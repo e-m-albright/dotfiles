@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# System
+# ------
+
+# Shorthand aliases
+alias g='git'
+alias sha256='shasum -a 256'
+
+# Colorize search results
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'
+
+# File system
+alias l.='ls -d .* -G'
+alias ll='ls -l -G'
+alias ls='ls -G'
+
+# Memory
+alias duhs='du -hs ~/*'
+
+# User
+# ----
+
+# Directories
+alias downloads='cd ~/Downloads'
+alias co='cd ~/code'
+
+# Git config - lazy aliases
+for al in $(git config --get-regexp '^alias\.' | cut -f 1 -d ' ' | cut -f 2 -d '.'); do
+  alias g${al}="git ${al}"
+done
+unset al
+
+# Languages
+# ----------
+
+# Python
+alias prp=poetry run python
+# Load default python virtual env
+alias py='source ~/.venv/base/bin/activate'
+
+# Cloud Vendors
+# -------------
+
+# Supabase
+alias sb="supabase"

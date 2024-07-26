@@ -1,0 +1,111 @@
+[user]
+	name = Evan Albright
+	email = ichbinevan@gmail.com
+
+# Enforce SSH
+[url "ssh://git@github.com/"]
+  insteadOf = https://github.com/
+[url "ssh://git@gitlab.com/"]
+  insteadOf = https://gitlab.com/
+[url "ssh://git@bitbucket.org/"]
+  insteadOf = https://bitbucket.org/
+
+[pull]
+	rebase = true
+[credential]
+	helper = store
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[init]
+	defaultBranch = main
+[merge]
+	tool = vscode
+[mergetool "vscode"]
+	cmd = code --wait --merge $REMOTE $LOCAL $BASE $MERGED
+[diff]
+	tool = vscode
+[difftool "vscode"]
+	cmd = code --wait --diff $LOCAL $REMOTE
+
+[alias]
+	# show all aliases
+	aliases = config --global -l
+	# build commands using the local branch name
+	branch-name = "!git rev-parse --abbrev-ref HEAD"
+
+
+	# Local work
+	# ----------
+	a = add
+	m = merge
+	mab = merge --abort
+	mo =  "!f() { git merge origin/$1; }; f"
+	mod = merge origin/develop
+	c = commit
+	cm = "!f() { git commit -m \"$1\"; }; f"
+	cam = "!f() { git commit -am \"$1\"; }; f"
+	co = checkout
+	cob = checkout -b
+	d = diff
+	ds = diff --stat
+	dc = diff --cached
+	sw = switch
+
+	# save / undo
+	save = add -A && git commit -m 'checkpoint'
+	undo = reset HEAD~1 --mixed
+	unstage = reset HEAD
+
+	# lose everything not in remote
+	hard-match-remote = reset --hard @{u}
+	# keep local diff, wipe history 
+	soft-match-remote = reset --soft @{u} 
+	# keep local diff compared to "develop"
+	soft-match-develop = reset --soft origin/develop
+
+	# status
+	s = !git sb
+	ss = status --show-stash
+	sb = status -sb
+
+	# Remote management
+	# ----------
+	f = fetch --prune
+	prune = remote prune origin
+	rp = remote prune origin
+	rv = remote -v
+
+	# History
+	# ----------
+	last = log -1 HEAD --stat
+	lg = log --pretty=format:\"%C(magenta)%h%Creset -%C(red)%d%Creset %s %C(dim green)(%cr) [%an]\" --abbrev-commit -30
+	lgg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -30
+	se = rev-list --all | xargs git grep -F  # search changes for a string
+
+	# Branch management
+	# ----------
+	b = branch
+	ba = branch -a
+	bf = branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:green)(%(committerdate:relative)) [%(authorname)]' --sort=-committerdate
+	bfa = branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:green)(%(committerdate:relative)) [%(authorname)]' --sort=-committerdate -a
+	pending = log main..develop --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    
+	recentb = "!r() { refbranch=$1 count=$2; git for-each-ref --sort=-committerdate refs/heads --format='%(refname:short)|%(HEAD)%(color:yellow)%(refname:short)|%(color:bold green)%(committerdate:relative)|%(color:blue)%(subject)|%(color:magenta)%(authorname)%(color:reset)' --color=always --count=${count:-20} | while read line; do branch=$(echo \"$line\" | awk 'BEGIN { FS = \"|\" }; { print $1 }' | tr -d '*'); ahead=$(git rev-list --count \"${refbranch:-origin/develop}..${branch}\"); behind=$(git rev-list --count \"${branch}..${refbranch:-origin/develop}\"); colorline=$(echo \"$line\" | sed 's/^[^|]*|//'); echo \"$ahead|$behind|$colorline\" | awk -F'|' -vOFS='|' '{$5=substr($5,1,70)}1' ; done | ( echo \"ahead|behind||branch|lastcommit|message|author\\n\" && cat) | column -ts'|';}; r"
+	br = for-each-ref --sort=committerdate refs/heads/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))'
+	bro = ls-remote -h origin | while read b; do PAGER='' git log -n1 --color --pretty=format:'%ct%C(yellow)%d%Creset - %Cred%h%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset%n' --abbrev-commit $( echo $b | cut -d' ' -f1 ) --; done | sort -rn -k1,10 | cut -c11-"
+
+	# delete local branch
+	ldel = branch -D
+	# delete remote branch
+	rdel = push origin --delete
+	
+	publish = "!git push -u origin $(git branch-name)"
+	unpublish = "!git push origin :$(git branch-name)"
+	pu = ![[ $(git config branch.$(git symbolic-ref --short HEAD).merge) = '' ]] && git push -u origin $(git symbolic-ref --short HEAD) || git push
+	pl = pull
+
+	fp = fetch --prune
+	pp = pull --prune
