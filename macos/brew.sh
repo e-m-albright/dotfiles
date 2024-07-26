@@ -7,6 +7,7 @@ brew upgrade
 brew tap homebrew/cask-versions
 
 # QOL Utilities
+brew install tmux
 brew install dockutil
 brew install wifi-password
 brew install bash-completion@2
