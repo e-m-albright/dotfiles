@@ -35,18 +35,19 @@ function py() {
         eval "$(pyenv init -)"
     fi
 
-    # Create venv if it doesn't exist
-    if [ ! -d "$VENV_DIR" ]; then
-        echo "Creating new virtual environment..."
-        python -m venv "$VENV_DIR"
-    fi
+    # # Create venv if it doesn't exist
+    # if [ ! -d "$VENV_DIR" ]; then
+    #     echo "Creating new virtual environment..."
+    #     # TODO python not python3
+    #     python3 -m venv "$VENV_DIR"
+    # fi
 
-    # Activate venv
-    if [ -f "$VENV_DIR/bin/activate" ]; then
-        source "$VENV_DIR/bin/activate"
-        echo "Virtual environment activated."
-    else
-        echo "Error: Virtual environment activation failed."
-        return 1
-    fi
+    # # Activate venv
+    # if [ -f "$VENV_DIR/bin/activate" ]; then
+    #     source "$VENV_DIR/bin/activate"
+    #     echo "Virtual environment activated."
+    # else
+    #     echo "Error: Virtual environment activation failed."
+    #     return 1
+    # fi
 }

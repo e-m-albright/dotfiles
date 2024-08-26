@@ -11,8 +11,12 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 . "$DOTFILES_DIR/macos/dock.sh"
 
 # Languages
+# -- Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# -- JavaScript / Bun
 curl -fsSL https://bun.sh/install | bash
+# -- Python / Pyenv + UV
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Dotfile symlinks
 ln -sfv "$DOTFILES_DIR/git/.gitconfig" ~

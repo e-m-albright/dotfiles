@@ -65,6 +65,3 @@ unset al
 
 # Extra Git
 alias gs='git status'
-
-# Python
-alias prp=poetry run python

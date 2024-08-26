@@ -21,19 +21,6 @@ _PROMPT_DIR="%~"
 _PROMPT_SEPA="@"
 _PROMPT_SEPD="\$"
 
-function pyenv_prompt_info() {
-  if which pyenv &>/dev/null; then
-    local pyenv_version="$(pyenv version-name)"
-    echo "${ZSH_THEME_PYENV_PROMPT_PREFIX:=(}${pyenv_version:=system}${ZSH_THEME_PYENV_PROMPT_SUFFIX:=)}"
-  fi
-}
-
-# function pyenv_prompt_info() {
-#     local version="$(pyenv version-name)"
-#     echo "${version:gs/%/%%}"
-# }
-
-
 # Use Amuse theme's prompt with mercurial info added
 PROMPT="\
 ${BOLD}${CYAN}${_PROMPT_USER}${_PROMPT_SEPA}${_PROMPT_MACHINE}➜ \
@@ -42,4 +29,3 @@ ${RESET}$(git_prompt_info) \
 ⌚ \
 ${BOLD}${RED}${_PROMPT_TIME}${RESET}
 ${YELLOW}${_PROMPT_SEPD}${RESET} "
-
