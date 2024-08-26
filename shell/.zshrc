@@ -10,33 +10,6 @@ setopt APPEND_HISTORY
 # Allow tab completion in the middle of a word.
 setopt COMPLETE_IN_WORD
 
-# My own aliases
-# ------------------------------------------------------------------
-# ------------------------------------------------------------------
-
-# Colorize search results
-alias egrep='egrep --color=auto'
-alias fgrep='fgrep --color=auto'
-alias grep='grep --color=auto'
-
-# File system
-alias l.='ls -d .*'  # list hidden files
-alias ll='ls -l'     # list long
-
-# Directories
-alias downloads='cd ~/Downloads'
-alias co='cd ~/code'
-
-# Pull aliases from git config - complementary to oh-my-zsh
-for al in $(git config --get-regexp '^alias\.' | cut -f 1 -d ' ' | cut -f 2 -d '.'); do
-  alias g${al}="git ${al}"
-done
-unset al
-
-# Python
-alias prp=poetry run python
-
-
 # Load oh-my-zsh
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -66,3 +39,31 @@ if [[ -n $SSH_CONNECTION ]]; then
 else
   export EDITOR='mvim'
 fi
+
+
+
+# My own aliases
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+
+# Colorize search results
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'
+
+# File system
+alias l.='ls -d .*'  # list hidden files
+alias ll='ls -l'     # list long
+
+# Directories
+alias downloads='cd ~/Downloads'
+alias co='cd ~/code'
+
+# Pull aliases from git config - complementary to oh-my-zsh
+for al in $(git config --get-regexp '^alias\.' | cut -f 1 -d ' ' | cut -f 2 -d '.'); do
+  alias g${al}="git ${al}"
+done
+unset al
+
+# Python
+alias prp=poetry run python

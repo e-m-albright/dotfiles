@@ -19,6 +19,7 @@ ln -sfv "$DOTFILES_DIR/git/.gitconfig" ~
 ln -sfv "$DOTFILES_DIR/shell/.zprofile" ~
 ln -sfv "$DOTFILES_DIR/shell/.zshenv" ~
 ln -sfv "$DOTFILES_DIR/shell/.zshrc" ~
+ln -sfv "$DOTFILES_DIR/shell/amuse.zsh-theme" ~/.oh-my-zsh/custom/themes/amuse.zsh-theme
 
 # Vscode extensions & settings
 . "$DOTFILES_DIR/vscode/extensions.sh"
