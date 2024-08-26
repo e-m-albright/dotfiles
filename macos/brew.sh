@@ -22,8 +22,9 @@ brew install wget     # Downloading files
 brew install jq       # JSON manipulation
 brew install nmap     # Network scanning
 # Programming Languages and Frameworks
-brew install pyenv   # Python version manager
-brew install bun     # JavaScript runtime
+brew install xz       # Compression - required for pyenv
+brew install pyenv    # Python version manager
+brew install bun      # JavaScript runtime
 
 # Wait a bit before moving on...
 sleep 1

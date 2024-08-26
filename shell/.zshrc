@@ -40,8 +40,6 @@ else
   export EDITOR='mvim'
 fi
 
-
-
 # My own aliases
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -64,6 +62,9 @@ for al in $(git config --get-regexp '^alias\.' | cut -f 1 -d ' ' | cut -f 2 -d '
   alias g${al}="git ${al}"
 done
 unset al
+
+# Extra Git
+alias gs='git status'
 
 # Python
 alias prp=poetry run python
