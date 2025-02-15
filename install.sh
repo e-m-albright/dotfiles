@@ -35,3 +35,6 @@ ln -sfv "$DOTFILES_DIR/vscode/settings.json" ~/Library/Application\ Support/Code
 
 # Add keys from keychain to ssh agent
 ssh-add -A 2>/dev/null;
+
+# Set zsh as default shell
+chsh -s $(which zsh)
