@@ -2,6 +2,12 @@
 
 My dotfiles!
 
+TODO can I automate
+- Final step of enabling rectangle
+- Configure flux
+
+TODO use the bin dotfiles or remove
+
 ## Install
 
 On a fresh installation of MacOS:

@@ -17,6 +17,7 @@ apps=(
     "/Applications/Super Productivity.app"
     "/Applications/Visual Studio Code.app"
     "/Applications/Cursor.app"
+    "/Applications/iTerm.app"
     "/Applications/Discord.app"
 )
 
