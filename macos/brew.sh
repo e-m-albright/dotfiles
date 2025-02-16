@@ -1,61 +1,147 @@
-# Install Homebrew
+#!/bin/bash
+set -euo pipefail
 
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Install Homebrew if not already installed
+if ! command -v brew >/dev/null 2>&1; then
+    echo "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    
+    # Add Homebrew to path if not already present
+    if ! grep -q 'eval "$(/opt/homebrew/bin/brew shellenv)"' /Users/$USER/.zprofile; then
+        echo >> /Users/$USER/.zprofile
+        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/$USER/.zprofile
+    fi
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+    echo "✓ Homebrew installed"
+fi
+
+echo "Updating Homebrew..."
 brew update
 brew upgrade
+echo "✓ Homebrew updated"
 
-brew tap homebrew/cask-versions
+# Install CLI packages
+echo "Installing CLI tools..."
 
-# QOL Utilities
-brew install dockutil
-brew install bash-completion@2
-# Git
-brew install git
-brew install git-lfs  # Large file support
-# Dev Utilities
-brew install htop     # Monitoring CPU, memory, and processes
-brew install iftop    # Monitoring network traffic
-brew install openssl  # SSL/TLS
-brew install wget     # Downloading files
-brew install jq       # JSON manipulation
-brew install nmap     # Network scanning
-# Programming Languages and Frameworks
-brew install uv       # Python
-brew install bun      # JavaScript runtime
+qol_utils=(
+    tmux
+    dockutil
+    "bash-completion@2"
+)
 
-# Wait a bit before moving on...
-sleep 1
+git_tools=(
+    git
+    git-lfs
+)
 
-# ...and then.
-echo "Success! Basic brew packages are installed."
+dev_utils=(
+    htop
+    iftop
+    openssl
+    wget
+    jq
+    nmap
+)
+
+# Function to install packages if not already installed
+install_packages() {
+    local pkgs=("$@")
+    for pkg in "${pkgs[@]}"; do
+        if ! brew list "$pkg" &>/dev/null; then
+            echo "Installing $pkg..."
+            brew install "$pkg"
+            echo "✓ $pkg installed"
+        else
+            echo "• $pkg already installed"
+        fi
+    done
+}
+
+# Install packages by category
+echo "Installing QOL utilities..."
+install_packages "${qol_utils[@]}"
+
+echo "Installing Git tools..."
+install_packages "${git_tools[@]}"
+
+echo "Installing dev utilities..."
+install_packages "${dev_utils[@]}"
+
+echo "✓ All CLI tools installed"
 
 # Install cask packages
+echo "Installing applications..."
 
-# Applications
-brew install --cask google-chrome
-brew install --cask spotify
-brew install --cask discord
-brew install --cask zoom
-brew install --cask super-productivity
-# QOL tools
-brew install --cask rectangle   # Window manager
-brew install --cask flux        # Night light
-brew install --cask flycut      # Clipboard manager
-# Development tools
-brew install --cask visual-studio-code
-brew install --cask cursor
-brew install --cask iterm2
-brew install --cask docker
-brew install --cask docker-compose
-# brew install --cask postman
-# brew install --cask insomnia
-# brew install --cask figma
+# Define cask packages in arrays
+apps=(
+    google-chrome
+    spotify
+    discord
+    zoom
+    super-productivity
+)
 
-# Quick Look Plugins (https://github.com/sindresorhus/quick-look-plugins)
-brew cask install qlcolorcode qlstephen qlmarkdown quicklook-json qlprettypatch quicklook-csv betterzipql qlimagesize webpquicklook qlvideo
+qol_apps=(
+    rectangle
+    flux
+    flycut
+)
 
-# Wait a bit before moving on...
-sleep 1
+dev_apps=(
+    visual-studio-code
+    cursor
+    iterm2
+    docker
+)
 
-# ...and then.
-echo "Success! Brew additional applications are installed."
+quicklook_plugins=(
+    qlcolorcode
+    qlstephen
+    qlmarkdown
+    quicklook-json
+    qlprettypatch
+    quicklook-csv
+    webpquicklook
+    qlvideo
+)
+
+# Function to install cask packages if not already installed
+install_casks() {
+    local casks=("$@")
+    for cask in "${casks[@]}"; do
+        if ! brew list --cask "$cask" &>/dev/null; then
+            echo "Installing $cask..."
+            brew install --cask "$cask"
+            echo "✓ $cask installed"
+        else
+            echo "• $cask already installed"
+        fi
+    done
+}
+
+# Install cask packages by category
+echo "Installing general applications..."
+install_casks "${apps[@]}"
+
+echo "Installing QOL applications..."
+install_casks "${qol_apps[@]}"
+
+echo "Installing development tools..."
+install_casks "${dev_apps[@]}"
+
+# Install Docker Compose separately as it's not a cask
+if ! brew list docker-compose &>/dev/null; then
+    echo "Installing docker-compose..."
+    brew install docker-compose
+    echo "✓ docker-compose installed"
+else
+    echo "• docker-compose already installed"
+fi
+
+echo "Installing Quick Look plugins..."
+install_casks "${quicklook_plugins[@]}"
+
+# Optional installations (commented out by default)
+# install_casks postman insomnia figma
+
+echo "✓ All applications successfully installed!"

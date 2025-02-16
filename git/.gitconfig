@@ -1,41 +1,121 @@
+# User Configuration
+# ------------------------------------------------------------------
 [user]
-	name = Evan Albright
-	email = ichbinevan@gmail.com
+    name = Evan Albright
+    email = ichbinevan@gmail.com
 
-# Enforce SSH
+# SSH Configuration
+# ------------------------------------------------------------------
 [url "ssh://git@github.com/"]
-  insteadOf = https://github.com/
+    insteadOf = https://github.com/
 [url "ssh://git@gitlab.com/"]
-  insteadOf = https://gitlab.com/
+    insteadOf = https://gitlab.com/
 [url "ssh://git@bitbucket.org/"]
-  insteadOf = https://bitbucket.org/
+    insteadOf = https://bitbucket.org/
 
-[pull]
-	rebase = true
-[credential]
-	helper = store
-[filter "lfs"]
-	clean = git-lfs clean -- %f
-	smudge = git-lfs smudge -- %f
-	process = git-lfs filter-process
-	required = true
+# Core Settings
+# ------------------------------------------------------------------
 [init]
-	defaultBranch = main
-[merge]
-	tool = vscode
-[mergetool "vscode"]
-	cmd = code --wait --merge $REMOTE $LOCAL $BASE $MERGED
-[diff]
-	tool = vscode
-[difftool "vscode"]
-	cmd = code --wait --diff $LOCAL $REMOTE
+    defaultBranch = main
+[pull]
+    rebase = true
+[credential]
+    helper = store
+[remote "origin"]
+    prune = true
+    [color]
+    ui = auto
+    diff = auto
+    status = auto
+    branch = auto
+[core]
+    excludesfile = ~/.gitignore_global
+    editor = code --wait
+    autocrlf = input
+    whitespace = trailing-space,space-before-tab
+[help]
+    autocorrect = 20  # Autocorrect commands after 2 seconds
+[push]
+    default = current
+    autoSetupRemote = true  # Automatically set upstream
+[fetch]
+    prune = true  # Always prune when fetching
+[rebase]
+    autoStash = true  # Automatically stash/unstash during rebase
 
+# Large File Storage
+# ------------------------------------------------------------------
+[filter "lfs"]
+    clean = git-lfs clean -- %f
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true
+
+# Diff & Merge Tools
+# ------------------------------------------------------------------
+[merge]
+    tool = vscode
+    conflictstyle = diff3  # Added: Shows original content in conflicts
+[mergetool "vscode"]
+    cmd = code --wait --merge $REMOTE $LOCAL $BASE $MERGED
+[diff]
+    tool = vscode
+    colorMoved = default  # Added: Better visualization of moved code
+[difftool "vscode"]
+    cmd = code --wait --diff $LOCAL $REMOTE
+
+# Aliases
+# ------------------------------------------------------------------
 [alias]
-	branch-name = "!git rev-parse --abbrev-ref HEAD"
-  cob = "!git checkout -b"
-	ldel = branch -D
-	rdel = push origin --delete
-	publish = "!git push -u origin $(git branch-name)"
-	unpublish = "!git push origin :$(git branch-name)"
-	pu = ![[ $(git config branch.$(git symbolic-ref --short HEAD).merge) = '' ]] && git push -u origin $(git symbolic-ref --short HEAD) || git push
-  pl = "!git pull --prune"
+    # Branch Operations
+    branch-name = "!git rev-parse --abbrev-ref HEAD"
+    b = "!git for-each-ref --sort='-authordate' --format='%(authordate)%09%(objectname:short)%09%(refname)' refs/heads | sed -e 's-refs/heads/--'"
+    ba = branch -a
+    ldel = branch -D
+    rdel = push origin --delete
+
+    # Checkout Operations
+    co = checkout
+    cob = checkout -b
+    cot = checkout --track
+
+    # Commit Operations
+    c = commit
+    cm = commit -m
+    cam = commit -am
+    ac = "!git add . && git commit -am"
+    ap = add -p
+
+    # Status & Information
+    s = status
+    ss = status -sb
+    alias = "!git config --get-regexp ^alias\\. | sed -e s/^alias\\.// -e s/\\ /\\ =\\ /"
+
+    # Stash Operations
+    st = stash
+    stl = stash list
+    sta = stash apply
+    sts = stash save
+    stp = stash pop
+
+    # Remote Operations
+    f = fetch -p
+    publish = "!git push -u origin $(git branch-name)"
+    unpublish = "!git push origin :$(git branch-name)"
+    pu = "![[ $(git config branch.$(git symbolic-ref --short HEAD).merge) = '' ]] && git push -u origin $(git symbolic-ref --short HEAD) || git push"
+    pl = "!git pull --prune"
+
+    # Diff Operations
+    d = diff
+    ds = diff --stat
+    dc = diff --cached
+
+    # Log Operations
+    l = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=short
+    lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+
+    # Merge Operations
+    m = merge
+    merge-span = "!f() { echo $(git log -1 $2 --merges --pretty=format:%P | cut -d' ' -f1)$1$(git log -1 $2 --merges --pretty=format:%P | cut -d' ' -f2); }; f"
+    merge-log = "!git log `git merge-span .. $1`"
+    merge-diff = "!git diff `git merge-span ... $1`"
