@@ -68,6 +68,6 @@ ln -sfv "$DOTFILES_DIR/vscode/settings.json" ~/Library/Application\ Support/Code
 # Clear cache
 . "$DOTFILES_DIR/bin/dotfiles" clean
 
-# Add keys from keychain to ssh agent
-ssh-add -A 2>/dev/null;
+mkdir -p ~/code
 
+echo "✨ Dotfiles setup complete!"
