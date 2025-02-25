@@ -83,6 +83,7 @@ apps=(
 
 qol_apps=(
     rectangle
+    caffeine
     flux
     flycut
 )

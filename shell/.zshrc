@@ -136,3 +136,8 @@ extract() {
         echo "'$1' is not a valid file"
     fi
 }
+# bun completions
+[ -s "/Users/evan/.bun/_bun" ] && source "/Users/evan/.bun/_bun"
+
+# fnm
+eval "$(fnm env)"

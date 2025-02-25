@@ -40,7 +40,14 @@ if ! command -v rustc >/dev/null 2>&1; then
     echo "✓ Rust installed"
 fi
 
-# -- JavaScript / Bun
+# -- Node.js / FNM (Fast Node Manager)
+if ! command -v fnm >/dev/null 2>&1; then
+    echo "Installing FNM..."
+    curl -fsSL https://fnm.vercel.app/install | bash
+    echo "✓ FNM installed"
+fi
+
+# -- Bun (Preferred JavaScript package manager / runtime)
 if ! command -v bun >/dev/null 2>&1; then
     echo "Installing Bun..."
     curl -fsSL https://bun.sh/install | bash

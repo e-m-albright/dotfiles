@@ -35,7 +35,7 @@ fi
 if [ ! -f "$SSH_CONFIG" ]; then
     echo "Creating SSH config..."
     cat > "$SSH_CONFIG" <<EOL
-Host *
+Host github.com
     UseKeychain yes
     AddKeysToAgent yes
     IdentityFile ~/.ssh/id_ed25519
