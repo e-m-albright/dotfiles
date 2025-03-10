@@ -15,9 +15,7 @@ apps=(
     "/Applications/Google Chrome.app"
     "/Applications/Spotify.app"
     "/Applications/Super Productivity.app"
-    "/Applications/Visual Studio Code.app"
     "/Applications/Cursor.app"
-    "/Applications/iTerm.app"
     "/Applications/Discord.app"
 )
 
@@ -39,8 +37,8 @@ done
 
 # Add special folders
 echo "Adding folders to dock..."
-dockutil --add /Applications --display folder
-echo "✓ Added Applications folder"
+# dockutil --add /Applications --display folder
+# echo "✓ Added Applications folder"
 dockutil --add ~/Downloads
 echo "✓ Added Downloads folder"
 
