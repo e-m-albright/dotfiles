@@ -78,6 +78,7 @@ apps=(
     spotify
     discord
     zoom
+    signal
     super-productivity
 )
 
