@@ -77,6 +77,7 @@ apps=(
     google-chrome
     spotify
     discord
+    whatsapp
     zoom
     signal
     super-productivity
