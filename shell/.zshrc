@@ -141,3 +141,5 @@ extract() {
 
 # fnm
 eval "$(fnm env)"
+
+PATH=~/.console-ninja/.bin:$PATH

@@ -86,7 +86,7 @@ apps=(
 qol_apps=(
     rectangle
     caffeine
-    flux
+    flux-app
     flycut
 )
 
@@ -94,7 +94,8 @@ dev_apps=(
     visual-studio-code
     cursor
     iterm2
-    docker
+    docker-desktop
+    gemini-cli
 )
 
 quicklook_plugins=(
