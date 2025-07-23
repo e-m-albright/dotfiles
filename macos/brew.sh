@@ -91,8 +91,9 @@ qol_apps=(
 )
 
 dev_apps=(
-    visual-studio-code
-    cursor
+    visual-studio-code # not ready yet to ditch it fully
+    zed
+    # cursor  # eh, don't love their company direction
     iterm2
     docker-desktop
     gemini-cli
