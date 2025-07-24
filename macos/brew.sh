@@ -92,11 +92,14 @@ qol_apps=(
 
 dev_apps=(
     visual-studio-code
+    # Newer AI editors
     # zed  # controversial?
     # cursor  # controversial?
     iterm2
     docker-desktop
+    # New AI CLI agents
     gemini-cli
+    claude-code
 )
 
 quicklook_plugins=(
