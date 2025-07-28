@@ -177,5 +177,6 @@
 "sherlock.userId": "16a0852e-c5ef-46f3-b5a4-cda960a5b43a",
 "javascript.updateImportsOnFileMove.enabled": "always",
 "workbench.iconTheme": "vscode-icons",
-"terminal.integrated.env.osx": {}
+"terminal.integrated.env.osx": {},
+"python.defaultInterpreterPath": "/usr/bin/python3"
 }

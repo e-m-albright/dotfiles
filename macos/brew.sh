@@ -100,6 +100,7 @@ dev_apps=(
     # New AI CLI agents
     gemini-cli
     claude-code
+    google-cloud-sdk
 )
 
 quicklook_plugins=(
