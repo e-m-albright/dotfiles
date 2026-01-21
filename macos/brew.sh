@@ -1,75 +1,9 @@
 #!/bin/bash
 set -eo pipefail  # Removed 'u' to allow empty arrays
 
-# Colors and formatting
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-BOLD='\033[1m'
-NC='\033[0m' # No Color
-
-# Symbols
-CHECK="${GREEN}✓${NC}"
-BULLET="${CYAN}•${NC}"
-WARN="${YELLOW}⚠${NC}"
-ARROW="${BLUE}→${NC}"
-
-# Package name color (subtle teal/blue)
-PKG_COLOR='\033[0;36m'  # Cyan/teal
-
-# Print functions (using printf for better compatibility)
-print_header() {
-    printf "\n"
-    printf "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-    printf "${BOLD}${BLUE}  %s${NC}\n" "$1"
-    printf "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-    printf "\n"
-}
-
-print_section() {
-    printf "\n"
-    printf "${CYAN}┌─${NC} ${BOLD}${CYAN}%s${NC}\n" "$1"
-}
-
-print_success() {
-    local msg="$1"
-    local pkg="${msg%% *}"
-    local rest="${msg#* }"
-    if [[ "$pkg" != "$msg" ]]; then
-        printf "  ${CHECK} ${GREEN}${PKG_COLOR}%s${NC}${GREEN} %s${NC}\n" "$pkg" "$rest"
-    else
-        printf "  ${CHECK} ${GREEN}%s${NC}\n" "$msg"
-    fi
-}
-
-print_info() {
-    local msg="$1"
-    local pkg="${msg%% *}"
-    local rest="${msg#* }"
-    if [[ "$pkg" != "$msg" ]]; then
-        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}%s${NC}\n" "$pkg" "$rest"
-    else
-        printf "  ${BULLET} ${CYAN}%s${NC}\n" "$msg"
-    fi
-}
-
-print_warn() {
-    printf "  ${WARN} ${YELLOW}%s${NC}\n" "$1"
-}
-
-print_action() {
-    local msg="$1"
-    local pkg="${msg%% *}"
-    local rest="${msg#* }"
-    if [[ "$pkg" != "$msg" ]]; then
-        printf "  ${ARROW} ${BOLD}${PKG_COLOR}%s${NC}${BOLD} %s${NC}\n" "$pkg" "$rest"
-    else
-        printf "  ${ARROW} ${BOLD}%s${NC}\n" "$msg"
-    fi
-}
+# Source shared print functions
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$SCRIPT_DIR/print_utils.sh"
 
 # -----------------------------------------------------------------------------
 # Homebrew bootstrap + curated packages
@@ -89,8 +23,6 @@ print_action() {
 : "${SOCIAL:=1}"
 
 print_header "🍺 Homebrew Setup"
-
-
 # Install Homebrew if not already installed
 if ! command -v brew >/dev/null 2>&1; then
     print_action "Installing Homebrew..."
@@ -151,15 +83,25 @@ install_casks() {
 
 install_any() {
     # Prefer formula; fall back to cask.
+    # Optimized: Check binary first (fast), then brew list (slower but necessary)
     local name="$1"
     [[ -z "$name" ]] || [[ "$name" =~ ^[[:space:]]*# ]] && return 0
     
-    if brew list "$name" &>/dev/null; then
-        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (formula)${NC}\n" "$name"
+    # Fast check: if binary exists, it's installed (works for most CLI tools)
+    # Try common binary name variations (much faster than brew list)
+    local bin_name="${name//-/_}"  # claude-code -> claude_code
+    local bin_name2="${name//-/}"  # claude-code -> claudecode
+    if command -v "$name" >/dev/null 2>&1 || \
+       command -v "$bin_name" >/dev/null 2>&1 || \
+       command -v "$bin_name2" >/dev/null 2>&1; then
+        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
         return 0
     fi
-    if brew list --cask "$name" &>/dev/null; then
-        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (cask)${NC}\n" "$name"
+    
+    # Slower check: use brew list (only if binary check failed)
+    # Combine both checks with || to short-circuit (faster than separate if statements)
+    if brew list "$name" &>/dev/null 2>&1 || brew list --cask "$name" &>/dev/null 2>&1; then
+        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
         return 0
     fi
 
@@ -290,12 +232,6 @@ install_packages "${network_cli[@]}"
 print_section "macOS CLI"
 install_packages "${mac_cli[@]}"
 
-printf "\n"
-printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-printf "${CHECK} ${BOLD}${GREEN}All CLI tools installed${NC}\n"
-printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-printf "\n"
-
 print_header "🖥️  Installing Applications"
 print_section "Essentials"
 install_casks "${essentials[@]}"
@@ -337,9 +273,3 @@ fi
 
 print_section "Quick Look Plugins"
 install_casks "${quicklook_plugins[@]}"
-
-printf "\n"
-printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-printf "${CHECK} ${BOLD}${GREEN}All applications successfully installed!${NC}\n"
-printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-printf "\n"
