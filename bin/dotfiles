@@ -14,40 +14,45 @@ export DOTFILES_DIR EXTRA_DIR
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 
 sub_help () {
-    echo -e "$ARROW Usage: ${YELLOW}$BIN_NAME <command>${NC}"
-    echo
-    echo "Commands:"
-    echo "   help             This help message"
-    echo "   update           Update packages and pkg managers (OS, brew, node, npm, yarn, commposer)"
-    echo "   clean            Clean up caches (brew, npm, yarn, composer)"
-    echo "   symlinks         Run symlinks script"
-    echo "   brew             Run brew script"
-    echo "   hosts            Run hosts script"
-    echo "   defaults         Run MacOS defaults script"
-    echo "   dock             Run MacOS dock script"
+    printf "%s Usage: ${YELLOW}%s <command>${NC}\n" "$ARROW" "$BIN_NAME"
+    printf "\n"
+    printf "Commands:\n"
+    printf "   help             This help message\n"
+    printf "   update           Update packages and pkg managers (OS, brew, node, npm, yarn, commposer)\n"
+    printf "   clean            Clean up caches (brew, npm, yarn, composer)\n"
+    printf "   brew             Run brew script\n"
+    printf "   dock             Run MacOS dock script\n"
 }
 
 sub_update () {
     sudo softwareupdate -i -a
-    sudo n lts # install last lts node instance
     brew update
     brew upgrade
-    echo -e "${GREEN}$ARROW Success! Update command finished.${NC}"
+    
+    # Update Node.js to latest LTS via fnm
+    if command -v fnm >/dev/null 2>&1; then
+        eval "$(fnm env)"
+        fnm install --lts
+        fnm use --install-if-missing lts-latest
+        fnm default lts-latest
+    fi
+    
+    printf "${GREEN}%s Success! Update command finished.${NC}\n" "$ARROW"
 }
 
 sub_clean () {
     brew cleanup
-    echo -e "${GREEN}$ARROW Success! Clean command finished.${NC}"
+    printf "${GREEN}%s Success! Clean command finished.${NC}\n" "$ARROW"
 }
 
 sub_brew () {
-    . "$DOTFILES_DIR/install/brew.sh"
-    echo -e "${GREEN}$ARROW Success! Brew command finished.${NC}"
+    . "$DOTFILES_DIR/macos/brew.sh"
+    printf "${GREEN}%s Success! Brew command finished.${NC}\n" "$ARROW"
 }
 
 sub_dock () {
     . "$DOTFILES_DIR/macos/dock.sh"
-    echo -e "${GREEN}$ARROW Success! MacOS dock command finished.${NC}"
+    printf "${GREEN}%s Success! MacOS dock command finished.${NC}\n" "$ARROW"
 }
 
 case $COMMAND_NAME in
@@ -58,7 +63,7 @@ case $COMMAND_NAME in
         shift
         sub_${COMMAND_NAME} $@
         if [ $? = 127 ]; then
-            echo -e "${RED}$ARROW Error: '$COMMAND_NAME' is not a known command or has errors.${NC}" >&2
+            printf "${RED}%s Error: '%s' is not a known command or has errors.${NC}\n" "$ARROW" "$COMMAND_NAME" >&2
             sub_help
             exit 1
         fi

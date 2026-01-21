@@ -19,30 +19,42 @@ apps=(
     "/Applications/Discord.app"
 )
 
-# Clear the dock
-echo "Removing existing dock items..."
-dockutil --no-restart --remove all
-echo "✓ Dock cleared"
+# Track if any changes were made (to avoid unnecessary Dock restart)
+dock_changed=false
 
-# Add applications
-echo "Adding applications to dock..."
+# Add applications (idempotent - only adds if not already present)
+echo "Ensuring applications are in dock..."
 for app in "${apps[@]}"; do
     if [ -e "$app" ]; then
-        dockutil --no-restart --add "$app"
-        echo "✓ Added $(basename "$app")"
+        # Check if app is already in dock
+        if dockutil --list | grep -q "$(basename "$app" .app)"; then
+            echo "• $(basename "$app") already in dock"
+        else
+            dockutil --no-restart --add "$app" >/dev/null 2>&1
+            echo "✓ Added $(basename "$app")"
+            dock_changed=true
+        fi
     else
-        echo "⚠️  Warning: $app not found"
+        echo "⚠️  Warning: $app not found (skipping)"
     fi
 done
 
-# Add special folders
-echo "Adding folders to dock..."
-# dockutil --add /Applications --display folder
-# echo "✓ Added Applications folder"
-dockutil --add ~/Downloads
-echo "✓ Added Downloads folder"
+# Add special folders (idempotent)
+echo "Ensuring folders are in dock..."
+if dockutil --list | grep -q "Downloads"; then
+    echo "• Downloads folder already in dock"
+else
+    dockutil --no-restart --add ~/Downloads >/dev/null 2>&1
+    echo "✓ Added Downloads folder"
+    dock_changed=true
+fi
 
-# Restart Dock to apply changes
-echo "Restarting Dock..."
-killall Dock
-echo "✓ Dock configuration complete!"
+# Only restart Dock if changes were made (prevents window focus switching)
+if [ "$dock_changed" = true ]; then
+    echo "Restarting Dock..."
+    killall Dock 2>/dev/null || true
+    sleep 0.5
+    echo "✓ Dock configuration complete!"
+else
+    echo "✓ Dock configuration complete! (no changes needed)"
+fi

@@ -1,5 +1,5 @@
 # Rust
-. "$HOME/.cargo/env"
+[ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
-# uv
-export PATH="/Users/evan/.local/bin:$PATH"
+# uv (Python package manager)
+export PATH="$HOME/.local/bin:$PATH"

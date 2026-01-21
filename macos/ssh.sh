@@ -59,12 +59,17 @@ EOL
 fi
 chmod 600 "$SSH_CONFIG"
 
-# Add key to ssh-agent only if not already added
-if ! ssh-add -l | grep -q "$SSH_KEY"; then
-    echo "Adding SSH key to ssh-agent..."
-    ssh-add --apple-use-keychain "$SSH_KEY"
-else
+# Add key to ssh-agent only if not already added (idempotent)
+# Check if key is loaded in ssh-agent
+if ssh-add -l 2>/dev/null | grep -q "$SSH_KEY" || ssh-add -l 2>/dev/null | grep -q "$(ssh-keygen -lf "$SSH_KEY" 2>/dev/null | awk '{print $2}')"; then
     echo "SSH key already in ssh-agent"
+else
+    echo "Adding SSH key to ssh-agent..."
+    ssh-add --apple-use-keychain "$SSH_KEY" 2>/dev/null || {
+        # If ssh-agent isn't running, start it and try again
+        eval "$(ssh-agent -s)" >/dev/null 2>&1
+        ssh-add --apple-use-keychain "$SSH_KEY" 2>/dev/null || echo "Warning: Could not add key to ssh-agent"
+    }
 fi
 
 # Copy public key to clipboard

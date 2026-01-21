@@ -2,6 +2,11 @@
 export DOTFILES_DIR
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# Colors for final message
+GREEN='\033[0;32m'
+BOLD='\033[1m'
+NC='\033[0m'
+
 # Install oh-my-zsh if not already installed
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
     echo "Installing Oh My Zsh..."
@@ -18,6 +23,7 @@ fi
 
 # Dotfile symlinks
 ln -sfv "$DOTFILES_DIR/git/.gitconfig" ~
+ln -sfv "$DOTFILES_DIR/git/.gitignore_global" ~
 ln -sfv "$DOTFILES_DIR/shell/.zprofile" ~
 ln -sfv "$DOTFILES_DIR/shell/.zshenv" ~
 ln -sfv "$DOTFILES_DIR/shell/.zshrc" ~
@@ -47,6 +53,32 @@ if ! command -v fnm >/dev/null 2>&1; then
     echo "✓ FNM installed"
 fi
 
+# Initialize FNM and install Node.js LTS (idempotent)
+if command -v fnm >/dev/null 2>&1; then
+    eval "$(fnm env)"
+    
+    # Check if Node.js LTS is already installed
+    if fnm list | grep -q "lts-latest"; then
+        echo "• Node.js LTS already installed"
+    else
+        echo "Installing Node.js LTS..."
+        fnm install --lts
+        fnm use --install-if-missing lts-latest
+        fnm default lts-latest
+        echo "✓ Node.js LTS installed"
+    fi
+    
+    # Ensure LTS is set as default (idempotent)
+    fnm use --install-if-missing lts-latest >/dev/null 2>&1
+    fnm default lts-latest >/dev/null 2>&1
+    
+    # Enable corepack for pnpm/yarn (idempotent - safe to run multiple times)
+    if command -v corepack >/dev/null 2>&1; then
+        corepack enable >/dev/null 2>&1 || true
+        echo "• Corepack enabled (pnpm/yarn support)"
+    fi
+fi
+
 # -- Bun (Preferred JavaScript package manager / runtime)
 if ! command -v bun >/dev/null 2>&1; then
     echo "Installing Bun..."
@@ -68,13 +100,50 @@ if ! command -v python3.12 >/dev/null 2>&1; then
     echo "✓ Python 3.12 installed"
 fi
 
-# Vscode extensions & settings
-. "$DOTFILES_DIR/vscode/extensions.sh"
-ln -sfv "$DOTFILES_DIR/vscode/settings.json" ~/Library/Application\ Support/Code/User/settings.json
+# Install Marimo (Python notebook alternative)
+if command -v uv >/dev/null 2>&1; then
+    # Try to install Marimo via uv
+    if ! uv pip list 2>/dev/null | grep -q "^marimo "; then
+        echo "Installing Marimo..."
+        uv pip install marimo >/dev/null 2>&1 && echo "✓ Marimo installed" || echo "• Marimo installation skipped (will install manually)"
+    else
+        echo "• Marimo already installed"
+    fi
+elif command -v pip3 >/dev/null 2>&1; then
+    if ! pip3 list 2>/dev/null | grep -q "^marimo "; then
+        echo "Installing Marimo..."
+        pip3 install --user marimo >/dev/null 2>&1 && echo "✓ Marimo installed" || echo "• Marimo installation skipped (will install manually)"
+    else
+        echo "• Marimo already installed"
+    fi
+fi
+
+# Editor configurations (VS Code & Cursor)
+# VS Code
+if command -v code >/dev/null 2>&1; then
+    . "$DOTFILES_DIR/editors/vscode/extensions.sh"
+    mkdir -p ~/Library/Application\ Support/Code/User
+    ln -sf "$DOTFILES_DIR/editors/vscode/settings.json" ~/Library/Application\ Support/Code/User/settings.json 2>/dev/null || true
+fi
+
+# Cursor
+if command -v cursor >/dev/null 2>&1; then
+    . "$DOTFILES_DIR/editors/cursor/extensions.sh"
+    mkdir -p ~/Library/Application\ Support/Cursor/User
+    ln -sf "$DOTFILES_DIR/editors/cursor/settings.json" ~/Library/Application\ Support/Cursor/User/settings.json 2>/dev/null || true
+    # Global Cursor CLI config
+    mkdir -p ~/.cursor
+    ln -sf "$DOTFILES_DIR/editors/cursor/cli-config.json" ~/.cursor/cli-config.json 2>/dev/null || true
+fi
 
 # Clear cache
 . "$DOTFILES_DIR/bin/dotfiles" clean
 
 mkdir -p ~/code
 
-echo "✨ Dotfiles setup complete!"
+# Final completion message
+printf "\n"
+printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+printf "${BOLD}${GREEN}  ✨ Dotfiles setup complete!${NC}\n"
+printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+printf "\n"
