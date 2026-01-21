@@ -109,5 +109,9 @@
   "terminal.integrated.env.osx": {},
   
   // Python
-  "python.defaultInterpreterPath": "/usr/bin/python3"
+"python.defaultInterpreterPath": "/usr/bin/python3",
+"cSpell.userWords": [
+    "FUMADOCS"
+],
+"git.autofetch": true
 }
