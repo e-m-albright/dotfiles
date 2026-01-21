@@ -175,6 +175,7 @@ productivity=(
     warp                   # AI terminal (modern UX)
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
+    granola                # AI notepad for meetings (auto-transcribes, enhances notes)
 )
 
 dev_apps=(
