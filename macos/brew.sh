@@ -145,6 +145,9 @@ dev_cli=(
     htop                # System monitoring
     iftop               # Network traffic monitoring
     just                # Command runner (like make, but simpler)
+    duckdb              # Fast analytical database (SQL for analytics)
+    hyperfine           # Command-line benchmarking tool
+    py-spy              # Sampling profiler for Python programs
 )
 
 mac_cli=(
@@ -175,7 +178,8 @@ productivity=(
 )
 
 dev_apps=(
-    docker-desktop
+    # docker-desktop    # Consider OrbStack instead (faster, lower resource usage on macOS)
+    orbstack            # Docker Desktop alternative (faster, better macOS integration)
     google-cloud-sdk
 )
 
@@ -193,6 +197,7 @@ ai_cli=(
     claude-code          # Anthropic CLI
     gemini-cli           # Google Gemini CLI
     ollama               # Local LLM runtime
+    huggingface-cli      # Hugging Face CLI (model management, downloads)
     # antigravity          # Distribution TBD
 )
 

@@ -93,9 +93,17 @@ In `macos/brew.sh` under `ai_gizmos` there's a small "AI-adjacent" list (mostly 
 - **Raycast** (launcher/workflows)
 - **Warp** (modern AI terminal)
 
-### What you already use (but this repo doesn’t fully automate yet)
+### What you already use (but this repo doesn't fully automate yet)
 
 - **Antigravity**: not currently installed/configured by these scripts; add it to `macos/brew.sh` (AI category) or document a manual install step once you decide the preferred distribution method.
+
+### ML/DL Development
+
+For deep learning and ML development (PyTorch, JAX, etc.), see **[ML_SETUP.md](ML_SETUP.md)** for:
+- Recommended Python packages (PyTorch, JAX, Weights & Biases, Hugging Face, etc.)
+- CLI tools (huggingface-cli, already included)
+- VS Code/Cursor extensions (Jupyter, TensorBoard)
+- Workflow recommendations and what teams like Anthropic use
 
 ### Local model quickstart (Ollama)
 

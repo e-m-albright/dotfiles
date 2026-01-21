@@ -74,6 +74,10 @@ install_extension "ms-python.debugpy"        # Python debugging
 install_extension "charliermarsh.ruff"       # Fast Python linter/formatter (replaces flake8/pylint)
 install_extension "marimo-team.marimo"       # Marimo notebooks (reactive Python notebooks)
 
+# ML / Data Science
+install_extension "ms-toolsai.jupyter"        # Jupyter notebook support
+install_extension "ms-toolsai.vscode-tensorboard"  # TensorBoard integration
+
 # Next.js / React / TypeScript (best-in-class DX)
 install_extension "dbaeumer.vscode-eslint"   # ESLint integration
 install_extension "esbenp.prettier-vscode"   # Code formatter

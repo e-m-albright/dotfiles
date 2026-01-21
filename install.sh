@@ -140,6 +140,21 @@ elif command -v pip3 >/dev/null 2>&1; then
     fi
 fi
 
+# Install Jupyter (for compatibility with traditional notebooks)
+print_section "Jupyter"
+if command -v uv >/dev/null 2>&1; then
+    if ! uv tool list 2>/dev/null | grep -q "^jupyter "; then
+        print_action "Installing Jupyter..."
+        if uv tool install jupyter >/dev/null 2>&1; then
+            print_success "Jupyter installed"
+        else
+            print_info "Jupyter installation skipped (will install manually)"
+        fi
+    else
+        print_info "Jupyter already installed"
+    fi
+fi
+
 # Editor configurations (VS Code & Cursor)
 print_header "📝 Editor Configuration"
 # VS Code
