@@ -114,5 +114,6 @@
     "FUMADOCS",
     "Marimo"
 ],
-"git.autofetch": true
+"git.autofetch": true,
+"editor.codeActions.triggerOnFocusChange": true
 }

@@ -57,8 +57,11 @@ install_packages() {
         [[ -z "$pkg" ]] || [[ "$pkg" =~ ^[[:space:]]*# ]] && continue
         if ! brew list "$pkg" &>/dev/null; then
             printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$pkg"
-            brew install "$pkg" >/dev/null 2>&1
-            printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$pkg"
+            if brew install "$pkg" 2>&1; then
+                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$pkg"
+            else
+                printf "  ${WARN} ${YELLOW}Failed to install ${PKG_COLOR}%s${NC} ${YELLOW}(may not be available via Homebrew)${NC}\n" "$pkg"
+            fi
         else
             printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$pkg"
         fi
@@ -71,12 +74,27 @@ install_casks() {
     [[ ${#casks[@]} -eq 0 ]] && return 0
     for cask in "${casks[@]}"; do
         [[ -z "$cask" ]] || [[ "$cask" =~ ^[[:space:]]*# ]] && continue
-        if ! brew list --cask "$cask" &>/dev/null; then
-            printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$cask"
-            brew install --cask "$cask" >/dev/null 2>&1
+        
+        # Check if installed via Homebrew
+        if brew list --cask "$cask" &>/dev/null 2>&1; then
+            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (Homebrew)${NC}\n" "$cask"
+            continue
+        fi
+        
+        # Check if app exists in /Applications (case-insensitive, common patterns)
+        # Convert cask name to app name: granola -> Granola.app, google-chrome -> Google Chrome.app
+        local app_pattern="${cask//-/*}"  # granola -> granola, google-chrome -> google*chrome
+        if find /Applications -maxdepth 1 -iname "*${app_pattern}*.app" 2>/dev/null | grep -q .; then
+            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (manual)${NC}\n" "$cask"
+            continue
+        fi
+        
+        # Try to install via Homebrew
+        printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$cask"
+        if brew install --cask "$cask" 2>&1; then
             printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$cask"
         else
-            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$cask"
+            printf "  ${WARN} ${YELLOW}Failed to install ${PKG_COLOR}%s${NC} ${YELLOW}(may not be available via Homebrew)${NC}\n" "$cask"
         fi
     done
 }
@@ -181,13 +199,14 @@ productivity=(
 dev_apps=(
     # docker-desktop    # Consider OrbStack instead (faster, lower resource usage on macOS)
     orbstack            # Docker Desktop alternative (faster, better macOS integration)
+    linear-linear       # Project management & issue tracking
     google-cloud-sdk
 )
 
 social_apps=(
     spotify
     zoom
-    discord
+    # discord
     # whatsapp
     # super-productivity
     # signal
