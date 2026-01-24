@@ -111,9 +111,12 @@
   // Python
 "python.defaultInterpreterPath": "/usr/bin/python3",
 "cSpell.userWords": [
+    "Agentic",
     "FUMADOCS",
-    "Marimo"
+    "Marimo",
+    "Pharma"
 ],
 "git.autofetch": true,
-"editor.codeActions.triggerOnFocusChange": true
+"editor.codeActions.triggerOnFocusChange": true,
+"git.confirmSync": false
 }

@@ -82,6 +82,15 @@ if command -v fnm >/dev/null 2>&1; then
         corepack enable >/dev/null 2>&1 || true
         print_info "Corepack enabled (pnpm/yarn support)"
     fi
+    
+    # Install Railway CLI (deployment platform)
+    if ! command -v railway >/dev/null 2>&1; then
+        print_action "Installing Railway CLI..."
+        npm install -g @railway/cli >/dev/null 2>&1 || true
+        print_success "Railway CLI installed"
+    else
+        print_info "Railway CLI already installed"
+    fi
 fi
 
 # -- Bun (Preferred JavaScript package manager / runtime)
