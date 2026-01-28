@@ -16,13 +16,17 @@ print_header "⚓ Dock Configuration"
 # Apps to add to dock
 apps=(
     "/Applications/Google Chrome.app"
+    "/Applications/Claude.app"  
     "/Applications/Spotify.app"
+    "/Applications/Slack.app"
+    # "/Applications/Discord.app"
+    # "/Applications/Granola.app"
     "/Applications/Linear.app"
+    # "/Applications/Visual Studio Code.app"
     "/Applications/Cursor.app"
     "/Applications/Warp.app"
     "/Applications/Raycast.app"
-    "/Applications/Claude.app"
-    "/Applications/OrbStack.app"
+    # "/Applications/OrbStack.app"
 )
 
 # Track if any changes were made (to avoid unnecessary Dock restart)

@@ -184,6 +184,16 @@ if command -v cursor >/dev/null 2>&1; then
     # Global Cursor CLI config
     mkdir -p ~/.cursor
     ln -sf "$DOTFILES_DIR/editors/cursor/cli-config.json" ~/.cursor/cli-config.json 2>/dev/null || true
+    
+    # Install Cursor CLI agent (command-line tool)
+    if ! command -v agent >/dev/null 2>&1; then
+        print_action "Installing Cursor CLI agent..."
+        curl -fsS https://cursor.com/install | bash >/dev/null 2>&1 || true
+        print_success "Cursor CLI agent installed"
+    else
+        print_info "Cursor CLI agent already installed"
+    fi
+    
     print_success "Cursor configured"
 fi
 

@@ -206,6 +206,7 @@ dev_apps=(
 social_apps=(
     spotify
     zoom
+    slack
     # discord
     # whatsapp
     # super-productivity
