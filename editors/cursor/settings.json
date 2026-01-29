@@ -119,5 +119,6 @@
 "git.autofetch": true,
 "editor.codeActions.triggerOnFocusChange": true,
 "git.confirmSync": false,
-"explorer.confirmDragAndDrop": false
+"explorer.confirmDragAndDrop": false,
+"git.enableSmartCommit": true
 }
