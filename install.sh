@@ -193,7 +193,13 @@ if command -v cursor >/dev/null 2>&1; then
     else
         print_info "Cursor CLI agent already installed"
     fi
-    
+
+    # Agent skills (npx skills add) — requires Node/npx
+    if command -v fnm >/dev/null 2>&1; then
+        eval "$(fnm env)"
+    fi
+    . "$DOTFILES_DIR/editors/cursor/skills.sh"
+
     print_success "Cursor configured"
 fi
 
