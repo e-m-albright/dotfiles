@@ -78,12 +78,12 @@ install_extension "marimo-team.marimo"       # Marimo notebooks (reactive Python
 install_extension "ms-toolsai.jupyter"        # Jupyter notebook support
 install_extension "ms-toolsai.vscode-tensorboard"  # TensorBoard integration
 
-# Next.js / React / TypeScript (best-in-class DX)
-install_extension "dbaeumer.vscode-eslint"   # ESLint integration
-install_extension "esbenp.prettier-vscode"   # Code formatter
-install_extension "crystal-spider.jsdoc-generator"  # JSDoc generation
+# TypeScript / SvelteKit (best-in-class DX)
+install_extension "svelte.svelte-vscode"     # Svelte/SvelteKit language support
+install_extension "biomejs.biome"            # Fast linter/formatter (preferred over ESLint+Prettier)
+install_extension "dbaeumer.vscode-eslint"   # ESLint (fallback for legacy projects)
+install_extension "esbenp.prettier-vscode"   # Prettier (fallback for legacy projects)
 install_extension "ms-playwright.playwright" # E2E testing support
-# install_extension "wallabyjs.quokka-vscode"  # JavaScript playground (optional)
 
 # HTML & CSS / Tailwind
 install_extension "bradlc.vscode-tailwindcss"  # Tailwind IntelliSense

@@ -1,12 +1,15 @@
 {
   // Cursor uses VS Code-compatible settings.json
   // Most VS Code settings work here, plus Cursor-specific AI features
-  
+  //
+  // NOTE: New projects use Biome (see "[svelte]" and "[typescript]" overrides).
+  // ESLint/Prettier kept as fallbacks for legacy projects.
+
   // Editor - Tabs & Indentation
-  "editor.tabSize": 4,
+  "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "editor.detectIndentation": false,
-  
+
   // Editor - Triggers
   "editor.formatOnType": false,
   "editor.formatOnPaste": true,
@@ -14,7 +17,7 @@
   "editor.formatOnSaveMode": "file",
   "files.autoSave": "onFocusChange",
   "editor.acceptSuggestionOnCommitCharacter": false,
-  
+
   // Editor - Navigation & Workbench
   "editor.minimap.enabled": false,
   "workbench.colorCustomizations": {
@@ -24,8 +27,8 @@
   "workbench.tree.renderIndentGuides": "always",
   "workbench.tree.indent": 16,
   "explorer.sortOrder": "default",
-  
-  // Formatting - File Types
+
+  // Formatting - Default (Prettier for legacy projects)
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
@@ -40,13 +43,13 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[svelte]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "svelte.svelte-vscode"
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   
   // Formatting - Plugins
@@ -62,9 +65,11 @@
   "eslint.format.enable": true,
   "eslint.run": "onSave",
   
-  // Languages
+  // Svelte
   "svelte.enable-ts-plugin": true,
-  "prettier.documentSelectors": ["**/*.svelte"],
+
+  // Biome (preferred for new projects)
+  "biome.enabled": true,
   
   // TailwindCSS
   "tailwindCSS.classAttributes": [

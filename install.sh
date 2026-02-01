@@ -206,11 +206,14 @@ fi
 # Prompts / Recipe Book
 print_header "📚 Prompts & Recipes"
 print_section "Recipe Book"
-# Make init script executable
+# Make scripts executable
 chmod +x "$DOTFILES_DIR/prompts/init.sh" 2>/dev/null || true
-# Add prompts/init.sh to PATH via symlink in bin
-ln -sf "$DOTFILES_DIR/prompts/init.sh" "$DOTFILES_DIR/bin/recipe"
-print_success "Recipe book configured (use 'recipe' command)"
+chmod +x "$DOTFILES_DIR/prompts/seed.sh" 2>/dev/null || true
+# Remove old 'recipe' symlink if it exists (deprecated)
+rm -f "$DOTFILES_DIR/bin/recipe" 2>/dev/null || true
+print_success "Recipe book configured"
+print_info "  New project:      ~/dotfiles/prompts/init.sh <recipe> <name>"
+print_info "  Existing project: ~/dotfiles/prompts/seed.sh <recipe> <path>"
 
 # Clear cache
 . "$DOTFILES_DIR/bin/dotfiles" clean

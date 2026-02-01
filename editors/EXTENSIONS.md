@@ -1,6 +1,6 @@
 # Editor Extensions
 
-Curated extension list optimized for **Python + Next.js** development.
+Curated extension list optimized for **SvelteKit + Python** development.
 
 ## Current Extension List
 
@@ -9,7 +9,7 @@ Curated extension list optimized for **Python + Next.js** development.
 - **code-spell-checker** - Spell checking in code
 - **todo-tree** - Highlight and manage TODO comments
 - **vscode-icons** - File type icons
-- **errorlens** - Inline error/warning highlighting (best-in-class DX) ⭐
+- **errorlens** - Inline error/warning highlighting (best-in-class DX)
 
 ### Version Control
 - **gitlens** - Git supercharged (blame, history, annotations)
@@ -25,13 +25,13 @@ Curated extension list optimized for **Python + Next.js** development.
 - **debugpy** - Python debugging support
 - **ruff** - Fast Python linter/formatter (replaces flake8/pylint/black)
 - **marimo** - Reactive Python notebooks (alternative to Jupyter, stores as .py files)
-- **marimo** - Reactive Python notebooks (alternative to Jupyter, stores as .py files)
 
-### Next.js / React / TypeScript (Best-in-Class DX)
-- **eslint** - JavaScript/TypeScript linting
-- **prettier-vscode** - Code formatter (works with ESLint)
-- **jsdoc-generator** - JSDoc comment generation
-- **playwright** - E2E testing support for Next.js
+### TypeScript / SvelteKit (Best-in-Class DX)
+- **svelte.svelte-vscode** - Svelte/SvelteKit language support
+- **eslint** - JavaScript/TypeScript linting (fallback for non-Biome projects)
+- **prettier-vscode** - Code formatter (fallback for non-Biome projects)
+- **biomejs.biome** - Fast linter/formatter (preferred over ESLint+Prettier)
+- **playwright** - E2E testing support
 
 ### HTML & CSS / Tailwind
 - **tailwindcss** - Tailwind CSS IntelliSense
@@ -44,23 +44,23 @@ Curated extension list optimized for **Python + Next.js** development.
 - **Ruff** chosen over flake8/pylint for speed (10-100x faster)
 - **Pylance** (included with python extension) provides fast type checking
 - **debugpy** for seamless debugging experience
-- **Marimo** - Modern reactive notebooks (Git-friendly .py files, better than Jupyter for many workflows)
+- **Marimo** - Modern reactive notebooks (Git-friendly .py files)
 
-### Next.js Stack
-- **ESLint + Prettier** - Industry standard for React/Next.js
-- **Playwright** - Modern E2E testing (better than Cypress for Next.js)
+### SvelteKit Stack
+- **Svelte extension** - Essential for .svelte file support
+- **Biome** preferred over ESLint+Prettier (35x faster, single tool)
+- **Playwright** - Modern E2E testing
 - **Tailwind IntelliSense** - Essential for Tailwind-heavy projects
-- **Error Lens** - Makes TypeScript/ESLint errors immediately visible
+- **Error Lens** - Makes TypeScript errors immediately visible
 
 ### Why These Extensions?
 1. **Error Lens** - Shows errors inline, reducing context switching
 2. **Ruff** - Fastest Python linter (written in Rust)
-3. **Pylance** - Fast type checking with excellent IntelliSense
-4. **Playwright** - Best E2E testing for Next.js (official recommendation)
+3. **Biome** - Fastest JS/TS linter (written in Rust, replaces ESLint+Prettier)
+4. **Pylance** - Fast type checking with excellent IntelliSense
 5. **GitLens** - Essential for understanding code history
 
-## Future Considerations
+## Notes
 
-- **EditorConfig** - Currently commented; uncomment if working across multiple projects
-- **Thunder Client** - REST API client (alternative to Postman)
-- **Jupyter** - If doing data science/ML work
+- **Biome vs ESLint+Prettier**: New projects should use Biome. ESLint+Prettier are kept for legacy projects.
+- For project-specific AI rules, see `prompts/*/AGENTS.md` rather than editor-level config.

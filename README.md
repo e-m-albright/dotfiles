@@ -37,7 +37,7 @@ chmod -R +x ~/dotfiles/bin
 ~/dotfiles/install.sh
 ```
 
-**What happens**: The installer sets up your shell, installs all Homebrew packages, configures Git, installs Node.js LTS (via fnm), sets up Rust/Python/Bun, installs Marimo (Python notebooks), installs VS Code/Cursor extensions, and configures your Dock. After completion, you'll have a fully configured dev environment ready for Next.js, React, Python, and more.
+**What happens**: The installer sets up your shell, installs all Homebrew packages, configures Git, installs Node.js LTS (via fnm), sets up Rust/Python/Bun, installs Marimo (Python notebooks), installs VS Code/Cursor extensions, and configures your Dock. After completion, you'll have a fully configured dev environment ready for SvelteKit, Python, and more.
 
 **Idempotent & safe to re-run**: The installer is designed to be safe to run multiple times. It checks for existing installations before installing, uses idempotent operations (symlinks, checks), and won't overwrite your customizations. You can safely run `./install.sh` after adding new tools to `macos/brew.sh` or updating configs.
 
@@ -134,29 +134,29 @@ Commands (see `bin/dotfiles`):
 - **brew**: run the Homebrew installer (`macos/brew.sh`)
 - **dock**: run Dock setup (`macos/dock.sh`)
 
-## Node.js / Next.js development
+## Node.js / SvelteKit development
 
-After installation, you're ready for Next.js development:
+After installation, you're ready for SvelteKit development:
 
 ```bash
 # Node.js LTS is already installed via fnm
 node --version
 
-# Corepack is enabled (pnpm/yarn support)
-pnpm --version  # or yarn --version
+# Bun is the preferred runtime (faster than Node)
+bun --version
 
-# Create a Next.js project
-pnpm create next-app@latest my-app
-# or
-npx create-next-app@latest my-app
+# Create a SvelteKit project (recommended)
+~/dotfiles/prompts/init.sh typescript my-app
+
+# Or manually with Bun
+bunx sv create my-app
 ```
 
 **What's included**:
-- **fnm**: Fast Node Manager (faster than nvm)
-- **Node.js LTS**: Automatically installed and set as default
-- **Corepack**: Enabled for pnpm/yarn (no separate install needed)
-- **npm**: Comes with Node.js
-- **VS Code extensions**: ESLint, Prettier, TailwindCSS, and more
+- **Bun**: Fast JavaScript runtime + package manager (preferred)
+- **fnm**: Fast Node Manager for Node.js when needed
+- **Node.js LTS**: Automatically installed as fallback
+- **VS Code/Cursor extensions**: Svelte, Biome, TailwindCSS, and more
 
 ## Shell choice: Oh My Zsh
 
@@ -204,11 +204,11 @@ The `prompts/` directory contains opinionated project templates ("recipes") desi
 
 ```bash
 # Create a new project from a recipe
-recipe typescript my-web-app
+~/dotfiles/prompts/init.sh typescript my-web-app
+~/dotfiles/prompts/init.sh python my-api ~/projects
 
-# Or manually
-cd ~/code
-~/dotfiles/prompts/init.sh python my-api
+# Seed an existing project with our structure
+~/dotfiles/prompts/seed.sh typescript /path/to/existing-project
 ```
 
 ### What Gets Created
@@ -217,10 +217,14 @@ cd ~/code
 my-project/
 ├── AGENTS.md           # Symlinked from recipe (AI instructions)
 ├── PROJECT_BRIEF.md    # Template for you to describe your project
-├── .agents/            # Directory for AI agent output
+├── .agents/            # Working files (gitignored)
 │   ├── plans/          # Implementation plans
 │   ├── research/       # Investigation notes
-│   └── scratch/        # Temporary work
+│   ├── prompts/        # Key prompts that led to decisions
+│   └── sessions/       # Conversation logs
+├── .decisions/         # Architecture decisions (versioned)
+│   ├── adr/            # Architecture Decision Records
+│   └── README.md
 ├── .gitignore
 ├── justfile
 └── [recipe-specific files]
