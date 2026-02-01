@@ -5,7 +5,7 @@ Opinionated Mac setup + project scaffolding for fast, maintainable development.
 **Two things happen here:**
 
 1. **Machine setup** — Run `install.sh` and get a fully configured dev environment
-2. **Project scaffolding** — Seed new or existing projects with battle-tested structure
+2. **Project scaffolding** — Seed new or existing projects with thoughtful structure
 
 ---
 
