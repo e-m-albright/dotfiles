@@ -97,6 +97,19 @@ require (
 )
 ```
 
+## Services
+
+> See `shared/SERVICES.md` for detailed comparisons.
+
+| Category | Primary | Notes |
+|----------|---------|-------|
+| **Hosting** | Railway | Or Fly.io for global VMs. |
+| **Database** | Supabase | Or self-hosted Postgres. |
+| **Cache** | Valkey | Redis fork, self-hosted. |
+| **Observability** | Sentry + Grafana Cloud | Or self-hosted Prometheus + Jaeger. |
+
+---
+
 ## Critical Notes
 
 1. **Go 1.22+ routing**: Use `http.HandleFunc("GET /users/{id}", handler)` — no need for Chi/Gin

@@ -1,182 +1,136 @@
 {
+  // VS Code settings
+  // Most settings are shared with Cursor - keep in sync with editors/cursor/settings.json
+  //
+  // NOTE: New projects use Biome. ESLint/Prettier kept as fallbacks for legacy projects.
+
   // Editor - Tabs & Indentation
-  "editor.tabSize": 4,
+  "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "editor.detectIndentation": false,
+
   // Editor - Triggers
-  "editor.formatOnType": false, // required
-  "editor.formatOnPaste": true, // optional
-  "editor.formatOnSave": true, // optional
-  "editor.formatOnSaveMode": "file", // required to format on save
-  "files.autoSave": "onFocusChange", // optional but recommended
+  "editor.formatOnType": false,
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "files.autoSave": "onFocusChange",
   "editor.acceptSuggestionOnCommitCharacter": false,
+
   // Editor - Navigation & Workbench
   "editor.minimap.enabled": false,
-  // -- Golden file tree vertical guidelines
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.stickyScroll.enabled": true,
   "workbench.colorCustomizations": {
     "tree.indentGuidesStroke": "#ffee00",
     "tree.inactiveIndentGuidesStroke": "#5d5700"
   },
   "workbench.tree.renderIndentGuides": "always",
   "workbench.tree.indent": 16,
-  "explorer.sortOrder": "default", // "filesFirst"
-  // Formatting - File Types
+  "explorer.sortOrder": "default",
+  "workbench.iconTheme": "vscode-icons",
+
+  // Formatting - Default (Prettier for legacy projects)
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[javascriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "[svelte]": {
-    // "editor.defaultFormatter": "svelte.svelte-vscode"
+  "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[typescript]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
-  // Formatting - Plugins
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on"
+  },
+
+  // Prettier (legacy fallback)
   "prettier.requireConfig": true,
-  "vs-code-prettier-eslint.prettierLast": false, // set as "true" to run 'prettier' last not first
-  // Linting - Plugins
+
+  // ESLint (legacy fallback)
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
   "eslint.ignoreUntitled": true,
   "eslint.validate": ["javascript", "typescript"],
-  "eslint.format.enable": true,
   "eslint.run": "onSave",
-  // Languages
+
+  // Biome (preferred for new projects)
+  "biome.enabled": true,
+
+  // Svelte
   "svelte.enable-ts-plugin": true,
-  "prettier.documentSelectors": ["**/*.svelte"],
-  // SkeletonUI / TailwindCSS
-  "tailwindCSS.classAttributes": [
-    "class",
-    "accent",
-    "active",
-    "animIndeterminate",
-    "aspectRatio",
-    "background",
-    "badge",
-    "bgBackdrop",
-    "bgDark",
-    "bgDrawer",
-    "bgLight",
-    "blur",
-    "border",
-    "button",
-    "buttonAction",
-    "buttonBack",
-    "buttonClasses",
-    "buttonComplete",
-    "buttonDismiss",
-    "buttonNeutral",
-    "buttonNext",
-    "buttonPositive",
-    "buttonTextCancel",
-    "buttonTextConfirm",
-    "buttonTextFirst",
-    "buttonTextLast",
-    "buttonTextNext",
-    "buttonTextPrevious",
-    "buttonTextSubmit",
-    "caretClosed",
-    "caretOpen",
-    "chips",
-    "color",
-    "controlSeparator",
-    "controlVariant",
-    "cursor",
-    "display",
-    "element",
-    "fill",
-    "fillDark",
-    "fillLight",
-    "flex",
-    "flexDirection",
-    "gap",
-    "gridColumns",
-    "height",
-    "hover",
-    "inactive",
-    "indent",
-    "justify",
-    "meter",
-    "padding",
-    "position",
-    "regionAnchor",
-    "regionBackdrop",
-    "regionBody",
-    "regionCaption",
-    "regionCaret",
-    "regionCell",
-    "regionChildren",
-    "regionChipList",
-    "regionChipWrapper",
-    "regionCone",
-    "regionContent",
-    "regionControl",
-    "regionDefault",
-    "regionDrawer",
-    "regionFoot",
-    "regionFootCell",
-    "regionFooter",
-    "regionHead",
-    "regionHeadCell",
-    "regionHeader",
-    "regionIcon",
-    "regionInput",
-    "regionInterface",
-    "regionInterfaceText",
-    "regionLabel",
-    "regionLead",
-    "regionLegend",
-    "regionList",
-    "regionListItem",
-    "regionNavigation",
-    "regionPage",
-    "regionPanel",
-    "regionRowHeadline",
-    "regionRowMain",
-    "regionSummary",
-    "regionSymbol",
-    "regionTab",
-    "regionTrail",
-    "ring",
-    "rounded",
-    "select",
-    "shadow",
-    "slotDefault",
-    "slotFooter",
-    "slotHeader",
-    "slotLead",
-    "slotMessage",
-    "slotMeta",
-    "slotPageContent",
-    "slotPageFooter",
-    "slotPageHeader",
-    "slotSidebarLeft",
-    "slotSidebarRight",
-    "slotTrail",
-    "spacing",
-    "text",
-    "track",
-    "transition",
-    "width",
-    "zIndex"
-],
-"sherlock.userId": "16a0852e-c5ef-46f3-b5a4-cda960a5b43a",
-"javascript.updateImportsOnFileMove.enabled": "always",
-"workbench.iconTheme": "vscode-icons",
-"terminal.integrated.env.osx": {},
-"python.defaultInterpreterPath": "/usr/bin/python3"
+
+  // TypeScript
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.importModuleSpecifier": "relative",
+
+  // TailwindCSS (shadcn-svelte compatible)
+  "tailwindCSS.classAttributes": ["class", "className"],
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ],
+
+  // Python
+  "python.defaultInterpreterPath": "python3",
+  "python.analysis.typeCheckingMode": "basic",
+
+  // Terminal
+  "terminal.integrated.env.osx": {},
+
+  // Git
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+
+  // Files
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true
+  },
+
+  // Spell checker
+  "cSpell.userWords": [
+    "Agentic",
+    "Biome",
+    "Drizzle",
+    "Marimo",
+    "Pydantic",
+    "Ruff",
+    "shadcn",
+    "Superforms",
+    "Sveltekit",
+    "tailwindcss"
+  ]
 }

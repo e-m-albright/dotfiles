@@ -1,9 +1,8 @@
 {
-  // Cursor uses VS Code-compatible settings.json
-  // Most VS Code settings work here, plus Cursor-specific AI features
+  // Cursor settings (VS Code-compatible)
+  // Keep in sync with editors/vscode/settings.json for consistency
   //
-  // NOTE: New projects use Biome (see "[svelte]" and "[typescript]" overrides).
-  // ESLint/Prettier kept as fallbacks for legacy projects.
+  // NOTE: New projects use Biome. ESLint/Prettier kept as fallbacks for legacy projects.
 
   // Editor - Tabs & Indentation
   "editor.tabSize": 2,
@@ -20,6 +19,9 @@
 
   // Editor - Navigation & Workbench
   "editor.minimap.enabled": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.stickyScroll.enabled": true,
   "workbench.colorCustomizations": {
     "tree.indentGuidesStroke": "#ffee00",
     "tree.inactiveIndentGuidesStroke": "#5d5700"
@@ -27,6 +29,8 @@
   "workbench.tree.renderIndentGuides": "always",
   "workbench.tree.indent": 16,
   "explorer.sortOrder": "default",
+  "explorer.confirmDragAndDrop": false,
+  "workbench.iconTheme": "vscode-icons",
 
   // Formatting - Default (Prettier for legacy projects)
   "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -34,12 +38,15 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[javascriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[svelte]": {
@@ -51,79 +58,85 @@
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-  
-  // Formatting - Plugins
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on"
+  },
+
+  // Prettier (legacy fallback)
   "prettier.requireConfig": true,
-  "vs-code-prettier-eslint.prettierLast": false,
-  
-  // Linting - Plugins
+
+  // ESLint (legacy fallback)
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
   "eslint.ignoreUntitled": true,
   "eslint.validate": ["javascript", "typescript"],
-  "eslint.format.enable": true,
   "eslint.run": "onSave",
-  
-  // Svelte
-  "svelte.enable-ts-plugin": true,
 
   // Biome (preferred for new projects)
   "biome.enabled": true,
-  
-  // TailwindCSS
-  "tailwindCSS.classAttributes": [
-    "class",
-    "accent", "active", "animIndeterminate", "aspectRatio", "background",
-    "badge", "bgBackdrop", "bgDark", "bgDrawer", "bgLight", "blur", "border",
-    "button", "buttonAction", "buttonBack", "buttonClasses", "buttonComplete",
-    "buttonDismiss", "buttonNeutral", "buttonNext", "buttonPositive",
-    "buttonTextCancel", "buttonTextConfirm", "buttonTextFirst", "buttonTextLast",
-    "buttonTextNext", "buttonTextPrevious", "buttonTextSubmit",
-    "caretClosed", "caretOpen", "chips", "color", "controlSeparator",
-    "controlVariant", "cursor", "display", "element", "fill", "fillDark",
-    "fillLight", "flex", "flexDirection", "gap", "gridColumns", "height",
-    "hover", "inactive", "indent", "justify", "meter", "padding", "position",
-    "regionAnchor", "regionBackdrop", "regionBody", "regionCaption",
-    "regionCaret", "regionCell", "regionChildren", "regionChipList",
-    "regionChipWrapper", "regionCone", "regionContent", "regionControl",
-    "regionDefault", "regionDrawer", "regionFoot", "regionFootCell",
-    "regionFooter", "regionHead", "regionHeadCell", "regionHeader",
-    "regionIcon", "regionInput", "regionInterface", "regionInterfaceText",
-    "regionLabel", "regionLead", "regionLegend", "regionList",
-    "regionListItem", "regionNavigation", "regionPage", "regionPanel",
-    "regionRowHeadline", "regionRowMain", "regionSummary", "regionSymbol",
-    "regionTab", "regionTrail", "ring", "rounded", "select", "shadow",
-    "slotDefault", "slotFooter", "slotHeader", "slotLead", "slotMessage",
-    "slotMeta", "slotPageContent", "slotPageFooter", "slotPageHeader",
-    "slotSidebarLeft", "slotSidebarRight", "slotTrail", "spacing", "text",
-    "track", "transition", "width", "zIndex"
+
+  // Svelte
+  "svelte.enable-ts-plugin": true,
+
+  // TypeScript
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.importModuleSpecifier": "relative",
+
+  // TailwindCSS (shadcn-svelte compatible)
+  "tailwindCSS.classAttributes": ["class", "className"],
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
   ],
-  
+
+  // Python
+  "python.defaultInterpreterPath": "python3",
+  "python.analysis.typeCheckingMode": "basic",
+
+  // Terminal
+  "terminal.integrated.env.osx": {},
+
+  // Git
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+
+  // Files
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true
+  },
+
   // Cursor-specific AI settings
   "cursor.ai.enableCodeActions": true,
   "cursor.ai.enableInlineCompletion": true,
-  
-  // JavaScript/TypeScript
-  "javascript.updateImportsOnFileMove.enabled": "always",
-  
-  // Workbench
-  "workbench.iconTheme": "vscode-icons",
-  
-  // Terminal
-  "terminal.integrated.env.osx": {},
-  
-  // Python
-"python.defaultInterpreterPath": "/usr/bin/python3",
-"cSpell.userWords": [
+  "editor.codeActions.triggerOnFocusChange": true,
+
+  // Spell checker
+  "cSpell.userWords": [
     "Agentic",
-    "FUMADOCS",
+    "Biome",
+    "Drizzle",
     "Marimo",
-    "Pharma"
-],
-"git.autofetch": true,
-"editor.codeActions.triggerOnFocusChange": true,
-"git.confirmSync": false,
-"explorer.confirmDragAndDrop": false,
-"git.enableSmartCommit": true
+    "Pydantic",
+    "Ruff",
+    "shadcn",
+    "Superforms",
+    "Sveltekit",
+    "tailwindcss"
+  ]
 }

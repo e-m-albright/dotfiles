@@ -57,7 +57,7 @@ install_extension "streetsidesoftware.code-spell-checker"
 install_extension "gruntfuggly.todo-tree"
 install_extension "vscode-icons-team.vscode-icons"
 install_extension "usernamehw.errorlens"  # Inline error highlighting (best-in-class DX)
-# install_extension "EditorConfig.EditorConfig" # Considering this one
+install_extension "christian-kohler.path-intellisense"  # Autocomplete file paths
 
 # Version Control
 install_extension "eamodio.gitlens"
@@ -84,6 +84,7 @@ install_extension "biomejs.biome"            # Fast linter/formatter (preferred 
 install_extension "dbaeumer.vscode-eslint"   # ESLint (fallback for legacy projects)
 install_extension "esbenp.prettier-vscode"   # Prettier (fallback for legacy projects)
 install_extension "ms-playwright.playwright" # E2E testing support
+install_extension "yoavbls.pretty-ts-errors" # Human-readable TypeScript errors
 
 # HTML & CSS / Tailwind
 install_extension "bradlc.vscode-tailwindcss"  # Tailwind IntelliSense
