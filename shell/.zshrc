@@ -1,144 +1,140 @@
-# History Configuration
-# ------------------------------------------------------------------
+# =============================================================================
+# ZSH Configuration
+# =============================================================================
+# Optimized for speed and productivity. Loads Oh My Zsh with minimal plugins.
+
+# =============================================================================
+# History
+# =============================================================================
 HISTFILE=~/.zsh_history
 HISTSIZE=100000
 SAVEHIST=100000
 setopt APPEND_HISTORY
-setopt HIST_IGNORE_ALL_DUPS  # Don't record duplicates
-setopt HIST_SAVE_NO_DUPS     # Don't save duplicates
-setopt HIST_REDUCE_BLANKS    # Remove blank lines
-setopt INC_APPEND_HISTORY    # Add commands as they are typed
-setopt EXTENDED_HISTORY      # Add timestamps to history
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_SAVE_NO_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt INC_APPEND_HISTORY
+setopt EXTENDED_HISTORY
+setopt SHARE_HISTORY
 
-# ZSH Options
-# ------------------------------------------------------------------
-setopt COMPLETE_IN_WORD     # Allow tab completion in the middle of a word
-setopt AUTO_CD              # If a command is a directory, cd into it
-setopt NO_CASE_GLOB         # Case insensitive globbing
-setopt NUMERIC_GLOB_SORT    # Sort filenames numerically when it makes sense
-setopt NO_BEEP              # No beep on error
-setopt AUTO_REMOVE_SLASH    # Remove trailing slash when completing directory
+# =============================================================================
+# Shell Options
+# =============================================================================
+setopt AUTO_CD
+setopt AUTO_PUSHD
+setopt PUSHD_IGNORE_DUPS
+setopt NO_CASE_GLOB
+setopt NUMERIC_GLOB_SORT
+setopt NO_BEEP
+setopt COMPLETE_IN_WORD
 
-# Homebrew Configuration
-# ------------------------------------------------------------------
-export PATH=/opt/homebrew/bin:$PATH
-export HOMEBREW_NO_ENV_HINTS=1
-export HOMEBREW_NO_ANALYTICS=1  # Disable analytics
+# =============================================================================
+# Path (Homebrew first)
+# =============================================================================
+export PATH="/opt/homebrew/bin:$PATH"
 
-# Oh My Zsh Configuration
-# ------------------------------------------------------------------
+# =============================================================================
+# Oh My Zsh
+# =============================================================================
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="amuse"
 
-# Update Configuration
+# Auto-update settings
 zstyle ':omz:update' mode auto
-zstyle ':omz:update' frequency 13
+zstyle ':omz:update' frequency 14
 
-# History timestamp format
-HIST_STAMPS="yyyy-mm-dd"
-
-# Plugins
+# Plugins (minimal for fast startup)
 plugins=(
-    aliases
-    git
-    tmux
-    vscode
-    # zsh-autosuggestions     # Suggests commands as you type
-    # zsh-syntax-highlighting # Syntax highlighting in shell
-    z                       # Jump to frequently used directories
+    git         # Git aliases and completions
+    z           # Jump to frequent directories
 )
 
 source $ZSH/oh-my-zsh.sh
 
-# Editor Configuration
-# ------------------------------------------------------------------
-if [[ -n $SSH_CONNECTION ]]; then
-    export EDITOR='vim'
-else
-    export EDITOR='vim'
-fi
+# =============================================================================
+# Environment
+# =============================================================================
+export EDITOR='cursor --wait'
+export VISUAL='cursor --wait'
+export HOMEBREW_NO_ENV_HINTS=1
+export HOMEBREW_NO_ANALYTICS=1
 
+# =============================================================================
 # Aliases
-# ------------------------------------------------------------------
-# Search
-alias grep='grep --color=auto'
-alias egrep='egrep --color=auto'
-alias fgrep='fgrep --color=auto'
-
-# File System
-alias l.='ls -d .*'
-alias ll='ls -l'
-alias la='ls -la'
-alias lh='ls -lh'        # Human readable sizes
-alias ldot='ls -ld .*'   # List hidden files only
-alias lsd='ls -ld */'    # List directories only
-
+# =============================================================================
 # Navigation
-alias downloads='cd ~/Downloads'
-alias co='cd ~/code'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
+alias co='cd ~/code'
 
-# Git Aliases
-# Import from git config
-for al in $(git config --get-regexp '^alias\.' | cut -f 1 -d ' ' | cut -f 2 -d '.'); do
-    alias g${al}="git ${al}"
-done
-unset al
+# Files
+alias ll='ls -lh'
+alias la='ls -lAh'
+alias l='ls -CF'
 
-# Additional Git shortcuts
-alias gs='git status'
-alias gp='git pull'
-alias gst='git stash'
+# Git (supplements oh-my-zsh git plugin)
+alias gs='git status -sb'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias gpl='git pull'
+alias gps='git push'
 alias gcm='git commit -m'
 
 # Development
-alias mk="make"
-alias py="python3"
-alias pip="pip3"
+alias py='python3'
+alias j='just'
+
+# Editors
+alias c='cursor'
+alias v='code'
 
 # System
-alias path='echo -e ${PATH//:/\\n}'  # Print each PATH entry on a separate line
-alias ports='netstat -tulanp'        # Show active ports
-alias mem='free -h'                  # Show memory usage
+alias path='echo $PATH | tr ":" "\n"'
+alias reload='source ~/.zshrc'
 
-# Bun Configuration
-# ------------------------------------------------------------------
-# Use $HOME instead of hardcoded username
-[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
-
+# =============================================================================
 # Functions
-# ------------------------------------------------------------------
-# Create a directory and cd into it
-mkcd() {
-    mkdir -p "$@" && cd "$_"
-}
+# =============================================================================
+# Create directory and cd into it
+mkcd() { mkdir -p "$@" && cd "$_"; }
 
-# Extract various compressed file types
+# Extract archives
 extract() {
-    if [ -f $1 ]; then
-        case $1 in
-            *.tar.bz2)   tar xjf $1     ;;
-            *.tar.gz)    tar xzf $1     ;;
-            *.bz2)       bunzip2 $1     ;;
-            *.rar)       unrar e $1     ;;
-            *.gz)        gunzip $1      ;;
-            *.tar)       tar xf $1      ;;
-            *.tbz2)      tar xjf $1     ;;
-            *.tgz)       tar xzf $1     ;;
-            *.zip)       unzip $1       ;;
-            *.Z)         uncompress $1  ;;
-            *.7z)        7z x $1        ;;
-            *)          echo "'$1' cannot be extracted via extract()" ;;
-        esac
-    else
+    if [[ ! -f "$1" ]]; then
         echo "'$1' is not a valid file"
+        return 1
     fi
+    case "$1" in
+        *.tar.bz2)   tar xjf "$1"   ;;
+        *.tar.gz)    tar xzf "$1"   ;;
+        *.tar.xz)    tar xJf "$1"   ;;
+        *.bz2)       bunzip2 "$1"   ;;
+        *.gz)        gunzip "$1"    ;;
+        *.tar)       tar xf "$1"    ;;
+        *.tbz2)      tar xjf "$1"   ;;
+        *.tgz)       tar xzf "$1"   ;;
+        *.zip)       unzip "$1"     ;;
+        *.7z)        7z x "$1"      ;;
+        *)           echo "'$1' cannot be extracted" ;;
+    esac
 }
-# FNM (Fast Node Manager) - must be after Oh My Zsh loads
-eval "$(fnm env --use-on-cd)"
 
-# Optional tools (if installed)
-[ -s "$HOME/.console-ninja/.bin" ] && PATH="$HOME/.console-ninja/.bin:$PATH"
-[ -s "$HOME/.antigravity/antigravity/bin" ] && export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+# =============================================================================
+# Tool Integrations (lazy-loaded where possible)
+# =============================================================================
+# FNM (Fast Node Manager)
+if command -v fnm &>/dev/null; then
+    eval "$(fnm env --use-on-cd --shell zsh)"
+fi
+
+# Bun completions
+[[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
+
+# OrbStack
+[[ -f ~/.orbstack/shell/init.zsh ]] && source ~/.orbstack/shell/init.zsh
+
+# =============================================================================
+# Local overrides (not in dotfiles repo)
+# =============================================================================
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

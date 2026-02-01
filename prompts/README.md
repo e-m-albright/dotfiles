@@ -40,6 +40,7 @@ The Python recipe isn't just for APIs. It covers:
 - **APIs & Services**: FastAPI for REST/GraphQL endpoints
 - **Background Workers**: Arq for async task queues, AI pipelines
 - **Analytics & Exploration**: Polars + DuckDB + Marimo notebooks
+- **ML/Deep Learning**: PyTorch, JAX, vLLM (see [python/ML.md](./python/ML.md))
 - **Full-Stack Apps**: Reflex for Python-native web UIs
 - **CLI Tools**: Typer for command-line applications
 - **Scripts**: Simple UV scripts for automation

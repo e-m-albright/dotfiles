@@ -145,6 +145,7 @@ install_any() {
 core_cli=(
     git                 # Version control
     git-lfs             # Git Large File Storage
+    git-delta           # Beautiful git diffs (used by .gitconfig)
     jq                  # JSON processor
     wget                # Web downloader
 )

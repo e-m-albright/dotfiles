@@ -100,11 +100,11 @@ In `macos/brew.sh` under `ai_gizmos` there's a small "AI-adjacent" list (mostly 
 
 ### ML/DL Development
 
-For deep learning and ML development (PyTorch, JAX, etc.), see **[ML_SETUP.md](ML_SETUP.md)** for:
-- Recommended Python packages (PyTorch, JAX, Weights & Biases, Hugging Face, etc.)
-- CLI tools (huggingface-cli, already included)
-- VS Code/Cursor extensions (Jupyter, TensorBoard)
-- Workflow recommendations and what teams like Anthropic use
+For deep learning and ML development, see **[prompts/python/ML.md](prompts/python/ML.md)** for:
+- Core frameworks (PyTorch, JAX, Lightning)
+- Experiment tracking (Weights & Biases, MLflow)
+- Model serving (vLLM, ONNX Runtime)
+- GPU cloud options (Modal, Replicate)
 
 ### Local model quickstart (Ollama)
 

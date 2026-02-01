@@ -1,31 +1,29 @@
-###################################### Personalized Theme ############################################################################
+# =============================================================================
+# Custom ZSH Theme (based on Amuse)
+# =============================================================================
+# Two-line prompt: user@host → directory (git) time
+#                  $
 
-BOLD="%B"
-CLEAR_BOLD="%b"
-CLEAR_COLOR="%f"
-RED="%F{1}"
-BLUE="%F{27}"
+# Colors
 CYAN="%F{51}"
-PURPLE="%F{56}"
 PINK="%F{162}"
+RED="%F{1}"
 YELLOW="%F{226}"
-# %{$fg[white]%} - more autoload colors notation - whats the full set?
 RESET="%{$reset_color%}"
-BOLD_CYAN="%{$fg_bold[cyan]%}"
+BOLD="%B"
 
-# https://zsh.sourceforge.io/Doc/Release/Prompt-Expansion.html
-_PROMPT_USER="%n"
-_PROMPT_MACHINE="%m"
-_PROMPT_TIME="%*"      # Current time of day in 24-hour format, with seconds.
-_PROMPT_DIR="%~"
-_PROMPT_SEPA="@"
-_PROMPT_SEPD="\$"
+# Components
+_USER="%n@%m"
+_DIR="%~"
+_TIME="%*"
 
-# Use Amuse theme's prompt with mercurial info added
-PROMPT="\
-${BOLD}${CYAN}${_PROMPT_USER}${_PROMPT_SEPA}${_PROMPT_MACHINE}➜ \
-${PINK}${_PROMPT_DIR} \
-${RESET}$(git_prompt_info) \
-⌚ \
-${BOLD}${RED}${_PROMPT_TIME}${RESET}
-${YELLOW}${_PROMPT_SEPD}${RESET} "
+# Main prompt (two lines)
+PROMPT='
+${BOLD}${CYAN}${_USER}${RESET}${BOLD}${CYAN} → ${PINK}${_DIR}${RESET} $(git_prompt_info)${BOLD}${RED}${_TIME}${RESET}
+${YELLOW}\$${RESET} '
+
+# Git prompt (from oh-my-zsh)
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}*"
+ZSH_THEME_GIT_PROMPT_CLEAN=""

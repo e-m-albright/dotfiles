@@ -1,121 +1,156 @@
-# User Configuration
-# ------------------------------------------------------------------
+# Git Configuration
+# Modern, opinionated settings for fast workflows
+
+# ============================================================================
+# Identity
+# ============================================================================
 [user]
     name = Evan Albright
     email = ichbinevan@gmail.com
 
-# SSH Configuration
-# ------------------------------------------------------------------
-[url "ssh://git@github.com/"]
-    insteadOf = https://github.com/
-[url "ssh://git@gitlab.com/"]
-    insteadOf = https://gitlab.com/
-[url "ssh://git@bitbucket.org/"]
-    insteadOf = https://bitbucket.org/
-
+# ============================================================================
 # Core Settings
-# ------------------------------------------------------------------
+# ============================================================================
 [init]
     defaultBranch = main
-[pull]
-    rebase = true
-[credential]
-    helper = store
-[remote "origin"]
-    prune = true
-    [color]
-    ui = auto
-    diff = auto
-    status = auto
-    branch = auto
+
 [core]
     excludesfile = ~/.gitignore_global
-    editor = code --wait
+    editor = cursor --wait
     autocrlf = input
-    whitespace = trailing-space,space-before-tab
-[help]
-    autocorrect = 20  # Autocorrect commands after 2 seconds
+    pager = delta
+    # Better performance on large repos
+    fsmonitor = true
+    untrackedcache = true
+
+[column]
+    ui = auto
+
+[branch]
+    sort = -committerdate
+
+[tag]
+    sort = -version:refname
+
+# ============================================================================
+# Safety & Workflow
+# ============================================================================
 [push]
     default = current
-    autoSetupRemote = true  # Automatically set upstream
-[fetch]
-    prune = true  # Always prune when fetching
-[rebase]
-    autoStash = true  # Automatically stash/unstash during rebase
+    autoSetupRemote = true
+    followTags = true
 
+[pull]
+    rebase = true
+
+[fetch]
+    prune = true
+    pruneTags = true
+    all = true
+
+[rebase]
+    autoStash = true
+    autoSquash = true
+    updateRefs = true
+
+[rerere]
+    enabled = true
+    autoUpdate = true
+
+[help]
+    autocorrect = prompt
+
+# ============================================================================
+# Diff & Merge (using delta for beautiful diffs)
+# ============================================================================
+[diff]
+    algorithm = histogram
+    colorMoved = default
+    mnemonicPrefix = true
+    renames = true
+
+[merge]
+    conflictstyle = zdiff3
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    side-by-side = true
+    line-numbers = true
+    syntax-theme = Dracula
+
+# ============================================================================
+# SSH over HTTPS (for corporate firewalls)
+# ============================================================================
+[url "ssh://git@github.com/"]
+    insteadOf = https://github.com/
+
+[url "ssh://git@gitlab.com/"]
+    insteadOf = https://gitlab.com/
+
+# ============================================================================
 # Large File Storage
-# ------------------------------------------------------------------
+# ============================================================================
 [filter "lfs"]
     clean = git-lfs clean -- %f
     smudge = git-lfs smudge -- %f
     process = git-lfs filter-process
     required = true
 
-# Diff & Merge Tools
-# ------------------------------------------------------------------
-[merge]
-    tool = vscode
-    conflictstyle = diff3  # Added: Shows original content in conflicts
-[mergetool "vscode"]
-    cmd = code --wait --merge $REMOTE $LOCAL $BASE $MERGED
-[diff]
-    tool = vscode
-    colorMoved = default  # Added: Better visualization of moved code
-[difftool "vscode"]
-    cmd = code --wait --diff $LOCAL $REMOTE
-
-# Aliases
-# ------------------------------------------------------------------
+# ============================================================================
+# Aliases (minimal, most work is done by shell aliases)
+# ============================================================================
 [alias]
-    # Branch Operations
-    branch-name = "!git rev-parse --abbrev-ref HEAD"
-    b = "!git for-each-ref --sort='-authordate' --format='%(authordate)%09%(objectname:short)%09%(refname)' refs/heads | sed -e 's-refs/heads/--'"
-    ba = branch -a
-    ldel = branch -D
-    rdel = push origin --delete
+    # Status
+    s = status -sb
 
-    # Checkout Operations
-    co = checkout
-    cob = checkout -b
-    cot = checkout --track
+    # Logging
+    l = log --oneline -20
+    lg = log --graph --oneline --decorate -20
+    ll = log --pretty=format:'%C(yellow)%h%Creset %s %C(dim)%an %ar%Creset%C(auto)%d' -20
 
-    # Commit Operations
+    # Branch
+    b = branch --sort=-committerdate --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:dim)%(committerdate:relative)%(color:reset)'
+
+    # Diff
+    d = diff
+    ds = diff --staged
+
+    # Commit
     c = commit
     cm = commit -m
-    cam = commit -am
-    ac = "!git add . && git commit -am"
-    ap = add -p
+    ca = commit --amend
+    can = commit --amend --no-edit
 
-    # Status & Information
-    s = status
-    ss = status -sb
-    alias = "!git config --get-regexp ^alias\\. | sed -e s/^alias\\.// -e s/\\ /\\ =\\ /"
-
-    # Stash Operations
+    # Stash
     st = stash
-    stl = stash list
-    sta = stash apply
-    sts = stash save
     stp = stash pop
+    stl = stash list
 
-    # Remote Operations
-    f = fetch -p
-    publish = "!git push -u origin $(git branch-name)"
-    unpublish = "!git push origin :$(git branch-name)"
-    pu = "![[ $(git config branch.$(git symbolic-ref --short HEAD).merge) = '' ]] && git push -u origin $(git symbolic-ref --short HEAD) || git push"
-    pl = "!git pull --prune"
+    # Working with remotes
+    f = fetch --all --prune
+    pl = pull
+    pu = push
+    puf = push --force-with-lease
 
-    # Diff Operations
-    d = diff
-    ds = diff --stat
-    dc = diff --cached
+    # Undo
+    undo = reset --soft HEAD~1
+    unstage = reset HEAD --
+    discard = checkout --
 
-    # Log Operations
-    l = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=short
-    lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    # Clean
+    clean-branches = "!git branch --merged | grep -v '\\*\\|main\\|master' | xargs -n 1 git branch -d"
 
-    # Merge Operations
-    m = merge
-    merge-span = "!f() { echo $(git log -1 $2 --merges --pretty=format:%P | cut -d' ' -f1)$1$(git log -1 $2 --merges --pretty=format:%P | cut -d' ' -f2); }; f"
-    merge-log = "!git log `git merge-span .. $1`"
-    merge-diff = "!git diff `git merge-span ... $1`"
+    # Who
+    who = shortlog -sn --no-merges
+
+    # Recent work
+    recent = for-each-ref --sort=-committerdate --count=10 --format='%(refname:short)' refs/heads/
+
+    # Fix up last commit with staged changes
+    fixup = commit --amend --no-edit
+
+    # Interactive rebase on last n commits
+    ri = "!f() { git rebase -i HEAD~${1:-5}; }; f"
