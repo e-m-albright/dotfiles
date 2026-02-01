@@ -82,6 +82,18 @@ claude "implement the user authentication system with OAuth, email verification,
 - **Lovable**: When design quality is paramount
 - **Replit**: When you want everything in one platform
 
+### Design-First Builders (Marketing Sites / Landing Pages)
+
+These are better for **marketing sites** than app prototypes:
+
+| Tool | Best For | Notes |
+|------|----------|-------|
+| **Framer** | Polished marketing sites | Designer-focused, excellent animations, CMS built-in |
+| **Webflow** | Complex marketing sites | Most powerful no-code, steep learning curve |
+| **Unicorn Platform** | Simple landing pages | Quick startup pages, limited customization |
+
+> **Note**: For app UIs, Claude Code or bolt.new are better choices. These tools excel at marketing/landing pages where design polish matters more than functionality.
+
 ### Limitations
 
 - Backend logic often needs refinement
@@ -115,24 +127,27 @@ claude "create a dashboard component with a sidebar, header, and main content ar
 
 > **For building AI-powered applications**, not for coding assistance.
 
-| Framework | Use Case | Maturity |
-|-----------|----------|----------|
-| **PydanticAI** | Python agents with tool calling | Production-ready |
-| **Instructor** | Structured outputs from LLMs | Production-ready |
-| **LangGraph** | Complex multi-agent orchestration | Production-ready, heavy |
-| **MetaGPT** | Full project simulation (PM → Architect → Engineer) | Experimental |
+| Framework | Language | Use Case | Maturity |
+|-----------|----------|----------|----------|
+| **PydanticAI** | Python | Agents with tool calling | Production-ready |
+| **Instructor** | Python | Structured outputs from LLMs | Production-ready |
+| **Mastra** | TypeScript | Agents with tool calling, workflows | Production-ready |
+| **LangGraph** | Python/TS | Complex multi-agent orchestration | Production-ready, heavy |
 
 ### Decision Tree
 
 ```
-Need structured output from LLM?
-├── Yes → Instructor
-└── No, need tool calling?
-    ├── Yes → PydanticAI
-    └── No, need multi-agent?
-        ├── Yes → LangGraph
-        └── No → Raw API client
+What language?
+├── Python
+│   ├── Need structured output? → Instructor
+│   ├── Need tool calling? → PydanticAI
+│   └── Need multi-agent? → LangGraph
+└── TypeScript
+    ├── Need agents + workflows? → Mastra
+    └── Need multi-agent? → LangGraph
 ```
+
+> **Note**: Mastra is useful when you want agent capabilities in TypeScript without a separate Python backend. For most projects, PydanticAI + a TypeScript frontend is cleaner.
 
 ---
 

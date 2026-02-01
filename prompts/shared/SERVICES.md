@@ -232,7 +232,77 @@ Tier 3 (At Scale):
 | + Email | add Resend |
 | + Search | add Meilisearch (self-hosted) |
 | SaaS Product | above + Stripe + Umami + PostHog |
+| + AI Features | add Modal or pgvector |
 | At Scale | add Grafana Cloud + OpenTelemetry |
+
+---
+
+## AI Infrastructure
+
+> **For running ML models and AI workloads**, not for coding assistance.
+
+| Category | Primary Pick | Alternative | Notes |
+|----------|-------------|-------------|-------|
+| **Serverless GPU** | Modal | Replicate | Modal: full control, Python-native. Replicate: pre-built models, API-first. |
+| **Model Hosting** | Replicate | Baseten | Replicate: easy API. Baseten: more customization, self-hosted option. |
+
+### When to Use What
+
+- **Modal**: Default for custom AI workloads. Python-native, excellent DX, auto-scaling GPUs.
+- **Replicate**: Running pre-trained models via API. Quick integration, no infra management.
+- **Baseten**: Enterprise needs, self-hosted requirements.
+
+### Modal Example
+
+```python
+import modal
+
+app = modal.App("my-ai-service")
+
+@app.function(gpu="A10G")
+def run_inference(prompt: str) -> str:
+    # Your model code here
+    return result
+```
+
+> **Note**: For simple embeddings or completions, just use OpenAI/Anthropic APIs directly. Modal/Replicate are for custom models or heavy inference workloads.
+
+---
+
+## Vector Databases
+
+> **For semantic search and RAG applications.** Most projects should start with pgvector.
+
+| Category | Primary Pick | Alternative | Notes |
+|----------|-------------|-------------|-------|
+| **Postgres Extension** | pgvector | — | Add to existing Postgres. Good enough for most use cases. |
+| **Managed Vector DB** | Pinecone | Weaviate Cloud | Pinecone: simple, fast. Weaviate: more features. |
+| **Self-Hosted** | Qdrant | Milvus, Weaviate | Qdrant: best DX. Milvus: highest scale. |
+| **Embedded** | LanceDB | Chroma | LanceDB: serverless, multimodal. Chroma: simpler. |
+
+### Decision Tree
+
+```
+How much vector data?
+├── < 1M vectors → pgvector (in your existing Postgres)
+├── 1M-100M vectors → Qdrant or Pinecone
+└── > 100M vectors → Milvus or dedicated solution
+```
+
+### pgvector Setup (Supabase)
+
+```sql
+-- Enable the extension
+create extension vector;
+
+-- Add vector column
+alter table documents add column embedding vector(1536);
+
+-- Create index for fast similarity search
+create index on documents using ivfflat (embedding vector_cosine_ops);
+```
+
+> **Recommendation**: Start with pgvector. Only move to dedicated vector DBs when you hit scale limits or need advanced features (hybrid search, filtering, etc.).
 
 ---
 

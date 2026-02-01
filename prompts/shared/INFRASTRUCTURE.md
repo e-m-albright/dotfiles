@@ -428,11 +428,25 @@ jobs:
 
 | Need | Tool | Notes |
 |------|------|-------|
+| Task runner | Just | Simple, cross-platform. Alternative: Task (taskfile.dev) for YAML fans. |
 | Local dev with dependencies | docker-compose | Postgres, Redis, etc. |
 | Deploy to cloud | Dockerfile | Production container |
 | Multi-environment infra | Pulumi | Dev, staging, prod |
 | Database schema management | Atlas / Drizzle Kit | Depends on language |
 | CI/CD | GitHub Actions | Or Railway/Vercel auto-deploy |
+
+### Task Runners: Just vs Task
+
+We use **Just** (justfile) because it's simpler and feels like a modern Makefile. **Task** (taskfile.dev) is a valid alternative if you prefer YAML syntax.
+
+| Feature | Just | Task |
+|---------|------|------|
+| Syntax | Makefile-like | YAML |
+| Dependencies | Implicit | Explicit `deps:` field |
+| Variables | Shell-style | Go templates |
+| Learning curve | Lower | Slightly higher |
+
+Both work well. Pick one and stick with it.
 
 **Start simple**: Most projects can deploy directly to Railway/Vercel without any Docker or Pulumi. Add infrastructure tooling when you actually need it.
 
