@@ -61,6 +61,32 @@
 - **Neon**: Pure Postgres, need database branching for previews.
 - **Turso**: Edge-first, SQLite-compatible, global reads.
 
+### Supabase Accelerators
+
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| **Basejump** | Multi-tenant SaaS | Pre-built RLS policies, team/org management, billing integration. Huge time saver. |
+
+---
+
+## Analytics (OLAP)
+
+> **For heavy analytical queries.** Most apps don't need this—Postgres is fine for dashboards.
+
+| Category | Primary Pick | Alternative | Notes |
+|----------|-------------|-------------|-------|
+| **In-Process** | DuckDB | — | Query Postgres/Parquet with SQL. No server needed. |
+| **Managed** | Tinybird | ClickHouse Cloud | Tinybird: API-first, real-time. ClickHouse: raw power. |
+| **Self-Hosted** | ClickHouse | — | Only for serious OLAP workloads at scale. |
+
+### When to Use What
+
+- **DuckDB**: Default for analytics. Query your existing data without infrastructure.
+- **Tinybird**: Real-time analytics APIs, user-facing dashboards, event streaming.
+- **ClickHouse**: When DuckDB isn't fast enough (rare). Petabyte-scale analytics.
+
+> **Note**: Most SaaS apps should start with Postgres + DuckDB. Add ClickHouse/Tinybird when you have millions of events and need sub-second queries.
+
 ---
 
 ## Search
