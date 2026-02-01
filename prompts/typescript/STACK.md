@@ -2,6 +2,32 @@
 
 **Philosophy**: Modern, type-safe, full-stack web development with maximum DX.
 
+> **Note**: This is a menu, not a mandate. A simple landing page doesn't need DuckDB.
+> Start with the core (Bun, SvelteKit, Tailwind) and add tools as requirements emerge.
+
+---
+
+## Installation Phases
+
+Tools are grouped by when to add them. Start with Phase 1, add others as needed.
+
+```
+Phase 1 - ALWAYS (every project)     Phase 2 - WHEN NEEDED (specific features)
+├── Bun (runtime + package manager)  ├── Drizzle + Better Auth (user data)
+├── SvelteKit 2 + Svelte 5           ├── TanStack Query (complex data fetching)
+├── Tailwind CSS v4                  ├── Resend (email)
+├── Biome (lint + format)            ├── Meilisearch (search)
+├── Just (task runner)               ├── Stripe (payments)
+└── Lefthook (git hooks)             └── LayerChart (data viz)
+
+Phase 3 - SCALE / SPECIAL
+├── Tauri (desktop app)
+├── DuckDB-WASM (client analytics)
+└── OpenTelemetry (2+ services)
+```
+
+---
+
 ## Runtime & Tooling
 
 | Category | Choice | Why Not Alternatives |
@@ -12,6 +38,8 @@
 | **Git Hooks** | Lefthook | Husky is slower, JS-based. Lefthook is Go-based, parallel execution, YAML config. |
 | **Task Runner** | Just | npm scripts are limited; Make syntax is archaic. Just is readable, cross-platform, modern. |
 
+---
+
 ## Framework & Build
 
 | Category | Choice | Why Not Alternatives |
@@ -20,6 +48,8 @@
 | **UI Framework** | Svelte 5 | React has hooks complexity; Vue has Options/Composition duality. Svelte 5 runes are intuitive and performant. |
 | **Build** | Vite | Built into SvelteKit. Webpack is slow; Turbopack is React-only. |
 | **Adapter** | svelte-adapter-bun | Native Bun integration for production. |
+
+---
 
 ## State & Data
 
@@ -30,6 +60,8 @@
 | **Forms** | Superforms + Zod | Formik is React-only; react-hook-form is complex. Superforms is SvelteKit-native with progressive enhancement. |
 | **Validation** | Zod | Yup has worse TypeScript inference. Zod is TS-first with excellent DX. |
 
+---
+
 ## UI & Styling
 
 | Category | Choice | Why Not Alternatives |
@@ -38,6 +70,8 @@
 | **Components** | shadcn-svelte + Bits UI | Chakra/MUI are heavy, React-only. shadcn is copy-paste, customizable, accessible via Bits UI. |
 | **Charts** | LayerChart | Recharts is React-only; Chart.js lacks customization. LayerChart is Svelte-native, D3-powered. |
 | **Animations** | Svelte transitions | Framer Motion is React-only. Svelte has excellent built-in transitions. |
+
+---
 
 ## Database & Backend
 
@@ -48,12 +82,33 @@
 | **Migrations** | drizzle-kit | Prisma Migrate is slower. drizzle-kit generates clean SQL migrations. |
 | **Schema Sync** | drizzle-zod | Generates Zod schemas from Drizzle tables. Single source of truth. |
 
+---
+
 ## Auth
 
 | Category | Choice | Why Not Alternatives |
 |----------|--------|---------------------|
-| **Auth** | Lucia | NextAuth is React-focused; Auth.js is complex. Lucia is lightweight, framework-agnostic, well-documented. |
-| **Alternative** | Better Auth | Newer option if Lucia doesn't fit. Both integrate well with Drizzle. |
+| **Auth** | Better Auth | Full-featured, TypeScript-first, self-hosted. Has OAuth, magic links, 2FA out of the box. |
+| **Alternative** | Lucia | Lightweight auth primitives. Use when you want to build your own auth flow. |
+| **Managed** | Clerk | When you don't want to self-host auth. Modern DX but external dependency. |
+
+> **Note**: Better Auth over Lucia for most projects. Lucia is for when you want more control.
+
+---
+
+## Analytics & Data (add when needed)
+
+> **Only add these when your project actually needs analytics.** Most apps don't need DuckDB.
+
+| Category | Choice | When to Use |
+|----------|--------|-------------|
+| **In-Browser Analytics** | DuckDB-WASM | Heavy client-side data processing. Query Parquet files in browser. |
+| **DataFrames** | Polars.js | If you need Polars-style operations in JS. Consider doing analytics server-side in Python instead. |
+| **Server Analytics** | DuckDB | Server-side analytics on Postgres or Parquet data. |
+
+> **Recommendation**: For serious analytics, consider a Python service with Polars/DuckDB rather than doing it in TypeScript.
+
+---
 
 ## Testing
 
@@ -64,6 +119,8 @@
 | **E2E** | Playwright | Cypress is slower, limited cross-browser. Playwright is faster, better debugging. |
 | **Mocking** | MSW | Nock is Node-only. MSW works in browser and Node, intercepts at network level. |
 
+---
+
 ## Code Quality
 
 | Category | Choice | Why Not Alternatives |
@@ -73,6 +130,8 @@
 | **Type Checking** | svelte-check + tsc | Built-in. Essential for catching errors. |
 | **Dead Code** | Knip | Manual review misses things. Knip finds unused exports, deps, files. |
 
+---
+
 ## Dev Experience
 
 | Category | Choice | Why Not Alternatives |
@@ -81,6 +140,8 @@
 | **i18n** | Paraglide | i18next has runtime overhead. Paraglide is compile-time, type-safe. |
 | **Env Vars** | @t3-oss/env-core | dotenv doesn't validate. T3 env provides type-safe, validated env vars. |
 
+---
+
 ## Production
 
 | Category | Choice | Why Not Alternatives |
@@ -88,6 +149,47 @@
 | **Logging** | Pino | Winston is slower. Pino is the fastest Node.js logger. |
 | **Errors** | Sentry | Self-hosted is complex. Sentry has best Svelte integration. |
 | **Deployment** | Railway / Vercel | Heroku is expensive; AWS is complex. Railway is simple, fast deploys. |
+
+---
+
+## Services
+
+> See `shared/SERVICES.md` for detailed comparisons.
+
+| Category | Primary | Notes |
+|----------|---------|-------|
+| **Hosting** | Railway | Or Cloudflare Pages for static/edge. |
+| **Database** | Supabase | Or Neon for pure Postgres with branching. |
+| **Search** | Meilisearch | Self-host, or use Meilisearch Cloud. |
+| **Email** | Resend | Works great with React Email. |
+| **Auth** | Better Auth | Self-hosted, TypeScript-first. |
+| **Analytics** | Umami | Privacy-first, self-hosted, GDPR-friendly. |
+| **Payments** | Stripe | Industry standard. LemonSqueezy if you need MoR. |
+
+---
+
+## Desktop Distribution (when needed)
+
+| Category | Choice | When to Use |
+|----------|--------|-------------|
+| **Desktop App** | Tauri | When you need to ship a native desktop app. Smaller than Electron, Rust backend. |
+
+> **Note**: Tauri is powerful but adds significant complexity. Only use if you actually need desktop distribution. Most apps should stay web-only.
+
+---
+
+## Infrastructure (add when needed)
+
+| Category | Choice | Notes |
+|----------|--------|-------|
+| **Containers** | Docker | Dockerfile + docker-compose for local dev. |
+| **IaC** | Pulumi | Uses TypeScript for infrastructure. No HCL to learn. |
+
+### Documentation (add later, not at start)
+
+| Category | Choice | Notes |
+|----------|--------|-------|
+| **Docs** | VitePress or Starlight | Modern, fast, Vite-based. Add only when you need public docs. |
 
 ---
 
@@ -110,3 +212,18 @@
 2. **Tailwind v4**: Plugin order matters - `tailwindcss()` BEFORE `sveltekit()` in vite.config
 3. **Dev Server**: Run with `bun --bun run dev` to use Bun runtime (not Node fallback)
 4. **Svelte 5**: Uses runes (`$state`, `$derived`, `$effect`) - not legacy `$:` syntax
+5. **Start minimal**: Don't add DuckDB, Tauri, or analytics until you need them
+
+## Quick Reference: What to Install When
+
+| Project Type | Core Dependencies |
+|-------------|-------------------|
+| Landing Page | `sveltekit`, `tailwindcss`, `biome` |
+| Web App | add `drizzle-orm`, `better-auth`, `superforms`, `zod` |
+| + Email | add `resend`, `react-email` |
+| + Search | add `meilisearch` |
+| + Analytics | add `@umami/node` (or script tag) |
+| + Rich Data Viz | add `layerchart` |
+| + Client Analytics | add `duckdb-wasm` (rare) |
+| Desktop App | add `tauri` (only if needed) |
+| SaaS | add `stripe` |

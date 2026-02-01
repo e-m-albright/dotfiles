@@ -1,7 +1,10 @@
-# AGENTS.md — Python/FastAPI
+# AGENTS.md — Python
 
 Cross-platform instructions for AI coding agents.
 Works with: Claude Code, Cursor, Windsurf, Gemini, ChatGPT, GitHub Copilot.
+
+> **Note**: This recipe covers multiple project types. Install only what you need.
+> See STACK.md for the full menu of available tools.
 
 ---
 
@@ -9,12 +12,16 @@ Works with: Claude Code, Cursor, Windsurf, Gemini, ChatGPT, GitHub Copilot.
 
 ```yaml
 Runtime:     Python 3.12+ (via UV)
-Framework:   FastAPI + Uvicorn
+Framework:   FastAPI + Uvicorn (APIs) / Reflex (full-stack) / Typer (CLI)
 Validation:  Pydantic v2
-Database:    SQLAlchemy 2.0 + asyncpg
-Testing:     pytest + pytest-asyncio
+Database:    SQLAlchemy 2.0 + asyncpg + Atlas
+Logging:     structlog + Rich
+Testing:     pytest + pytest-asyncio + Hypothesis
 Linting:     Ruff (lint + format)
+Types:       Pyright
 Tasks:       Just
+Agents:      PydanticAI + Instructor
+Debugging:   icecream + ipdb
 ```
 
 ---
@@ -83,7 +90,7 @@ src/
 │   └── db/
 │       ├── __init__.py
 │       ├── session.py     # Database connection
-│       └── migrations/    # Alembic migrations
+│       └── schema.sql     # Atlas schema (or migrations/)
 tests/
 ├── conftest.py            # Shared fixtures
 ├── test_api/
@@ -272,7 +279,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 ```
 
-### Configuration
+### Configuration (Pydantic Settings)
 
 ```python
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -300,6 +307,68 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+```
+
+### Logging (structlog + Rich)
+
+```python
+import logging
+import structlog
+
+def setup_logging(debug: bool = False) -> None:
+    """Configure structlog with Rich for beautiful console output."""
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.dev.ConsoleRenderer(colors=True),
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(
+            logging.DEBUG if debug else logging.INFO
+        ),
+        context_class=dict,
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+# Usage
+log = structlog.get_logger()
+log.info("server_started", port=8000, env="production")
+log.error("request_failed", error=str(e), request_id=req_id)
+```
+
+### CLI Tool (Typer)
+
+```python
+import typer
+from rich.console import Console
+
+app = typer.Typer(help="My CLI tool")
+console = Console()
+
+
+@app.command()
+def greet(name: str, count: int = 1) -> None:
+    """Greet someone multiple times."""
+    for _ in range(count):
+        console.print(f"Hello, [bold green]{name}[/]!")
+
+
+@app.command()
+def process(
+    input_file: Path = typer.Argument(..., help="Input file path"),
+    output: Path = typer.Option("output.json", "--output", "-o"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+) -> None:
+    """Process a file."""
+    if verbose:
+        console.print(f"Processing {input_file}...")
+    # ...
+
+
+if __name__ == "__main__":
+    app()
 ```
 
 ### Test Fixture
@@ -348,6 +417,109 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield client
 
     app.dependency_overrides.clear()
+```
+
+### Property-Based Testing (Hypothesis)
+
+```python
+from hypothesis import given, strategies as st, settings
+import pytest
+
+# Basic property test
+@given(st.lists(st.integers()))
+def test_sort_is_idempotent(xs: list[int]) -> None:
+    """Sorting twice gives same result as sorting once."""
+    assert sorted(sorted(xs)) == sorted(xs)
+
+
+# Test with custom strategies
+@given(
+    email=st.emails(),
+    name=st.text(min_size=1, max_size=100, alphabet=st.characters(blacklist_categories=("Cs",))),
+)
+def test_user_create_schema_validates(email: str, name: str) -> None:
+    """UserCreate schema accepts valid inputs."""
+    from app.schemas.user import UserCreate
+    user = UserCreate(email=email, name=name, password="validpassword123")
+    assert user.email == email
+
+
+# Async property test
+@pytest.mark.asyncio
+@given(user_id=st.integers(min_value=1))
+@settings(max_examples=50)  # Limit examples for async tests
+async def test_get_nonexistent_user_returns_none(db_session, user_id: int) -> None:
+    """Getting a non-existent user returns None."""
+    from app.services.user import UserService
+    service = UserService(db_session)
+    result = await service.get_by_id(user_id)
+    assert result is None
+```
+
+### Debugging with icecream
+
+```python
+from icecream import ic
+
+# Instead of print debugging
+def process_order(order: Order) -> Result:
+    ic(order.id, order.status)  # ic| order.id: 42, order.status: 'pending'
+
+    total = calculate_total(order.items)
+    ic(total)  # ic| total: 159.99
+
+    if total > 100:
+        ic("applying discount")  # ic| 'applying discount'
+        total *= 0.9
+
+    return Result(total=total)
+
+# Disable in production
+import os
+if os.getenv("ENV") == "production":
+    ic.disable()
+```
+
+### PydanticAI Agent Pattern
+
+```python
+from pydantic_ai import Agent, RunContext
+from pydantic import BaseModel
+from httpx import AsyncClient
+
+class Dependencies(BaseModel):
+    """Dependencies injected into agent tools."""
+    http_client: AsyncClient
+    api_key: str
+
+class WeatherResult(BaseModel):
+    """Structured output from weather agent."""
+    location: str
+    temperature: float
+    conditions: str
+
+weather_agent = Agent(
+    "openai:gpt-4o",
+    deps_type=Dependencies,
+    result_type=WeatherResult,
+    system_prompt="You are a weather assistant. Use the get_weather tool to fetch data.",
+)
+
+@weather_agent.tool
+async def get_weather(ctx: RunContext[Dependencies], location: str) -> str:
+    """Fetch weather data for a location."""
+    response = await ctx.deps.http_client.get(
+        f"https://api.weather.com/v1/current",
+        params={"q": location, "key": ctx.deps.api_key},
+    )
+    return response.text
+
+# Usage
+async def main():
+    async with AsyncClient() as client:
+        deps = Dependencies(http_client=client, api_key="...")
+        result = await weather_agent.run("What's the weather in Tokyo?", deps=deps)
+        print(result.data)  # WeatherResult(location="Tokyo", ...)
 ```
 
 ---
