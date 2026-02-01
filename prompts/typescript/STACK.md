@@ -135,12 +135,26 @@ Phase 3 - SCALE / SPECIAL
 
 ## Testing
 
+**Match testing to complexity.** Not every project needs the same testing infrastructure.
+
 | Category | Choice | Why Not Alternatives |
 |----------|--------|---------------------|
 | **Unit** | Vitest | Jest is slower, needs more config. Vitest is Vite-native, faster, better DX. |
 | **Component** | @testing-library/svelte | Enzyme is dead. Testing Library focuses on user behavior, not implementation. |
 | **E2E** | Playwright | Cypress is slower, limited cross-browser. Playwright is faster, better debugging. |
 | **Mocking** | MSW | Nock is Node-only. MSW works in browser and Node, intercepts at network level. |
+
+### When to Use What
+
+| Project Type | Testing Strategy |
+|--------------|------------------|
+| **Static site / blog (Astro)** | `astro check` + Biome. If it builds, it works. Unit test utilities if complex. |
+| **Content site with islands** | Above + Vitest for interactive components. |
+| **SvelteKit app (no auth)** | Vitest for logic + components. |
+| **SvelteKit app (auth/forms)** | Full stack: Vitest + Playwright for critical flows. |
+| **SaaS / Dashboard** | Full stack + MSW for API mocking. |
+
+> **Astro sites**: E2E testing is usually overkill. Astro validates content collections at build time, and static content either renders or fails the build. Save Playwright for apps with auth, forms, and complex user interactions.
 
 ---
 

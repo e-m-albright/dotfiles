@@ -14,12 +14,14 @@ UI:          Svelte 5 (runes) | Astro components
 Styling:     Tailwind CSS v4
 Database:    Drizzle ORM + PostgreSQL (when needed)
 Auth:        Better Auth (or Lucia for lightweight)
-Testing:     Vitest + Playwright
+Testing:     Vitest (+ Playwright for interactive apps)
 Linting:     Biome
 Tasks:       Just
 ```
 
 > **Framework Detection**: Check for `svelte.config.js` (SvelteKit) or `astro.config.mjs` (Astro) to determine which patterns apply.
+
+> **Testing Philosophy**: Match testing to complexity. Static content sites (blogs, portfolios) need minimal testing — if it builds, it works. Save E2E testing for apps with auth, forms, and complex interactions.
 
 ---
 
