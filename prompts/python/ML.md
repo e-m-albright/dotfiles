@@ -154,6 +154,43 @@ response = client.chat.completions.create(
 
 ---
 
+## Embeddings & RAG
+
+| Category | Choice | Why Not Alternatives |
+|----------|--------|---------------------|
+| **RAG Framework** | LLMWare | 300+ models, local/on-device processing, comprehensive document support. |
+| **Alternative** | Cognita | Modular, API-driven, production-focused. By TrueFoundry. |
+| **Embeddings API** | JinaAI | Multilingual (8K context), task-specific adapters. Also on Hugging Face. |
+| **Alternative** | Nomic | Good embeddings + Atlas visualization platform. |
+
+### LLMWare Setup
+
+```bash
+uv pip install llmware
+```
+
+```python
+from llmware.models import ModelCatalog
+from llmware.rag import RAG
+
+# Load embedding model
+embedding_model = ModelCatalog().load_model("nomic-embed-text-v1")
+
+# Build RAG pipeline
+rag = RAG(embedding_model=embedding_model)
+rag.add_documents("./documents/")
+response = rag.query("What are the key findings?")
+```
+
+### When to Use What
+
+- **LLMWare**: Default for RAG pipelines. Local processing, privacy-first.
+- **JinaAI**: When you need multilingual embeddings or long-context (8K tokens).
+- **Cognita**: When you need a modular, API-driven RAG architecture.
+- **Nomic**: When you also need data visualization/exploration (Atlas platform).
+
+---
+
 ## Local Development (Ollama)
 
 For local model experimentation without cloud costs:
@@ -204,6 +241,49 @@ def run_inference(prompt: str) -> str:
     from transformers import pipeline
     pipe = pipeline("text-generation", model="gpt2")
     return pipe(prompt)[0]["generated_text"]
+```
+
+---
+
+## ML Pipelines & Orchestration
+
+| Category | Choice | Why Not Alternatives |
+|----------|--------|---------------------|
+| **ML Pipelines** | Metaflow | Battle-tested at Netflix (3000+ projects). Seamless local-to-cloud scaling. |
+| **Alternative** | Prefect | More general workflow orchestration. Less ML-specific. |
+
+### Metaflow Example
+
+```python
+from metaflow import FlowSpec, step, Parameter
+
+class TrainingFlow(FlowSpec):
+    lr = Parameter('lr', default=0.001)
+
+    @step
+    def start(self):
+        self.data = load_data()
+        self.next(self.train)
+
+    @step
+    def train(self):
+        self.model = train_model(self.data, lr=self.lr)
+        self.next(self.end)
+
+    @step
+    def end(self):
+        save_model(self.model)
+
+if __name__ == '__main__':
+    TrainingFlow()
+```
+
+```bash
+# Run locally
+python train_flow.py run
+
+# Run on AWS Batch (same code)
+python train_flow.py run --with batch
 ```
 
 ---

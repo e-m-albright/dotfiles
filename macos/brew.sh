@@ -147,6 +147,7 @@ core_cli=(
     git-lfs             # Git Large File Storage
     git-delta           # Beautiful git diffs (used by .gitconfig)
     jq                  # JSON processor
+    yq                  # YAML processor (like jq for YAML)
     wget                # Web downloader
 )
 
@@ -160,13 +161,15 @@ network_cli=(
 )
 
 dev_cli=(
-    openssl             # Security tools  
+    openssl             # Security tools
     htop                # System monitoring
     iftop               # Network traffic monitoring
     just                # Command runner (like make, but simpler)
     duckdb              # Fast analytical database (SQL for analytics)
     hyperfine           # Command-line benchmarking tool
     py-spy              # Sampling profiler for Python programs
+    go                  # Go programming language
+    golangci-lint       # Go linter aggregator (fast, configurable)
 )
 
 mac_cli=(

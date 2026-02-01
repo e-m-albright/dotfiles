@@ -24,7 +24,7 @@ git clone https://github.com/e-m-albright/dotfiles ~/dotfiles
 
 **What you get:**
 - Shell: Zsh + Oh My Zsh + custom theme
-- Runtimes: Bun, Node.js (fnm), Python (uv), Rust
+- Runtimes: Bun, Node.js (fnm), Python (uv), Go
 - Editor: Cursor (with VS Code as fallback)
 - CLI: Git, just, jq, tmux, delta, and more
 - AI: Claude Code, Gemini CLI, Ollama
@@ -109,7 +109,7 @@ See [`prompts/README.md`](prompts/README.md) for the full recipe documentation.
 | **Node.js** | fnm | LTS version, auto-switches per project |
 | **Bun** | direct | Preferred JS runtime (faster than Node) |
 | **Python** | uv | Python 3.12, fast package management |
-| **Rust** | rustup | Cargo included |
+| **Go** | brew | Go 1.22+, with gopls, delve, air, sqlc, templ |
 
 ### Editors
 

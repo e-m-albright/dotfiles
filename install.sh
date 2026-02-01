@@ -57,15 +57,36 @@ fi
 
 # Languages & Runtimes
 print_header "🔧 Languages & Runtimes"
-# -- Rust
-print_section "Rust"
-if ! command -v rustc >/dev/null 2>&1; then
-    print_action "Installing Rust..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y >/dev/null 2>&1
-    print_success "Rust installed"
+# -- Go
+print_section "Go"
+if ! command -v go >/dev/null 2>&1; then
+    print_action "Installing Go..."
+    brew install go >/dev/null 2>&1
+    print_success "Go installed"
 else
-    print_info "rustc already installed"
+    print_info "Go already installed ($(go version | awk '{print $3}'))"
 fi
+
+# Go tools (installed globally)
+print_action "Installing Go tools..."
+GO_TOOLS=(
+    "golang.org/x/tools/gopls@latest"           # LSP server
+    "github.com/go-delve/delve/cmd/dlv@latest"  # Debugger
+    "github.com/air-verse/air@latest"           # Live reload
+    "github.com/sqlc-dev/sqlc/cmd/sqlc@latest"  # SQL codegen
+    "github.com/pressly/goose/v3/cmd/goose@latest"  # Migrations
+    "github.com/a-h/templ/cmd/templ@latest"     # HTML templates
+    "honnef.co/go/tools/cmd/staticcheck@latest" # Static analysis
+)
+for tool in "${GO_TOOLS[@]}"; do
+    tool_name=$(basename "${tool%@*}")
+    if ! command -v "$tool_name" >/dev/null 2>&1; then
+        go install "$tool" >/dev/null 2>&1 && print_info "  $tool_name installed" || print_info "  $tool_name skipped"
+    else
+        print_info "  $tool_name already installed"
+    fi
+done
+print_success "Go tools configured"
 
 # -- Node.js / FNM (Fast Node Manager)
 print_section "Node.js / FNM"
@@ -228,11 +249,25 @@ print_section "Recipe Book"
 # Make scripts executable
 chmod +x "$DOTFILES_DIR/prompts/init.sh" 2>/dev/null || true
 chmod +x "$DOTFILES_DIR/prompts/seed.sh" 2>/dev/null || true
+chmod +x "$DOTFILES_DIR/.agents/generate-permissions.sh" 2>/dev/null || true
 # Remove old 'recipe' symlink if it exists (deprecated)
 rm -f "$DOTFILES_DIR/bin/recipe" 2>/dev/null || true
 print_success "Recipe book configured"
 print_info "  New project:      ~/dotfiles/prompts/init.sh <recipe> <name>"
 print_info "  Existing project: ~/dotfiles/prompts/seed.sh <recipe> <path>"
+
+# Agent Permissions (safe commands for agentic tools)
+print_section "Agent Permissions"
+# Merge safe commands into ~/.claude/settings.json (requires yq + jq)
+if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    "$DOTFILES_DIR/.agents/generate-permissions.sh" claude >/dev/null 2>&1 && \
+        print_success "Claude Code permissions merged into ~/.claude/settings.json" || \
+        print_warning "Failed to merge Claude Code permissions"
+else
+    print_warning "Skipping Claude Code permissions (requires yq and jq)"
+    print_info "  Install with: brew install yq jq"
+    print_info "  Then run: ~/dotfiles/.agents/generate-permissions.sh claude"
+fi
 
 # Clear cache
 . "$DOTFILES_DIR/bin/dotfiles" clean

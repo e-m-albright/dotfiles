@@ -305,6 +305,7 @@ def run_inference(prompt: str) -> str:
 | **Managed Vector DB** | Pinecone | Weaviate Cloud | Pinecone: simple, fast. Weaviate: more features. |
 | **Self-Hosted** | Qdrant | Milvus, Weaviate | Qdrant: best DX. Milvus: highest scale. |
 | **Embedded** | LanceDB | Chroma | LanceDB: serverless, multimodal. Chroma: simpler. |
+| **Library** | FAISS | — | Meta's similarity search. Embed in apps, not a full DB. |
 
 ### Decision Tree
 
@@ -341,3 +342,5 @@ create index on documents using ivfflat (embedding vector_cosine_ops);
 | Auth0 | Complex, expensive, enterprise-focused. |
 | Datadog/New Relic | Overkill for small teams, expensive. |
 | AWS/GCP/Azure directly | Complexity overhead. Use Railway/Fly.io instead. |
+| Vercel | Pricing traps, vendor lock-in, Next.js-centric. Use Railway or Cloudflare instead. |
+| Next.js | Vercel-coupled, complexity creep. Use SvelteKit or Astro instead. |
