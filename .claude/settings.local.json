@@ -5,7 +5,8 @@
       "Bash(chmod:*)",
       "Bash(firecrawl --status:*)",
       "Bash(firecrawl search:*)",
-      "Bash(firecrawl scrape:*)"
+      "Bash(firecrawl scrape:*)",
+      "Bash(git_prompt_info)"
     ]
   }
 }

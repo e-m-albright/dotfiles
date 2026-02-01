@@ -25,7 +25,26 @@ ln -sfv "$DOTFILES_DIR/git/.gitignore_global" ~
 ln -sfv "$DOTFILES_DIR/shell/.zprofile" ~
 ln -sfv "$DOTFILES_DIR/shell/.zshenv" ~
 ln -sfv "$DOTFILES_DIR/shell/.zshrc" ~
-ln -fv "$DOTFILES_DIR/shell/amuse.zsh-theme" ~/.oh-my-zsh/custom/themes/amuse.zsh-theme
+ln -sfv "$DOTFILES_DIR/shell/amuse.zsh-theme" ~/.oh-my-zsh/custom/themes/amuse.zsh-theme
+
+# Git identity setup (stored in ~/.gitconfig.local, not committed)
+if [ ! -f ~/.gitconfig.local ]; then
+    print_section "Git Identity"
+    print_action "Setting up git identity..."
+    printf "  Enter your full name: "
+    read git_name
+    printf "  Enter your email: "
+    read git_email
+    cat > ~/.gitconfig.local << EOF
+# Local git identity (not committed to dotfiles repo)
+[user]
+    name = $git_name
+    email = $git_email
+EOF
+    print_success "Git identity configured"
+else
+    print_info "Git identity already configured in ~/.gitconfig.local"
+fi
 
 ################################################################################
 # Set up SSH for Git + Homebrew
