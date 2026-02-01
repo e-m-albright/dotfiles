@@ -80,7 +80,7 @@ What Gets Created:
   ├── PROJECT_BRIEF.md    # Template for you to fill in
   ├── .agents/            # Working files (gitignored)
   │   └── plans/, research/, prompts/, sessions/
-  ├── .decisions/         # Architecture decisions (versioned)
+  ├── .architecture/         # Architecture decisions (versioned)
   │   └── adr/, README.md
   ├── .gitignore          # Copied from recipe
   ├── justfile            # Copied from recipe
@@ -162,9 +162,9 @@ mkdir -p "$PROJECT_PATH/.agents/research"
 mkdir -p "$PROJECT_PATH/.agents/prompts"
 mkdir -p "$PROJECT_PATH/.agents/sessions"
 
-# Create .decisions directory (Layer 2: Decision History)
-print_step "Creating .decisions/ directory"
-mkdir -p "$PROJECT_PATH/.decisions/adr"
+# Create .architecture directory (Layer 2: Decision History)
+print_step "Creating .architecture/ directory"
+mkdir -p "$PROJECT_PATH/.architecture/adr"
 
 # Create .agents/README.md
 cat > "$PROJECT_PATH/.agents/README.md" << 'EOF'
@@ -200,12 +200,12 @@ Use date-prefixed names: `YYYY-MM-DD-description.md`
 
 ---
 
-**Note**: Architecture decisions go in `.decisions/adr/`, not here.
+**Note**: Architecture decisions go in `.architecture/adr/`, not here.
 See `prompts/shared/PROJECT_MEMORY.md` for the full three-layer system.
 EOF
 
-# Create .decisions/README.md
-cat > "$PROJECT_PATH/.decisions/README.md" << 'EOF'
+# Create .architecture/README.md
+cat > "$PROJECT_PATH/.architecture/README.md" << 'EOF'
 # Decision History (Layer 2)
 
 This directory contains versioned Architecture Decision Records (ADRs).
@@ -213,7 +213,7 @@ This directory contains versioned Architecture Decision Records (ADRs).
 ## Structure
 
 ```
-.decisions/
+.architecture/
 ├── adr/           # Architecture Decision Records
 │   └── 0001-*.md  # Numbered ADRs
 └── CHANGELOG.md   # Timeline of decisions
@@ -223,7 +223,7 @@ This directory contains versioned Architecture Decision Records (ADRs).
 
 ```bash
 # Create a new ADR
-touch .decisions/adr/0001-your-decision.md
+touch .architecture/adr/0001-your-decision.md
 ```
 
 Use the template from `prompts/shared/PROJECT_MEMORY.md`.
@@ -236,8 +236,8 @@ Use the template from `prompts/shared/PROJECT_MEMORY.md`.
 - ⚠️ ASSUMED: Nobody explicitly decided (validate this)
 EOF
 
-# Create .decisions/adr/_index.md
-cat > "$PROJECT_PATH/.decisions/adr/_index.md" << 'EOF'
+# Create .architecture/adr/_index.md
+cat > "$PROJECT_PATH/.architecture/adr/_index.md" << 'EOF'
 # Architecture Decision Records
 
 | ADR | Title | Status | Date |
@@ -331,7 +331,7 @@ echo -e "${BLUE}Project structure:${NC}"
 echo "  - AGENTS.md        → Instructions for AI coding agents"
 echo "  - PROJECT_BRIEF.md → Your project description (edit this!)"
 echo "  - .agents/         → Working files (gitignored)"
-echo "  - .decisions/      → Architecture decisions (versioned)"
+echo "  - .architecture/      → Architecture decisions (versioned)"
 echo ""
 echo -e "${BLUE}Start building with Claude Code:${NC}"
 echo ""

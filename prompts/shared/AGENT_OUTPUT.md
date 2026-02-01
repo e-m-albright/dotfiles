@@ -55,19 +55,19 @@ Attribution provides context for future readers (human or AI):
 | Code experiments | `.agents/` | Delete when done |
 | Debug notes | `.agents/` | Delete when done |
 | Conversation logs | `.agents/sessions/` | Gitignored |
-| **Architecture decisions** | `.decisions/adr/` | Versioned (Layer 2) |
-| **Decision timeline** | `.decisions/CHANGELOG.md` | Versioned (Layer 2) |
+| **Architecture decisions** | `.architecture/adr/` | Versioned (Layer 2) |
+| **Decision timeline** | `.architecture/CHANGELOG.md` | Versioned (Layer 2) |
 
 ### Where Architecture Decisions Go
 
-**Important**: Architecture Decision Records (ADRs) go in `.decisions/adr/`, not `.agents/`. They're part of project history (Layer 2), not working files (Layer 3).
+**Important**: Architecture Decision Records (ADRs) go in `.architecture/adr/`, not `.agents/`. They're part of project history (Layer 2), not working files (Layer 3).
 
 ```
 # Wrong
 .agents/plans/2024-01-15-adr-database.md
 
 # Right
-.decisions/adr/0001-database-choice.md
+.architecture/adr/0001-database-choice.md
 ```
 
 ### .gitignore Entry
@@ -83,12 +83,12 @@ Attribution provides context for future readers (human or AI):
 
 ### What Gets Auto-Discovered
 
-Claude Code automatically loads `AGENTS.md` at project root. It does NOT auto-discover `.agents/` or `.decisions/`. Reference them in `AGENTS.md` if you want AI to know about them:
+Claude Code automatically loads `AGENTS.md` at project root. It does NOT auto-discover `.agents/` or `.architecture/`. Reference them in `AGENTS.md` if you want AI to know about them:
 
 ```markdown
 ## Project Organization
 - Working files: `.agents/`
-- Decision history: `.decisions/`
+- Decision history: `.architecture/`
 ```
 
 ### Plan File Format
@@ -211,5 +211,5 @@ See ADR-000X for the decision.
 | Directory | Purpose | Versioned | Auto-Discovered |
 |-----------|---------|-----------|-----------------|
 | `AGENTS.md` | Project instructions | Yes | Yes (Claude, Cursor, etc.) |
-| `.decisions/` | Decision history | Yes | No (reference in AGENTS.md) |
+| `.architecture/` | Decision history | Yes | No (reference in AGENTS.md) |
 | `.agents/` | Working files | No (gitignored) | No |

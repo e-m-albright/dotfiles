@@ -1,4 +1,4 @@
-# AGENTS.md — TypeScript/SvelteKit
+# AGENTS.md — TypeScript
 
 Cross-platform instructions for AI coding agents.
 Works with: Claude Code, Cursor, Windsurf, Gemini, ChatGPT, GitHub Copilot.
@@ -9,18 +9,23 @@ Works with: Claude Code, Cursor, Windsurf, Gemini, ChatGPT, GitHub Copilot.
 
 ```yaml
 Runtime:     Bun (not Node)
-Framework:   SvelteKit 2 + Svelte 5 (runes)
+Framework:   SvelteKit 2 | Astro 4+ (detect from config)
+UI:          Svelte 5 (runes) | Astro components
 Styling:     Tailwind CSS v4
-Database:    Drizzle ORM + PostgreSQL
+Database:    Drizzle ORM + PostgreSQL (when needed)
 Auth:        Better Auth (or Lucia for lightweight)
 Testing:     Vitest + Playwright
 Linting:     Biome
 Tasks:       Just
 ```
 
+> **Framework Detection**: Check for `svelte.config.js` (SvelteKit) or `astro.config.mjs` (Astro) to determine which patterns apply.
+
 ---
 
 ## Commands
+
+### SvelteKit Projects
 
 ```bash
 # Development
@@ -43,9 +48,28 @@ bun run db:migrate         # Run migrations
 bun run db:studio          # Open Drizzle Studio
 ```
 
+### Astro Projects
+
+```bash
+# Development
+bun run dev                # Start dev server (localhost:4321)
+bun run build              # Build for production (includes type check)
+bun run preview            # Preview production build locally
+
+# Quality
+bun run astro check        # TypeScript + Astro type checking
+bun run lint               # Biome lint (or ESLint if configured)
+bun run format             # Biome format
+
+# Deployment (Cloudflare example)
+bun run deploy             # Build and deploy to Cloudflare Pages
+```
+
 ---
 
 ## Project Structure
+
+### SvelteKit
 
 ```
 src/
@@ -54,7 +78,7 @@ src/
 │   │   └── ui/           # shadcn-svelte components
 │   ├── server/           # Server-only code
 │   │   ├── db/           # Drizzle schema + queries
-│   │   └── auth/         # Lucia auth setup
+│   │   └── auth/         # Auth setup
 │   └── utils/            # Shared utilities
 ├── routes/               # SvelteKit file-based routing
 │   ├── +layout.svelte    # Root layout
@@ -62,6 +86,30 @@ src/
 │   └── api/              # API routes (+server.ts files)
 ├── app.html              # HTML template
 └── app.css               # Global styles (Tailwind imports)
+```
+
+### Astro
+
+```
+src/
+├── components/           # Astro/Svelte components
+│   └── ui/              # Reusable UI components
+├── content/             # Content collections
+│   ├── config.ts        # Collection schemas (Zod)
+│   ├── blog/            # Blog posts (MDX/Markdown)
+│   └── projects/        # Other collections
+├── layouts/             # Page layouts
+│   └── Layout.astro     # Base layout
+├── pages/               # File-based routing
+│   ├── index.astro      # Home page
+│   ├── blog/
+│   │   ├── index.astro  # Blog listing
+│   │   └── [...slug].astro  # Dynamic post pages
+│   └── api/             # API routes (.ts files)
+├── lib/                 # Shared utilities
+│   └── utils.ts
+└── styles/              # Global styles
+    └── global.css
 ```
 
 ---
@@ -167,6 +215,86 @@ export const actions: Actions = {
     return message(form, 'Success!');
   }
 };
+```
+
+---
+
+## Astro Patterns
+
+### Content Collections
+
+```typescript
+// src/content/config.ts
+import { defineCollection, z } from 'astro:content';
+
+const blog = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    date: z.coerce.date(),
+    draft: z.boolean().optional(),
+  }),
+});
+
+export const collections = { blog };
+```
+
+### Querying Content
+
+```astro
+---
+import { getCollection, getEntry } from 'astro:content';
+
+// Get all non-draft posts, sorted by date
+const posts = (await getCollection('blog'))
+  .filter(post => !post.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Get single entry
+const post = await getEntry('blog', 'my-post');
+const { Content } = await post.render();
+---
+
+<Content />
+```
+
+### Static Paths (Dynamic Routes)
+
+```astro
+---
+// src/pages/blog/[...slug].astro
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+---
+```
+
+### Islands (Interactive Components)
+
+```astro
+---
+import Counter from '@components/Counter.svelte';
+---
+
+<!-- No JS shipped -->
+<p>Static content</p>
+
+<!-- Hydrate strategies -->
+<Counter client:load />      <!-- Immediate -->
+<Counter client:idle />      <!-- When browser idle -->
+<Counter client:visible />   <!-- When in viewport -->
 ```
 
 ---
@@ -359,11 +487,13 @@ export function handleApiError(error: unknown) {
 
 | Type | Convention | Example |
 |------|------------|---------|
-| Components | PascalCase | `Button.svelte`, `UserCard.svelte` |
-| Routes | lowercase | `+page.svelte`, `+server.ts` |
-| Utilities | camelCase | `formatDate.ts`, `useDebounce.ts` |
+| Components | PascalCase | `Button.svelte`, `Card.astro` |
+| Routes (SvelteKit) | lowercase | `+page.svelte`, `+server.ts` |
+| Routes (Astro) | lowercase | `index.astro`, `[...slug].astro` |
+| Content | lowercase-kebab | `my-first-post.mdx` |
+| Utilities | camelCase | `formatDate.ts`, `readingTime.ts` |
 | Types | PascalCase | `User.ts`, `ApiResponse.ts` |
-| Constants | SCREAMING_SNAKE | `API_BASE_URL`, `MAX_RETRIES` |
+| Constants | SCREAMING_SNAKE | `SITE_URL`, `MAX_POSTS_PER_PAGE` |
 
 ---
 
@@ -398,7 +528,7 @@ refactor/db-drizzle
 2. **Date-prefix plans** — `YYYY-MM-DD-feature-name.md`
 3. **Update .agents/README.md** — Keep index of all agent-generated files
 4. **Clean working files** — Delete when no longer needed
-5. **Architecture decisions** — Go in `.decisions/adr/`, not `.agents/`
+5. **Architecture decisions** — Go in `.architecture/adr/`, not `.agents/`
 
 ---
 
@@ -406,18 +536,25 @@ refactor/db-drizzle
 
 ### Always
 
-- Use Svelte 5 runes (`$state`, `$derived`, `$effect`) — never legacy `$:` syntax
-- Run `bun run check` before committing
+- Run type checking before committing (`bun run check` or `astro check`)
 - Use Zod for all external data validation
 - Handle loading and error states in UI
+
+**SvelteKit:**
+- Use Svelte 5 runes (`$state`, `$derived`, `$effect`) — never legacy `$:` syntax
 - Use `+page.server.ts` for data that needs auth
+
+**Astro:**
+- Define content collection schemas in `src/content/config.ts`
+- Use `export const prerender = true` for static pages in hybrid mode
+- Prefer `.astro` components; use Svelte only for interactive islands
 
 ### Never
 
 - Use `any` type — use `unknown` and narrow
 - Skip error handling on async operations
 - Commit `.env` files — use `.env.example`
-- Use `console.log` in production code — use Pino logger
+- Use `console.log` in production code — use structured logger
 - Mutate props directly — derive new values
 
 ### Ask First
@@ -425,4 +562,5 @@ refactor/db-drizzle
 - Adding new dependencies
 - Changing database schema
 - Modifying auth flow
+- Changing content collection schemas
 - Deleting files

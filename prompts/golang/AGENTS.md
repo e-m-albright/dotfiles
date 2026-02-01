@@ -438,7 +438,7 @@ chore(deps): bump pgx to v5.7.0
 2. **Date-prefix plans** — `YYYY-MM-DD-feature-name.md`
 3. **Update .agents/README.md** — Keep index of all agent-generated files
 4. **Clean working files** — Delete when no longer needed
-5. **Architecture decisions** — Go in `.decisions/adr/`, not `.agents/`
+5. **Architecture decisions** — Go in `.architecture/adr/`, not `.agents/`
 
 ---
 

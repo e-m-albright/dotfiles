@@ -179,12 +179,10 @@ essentials=(
     # iterm2            # Terminal emulator (using Warp instead)
 )
 
-# IDEs (casks) — pick exactly one as your daily driver.
-# Switch by commenting/uncommenting inline.
+# Editors
 ide=(
-    # visual-studio-code   # VS Code
-    cursor                 # AI-native editor
-    # zed                  # Ultra-fast editor
+    cursor                 # Primary: AI-native editor (VS Code compatible)
+    visual-studio-code     # Fallback: when Cursor isn't suitable
 )
 
 productivity=(
@@ -216,11 +214,10 @@ social_apps=(
 
 # AI Tools
 ai_cli=(
-    claude-code          # Anthropic CLI
+    claude-code          # Anthropic CLI agent
     gemini-cli           # Google Gemini CLI
     ollama               # Local LLM runtime
     huggingface-cli      # Hugging Face CLI (model management, downloads)
-    # antigravity          # Distribution TBD
 )
 
 quicklook_plugins=(

@@ -6,7 +6,8 @@
       "Bash(firecrawl --status:*)",
       "Bash(firecrawl search:*)",
       "Bash(firecrawl scrape:*)",
-      "Bash(git_prompt_info)"
+      "Bash(git_prompt_info)",
+      "Bash(~/dotfiles/prompts/seed.sh typescript ~/code/evan)"
     ]
   }
 }

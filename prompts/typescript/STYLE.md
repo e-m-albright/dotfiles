@@ -1,5 +1,9 @@
 # TypeScript Style Guide
 
+This guide covers TypeScript patterns and framework-specific styles for both SvelteKit and Astro projects.
+
+---
+
 ## TypeScript
 
 ### Types over Interfaces (for most cases)
@@ -188,6 +192,210 @@ function merge<T extends Record<string, unknown>>(a: T, b: Partial<T>): T {
 <form onsubmit={handleSubmit}>
   <button onclick={onClick}>Click</button>
 </form>
+```
+
+---
+
+## Astro
+
+### Component Structure
+
+```astro
+---
+// 1. Imports
+import Layout from '@layouts/Layout.astro';
+import Card from '@components/Card.astro';
+import { getCollection } from 'astro:content';
+
+// 2. Props interface
+interface Props {
+  title: string;
+  description?: string;
+}
+
+// 3. Props destructuring
+const { title, description = 'Default description' } = Astro.props;
+
+// 4. Data fetching (runs at build time or request time)
+const posts = await getCollection('blog');
+
+// 5. Computed values
+const sortedPosts = posts
+  .filter(post => !post.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<!-- 6. Template -->
+<Layout title={title}>
+  <h1>{title}</h1>
+  <p>{description}</p>
+
+  {sortedPosts.map(post => (
+    <Card title={post.data.title} href={`/blog/${post.slug}`} />
+  ))}
+</Layout>
+
+<!-- 7. Styles (scoped by default) -->
+<style>
+  h1 {
+    font-size: 2rem;
+  }
+</style>
+```
+
+### Content Collections
+
+```typescript
+// src/content/config.ts
+import { defineCollection, z } from 'astro:content';
+
+const blog = defineCollection({
+  type: 'content',  // Markdown/MDX with frontmatter
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    date: z.coerce.date(),
+    draft: z.boolean().optional().default(false),
+    tags: z.array(z.string()).optional(),
+  }),
+});
+
+// For data-only collections (JSON, YAML)
+const authors = defineCollection({
+  type: 'data',
+  schema: z.object({
+    name: z.string(),
+    email: z.string().email(),
+    avatar: z.string().url(),
+  }),
+});
+
+export const collections = { blog, authors };
+```
+
+### Querying Content
+
+```astro
+---
+import { getCollection, getEntry } from 'astro:content';
+
+// Get all entries
+const allPosts = await getCollection('blog');
+
+// Filter entries
+const publishedPosts = await getCollection('blog', ({ data }) => {
+  return !data.draft;
+});
+
+// Get single entry by slug
+const post = await getEntry('blog', 'my-post-slug');
+
+// Render content
+const { Content, headings } = await post.render();
+---
+
+<Content />
+```
+
+### Dynamic Routes
+
+```astro
+---
+// src/pages/blog/[...slug].astro
+import { getCollection } from 'astro:content';
+
+// Required for static generation
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+---
+
+<article>
+  <h1>{post.data.title}</h1>
+  <Content />
+</article>
+```
+
+### Islands (Interactive Components)
+
+```astro
+---
+// Use Svelte components for interactivity
+import Counter from '@components/Counter.svelte';
+import SearchBar from '@components/SearchBar.svelte';
+---
+
+<!-- Static by default (no JS) -->
+<p>This is static HTML.</p>
+
+<!-- Hydrate on page load -->
+<Counter client:load />
+
+<!-- Hydrate when browser is idle -->
+<SearchBar client:idle />
+
+<!-- Hydrate when visible in viewport -->
+<Counter client:visible />
+
+<!-- Only run on client (no SSR) -->
+<Counter client:only="svelte" />
+```
+
+### API Routes
+
+```typescript
+// src/pages/api/posts.ts
+import type { APIRoute } from 'astro';
+import { getCollection } from 'astro:content';
+
+export const GET: APIRoute = async ({ request }) => {
+  const posts = await getCollection('blog');
+
+  return new Response(JSON.stringify(posts), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
+export const POST: APIRoute = async ({ request }) => {
+  const body = await request.json();
+  // Process...
+
+  return new Response(JSON.stringify({ success: true }), {
+    status: 201,
+  });
+};
+```
+
+### Middleware
+
+```typescript
+// src/middleware.ts
+import { defineMiddleware } from 'astro:middleware';
+
+export const onRequest = defineMiddleware(async (context, next) => {
+  // Before request
+  const start = Date.now();
+
+  // Add data to locals (available in components via Astro.locals)
+  context.locals.requestId = crypto.randomUUID();
+
+  const response = await next();
+
+  // After request
+  console.log(`${context.url.pathname} - ${Date.now() - start}ms`);
+
+  return response;
+});
 ```
 
 ---

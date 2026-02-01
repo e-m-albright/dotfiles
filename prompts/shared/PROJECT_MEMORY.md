@@ -18,8 +18,8 @@
 ├─────────────────────────────────────────────────────────────────────┤
 │ Layer 2: DECISION HISTORY (Append-only, evolvable)                 │
 │ "Why did we decide this? How has thinking evolved?"                │
-│ ├── .decisions/adr/*.md (Architecture Decision Records)            │
-│ └── .decisions/CHANGELOG.md (timeline with context)                │
+│ ├── .architecture/adr/*.md (Architecture Decision Records)            │
+│ └── .architecture/CHANGELOG.md (timeline with context)                │
 ├─────────────────────────────────────────────────────────────────────┤
 │ Layer 3: WORKING CONTEXT (Ephemeral, gitignored)                   │
 │ "What am I working on right now?"                                  │
@@ -43,7 +43,7 @@ your-project/
 ├── AGENTS.md                      # Layer 1: Project instructions (for humans + AI)
 ├── PROJECT_BRIEF.md               # Layer 1: What we're building
 │
-├── .decisions/                    # Layer 2: Decision history (versioned)
+├── .architecture/                    # Layer 2: Decision history (versioned)
 │   ├── adr/                       # Architecture Decision Records
 │   │   ├── 0001-database-choice.md
 │   │   ├── 0002-api-design.md
@@ -71,7 +71,7 @@ your-project/
 .agents/
 
 # Keep these versioned:
-# .decisions/        (decision history)
+# .architecture/        (decision history)
 # AGENTS.md          (project instructions)
 # PROJECT_BRIEF.md   (project context)
 ```
@@ -165,8 +165,8 @@ We will use Better Auth for authentication because [...]
 |----------|-------|----------------|
 | `AGENTS.md` | Curated | Edit in place, keep current |
 | `PROJECT_BRIEF.md` | Curated | Edit in place, keep current |
-| `.decisions/adr/*.md` | Append-only | Don't edit, supersede instead |
-| `.decisions/CHANGELOG.md` | Append-only | Add entries, never remove |
+| `.architecture/adr/*.md` | Append-only | Don't edit, supersede instead |
+| `.architecture/CHANGELOG.md` | Append-only | Add entries, never remove |
 | `.agents/*` | Ephemeral | Delete when done |
 
 **The rule**: Layer 1 is edited. Layer 2 is appended. Layer 3 is deleted.
@@ -274,13 +274,13 @@ All decisions can be revisited. Attribution helps you work effectively:
 cat AGENTS.md | grep -A5 "## Architecture"
 
 # 2. Check relevant decisions
-ls .decisions/adr/ | grep -i "auth\|api"
+ls .architecture/adr/ | grep -i "auth\|api"
 
 # 3. Create a plan
 # Create .agents/plans/2026-02-01-feature-x.md
 
 # 4. If architectural decision needed, draft ADR
-# Create .decisions/adr/0006-feature-x-approach.md (status: proposed)
+# Create .architecture/adr/0006-feature-x-approach.md (status: proposed)
 
 # 5. Review and approve
 # Change status to "accepted", add attribution
@@ -291,7 +291,7 @@ ls .decisions/adr/ | grep -i "auth\|api"
 ```bash
 # If confused about what's current:
 # 1. AGENTS.md is the source of truth for current state
-# 2. .decisions/CHANGELOG.md shows the evolution
+# 2. .architecture/CHANGELOG.md shows the evolution
 # 3. ADRs explain the "why" behind each decision
 ```
 
@@ -301,8 +301,8 @@ ls .decisions/adr/ | grep -i "auth\|api"
 ## Read in Order
 1. PROJECT_BRIEF.md (what we're building)
 2. AGENTS.md (how we build it)
-3. .decisions/_index.md (key decisions)
-4. .decisions/CHANGELOG.md (recent changes)
+3. .architecture/_index.md (key decisions)
+4. .architecture/CHANGELOG.md (recent changes)
 ```
 
 ---
@@ -406,8 +406,8 @@ Chosen option: **Option B** because [justification]
 | Question | Where to Look |
 |----------|---------------|
 | What's the current approach? | `AGENTS.md` |
-| Why did we choose this? | `.decisions/adr/XXXX-*.md` |
-| What changed recently? | `.decisions/CHANGELOG.md` |
+| Why did we choose this? | `.architecture/adr/XXXX-*.md` |
+| What changed recently? | `.architecture/CHANGELOG.md` |
 | What are we working on now? | `.agents/plans/` |
 | Who made this decision? | Check attribution tags |
 | Can I change this? | Yes—but loop in people with context first |

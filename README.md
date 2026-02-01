@@ -1,245 +1,198 @@
 # Dotfiles
 
-Opinionated Mac setup scripts + configs, optimized for a fast, clean dev machine.
+Opinionated Mac setup + project scaffolding for fast, maintainable development.
 
-## What you get
+**Two things happen here:**
 
-- **Shell**: Zsh + Oh My Zsh + a custom theme (`shell/amuse.zsh-theme`)
-- **Dev runtimes**:
-  - **Rust**: `rustup` + Cargo
-  - **Node.js**: `fnm` (Fast Node Manager) + Node LTS + Corepack (pnpm/yarn)
-  - **Bun**: JavaScript runtime + package manager
-  - **Python**: `uv` + Python 3.12
-- **Homebrew**: curated packages + apps via `macos/brew.sh`
-- **macOS**: Dock setup via `macos/dock.sh`
-- **Editors**: VS Code & Cursor configurations via `editors/`
-  - Shared extension list (VS Code gets Supermaven; Cursor uses built-in AI)
-  - Editor-specific settings and Cursor AI rules
-- **Git**: `.gitconfig` + `.gitignore_global`
-- **DX tools**: `just` (command runner), `jq`, `tmux`, and more
-- **Recipe Book**: Opinionated project templates for AI-assisted development (`prompts/`)
+1. **Machine setup** — Run `install.sh` and get a fully configured dev environment
+2. **Project scaffolding** — Seed new or existing projects with battle-tested structure
 
-## Install (fresh macOS)
+---
 
-1. **Update macOS + install Xcode CLT**
+## Quick Start
+
+### Fresh Mac Setup
 
 ```bash
-sudo softwareupdate -i -a
+# 1. Install Xcode CLI tools
 xcode-select --install
-```
 
-2. **Clone and run**
-
-```bash
+# 2. Clone and run
 git clone https://github.com/e-m-albright/dotfiles ~/dotfiles
-chmod +x ~/dotfiles/install.sh
-chmod -R +x ~/dotfiles/bin
 ~/dotfiles/install.sh
 ```
 
-**What happens**: The installer sets up your shell, installs all Homebrew packages, configures Git, installs Node.js LTS (via fnm), sets up Rust/Python/Bun, installs Marimo (Python notebooks), installs VS Code/Cursor extensions, and configures your Dock. After completion, you'll have a fully configured dev environment ready for SvelteKit, Python, and more.
+**What you get:**
+- Shell: Zsh + Oh My Zsh + custom theme
+- Runtimes: Bun, Node.js (fnm), Python (uv), Rust
+- Editor: Cursor (with VS Code as fallback)
+- CLI: Git, just, jq, tmux, delta, and more
+- AI: Claude Code, Gemini CLI, Ollama
 
-**Idempotent & safe to re-run**: The installer is designed to be safe to run multiple times. It checks for existing installations before installing, uses idempotent operations (symlinks, checks), and won't overwrite your customizations. You can safely run `./install.sh` after adding new tools to `macos/brew.sh` or updating configs.
+The installer is idempotent — safe to re-run anytime.
 
-## Homebrew (curation + toggles)
+---
 
-**Configuration**: Edit `macos/brew.sh` directly to manage your tool selection. Packages are organized in bash arrays by category:
-- Add/remove packages by editing the arrays
-- Switch IDEs by commenting/uncommenting inline
-- Comment out tools inline (right where they "would live")
+## Project Scaffolding
 
-No dependencies needed - just edit the bash arrays and re-run the script.
+The `prompts/` directory contains opinionated recipes for TypeScript, Python, and Go projects.
 
-**Installation**: `macos/brew.sh` supports opt-in toggles:
+### New Project (Seed)
 
-- **AI**: `AI=1` (default) installs AI CLI tools and local model runner
-- **Productivity**: `PRODUCTIVITY=1` (default) installs window/clipboard helpers
-- **Social**: `SOCIAL=1` (default) installs chat/music/etc.
+Create a fresh project with our full skeleton:
 
-Example:
+```bash
+~/dotfiles/prompts/init.sh typescript my-app
+~/dotfiles/prompts/init.sh python my-api
+~/dotfiles/prompts/init.sh golang my-service
+```
+
+### Existing Project (Rails)
+
+Add our project structure to an existing codebase:
+
+```bash
+~/dotfiles/prompts/seed.sh typescript ~/code/my-existing-app
+```
+
+This adds the **rails** — lightweight scaffolding that guides AI agents and keeps projects maintainable:
+
+```
+my-project/
+├── AGENTS.md           # Instructions for AI agents (symlinked from recipe)
+├── PROJECT_BRIEF.md    # What you're building (you fill this in)
+├── .agents/            # Working files, gitignored (plans, research, sessions)
+└── .architecture/      # Architecture decisions, versioned (ADRs)
+```
+
+Then use Claude Code to bring the project into conformance:
+
+```bash
+cd ~/code/my-existing-app
+
+# Audit against our guidelines
+claude "Read AGENTS.md and audit this codebase. List what conforms,
+what needs to change, and recommended priority. Don't change anything yet."
+
+# Create a conformance plan
+claude "Create a phased plan in .agents/plans/ to bring this project
+into conformance. Each phase should be safe and incremental."
+
+# Execute incrementally
+claude "Execute phase 1. Run tests after each change."
+```
+
+### Available Recipes
+
+| Recipe | Runtime | Framework | Use Case |
+|--------|---------|-----------|----------|
+| `typescript` | Bun | SvelteKit / Astro | Full-stack apps, content sites |
+| `python` | UV | FastAPI / Reflex | APIs, AI services, analytics |
+| `golang` | Go 1.22+ | stdlib + sqlc | High-performance services |
+
+See [`prompts/README.md`](prompts/README.md) for the full recipe documentation.
+
+---
+
+## What's Installed
+
+### Shell & Terminal
+
+- **Zsh + Oh My Zsh**: Battle-tested shell framework
+- **Custom theme**: Two-line prompt with git branch status
+- **Warp**: Modern terminal with AI features
+
+### Runtimes
+
+| Runtime | Manager | Notes |
+|---------|---------|-------|
+| **Node.js** | fnm | LTS version, auto-switches per project |
+| **Bun** | direct | Preferred JS runtime (faster than Node) |
+| **Python** | uv | Python 3.12, fast package management |
+| **Rust** | rustup | Cargo included |
+
+### Editors
+
+- **Cursor**: Primary editor (AI-native, VS Code compatible)
+- **VS Code**: Fallback when needed
+
+Both share the same extension list. See `editors/` for configs.
+
+### CLI Tools
+
+| Category | Tools |
+|----------|-------|
+| **Git** | delta (diffs), gh (GitHub CLI) |
+| **Task runner** | just |
+| **Data** | jq, yq |
+| **Utils** | tmux, ripgrep, fd, bat, eza |
+
+### AI Tools
+
+| Tool | Purpose |
+|------|---------|
+| **Claude Code** | Agentic coding assistant |
+| **Gemini CLI** | Google's CLI assistant |
+| **Ollama** | Local model runtime |
+
+---
+
+## Configuration
+
+### Homebrew
+
+Edit `macos/brew.sh` to customize packages. Organized by category with opt-in toggles:
 
 ```bash
 AI=1 PRODUCTIVITY=1 SOCIAL=0 ~/dotfiles/macos/brew.sh
 ```
 
-**IDEs**: The config includes a curated list of editors; you keep exactly one enabled at a time by commenting/uncommenting inline.
-
-## AI tools
-
-This repo currently supports AI tooling in three ways:
-
-- **Editors** (configured via `editors/` directory)
-  - **VS Code**: 
-    - `editors/vscode/settings.json` - Editor settings
-    - `editors/vscode/extensions.sh` - Extension installer (uses shared list)
-    - Includes Supermaven for AI autocomplete
-  - **Cursor**: 
-    - `editors/cursor/settings.json` - VS Code-compatible editor settings
-    - `editors/cursor/cli-config.json` - Global Cursor CLI configuration (AI agent permissions, modes)
-    - `editors/cursor/.cursorignore` - Files to exclude from AI context
-    - `editors/cursor/extensions.sh` - Extension installer (uses shared list, excludes Supermaven)
-    - Referenced in `macos/dock.sh` (Dock pin)
-  - **Shared**: `editors/extensions.sh` - Common extension list (both editors use this)
-- **CLI agents**
-  - **Claude Code**: installed via Homebrew when available (`macos/brew.sh`, AI category).
-  - **Gemini CLI**: installed via Homebrew when available (`macos/brew.sh`, AI category).
-- **Local models**
-  - **Ollama**: installed via Homebrew (`macos/brew.sh`, AI category).
-  - Optional UI (manual): `open-webui` via `uv` (see below).
-
-### New AI gizmos (optional)
-
-In `macos/brew.sh` under `ai_gizmos` there's a small "AI-adjacent" list (mostly commented out) for tools like:
-- **Raycast** (launcher/workflows)
-- **Warp** (modern AI terminal)
-
-### What you already use (but this repo doesn't fully automate yet)
-
-- **Antigravity**: not currently installed/configured by these scripts; add it to `macos/brew.sh` (AI category) or document a manual install step once you decide the preferred distribution method.
-
-### ML/DL Development
-
-For deep learning and ML development, see **[prompts/python/ML.md](prompts/python/ML.md)** for:
-- Core frameworks (PyTorch, JAX, Lightning)
-- Experiment tracking (Weights & Biases, MLflow)
-- Model serving (vLLM, ONNX Runtime)
-- GPU cloud options (Modal, Replicate)
-
-### Local model quickstart (Ollama)
+### The `dotfiles` Command
 
 ```bash
-ollama serve
-ollama pull llama3.2
+dotfiles help      # Show available commands
+dotfiles update    # Update OS + package managers
+dotfiles clean     # Clear caches
+dotfiles brew      # Re-run Homebrew setup
+dotfiles dock      # Reset Dock layout
 ```
 
-### Optional: Open WebUI (via uv)
+### Git
 
-```bash
-uv tool install open-webui
-uv tool run open-webui serve
-```
+- `.gitconfig`: Modern defaults (delta, push.autoSetupRemote, rebase on pull)
+- `.gitconfig.local`: Your name/email (created on first install, not committed)
+- `.gitignore_global`: Common ignores
 
-## The `dotfiles` command
+---
 
-```bash
-dotfiles help
-```
-
-Commands (see `bin/dotfiles`):
-
-- **help**: show help
-- **update**: update OS + package managers
-- **clean**: clean caches
-- **brew**: run the Homebrew installer (`macos/brew.sh`)
-- **dock**: run Dock setup (`macos/dock.sh`)
-
-## Node.js / SvelteKit development
-
-After installation, you're ready for SvelteKit development:
-
-```bash
-# Node.js LTS is already installed via fnm
-node --version
-
-# Bun is the preferred runtime (faster than Node)
-bun --version
-
-# Create a SvelteKit project (recommended)
-~/dotfiles/prompts/init.sh typescript my-app
-
-# Or manually with Bun
-bunx sv create my-app
-```
-
-**What's included**:
-- **Bun**: Fast JavaScript runtime + package manager (preferred)
-- **fnm**: Fast Node Manager for Node.js when needed
-- **Node.js LTS**: Automatically installed as fallback
-- **VS Code/Cursor extensions**: Svelte, Biome, TailwindCSS, and more
-
-## Shell choice: Oh My Zsh
-
-**Why Oh My Zsh?** Oh My Zsh is still the best-in-class framework for ZSH:
-
-- **Massive ecosystem**: 200+ plugins, 150+ themes, huge community
-- **Easy customization**: Simple plugin/theme system, well-documented
-- **Battle-tested**: Used by millions, stable and reliable
-- **Great defaults**: Sensible ZSH options, useful aliases out of the box
-- **Plugin ecosystem**: Git, Docker, Node, Python, Rust plugins ready to go
-- **Performance**: Fast startup, efficient completion system
-
-**Alternatives considered**:
-- **Prezto**: Lighter but smaller plugin ecosystem
-- **Zinit/Zplugin**: More powerful but steeper learning curve
-- **Starship**: Great prompt but not a full framework
-- **No framework**: More control but more setup work
-
-For a macOS-focused dev setup, Oh My Zsh provides the best balance of ease-of-use, ecosystem size, and customization. It's the "batteries included" approach that gets you productive fast.
-
-## Notes / future tweaks
-
-- **Caffeine**: Intel-only (requires Rosetta); included in config but you may want to skip it on Apple Silicon.
-- **Rectangle vs Raycast**: Rectangle is the current default; Raycast is a great alternative if you want to consolidate window management + launcher.
-
-## Recipe Book (AI-Assisted Development)
-
-The `prompts/` directory contains opinionated project templates ("recipes") designed for AI-assisted development. Each recipe includes:
-
-- **AGENTS.md**: Cross-platform instructions for AI coding agents (Claude, Cursor, Gemini, ChatGPT)
-- **STACK.md**: Tech stack decisions with rationale (why X over Y)
-- **STYLE.md**: Code style guide
-- **templates/**: Starter files (`.gitignore`, `justfile`, configs)
-- **skills/**: Agent skills for specific frameworks
-
-### Available Recipes
-
-| Recipe | Stack | Use Case |
-|--------|-------|----------|
-| `typescript` | Bun + SvelteKit 2 + Svelte 5 + Tailwind v4 + Drizzle | Full-stack web apps |
-| `python` | UV + FastAPI + Pydantic v2 + SQLAlchemy 2.0 | APIs, ML services |
-| `golang` | Go 1.22+ stdlib + sqlc + pgx | High-performance services |
-
-### Quick Start
-
-```bash
-# Create a new project from a recipe
-~/dotfiles/prompts/init.sh typescript my-web-app
-~/dotfiles/prompts/init.sh python my-api ~/projects
-
-# Seed an existing project with our structure
-~/dotfiles/prompts/seed.sh typescript /path/to/existing-project
-```
-
-### What Gets Created
+## Directory Structure
 
 ```
-my-project/
-├── AGENTS.md           # Symlinked from recipe (AI instructions)
-├── PROJECT_BRIEF.md    # Template for you to describe your project
-├── .agents/            # Working files (gitignored)
-│   ├── plans/          # Implementation plans
-│   ├── research/       # Investigation notes
-│   ├── prompts/        # Key prompts that led to decisions
-│   └── sessions/       # Conversation logs
-├── .decisions/         # Architecture decisions (versioned)
-│   ├── adr/            # Architecture Decision Records
-│   └── README.md
-├── .gitignore
-├── justfile
-└── [recipe-specific files]
+dotfiles/
+├── install.sh              # Main installer (run this)
+├── bin/                    # CLI tools (dotfiles command)
+├── shell/                  # Zsh config + theme
+├── git/                    # Git config + global ignores
+├── editors/                # Cursor + VS Code settings
+├── macos/                  # Homebrew, Dock, SSH setup
+└── prompts/                # Project recipes + scaffolding
+    ├── typescript/         # SvelteKit / Astro recipe
+    ├── python/             # FastAPI / Reflex recipe
+    ├── golang/             # Go recipe
+    ├── shared/             # Cross-language guides
+    └── templates/          # PROJECT_BRIEF.md template
 ```
 
-### Philosophy
+---
 
-- **One pick per category**: No "it depends." Every choice is justified.
-- **Agent-first**: All configs work with Claude, Cursor, Gemini, ChatGPT.
-- **Human-readable**: Every file is organized, commented, and skimmable.
-- **DX-optimized**: Fast feedback loops, minimal config, maximum productivity.
+## Philosophy
 
-For detailed documentation, see [`prompts/README.md`](prompts/README.md).
+**Machine setup:**
+- Idempotent — run anytime, get the same result
+- Opinionated but removable — edit `brew.sh` to customize
+- Fast — parallel installs, skip what's already there
 
-## Credits
-
-- https://dotfiles.github.io/
-- https://github.com/webpro/awesome-dotfiles
-- https://github.com/mathiasbynens/dotfiles
+**Project scaffolding:**
+- One pick per category — no "it depends"
+- Agent-first — all configs work with Claude, Cursor, Gemini
+- Start minimal — add tools when you need them, not before

@@ -42,12 +42,35 @@ Phase 3 - SCALE / SPECIAL
 
 ## Framework & Build
 
+**Pick based on use case:**
+
+| Use Case | Framework | Notes |
+|----------|-----------|-------|
+| Full-stack web app | SvelteKit 2 | SSR, API routes, forms, auth |
+| Content site / blog | Astro | Content collections, islands, MDX, static-first |
+| Marketing / landing | Astro | Or SvelteKit with static adapter |
+| Dashboard / SaaS | SvelteKit 2 | Better for highly interactive UIs |
+
+### SvelteKit (Full-Stack Apps)
+
 | Category | Choice | Why Not Alternatives |
 |----------|--------|---------------------|
 | **Framework** | SvelteKit 2 | Next.js is React (more boilerplate); Nuxt is Vue (less type-safe). SvelteKit is simpler, faster, better DX. |
 | **UI Framework** | Svelte 5 | React has hooks complexity; Vue has Options/Composition duality. Svelte 5 runes are intuitive and performant. |
 | **Build** | Vite | Built into SvelteKit. Webpack is slow; Turbopack is React-only. |
 | **Adapter** | svelte-adapter-bun | Native Bun integration for production. |
+
+### Astro (Content Sites)
+
+| Category | Choice | Why Not Alternatives |
+|----------|--------|---------------------|
+| **Framework** | Astro 4/5 | Zero JS by default, content collections, islands architecture. Perfect for blogs, docs, marketing. |
+| **UI Components** | Svelte (via @astrojs/svelte) | Use Svelte for interactive islands. React/Vue also supported but Svelte is lighter. |
+| **Content** | MDX (@astrojs/mdx) | Components in Markdown. Or plain Markdown for simple content. |
+| **Build** | Vite | Built into Astro. |
+| **Adapter** | @astrojs/cloudflare | Or @astrojs/node, @astrojs/vercel based on deployment target. |
+
+> **When to use Astro over SvelteKit**: Content-heavy sites (blogs, docs, portfolios) where most pages are static. Astro's content collections and zero-JS default are ideal. Add Svelte components for interactive islands.
 
 ---
 
@@ -200,6 +223,7 @@ Phase 3 - SCALE / SPECIAL
   "bun": ">=1.0.0",
   "svelte": ">=5.0.0",
   "sveltekit": ">=2.0.0",
+  "astro": ">=4.0.0",
   "tailwindcss": ">=4.0.0",
   "drizzle-orm": ">=0.39.0",
   "biome": ">=1.9.0"
@@ -208,14 +232,24 @@ Phase 3 - SCALE / SPECIAL
 
 ## Critical Notes
 
+### SvelteKit
 1. **Bun Adapter**: Use `svelte-adapter-bun` v1.0+ (recently rewritten, actively maintained)
 2. **Tailwind v4**: Plugin order matters - `tailwindcss()` BEFORE `sveltekit()` in vite.config
 3. **Dev Server**: Run with `bun --bun run dev` to use Bun runtime (not Node fallback)
 4. **Svelte 5**: Uses runes (`$state`, `$derived`, `$effect`) - not legacy `$:` syntax
+
+### Astro
+1. **Content Collections**: Define schemas in `src/content/config.ts` with Zod
+2. **Islands**: Use `client:load`, `client:idle`, `client:visible` directives for interactive components
+3. **Static vs SSR**: Use `export const prerender = true/false` per-page, or set `output: 'static'|'server'|'hybrid'` in config
+4. **Svelte in Astro**: Add `@astrojs/svelte` integration for interactive islands
+
+### General
 5. **Start minimal**: Don't add DuckDB, Tauri, or analytics until you need them
 
 ## Quick Reference: What to Install When
 
+### SvelteKit Projects
 | Project Type | Core Dependencies |
 |-------------|-------------------|
 | Landing Page | `sveltekit`, `tailwindcss`, `biome` |
@@ -227,3 +261,22 @@ Phase 3 - SCALE / SPECIAL
 | + Client Analytics | add `duckdb-wasm` (rare) |
 | Desktop App | add `tauri` (only if needed) |
 | SaaS | add `stripe` |
+
+### Astro Projects
+| Project Type | Core Dependencies |
+|-------------|-------------------|
+| Blog / Portfolio | `astro`, `@astrojs/mdx`, `@astrojs/sitemap`, `tailwindcss`, `biome` |
+| + Interactive UI | add `@astrojs/svelte`, `svelte` |
+| + RSS Feed | add `@astrojs/rss` |
+| + Image Optimization | add `sharp` (usually included) |
+| + Search | add `pagefind` (static) or `meilisearch` (dynamic) |
+| + CMS | add `@astrojs/db` or integrate with headless CMS |
+| Docs Site | use Starlight (`@astrojs/starlight`) |
+
+### Deployment Adapters
+| Target | SvelteKit | Astro |
+|--------|-----------|-------|
+| Cloudflare | `@sveltejs/adapter-cloudflare` | `@astrojs/cloudflare` |
+| Vercel | `@sveltejs/adapter-vercel` | `@astrojs/vercel` |
+| Node/Bun | `svelte-adapter-bun` | `@astrojs/node` |
+| Static | `@sveltejs/adapter-static` | `output: 'static'` (default) |

@@ -76,7 +76,7 @@ What Gets Added (won't overwrite existing files):
   AGENTS.md           # Symlinked from recipe
   PROJECT_BRIEF.md    # Template for you to fill in
   .agents/            # Working files directory
-  .decisions/         # Architecture decisions directory
+  .architecture/         # Architecture decisions directory
 
 This script is safe to run multiple times - it won't overwrite existing files.
 EOF
@@ -182,19 +182,19 @@ Use date-prefixed names: `YYYY-MM-DD-description.md`
 
 ---
 
-**Note**: Architecture decisions go in `.decisions/adr/`, not here.
+**Note**: Architecture decisions go in `.architecture/adr/`, not here.
 EOF
 fi
 
-# Create .decisions directory structure
-if [[ -d ".decisions" ]]; then
-    print_skip ".decisions/"
+# Create .architecture directory structure
+if [[ -d ".architecture" ]]; then
+    print_skip ".architecture/"
 else
-    print_step "Creating .decisions/ directory"
-    mkdir -p ".decisions/adr"
+    print_step "Creating .architecture/ directory"
+    mkdir -p ".architecture/adr"
 
     # Create README
-    cat > ".decisions/README.md" << 'EOF'
+    cat > ".architecture/README.md" << 'EOF'
 # Decision History (Layer 2)
 
 This directory contains versioned Architecture Decision Records (ADRs).
@@ -202,7 +202,7 @@ This directory contains versioned Architecture Decision Records (ADRs).
 ## Structure
 
 ```
-.decisions/
+.architecture/
 ├── adr/           # Architecture Decision Records
 │   └── 0001-*.md  # Numbered ADRs
 └── CHANGELOG.md   # Timeline of decisions
@@ -217,7 +217,7 @@ This directory contains versioned Architecture Decision Records (ADRs).
 EOF
 
     # Create ADR index
-    cat > ".decisions/adr/_index.md" << 'EOF'
+    cat > ".architecture/adr/_index.md" << 'EOF'
 # Architecture Decision Records
 
 | ADR | Title | Status | Date |
@@ -251,7 +251,7 @@ echo -e "${BLUE}What was added:${NC}"
 echo "  - AGENTS.md        → Instructions for AI coding agents"
 echo "  - PROJECT_BRIEF.md → Your project description (edit this!)"
 echo "  - .agents/         → Working files (gitignored)"
-echo "  - .decisions/      → Architecture decisions (versioned)"
+echo "  - .architecture/      → Architecture decisions (versioned)"
 
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
