@@ -205,8 +205,8 @@ dev_apps=(
 
 social_apps=(
     spotify
-    zoom
     slack
+    # zoom  # just use the web client, tired of this causing the "microphone" active indicator.
     # discord
     # whatsapp
     # super-productivity
