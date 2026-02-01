@@ -1,6 +1,6 @@
 # Project Memory & Decision Organization
 
-**Philosophy**: Maintain a clear, layered system that distinguishes current state from historical evolution, and human decisions from AI suggestions.
+**Philosophy**: Maintain a clear, layered system that distinguishes current state from historical evolution, with attribution for context—not to create rules that can never be questioned.
 
 > **Key Insight**: The best project memory files are hand-curated, ~300-500 lines max.
 > Auto-generated documentation becomes "balls of mud." Quality over quantity.
@@ -13,20 +13,25 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │ Layer 1: CURRENT STATE (Living, curated)                           │
 │ "What is true right now?"                                          │
-│ ├── AGENTS.md / CLAUDE.md (300-500 lines, updated weekly)         │
-│ └── PROJECT_BRIEF.md (project-specific context)                    │
+│ ├── AGENTS.md (300-500 lines, project instructions for everyone)   │
+│ └── PROJECT_BRIEF.md (what we're building, context)                │
 ├─────────────────────────────────────────────────────────────────────┤
-│ Layer 2: DECISION HISTORY (Immutable, append-only)                 │
-│ "Why did we decide this? What changed?"                            │
-│ ├── decisions/adr/*.md (Architecture Decision Records)             │
-│ └── decisions/CHANGELOG.md (timeline with context)                 │
+│ Layer 2: DECISION HISTORY (Append-only, evolvable)                 │
+│ "Why did we decide this? How has thinking evolved?"                │
+│ ├── .decisions/adr/*.md (Architecture Decision Records)            │
+│ └── .decisions/CHANGELOG.md (timeline with context)                │
 ├─────────────────────────────────────────────────────────────────────┤
-│ Layer 3: SESSION CONTEXT (Ephemeral, personal)                     │
+│ Layer 3: WORKING CONTEXT (Ephemeral, gitignored)                   │
 │ "What am I working on right now?"                                  │
-│ ├── .agents/scratch/* (temporary work files)                       │
-│ └── .agents/sessions/* (conversation logs, gitignored)             │
+│ ├── .agents/plans/* (implementation plans)                         │
+│ ├── .agents/research/* (investigation notes)                       │
+│ └── .agents/sessions/* (conversation logs)                         │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+### Naming
+
+`AGENTS.md` is the cross-platform convention that works with Claude Code, Cursor, Gemini, ChatGPT, and others. Think of it as **project instructions for everyone**—humans and AI alike.
 
 ---
 
@@ -35,10 +40,10 @@
 ```
 your-project/
 │
-├── AGENTS.md                      # Layer 1: Current state (300-500 lines)
-├── PROJECT_BRIEF.md               # Layer 1: Project-specific context
+├── AGENTS.md                      # Layer 1: Project instructions (for humans + AI)
+├── PROJECT_BRIEF.md               # Layer 1: What we're building
 │
-├── decisions/                     # Layer 2: Decision history
+├── .decisions/                    # Layer 2: Decision history (versioned)
 │   ├── adr/                       # Architecture Decision Records
 │   │   ├── 0001-database-choice.md
 │   │   ├── 0002-api-design.md
@@ -48,39 +53,65 @@ your-project/
 │   ├── CHANGELOG.md               # Timeline of decisions with context
 │   └── README.md                  # How decisions are made here
 │
-├── .agents/                       # Layer 3: Session/working memory
+├── .agents/                       # Layer 3: Working memory (gitignored)
 │   ├── plans/                     # Implementation plans (date-prefixed)
 │   ├── research/                  # Investigation notes
-│   ├── scratch/                   # Temporary work files
-│   ├── sessions/                  # Conversation logs (gitignored)
-│   └── prompts/                   # Key prompts that led to decisions
+│   ├── prompts/                   # Key prompts that led to decisions
+│   └── sessions/                  # Conversation logs
 │
-└── .gitignore                     # Ignore .agents/sessions/, *.local.md
+└── .gitignore
+```
+
+### What Gets Versioned
+
+```gitignore
+# .gitignore
+
+# Working memory (ephemeral)
+.agents/
+
+# Keep these versioned:
+# .decisions/        (decision history)
+# AGENTS.md          (project instructions)
+# PROJECT_BRIEF.md   (project context)
 ```
 
 ---
 
-## Attribution: Human vs AI Decisions
+## Attribution: Understanding Decision Origins
 
-### The Problem
+### Why Track Attribution?
 
-Without attribution, you lose track of:
-- Which decisions were deliberate human choices (durable)
-- Which decisions were AI suggestions (inspectable, challengeable)
-- The reasoning chain that led to the current state
+Attribution isn't about creating untouchable rules—it's about **context**:
+- Understanding the reasoning behind decisions
+- Knowing when to seek input before changing something
+- Recognizing assumptions that may need validation
 
-### The Solution: Decision Attribution Tags
+**Everything is challengeable.** Attribution just helps you know who to involve in the conversation.
 
-Use these tags consistently in ADRs, CHANGELOG, and commit messages:
+### Attribution Tags
+
+Use these to provide context, not to create hierarchy:
 
 ```markdown
 ## Attribution Tags
 
-👤 HUMAN       - Explicit human decision, treat as durable
-🤖 AI-SUGGESTED - AI proposed this, human approved
-🤖→👤 AI-REFINED  - AI explored options, human made final call
-⚠️ ASSUMED     - Implicit assumption, needs validation
+👤 HUMAN       - Human made this call (involve them before changing)
+🤖 AI-SUGGESTED - AI proposed, human approved (feel free to revisit)
+🤖→👤 AI-REFINED  - AI explored, human decided (check reasoning in ADR)
+⚠️ ASSUMED     - Implicit assumption (actively validate)
 ```
+
+### How Attribution Affects Workflow
+
+| Tag | What It Means | Before Changing |
+|-----|---------------|-----------------|
+| 👤 HUMAN | Someone thought carefully about this | Loop them in, understand context |
+| 🤖 AI-SUGGESTED | AI's best guess at the time | Feel free to propose alternatives |
+| 🤖→👤 AI-REFINED | Collaborative decision | Review the ADR reasoning |
+| ⚠️ ASSUMED | Nobody explicitly decided | Validate, then decide properly |
+
+**Note**: "Involve them" doesn't mean "get permission"—it means "benefit from their context before changing direction."
 
 ### Example ADR with Attribution
 
@@ -134,9 +165,9 @@ We will use Better Auth for authentication because [...]
 |----------|-------|----------------|
 | `AGENTS.md` | Curated | Edit in place, keep current |
 | `PROJECT_BRIEF.md` | Curated | Edit in place, keep current |
-| `decisions/adr/*.md` | Immutable | Never edit, only supersede |
-| `decisions/CHANGELOG.md` | Append-only | Add entries, never remove |
-| `.agents/scratch/*` | Ephemeral | Delete when done |
+| `.decisions/adr/*.md` | Append-only | Don't edit, supersede instead |
+| `.decisions/CHANGELOG.md` | Append-only | Add entries, never remove |
+| `.agents/*` | Ephemeral | Delete when done |
 
 **The rule**: Layer 1 is edited. Layer 2 is appended. Layer 3 is deleted.
 
@@ -200,28 +231,37 @@ When a decision changes:
 
 ---
 
-## AI Challenge Protocol
+## Working With Decisions
 
-When AI encounters a decision marked `🤖 AI-SUGGESTED` or `⚠️ ASSUMED`:
+### For Everyone (Human or AI)
+
+All decisions can be revisited. Attribution helps you work effectively:
 
 ```markdown
-## AI Behavior for Decision Types
+## When Working With Existing Decisions
 
 ### 👤 HUMAN Decisions
-- Treat as durable constraints
-- Do not challenge unless explicitly asked
-- Ask before proposing alternatives
+- Understand the context before proposing changes
+- The person who made it likely has context you don't
+- Propose alternatives, don't just override
 
 ### 🤖 AI-SUGGESTED Decisions
-- Can propose alternatives if context has changed
-- Frame as: "This was AI-suggested. Given [new context], consider..."
-- Seek human approval for changes
+- These were best guesses—feel free to improve
+- Context may have changed since the suggestion
+- No need for ceremony to revisit these
 
 ### ⚠️ ASSUMED Decisions
-- Actively flag for review when relevant
-- "This appears to be an assumption. Should we validate?"
-- Encourage human confirmation
+- These need attention—nobody explicitly decided
+- Great opportunity to make a real decision
+- Convert to 👤 or 🤖→👤 once validated
 ```
+
+### Healthy Decision Culture
+
+- **No decision is sacred**—but decisions have context
+- **Challenge respectfully**—understand before proposing alternatives
+- **Document changes**—future you will thank present you
+- **Assumptions decay**—revisit ⚠️ items periodically
 
 ---
 
@@ -234,16 +274,16 @@ When AI encounters a decision marked `🤖 AI-SUGGESTED` or `⚠️ ASSUMED`:
 cat AGENTS.md | grep -A5 "## Architecture"
 
 # 2. Check relevant decisions
-ls decisions/adr/ | grep -i "auth\|api"
+ls .decisions/adr/ | grep -i "auth\|api"
 
 # 3. Create a plan
-# AI creates .agents/plans/2026-02-01-feature-x.md
+# Create .agents/plans/2026-02-01-feature-x.md
 
 # 4. If architectural decision needed, draft ADR
-# AI creates decisions/adr/0006-feature-x-approach.md (status: proposed)
+# Create .decisions/adr/0006-feature-x-approach.md (status: proposed)
 
-# 5. Human reviews and approves
-# Change status to "accepted", add 👤 tag
+# 5. Review and approve
+# Change status to "accepted", add attribution
 ```
 
 ### Resolving Confusion About Current State
@@ -251,18 +291,18 @@ ls decisions/adr/ | grep -i "auth\|api"
 ```bash
 # If confused about what's current:
 # 1. AGENTS.md is the source of truth for current state
-# 2. decisions/CHANGELOG.md shows the evolution
+# 2. .decisions/CHANGELOG.md shows the evolution
 # 3. ADRs explain the "why" behind each decision
 ```
 
-### Onboarding a New Developer (or AI)
+### Onboarding (Human or AI)
 
 ```markdown
 ## Read in Order
 1. PROJECT_BRIEF.md (what we're building)
 2. AGENTS.md (how we build it)
-3. decisions/_index.md (key decisions)
-4. decisions/CHANGELOG.md (recent changes)
+3. .decisions/_index.md (key decisions)
+4. .decisions/CHANGELOG.md (recent changes)
 ```
 
 ---
@@ -299,9 +339,9 @@ ls decisions/adr/ | grep -i "auth\|api"
 
 ## How to Read This Log
 
-- 👤 HUMAN: Explicit human decision, durable
+- 👤 HUMAN: Human made this call
 - 🤖 AI-SUGGESTED: AI proposed, human approved
-- 🤖→👤 AI-REFINED: AI explored, human decided
+- 🤖→👤 AI-REFINED: Collaborative decision
 - ⚠️ ASSUMED: Needs validation
 ```
 
@@ -366,8 +406,8 @@ Chosen option: **Option B** because [justification]
 | Question | Where to Look |
 |----------|---------------|
 | What's the current approach? | `AGENTS.md` |
-| Why did we choose this? | `decisions/adr/XXXX-*.md` |
-| What changed recently? | `decisions/CHANGELOG.md` |
+| Why did we choose this? | `.decisions/adr/XXXX-*.md` |
+| What changed recently? | `.decisions/CHANGELOG.md` |
 | What are we working on now? | `.agents/plans/` |
-| Was this a human or AI decision? | Check attribution tags |
-| Can I change this? | 👤 = ask first, 🤖 = propose alternative |
+| Who made this decision? | Check attribution tags |
+| Can I change this? | Yes—but loop in people with context first |

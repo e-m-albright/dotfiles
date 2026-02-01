@@ -640,9 +640,10 @@ chore(deps): bump fastapi to 0.115.0
 ## Agent Output Rules
 
 1. **All artifacts go in `.agents/`** — Never create random files in project root
-2. **Date-prefix plans** — `2024-01-15-feature-name.md`
+2. **Date-prefix plans** — `YYYY-MM-DD-feature-name.md`
 3. **Update .agents/README.md** — Keep index of all agent-generated files
-4. **Clean scratch files** — Delete when no longer needed
+4. **Clean working files** — Delete when no longer needed
+5. **Architecture decisions** — Go in `.decisions/adr/`, not `.agents/`
 
 ---
 

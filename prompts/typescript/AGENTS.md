@@ -12,7 +12,7 @@ Runtime:     Bun (not Node)
 Framework:   SvelteKit 2 + Svelte 5 (runes)
 Styling:     Tailwind CSS v4
 Database:    Drizzle ORM + PostgreSQL
-Auth:        Lucia
+Auth:        Better Auth (or Lucia for lightweight)
 Testing:     Vitest + Playwright
 Linting:     Biome
 Tasks:       Just
@@ -395,11 +395,10 @@ refactor/db-drizzle
 ## Agent Output Rules
 
 1. **All artifacts go in `.agents/`** — Never create random files in project root
-2. **Date-prefix plans** — `2024-01-15-feature-name.md`
+2. **Date-prefix plans** — `YYYY-MM-DD-feature-name.md`
 3. **Update .agents/README.md** — Keep index of all agent-generated files
-4. **Clean scratch files** — Delete when no longer needed
-
-See `@dotfiles/prompts/shared/AGENT_OUTPUT.md` for full details.
+4. **Clean working files** — Delete when no longer needed
+5. **Architecture decisions** — Go in `.decisions/adr/`, not `.agents/`
 
 ---
 

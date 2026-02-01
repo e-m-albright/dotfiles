@@ -78,8 +78,10 @@ What Gets Created:
   <project-name>/
   ├── AGENTS.md           # Symlinked from recipe (for AI agents)
   ├── PROJECT_BRIEF.md    # Template for you to fill in
-  ├── .agents/            # Directory for agent output
-  │   └── README.md
+  ├── .agents/            # Working files (gitignored)
+  │   └── plans/, research/, prompts/, sessions/
+  ├── .decisions/         # Architecture decisions (versioned)
+  │   └── adr/, README.md
   ├── .gitignore          # Copied from recipe
   ├── justfile            # Copied from recipe
   └── [other templates]   # Recipe-specific files
@@ -153,17 +155,22 @@ cp -r "$RECIPE_DIR/templates/".* "$PROJECT_PATH/" 2>/dev/null || true
 print_step "Symlinking AGENTS.md"
 ln -s "$RECIPE_DIR/AGENTS.md" "$PROJECT_PATH/AGENTS.md"
 
-# Create .agents directory
+# Create .agents directory (Layer 3: Working Context)
 print_step "Creating .agents/ directory"
 mkdir -p "$PROJECT_PATH/.agents/plans"
 mkdir -p "$PROJECT_PATH/.agents/research"
-mkdir -p "$PROJECT_PATH/.agents/scratch"
+mkdir -p "$PROJECT_PATH/.agents/prompts"
+mkdir -p "$PROJECT_PATH/.agents/sessions"
+
+# Create .decisions directory (Layer 2: Decision History)
+print_step "Creating .decisions/ directory"
+mkdir -p "$PROJECT_PATH/.decisions/adr"
 
 # Create .agents/README.md
 cat > "$PROJECT_PATH/.agents/README.md" << 'EOF'
-# Agent Artifacts
+# Working Files (Layer 3)
 
-This directory contains AI agent-generated artifacts.
+This directory contains ephemeral agent-generated artifacts. Gitignored by default.
 
 ## Structure
 
@@ -171,8 +178,8 @@ This directory contains AI agent-generated artifacts.
 .agents/
 ├── plans/      # Implementation plans
 ├── research/   # Investigation notes
-├── scratch/    # Temporary work files
-└── sessions/   # Conversation logs (optional)
+├── prompts/    # Key prompts that led to decisions
+└── sessions/   # Conversation logs
 ```
 
 ## Naming Convention
@@ -190,6 +197,52 @@ Use date-prefixed names: `YYYY-MM-DD-description.md`
 ### Research
 
 (none yet)
+
+---
+
+**Note**: Architecture decisions go in `.decisions/adr/`, not here.
+See `prompts/shared/PROJECT_MEMORY.md` for the full three-layer system.
+EOF
+
+# Create .decisions/README.md
+cat > "$PROJECT_PATH/.decisions/README.md" << 'EOF'
+# Decision History (Layer 2)
+
+This directory contains versioned Architecture Decision Records (ADRs).
+
+## Structure
+
+```
+.decisions/
+├── adr/           # Architecture Decision Records
+│   └── 0001-*.md  # Numbered ADRs
+└── CHANGELOG.md   # Timeline of decisions
+```
+
+## Creating an ADR
+
+```bash
+# Create a new ADR
+touch .decisions/adr/0001-your-decision.md
+```
+
+Use the template from `prompts/shared/PROJECT_MEMORY.md`.
+
+## Attribution Tags
+
+- 👤 HUMAN: Human made this call
+- 🤖 AI-SUGGESTED: AI proposed, human approved
+- 🤖→👤 AI-REFINED: AI explored, human decided
+- ⚠️ ASSUMED: Nobody explicitly decided (validate this)
+EOF
+
+# Create .decisions/adr/_index.md
+cat > "$PROJECT_PATH/.decisions/adr/_index.md" << 'EOF'
+# Architecture Decision Records
+
+| ADR | Title | Status | Date |
+|-----|-------|--------|------|
+| — | (none yet) | — | — |
 EOF
 
 # Copy PROJECT_BRIEF.md template
@@ -274,8 +327,13 @@ case "$RECIPE" in
 esac
 
 echo ""
-echo -e "${BLUE}Documentation:${NC}"
-echo "  - AGENTS.md      → Instructions for AI coding agents"
+echo -e "${BLUE}Project structure:${NC}"
+echo "  - AGENTS.md        → Instructions for AI coding agents"
 echo "  - PROJECT_BRIEF.md → Your project description (edit this!)"
-echo "  - .agents/       → Where agents store their work"
+echo "  - .agents/         → Working files (gitignored)"
+echo "  - .decisions/      → Architecture decisions (versioned)"
+echo ""
+echo -e "${BLUE}Start building with Claude Code:${NC}"
+echo ""
+echo '  claude "Read AGENTS.md and PROJECT_BRIEF.md. Create a plan for the first feature."'
 echo ""

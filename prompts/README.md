@@ -83,21 +83,67 @@ recipe-name/
 ### New Project
 
 ```bash
-# From your dotfiles
-recipe typescript my-new-app
-
-# Or directly
-~/dotfiles/prompts/init.sh python my-api
+# Create a new project from a recipe
+~/dotfiles/prompts/init.sh typescript my-new-app
+~/dotfiles/prompts/init.sh python my-api ~/projects
+~/dotfiles/prompts/init.sh golang my-service
 ```
 
 ### Existing Project
 
-```bash
-# Copy the AGENTS.md to your project root
-cp ~/dotfiles/prompts/typescript/AGENTS.md ./AGENTS.md
+For established projects, use the seed script to add the project organization structure:
 
-# Copy specific configs as needed
-cp ~/dotfiles/prompts/typescript/templates/biome.json .
+```bash
+# Seed an existing project with our structure
+~/dotfiles/prompts/seed.sh typescript /path/to/existing-project
+```
+
+This adds:
+- `AGENTS.md` → Symlinked from the recipe
+- `PROJECT_BRIEF.md` → Template to fill in
+- `.agents/` → Working files directory (gitignored)
+- `.decisions/` → Architecture decision records (versioned)
+
+Then use Claude Code to bring the project into conformance:
+
+```bash
+cd /path/to/existing-project
+
+# 1. Fill out the project brief first
+# Edit PROJECT_BRIEF.md to describe your project
+
+# 2. Audit current state against our guidelines
+claude "Read AGENTS.md and audit this codebase. Create a report in .agents/research/ \
+listing: (1) what already conforms to our guidelines, (2) what needs to change, \
+(3) recommended priority order for changes. Don't make changes yet."
+
+# 3. Create a conformance plan
+claude "Based on the audit, create a phased plan in .agents/plans/ to bring this \
+project into conformance. Each phase should be a safe, incremental change. \
+Include ADRs for any significant architectural decisions."
+
+# 4. Execute the plan incrementally
+claude "Execute phase 1 of the conformance plan. After each change, run tests \
+and verify nothing broke before proceeding."
+```
+
+#### Manual Setup (Alternative)
+
+If you prefer to set up manually:
+
+```bash
+# Copy AGENTS.md (or symlink it)
+ln -s ~/dotfiles/prompts/typescript/AGENTS.md ./AGENTS.md
+
+# Create the directory structure
+mkdir -p .agents/{plans,research,prompts,sessions}
+mkdir -p .decisions/adr
+
+# Copy the project brief template
+cp ~/dotfiles/prompts/templates/PROJECT_BRIEF.md .
+
+# Add to .gitignore
+echo ".agents/" >> .gitignore
 ```
 
 ## AI Development Tools
@@ -149,48 +195,47 @@ See `shared/PROJECT_MEMORY.md` for the complete decision organization system.
 
 ```
 Layer 1: CURRENT STATE (Living, curated, ~300-500 lines)
-├── AGENTS.md             # How we build (tech stack, patterns)
+├── AGENTS.md             # Project instructions (for humans + AI)
 └── PROJECT_BRIEF.md      # What we're building (context)
 
-Layer 2: DECISION HISTORY (Immutable, append-only)
-├── decisions/adr/*.md    # Architecture Decision Records
-└── decisions/CHANGELOG.md # Timeline with attribution
+Layer 2: DECISION HISTORY (Append-only, evolvable)
+├── .decisions/adr/*.md   # Architecture Decision Records
+└── .decisions/CHANGELOG.md # Timeline with attribution
 
-Layer 3: SESSION CONTEXT (Ephemeral, gitignored)
+Layer 3: WORKING CONTEXT (Ephemeral, gitignored)
 ├── .agents/plans/        # Implementation plans
 ├── .agents/research/     # Investigation notes
-├── .agents/scratch/      # Temporary work
 └── .agents/sessions/     # Conversation logs
 ```
 
+`AGENTS.md` is the cross-platform convention that works with Claude, Cursor, Gemini, ChatGPT, and others. Think of it as **project instructions for everyone**—humans and AI alike.
+
 ### Decision Attribution
 
-Track who made decisions and how:
+Attribution provides context, not hierarchy. Everything is challengeable.
 
-| Tag | Meaning | Durability |
-|-----|---------|------------|
-| 👤 HUMAN | Explicit human decision | Durable, don't challenge |
-| 🤖 AI-SUGGESTED | AI proposed, human approved | Inspectable, can revisit |
-| 🤖→👤 AI-REFINED | AI explored, human decided | Hybrid attribution |
-| ⚠️ ASSUMED | Implicit assumption | Flag for validation |
+| Tag | Meaning | Before Changing |
+|-----|---------|-----------------|
+| 👤 HUMAN | Human made this call | Loop them in for context |
+| 🤖 AI-SUGGESTED | AI proposed, human approved | Feel free to revisit |
+| 🤖→👤 AI-REFINED | AI explored, human decided | Review the reasoning |
+| ⚠️ ASSUMED | Nobody explicitly decided | Validate, then decide |
 
 ### Directory Structure
 
 ```
 your-project/
-├── AGENTS.md                    # Layer 1: Current state
+├── AGENTS.md                    # Layer 1: Project instructions
 ├── PROJECT_BRIEF.md             # Layer 1: Project context
-├── decisions/                   # Layer 2: Decision history
-│   ├── adr/                     # Architecture Decision Records
+├── .decisions/                  # Layer 2: Decision history (versioned)
+│   ├── adr/
 │   │   ├── 0001-database.md
 │   │   └── _index.md
-│   └── CHANGELOG.md             # Decision timeline
-├── .agents/                     # Layer 3: Session memory (gitignored)
-│   ├── plans/
-│   ├── research/
-│   ├── scratch/
-│   └── sessions/
-└── ...
+│   └── CHANGELOG.md
+└── .agents/                     # Layer 3: Working memory (gitignored)
+    ├── plans/
+    ├── research/
+    └── sessions/
 ```
 
 ## Shared Infrastructure

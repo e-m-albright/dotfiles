@@ -1,8 +1,8 @@
-# Agent Output Organization
+# Working Files & Agent Artifacts
 
 ## Directory: `.agents/`
 
-All agent-generated artifacts MUST be placed in the `.agents/` directory at the project root. This keeps the main codebase clean and provides a clear audit trail of agent work.
+Working files, plans, and research go in `.agents/` at the project root. This keeps the main codebase clean while preserving useful context. The `.agents/` convention works across Claude Code, Cursor, Gemini, ChatGPT, and other AI tools.
 
 > **See also**: `PROJECT_MEMORY.md` for the full three-layer decision organization system.
 
@@ -16,73 +16,79 @@ All agent-generated artifacts MUST be placed in the `.agents/` directory at the 
 ├── research/                 # Investigation and analysis notes
 │   ├── YYYY-MM-DD-topic.md
 │   └── ...
-├── scratch/                  # Temporary work files, experiments
-│   └── ...
-├── sessions/                 # Conversation logs (gitignored)
-│   └── ...
 ├── prompts/                  # Key prompts that led to decisions
 │   ├── feature-auth.md
 │   └── ...
-└── README.md                 # Auto-generated index of contents
+├── sessions/                 # Conversation logs
+│   └── ...
+└── README.md                 # Index of contents
 ```
 
 ### Rules
 
-1. **Never pollute the main tree** — Don't create random markdown files in `src/`, `docs/`, or project root
+1. **Keep the main tree clean** — Working files go in `.agents/`, not scattered around
 2. **Date-prefix files** — Use `YYYY-MM-DD-description.md` for chronological sorting
-3. **Clean up scratch** — Delete scratch files after they're no longer needed
-4. **Plans are versioned** — Create new version files rather than editing approved plans
-5. **Attribution required** — Mark AI-generated content with attribution tags
+3. **Clean up when done** — Delete scratch files after they're incorporated or abandoned
+4. **Version plans** — Create new version files rather than editing approved plans
+5. **Include attribution** — Note who contributed what for context
 
 ### Attribution Tags
 
-Use these tags in all agent-generated content:
+Attribution provides context for future readers (human or AI):
 
-| Tag | Meaning | Usage |
-|-----|---------|-------|
-| 👤 HUMAN | Human-authored | Durable decisions, don't challenge |
-| 🤖 AI-SUGGESTED | AI proposed | Inspectable, can revisit with new context |
-| 🤖→👤 AI-REFINED | AI explored, human decided | Hybrid attribution |
-| ⚠️ ASSUMED | Implicit assumption | Flag for human validation |
+| Tag | Meaning | Context |
+|-----|---------|---------|
+| 👤 HUMAN | Human made this call | Loop them in before changing |
+| 🤖 AI-SUGGESTED | AI proposed | Feel free to revisit |
+| 🤖→👤 AI-REFINED | AI explored, human decided | Check the reasoning |
+| ⚠️ ASSUMED | Nobody explicitly decided | Validate this |
+
+**Note**: Attribution isn't about creating untouchable rules—it's about knowing who has context.
 
 ### What Goes Where
 
 | Content Type | Location | Persistence |
 |-------------|----------|-------------|
-| Implementation plan | `.agents/plans/` | Versioned |
-| API research | `.agents/research/` | Versioned |
-| Code experiments | `.agents/scratch/` | Delete when done |
-| Debug notes | `.agents/scratch/` | Delete when done |
+| Implementation plan | `.agents/plans/` | Gitignored (or version if useful) |
+| API research | `.agents/research/` | Gitignored (or version if useful) |
+| Key prompts | `.agents/prompts/` | Gitignored (or version if useful) |
+| Code experiments | `.agents/` | Delete when done |
+| Debug notes | `.agents/` | Delete when done |
 | Conversation logs | `.agents/sessions/` | Gitignored |
-| Key prompts | `.agents/prompts/` | Versioned (optional) |
-| **Architecture decisions** | `decisions/adr/` | Permanent (Layer 2) |
-| **Decision timeline** | `decisions/CHANGELOG.md` | Permanent (Layer 2) |
+| **Architecture decisions** | `.decisions/adr/` | Versioned (Layer 2) |
+| **Decision timeline** | `.decisions/CHANGELOG.md` | Versioned (Layer 2) |
 
 ### Where Architecture Decisions Go
 
-**Important**: Architecture Decision Records (ADRs) do NOT go in `.agents/`. They go in `decisions/adr/` at the project root because they are Layer 2 (permanent history), not Layer 3 (ephemeral session data).
+**Important**: Architecture Decision Records (ADRs) go in `.decisions/adr/`, not `.agents/`. They're part of project history (Layer 2), not working files (Layer 3).
 
 ```
 # Wrong
 .agents/plans/2024-01-15-adr-database.md
 
 # Right
-decisions/adr/0001-database-choice.md
+.decisions/adr/0001-database-choice.md
 ```
 
 ### .gitignore Entry
 
-Add to your `.gitignore`:
-
 ```gitignore
-# Agent session artifacts (ephemeral)
-.agents/scratch/
-.agents/sessions/
+# Working files (ephemeral by default)
+.agents/
 
-# Keep these versioned:
-# .agents/plans/
-# .agents/research/
-# .agents/prompts/
+# Optionally version working files you want to keep:
+# !.agents/plans/
+# !.agents/research/
+```
+
+### What Gets Auto-Discovered
+
+Claude Code automatically loads `AGENTS.md` at project root. It does NOT auto-discover `.agents/` or `.decisions/`. Reference them in `AGENTS.md` if you want AI to know about them:
+
+```markdown
+## Project Organization
+- Working files: `.agents/`
+- Decision history: `.decisions/`
 ```
 
 ### Plan File Format
@@ -153,10 +159,10 @@ What are we trying to learn?
 
 ### Auto-Index
 
-When creating files in `.agents/`, update `.agents/README.md`:
+If you version `.agents/`, maintain a README:
 
 ```markdown
-# Agent Artifacts
+# Working Files
 
 Last updated: YYYY-MM-DD
 
@@ -167,7 +173,7 @@ Last updated: YYYY-MM-DD
 - [Topic](research/YYYY-MM-DD-topic.md) - 🤖 Brief description
 
 ## Key Prompts
-- [Auth exploration](prompts/auth-exploration.md) - Prompts that led to ADR-0005
+- [Auth exploration](prompts/auth-exploration.md) - Led to ADR-0005
 
 ## Archived
 - [Old Plan](plans/YYYY-MM-DD-old.md) - Superseded by [New Plan]
@@ -175,7 +181,7 @@ Last updated: YYYY-MM-DD
 
 ### Prompt Archive Format
 
-When a significant decision is made based on AI exploration, archive the key prompts:
+When a significant decision emerges from exploration, archive the key prompts:
 
 ```markdown
 # Prompts: {Decision Topic}
@@ -191,9 +197,19 @@ When a significant decision is made based on AI exploration, archive the key pro
 > "Given Better Auth, design the migration path from our current
 > custom auth. Zero downtime required."
 
-## Human Refinement
+## Human Input
 @evan: "Also need to support HIPAA compliance for healthcare clients."
 
-## Final Decision
-See ADR-000X for the decision outcome.
+## Outcome
+See ADR-000X for the decision.
 ```
+
+---
+
+## Summary
+
+| Directory | Purpose | Versioned | Auto-Discovered |
+|-----------|---------|-----------|-----------------|
+| `AGENTS.md` | Project instructions | Yes | Yes (Claude, Cursor, etc.) |
+| `.decisions/` | Decision history | Yes | No (reference in AGENTS.md) |
+| `.agents/` | Working files | No (gitignored) | No |
