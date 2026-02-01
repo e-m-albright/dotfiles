@@ -1,0 +1,60 @@
+# =============================================================================
+# Lefthook Configuration
+# =============================================================================
+# Git hooks powered by Lefthook (https://github.com/evilmartians/lefthook)
+# Faster than Husky, parallel execution, Go-based
+# =============================================================================
+
+# Run multiple hooks in parallel for speed
+parallel: true
+
+pre-commit:
+  parallel: true
+  commands:
+    # Lint and format staged files
+    biome:
+      glob: "*.{js,ts,jsx,tsx,json,svelte}"
+      run: bunx biome check --write --staged --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+    # Type check (runs on all files, not just staged)
+    typecheck:
+      glob: "*.{ts,tsx,svelte}"
+      run: bun run check
+
+    # Svelte-specific checks
+    svelte-check:
+      glob: "*.svelte"
+      run: bunx svelte-check --tsconfig ./tsconfig.json
+
+pre-push:
+  parallel: true
+  commands:
+    # Run tests before pushing
+    test:
+      run: bun test
+
+    # Ensure build succeeds
+    build:
+      run: bun run build
+
+# Optional: commit message validation
+commit-msg:
+  commands:
+    # Enforce conventional commits format
+    conventional:
+      run: |
+        commit_msg=$(cat {1})
+        if ! echo "$commit_msg" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+"; then
+          echo "Error: Commit message must follow Conventional Commits format"
+          echo "Examples:"
+          echo "  feat(auth): add OAuth2 login flow"
+          echo "  fix(api): handle null response"
+          echo "  docs: update README"
+          exit 1
+        fi
+
+# Skip hooks with LEFTHOOK=0 or --no-verify
+skip_output:
+  - meta
+  - summary

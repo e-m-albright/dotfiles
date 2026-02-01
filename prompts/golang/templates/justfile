@@ -1,0 +1,182 @@
+# =============================================================================
+# Justfile — Go Project
+# =============================================================================
+# Run `just` to see all available commands
+# =============================================================================
+
+# Default recipe: show help
+default:
+    @just --list
+
+# Binary name
+binary := "myapp"
+
+# -----------------------------------------------------------------------------
+# Development
+# -----------------------------------------------------------------------------
+
+# Start development server with hot reload
+dev:
+    air
+
+# Build the binary
+build:
+    go build -o bin/{{binary}} ./cmd/server
+
+# Run the binary
+run: build
+    ./bin/{{binary}}
+
+# Build for production (optimized)
+build-prod:
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/{{binary}} ./cmd/server
+
+# -----------------------------------------------------------------------------
+# Quality
+# -----------------------------------------------------------------------------
+
+# Run all checks
+check: lint test
+
+# Lint with golangci-lint
+lint:
+    golangci-lint run
+
+# Lint and fix (where possible)
+lint-fix:
+    golangci-lint run --fix
+
+# Format code
+fmt:
+    gofmt -w .
+    goimports -w .
+
+# Check formatting
+fmt-check:
+    @test -z "$(gofmt -l .)" || (echo "Files need formatting:" && gofmt -l . && exit 1)
+
+# Vet code
+vet:
+    go vet ./...
+
+# -----------------------------------------------------------------------------
+# Testing
+# -----------------------------------------------------------------------------
+
+# Run tests
+test:
+    go test ./...
+
+# Run tests with verbose output
+test-v:
+    go test -v ./...
+
+# Run tests with coverage
+test-cov:
+    go test -coverprofile=coverage.out ./...
+    go tool cover -html=coverage.out -o coverage.html
+    @echo "Coverage report: coverage.html"
+
+# Run tests with race detector
+test-race:
+    go test -race ./...
+
+# Run specific test
+test-filter pattern:
+    go test -v -run "{{pattern}}" ./...
+
+# Run integration tests
+test-integration:
+    go test -v -tags=integration ./tests/integration/...
+
+# -----------------------------------------------------------------------------
+# Database
+# -----------------------------------------------------------------------------
+
+# Run migrations up
+db-migrate:
+    migrate -path internal/db/migrations -database "${DATABASE_URL}" up
+
+# Run migrations down (one step)
+db-rollback:
+    migrate -path internal/db/migrations -database "${DATABASE_URL}" down 1
+
+# Create new migration
+db-new name:
+    migrate create -ext sql -dir internal/db/migrations -seq {{name}}
+
+# Generate sqlc code
+sqlc:
+    sqlc generate
+
+# Open database shell
+db-shell:
+    psql "${DATABASE_URL}"
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+
+# Tidy go.mod
+mod:
+    go mod tidy
+
+# Download dependencies
+download:
+    go mod download
+
+# Update all dependencies
+update:
+    go get -u ./...
+    go mod tidy
+
+# Verify dependencies
+verify:
+    go mod verify
+
+# -----------------------------------------------------------------------------
+# Code Generation
+# -----------------------------------------------------------------------------
+
+# Run all generators
+generate:
+    go generate ./...
+
+# Generate mocks (gomock)
+mocks:
+    go generate ./internal/...
+
+# -----------------------------------------------------------------------------
+# Utilities
+# -----------------------------------------------------------------------------
+
+# Clean build artifacts
+clean:
+    rm -rf bin/ tmp/ coverage.out coverage.html
+
+# Show outdated dependencies
+outdated:
+    go list -u -m all
+
+# Security audit
+audit:
+    govulncheck ./...
+
+# -----------------------------------------------------------------------------
+# Docker
+# -----------------------------------------------------------------------------
+
+# Build Docker image
+docker-build:
+    docker build -t {{binary}}:latest .
+
+# Run in Docker
+docker-run:
+    docker run -p 8080:8080 --env-file .env {{binary}}:latest
+
+# -----------------------------------------------------------------------------
+# CI/CD Helpers
+# -----------------------------------------------------------------------------
+
+# Run CI checks (what CI would run)
+ci: fmt-check lint test-race vet

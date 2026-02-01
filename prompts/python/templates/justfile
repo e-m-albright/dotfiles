@@ -1,0 +1,191 @@
+# =============================================================================
+# Justfile — Python/FastAPI Project
+# =============================================================================
+# Run `just` to see all available commands
+# =============================================================================
+
+# Default recipe: show help
+default:
+    @just --list
+
+# -----------------------------------------------------------------------------
+# Environment
+# -----------------------------------------------------------------------------
+
+# Install all dependencies
+install:
+    uv sync
+
+# Install with dev dependencies
+install-dev:
+    uv sync --dev
+
+# Install with ML dependencies
+install-ml:
+    uv sync --extra ml
+
+# Update dependencies
+update:
+    uv lock --upgrade
+
+# Add a dependency
+add *packages:
+    uv add {{packages}}
+
+# Add a dev dependency
+add-dev *packages:
+    uv add --dev {{packages}}
+
+# -----------------------------------------------------------------------------
+# Development
+# -----------------------------------------------------------------------------
+
+# Start development server
+dev:
+    uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Start with specific port
+dev-port port="8000":
+    uv run uvicorn app.main:app --reload --host 0.0.0.0 --port {{port}}
+
+# Open Python shell with project environment
+shell:
+    uv run python
+
+# Run arbitrary command in project environment
+run *args:
+    uv run {{args}}
+
+# -----------------------------------------------------------------------------
+# Quality
+# -----------------------------------------------------------------------------
+
+# Run all checks
+check: lint typecheck test
+
+# Lint with Ruff
+lint:
+    uv run ruff check .
+
+# Lint and fix
+lint-fix:
+    uv run ruff check --fix .
+
+# Format with Ruff
+format:
+    uv run ruff format .
+
+# Check formatting without fixing
+format-check:
+    uv run ruff format --check .
+
+# Type check with Pyright
+typecheck:
+    uv run pyright
+
+# -----------------------------------------------------------------------------
+# Testing
+# -----------------------------------------------------------------------------
+
+# Run tests
+test:
+    uv run pytest
+
+# Run tests with verbose output
+test-v:
+    uv run pytest -v
+
+# Run tests with coverage
+test-cov:
+    uv run pytest --cov --cov-report=html --cov-report=term-missing
+
+# Run tests in watch mode (requires pytest-watch)
+test-watch:
+    uv run ptw
+
+# Run specific test file or pattern
+test-filter pattern:
+    uv run pytest -k "{{pattern}}"
+
+# Run only fast tests (exclude slow markers)
+test-fast:
+    uv run pytest -m "not slow"
+
+# -----------------------------------------------------------------------------
+# Database
+# -----------------------------------------------------------------------------
+
+# Generate a new migration
+db-migrate message:
+    uv run alembic revision --autogenerate -m "{{message}}"
+
+# Run all pending migrations
+db-upgrade:
+    uv run alembic upgrade head
+
+# Rollback one migration
+db-downgrade:
+    uv run alembic downgrade -1
+
+# Show migration history
+db-history:
+    uv run alembic history
+
+# Show current migration
+db-current:
+    uv run alembic current
+
+# -----------------------------------------------------------------------------
+# Documentation
+# -----------------------------------------------------------------------------
+
+# Serve documentation locally (requires mkdocs)
+docs:
+    uv run mkdocs serve
+
+# Build documentation
+docs-build:
+    uv run mkdocs build
+
+# -----------------------------------------------------------------------------
+# Utilities
+# -----------------------------------------------------------------------------
+
+# Clean build artifacts and caches
+clean:
+    rm -rf .pytest_cache .ruff_cache .mypy_cache .coverage htmlcov dist build *.egg-info
+    find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+# Clean everything including venv
+clean-all: clean
+    rm -rf .venv
+
+# Generate requirements.txt (for deployment)
+requirements:
+    uv pip compile pyproject.toml -o requirements.txt
+
+# -----------------------------------------------------------------------------
+# CI/CD Helpers
+# -----------------------------------------------------------------------------
+
+# Run CI checks (what CI would run)
+ci: install-dev
+    just lint
+    just typecheck
+    just test-cov
+
+# Build for production
+build:
+    uv build
+
+# -----------------------------------------------------------------------------
+# Git Hooks
+# -----------------------------------------------------------------------------
+
+# Install git hooks
+hooks-install:
+    uv run lefthook install
+
+# Run pre-commit hooks manually
+hooks-run:
+    uv run lefthook run pre-commit

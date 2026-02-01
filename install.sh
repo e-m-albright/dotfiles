@@ -203,6 +203,15 @@ if command -v cursor >/dev/null 2>&1; then
     print_success "Cursor configured"
 fi
 
+# Prompts / Recipe Book
+print_header "📚 Prompts & Recipes"
+print_section "Recipe Book"
+# Make init script executable
+chmod +x "$DOTFILES_DIR/prompts/init.sh" 2>/dev/null || true
+# Add prompts/init.sh to PATH via symlink in bin
+ln -sf "$DOTFILES_DIR/prompts/init.sh" "$DOTFILES_DIR/bin/recipe"
+print_success "Recipe book configured (use 'recipe' command)"
+
 # Clear cache
 . "$DOTFILES_DIR/bin/dotfiles" clean
 

@@ -5,7 +5,7 @@ Opinionated Mac setup scripts + configs, optimized for a fast, clean dev machine
 ## What you get
 
 - **Shell**: Zsh + Oh My Zsh + a custom theme (`shell/amuse.zsh-theme`)
-- **Dev runtimes**: 
+- **Dev runtimes**:
   - **Rust**: `rustup` + Cargo
   - **Node.js**: `fnm` (Fast Node Manager) + Node LTS + Corepack (pnpm/yarn)
   - **Bun**: JavaScript runtime + package manager
@@ -17,6 +17,7 @@ Opinionated Mac setup scripts + configs, optimized for a fast, clean dev machine
   - Editor-specific settings and Cursor AI rules
 - **Git**: `.gitconfig` + `.gitignore_global`
 - **DX tools**: `just` (command runner), `jq`, `tmux`, and more
+- **Recipe Book**: Opinionated project templates for AI-assisted development (`prompts/`)
 
 ## Install (fresh macOS)
 
@@ -180,6 +181,59 @@ For a macOS-focused dev setup, Oh My Zsh provides the best balance of ease-of-us
 
 - **Caffeine**: Intel-only (requires Rosetta); included in config but you may want to skip it on Apple Silicon.
 - **Rectangle vs Raycast**: Rectangle is the current default; Raycast is a great alternative if you want to consolidate window management + launcher.
+
+## Recipe Book (AI-Assisted Development)
+
+The `prompts/` directory contains opinionated project templates ("recipes") designed for AI-assisted development. Each recipe includes:
+
+- **AGENTS.md**: Cross-platform instructions for AI coding agents (Claude, Cursor, Gemini, ChatGPT)
+- **STACK.md**: Tech stack decisions with rationale (why X over Y)
+- **STYLE.md**: Code style guide
+- **templates/**: Starter files (`.gitignore`, `justfile`, configs)
+- **skills/**: Agent skills for specific frameworks
+
+### Available Recipes
+
+| Recipe | Stack | Use Case |
+|--------|-------|----------|
+| `typescript` | Bun + SvelteKit 2 + Svelte 5 + Tailwind v4 + Drizzle | Full-stack web apps |
+| `python` | UV + FastAPI + Pydantic v2 + SQLAlchemy 2.0 | APIs, ML services |
+| `golang` | Go 1.22+ stdlib + sqlc + pgx | High-performance services |
+
+### Quick Start
+
+```bash
+# Create a new project from a recipe
+recipe typescript my-web-app
+
+# Or manually
+cd ~/code
+~/dotfiles/prompts/init.sh python my-api
+```
+
+### What Gets Created
+
+```
+my-project/
+├── AGENTS.md           # Symlinked from recipe (AI instructions)
+├── PROJECT_BRIEF.md    # Template for you to describe your project
+├── .agents/            # Directory for AI agent output
+│   ├── plans/          # Implementation plans
+│   ├── research/       # Investigation notes
+│   └── scratch/        # Temporary work
+├── .gitignore
+├── justfile
+└── [recipe-specific files]
+```
+
+### Philosophy
+
+- **One pick per category**: No "it depends." Every choice is justified.
+- **Agent-first**: All configs work with Claude, Cursor, Gemini, ChatGPT.
+- **Human-readable**: Every file is organized, commented, and skimmable.
+- **DX-optimized**: Fast feedback loops, minimal config, maximum productivity.
+
+For detailed documentation, see [`prompts/README.md`](prompts/README.md).
 
 ## Credits
 

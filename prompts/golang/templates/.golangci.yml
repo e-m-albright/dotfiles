@@ -1,0 +1,136 @@
+# =============================================================================
+# golangci-lint Configuration
+# =============================================================================
+# Documentation: https://golangci-lint.run/usage/configuration/
+# =============================================================================
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  go: "1.22"
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    # Default linters
+    - errcheck          # Check for unchecked errors
+    - gosimple          # Simplify code
+    - govet             # Examine Go source for suspicious constructs
+    - ineffassign       # Detect ineffectual assignments
+    - staticcheck       # Static analysis
+    - unused            # Check for unused code
+
+    # Additional linters
+    - bodyclose         # Check HTTP body is closed
+    - contextcheck      # Check context.Context usage
+    - copyloopvar       # Check for loop variable capture
+    - durationcheck     # Check for duration multiplication issues
+    - errname           # Check error naming conventions
+    - errorlint         # Error wrapping best practices
+    - exhaustive        # Check enum switch exhaustiveness
+    - goconst           # Find repeated strings that could be constants
+    - gocritic          # Highly extensible Go linter
+    - godot             # Check comment formatting
+    - gofmt             # Check formatting
+    - goimports         # Check import ordering
+    - gosec             # Security checker
+    - misspell          # Check for misspellings
+    - nilerr            # Check for nil error returns
+    - noctx             # Check for HTTP requests without context
+    - prealloc          # Find slice preallocation opportunities
+    - predeclared       # Check for shadowed predeclared identifiers
+    - revive            # Fast, configurable linter
+    - sqlclosecheck     # Check SQL rows/stmt are closed
+    - unconvert         # Remove unnecessary type conversions
+    - unparam           # Report unused function parameters
+    - wastedassign      # Find wasted assignment statements
+
+  disable:
+    - funlen            # Too restrictive for some valid cases
+    - gochecknoglobals  # Sometimes globals are appropriate
+    - gochecknoinits    # Sometimes init() is needed
+    - lll               # Line length - handled by gofmt
+    - wsl               # Whitespace linter - too opinionated
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - hugeParam        # Sometimes large params are fine
+      - rangeValCopy     # Go 1.22+ handles this
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: myapp # Replace with your module name
+
+  gosec:
+    excludes:
+      - G104 # Audit errors not checked (too noisy)
+
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment  # Too noisy, minor optimization
+
+  misspell:
+    locale: US
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: increment-decrement
+      - name: indent-error-flow
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: var-declaration
+      - name: var-naming
+
+  staticcheck:
+    checks: ["all"]
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+        - goconst
+
+    # Exclude certain checks in main.go
+    - path: main\.go
+      linters:
+        - gochecknoglobals
+
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

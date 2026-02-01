@@ -1,0 +1,198 @@
+# =============================================================================
+# Justfile — TypeScript/SvelteKit Project
+# =============================================================================
+# Run `just` to see all available commands
+# Run `just <command>` to execute a command
+# =============================================================================
+
+# Default recipe: show help
+default:
+    @just --list
+
+# -----------------------------------------------------------------------------
+# Development
+# -----------------------------------------------------------------------------
+
+# Start development server (with Bun runtime)
+dev:
+    bun --bun run dev
+
+# Start with specific port
+dev-port port="3000":
+    bun --bun run dev -- --port {{port}}
+
+# Build for production
+build:
+    bun run build
+
+# Preview production build
+preview:
+    bun run preview
+
+# -----------------------------------------------------------------------------
+# Quality
+# -----------------------------------------------------------------------------
+
+# Run all checks (type, lint, format)
+check:
+    bun run check
+    bun run lint
+
+# Type check only
+typecheck:
+    bun run check
+
+# Lint with Biome
+lint:
+    bunx biome check .
+
+# Lint and fix
+lint-fix:
+    bunx biome check --write .
+
+# Format with Biome
+format:
+    bunx biome format --write .
+
+# Check formatting without fixing
+format-check:
+    bunx biome format .
+
+# Find unused code/dependencies
+knip:
+    bunx knip
+
+# -----------------------------------------------------------------------------
+# Testing
+# -----------------------------------------------------------------------------
+
+# Run unit tests
+test:
+    bun test
+
+# Run tests in watch mode
+test-watch:
+    bun test --watch
+
+# Run tests with coverage
+test-cov:
+    bun test --coverage
+
+# Run E2E tests
+test-e2e:
+    bunx playwright test
+
+# Run E2E tests with UI
+test-e2e-ui:
+    bunx playwright test --ui
+
+# Update E2E snapshots
+test-e2e-update:
+    bunx playwright test --update-snapshots
+
+# -----------------------------------------------------------------------------
+# Database
+# -----------------------------------------------------------------------------
+
+# Generate migration from schema changes
+db-generate:
+    bun run db:generate
+
+# Run pending migrations
+db-migrate:
+    bun run db:migrate
+
+# Open Drizzle Studio
+db-studio:
+    bun run db:studio
+
+# Push schema directly (dev only, no migration)
+db-push:
+    bunx drizzle-kit push
+
+# Reset database (drop all, re-migrate)
+db-reset:
+    bunx drizzle-kit drop && bun run db:migrate
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+
+# Install dependencies
+install:
+    bun install
+
+# Update dependencies
+update:
+    bun update
+
+# Check for outdated dependencies
+outdated:
+    bun outdated
+
+# Add a dependency
+add *packages:
+    bun add {{packages}}
+
+# Add a dev dependency
+add-dev *packages:
+    bun add -d {{packages}}
+
+# -----------------------------------------------------------------------------
+# Git Hooks
+# -----------------------------------------------------------------------------
+
+# Install git hooks
+hooks-install:
+    bunx lefthook install
+
+# Run pre-commit hooks manually
+hooks-run:
+    bunx lefthook run pre-commit
+
+# -----------------------------------------------------------------------------
+# Utilities
+# -----------------------------------------------------------------------------
+
+# Clean build artifacts and caches
+clean:
+    rm -rf .svelte-kit build node_modules/.cache .turbo coverage
+
+# Clean everything (including node_modules)
+clean-all:
+    rm -rf .svelte-kit build node_modules coverage .turbo
+
+# Generate TypeScript types from API
+codegen:
+    @echo "Add your codegen command here (e.g., openapi-typescript)"
+
+# Start component development (Histoire)
+storybook:
+    bunx histoire dev
+
+# Build component documentation
+storybook-build:
+    bunx histoire build
+
+# -----------------------------------------------------------------------------
+# Deployment
+# -----------------------------------------------------------------------------
+
+# Deploy to Railway
+deploy-railway:
+    railway up
+
+# Deploy to Vercel
+deploy-vercel:
+    vercel
+
+# -----------------------------------------------------------------------------
+# CI/CD Helpers
+# -----------------------------------------------------------------------------
+
+# Run CI checks (what CI would run)
+ci: install
+    bun run check
+    bun run lint
+    bun test
+    bun run build
