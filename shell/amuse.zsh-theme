@@ -1,14 +1,16 @@
 # =============================================================================
-# Custom ZSH Theme (based on Amuse)
+# Custom ZSH Theme
 # =============================================================================
-# Two-line prompt: user@host → directory (git) time
-#                  $
+# Two-line prompt with git branch:
+#   user@host → ~/directory (main*) 14:32:05
+#   $
 
 # Colors
 CYAN="%F{51}"
 PINK="%F{162}"
 RED="%F{1}"
 YELLOW="%F{226}"
+GREEN="%F{82}"
 RESET="%{$reset_color%}"
 BOLD="%B"
 
@@ -17,13 +19,14 @@ _USER="%n@%m"
 _DIR="%~"
 _TIME="%*"
 
-# Main prompt (two lines)
+# Main prompt
 PROMPT='
-${BOLD}${CYAN}${_USER}${RESET}${BOLD}${CYAN} → ${PINK}${_DIR}${RESET} $(git_prompt_info)${BOLD}${RED}${_TIME}${RESET}
+${BOLD}${CYAN}${_USER}${RESET} → ${BOLD}${PINK}${_DIR}${RESET} $(git_prompt_info)${RED}${_TIME}${RESET}
 ${YELLOW}\$${RESET} '
 
-# Git prompt (from oh-my-zsh)
-ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}("
+# Git branch display
+# Shows: (branch) in green, or (branch*) in yellow if dirty
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[green]%}("
 ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%} "
-ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}*"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[yellow]%}*%{$fg_bold[green]%}"
 ZSH_THEME_GIT_PROMPT_CLEAN=""

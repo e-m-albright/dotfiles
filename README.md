@@ -76,7 +76,6 @@ This repo currently supports AI tooling in three ways:
   - **Cursor**: 
     - `editors/cursor/settings.json` - VS Code-compatible editor settings
     - `editors/cursor/cli-config.json` - Global Cursor CLI configuration (AI agent permissions, modes)
-    - `editors/cursor/CursorRules.md` - Project-level AI agent rules template
     - `editors/cursor/.cursorignore` - Files to exclude from AI context
     - `editors/cursor/extensions.sh` - Extension installer (uses shared list, excludes Supermaven)
     - Referenced in `macos/dock.sh` (Dock pin)

@@ -2,11 +2,10 @@
 # Modern, opinionated settings for fast workflows
 
 # ============================================================================
-# Identity
+# Identity (set in ~/.gitconfig.local - not committed to repo)
 # ============================================================================
-[user]
-    name = Evan Albright
-    email = ichbinevan@gmail.com
+[include]
+    path = ~/.gitconfig.local
 
 # ============================================================================
 # Core Settings
