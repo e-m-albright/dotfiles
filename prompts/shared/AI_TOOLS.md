@@ -319,3 +319,57 @@ Prototyping:
 | GitHub Copilot | Subscription | $10-19/month |
 
 **Budget recommendation**: Claude Code + Cursor = ~$40-50/month for full AI-assisted development.
+
+---
+
+## Watch & Revisit
+
+> Tools and libraries to keep an eye on. Not yet evaluated or integrated, but showing promise.
+
+### AI Agents & Memory
+
+| Tool | What It Does | Why Watch |
+|------|--------------|-----------|
+| **OpenClaw** (prev MoltBot) | Open-source self-hosted AI agent/personal assistant | Runs on Mac mini or Cloudflare Workers; integrations for chat, AI models, tools |
+| **claude-supermemory** | Persistent memory for Claude Code across sessions | Context injection, automatic capture, codebase indexing |
+| **claude-subconscious** | Letta agent that observes Claude Code sessions | Accumulates patterns across sessions, provides async guidance via CLAUDE.md |
+
+**Links**:
+- OpenClaw: https://github.com/openclaw/openclaw
+- OpenClaw + Cloudflare: https://blog.cloudflare.com/moltworker-self-hosted-ai-agent/
+- claude-supermemory: https://github.com/supermemoryai/claude-supermemory
+- claude-subconscious: https://github.com/letta-ai/claude-subconscious
+
+### Agent Protocols
+
+| Tool | What It Does | Why Watch |
+|------|--------------|-----------|
+| **AG-UI** | Agent-User Interaction Protocol | Standardizes how AI agents connect to UIs; complements MCP (tools) and A2A (agent-to-agent); good for MCP Apps |
+
+**Links**:
+- AG-UI: https://github.com/ag-ui-protocol/ag-ui
+
+### Python ML Libraries (Feature Engineering)
+
+| Library | Use Case | Notes |
+|---------|----------|-------|
+| **NVTabular** | GPU-accelerated tabular preprocessing | NVIDIA-Merlin; for deep learning recommenders at scale |
+| **FeatureTools** | Automated feature engineering | Deep feature synthesis on relational/time-series data |
+| **Dask** | Parallel Pandas/scikit-learn | Cluster-based computations for large datasets |
+| **Polars** | High-performance dataframes | Rust-based, lazy evaluation; Pandas alternative |
+| **Feast** | Feature store | Ensures training/inference consistency; pairs with denormalized |
+| **tsfresh** | Time series feature extraction | Hundreds of features + relevance filtering |
+| **River** | Online/streaming ML | Handles unbounded data and concept drift |
+
+**Links**:
+- NVTabular: https://github.com/NVIDIA-Merlin/NVTabular
+- FeatureTools: https://github.com/alteryx/featuretools
+- Dask: https://www.dask.org/
+- Polars: https://pola.rs/
+- Feast: https://feast.dev/
+- tsfresh: https://tsfresh.readthedocs.io/
+- River: https://github.com/online-ml/river
+
+### To Investigate
+
+- **Ralph Wiggum AI** - AI "software engineer" for testing NPM package compatibility (mentioned in Cloudflare blog)
