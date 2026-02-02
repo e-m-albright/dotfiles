@@ -55,15 +55,21 @@ install_packages() {
     [[ ${#pkgs[@]} -eq 0 ]] && return 0
     for pkg in "${pkgs[@]}"; do
         [[ -z "$pkg" ]] || [[ "$pkg" =~ ^[[:space:]]*# ]] && continue
-        if ! brew list "$pkg" &>/dev/null; then
-            printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$pkg"
-            if brew install "$pkg" 2>&1; then
-                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$pkg"
-            else
-                printf "  ${WARN} ${YELLOW}Failed to install ${PKG_COLOR}%s${NC} ${YELLOW}(may not be available via Homebrew)${NC}\n" "$pkg"
-            fi
-        else
+        # Check if binary exists first (works for tap formulas too)
+        if command -v "$pkg" >/dev/null 2>&1; then
             printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$pkg"
+            continue
+        fi
+        # Also check brew list (for non-tap formulas)
+        if brew list "$pkg" &>/dev/null 2>&1; then
+            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$pkg"
+            continue
+        fi
+        printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$pkg"
+        if brew install "$pkg" 2>&1; then
+            printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$pkg"
+        else
+            printf "  ${WARN} ${YELLOW}Failed to install ${PKG_COLOR}%s${NC} ${YELLOW}(may not be available via Homebrew)${NC}\n" "$pkg"
         fi
     done
 }
@@ -170,6 +176,7 @@ dev_cli=(
     py-spy              # Sampling profiler for Python programs
     go                  # Go programming language
     golangci-lint       # Go linter aggregator (fast, configurable)
+    atlas               # Database schema migration tool (requires ariga/tap)
 )
 
 mac_cli=(
@@ -244,6 +251,12 @@ formulae=(
 # =============================================================================
 
 print_header "📦 Installing CLI Tools"
+
+# Add required taps before installing packages
+print_action "Adding Homebrew taps..."
+brew tap ariga/tap >/dev/null 2>&1 || true
+print_success "Taps configured"
+
 print_section "Core CLI"
 install_packages "${core_cli[@]}"
 
