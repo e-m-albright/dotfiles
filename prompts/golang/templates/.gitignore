@@ -42,10 +42,7 @@ go.work.sum
 # IDE & Editors
 # -----------------------------------------------------------------------------
 # VS Code
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-!.vscode/launch.json
+.vscode/
 
 # GoLand / JetBrains
 .idea/

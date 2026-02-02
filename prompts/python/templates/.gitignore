@@ -64,9 +64,7 @@ coverage.xml
 # IDE & Editors
 # -----------------------------------------------------------------------------
 # VS Code
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+.vscode/
 
 # PyCharm
 .idea/

@@ -28,10 +28,8 @@ node_modules/
 # -----------------------------------------------------------------------------
 # Editor & IDE
 # -----------------------------------------------------------------------------
-# VS Code (project settings OK, but not personal)
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+# VS Code
+.vscode/
 
 # JetBrains (WebStorm, etc.)
 .idea/
