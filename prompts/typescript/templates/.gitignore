@@ -117,12 +117,7 @@ drizzle/meta/_journal.json.bak
 # -----------------------------------------------------------------------------
 # Agent Artifacts
 # -----------------------------------------------------------------------------
-# Scratch files and sessions (optional: remove if you want to version these)
-.agents/scratch/
-.agents/sessions/
-
-# Keep plans and research (optional: uncomment to ignore all)
-# .agents/
+.agents/
 
 # -----------------------------------------------------------------------------
 # Miscellaneous

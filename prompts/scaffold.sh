@@ -373,8 +373,9 @@ EOF
 EOF
 fi
 
-# Ensure .agents/ is in .gitignore
+# Handle .gitignore
 if [[ -f ".gitignore" ]]; then
+    # Existing .gitignore — just ensure .agents/ is present
     if ! grep -q "^\.agents/" ".gitignore" 2>/dev/null; then
         print_step "Adding .agents/ to .gitignore"
         echo "" >> ".gitignore"
@@ -382,9 +383,15 @@ if [[ -f ".gitignore" ]]; then
         echo ".agents/" >> ".gitignore"
     fi
 else
-    print_step "Creating .gitignore with .agents/"
-    echo "# Working files (ephemeral)" > ".gitignore"
-    echo ".agents/" >> ".gitignore"
+    # No .gitignore — copy the curated template
+    if [[ -f "$RECIPE_DIR/templates/.gitignore" ]]; then
+        print_step "Creating .gitignore (from template)"
+        cp "$RECIPE_DIR/templates/.gitignore" ".gitignore"
+    else
+        print_step "Creating .gitignore"
+        echo "# Working files (ephemeral)" > ".gitignore"
+        echo ".agents/" >> ".gitignore"
+    fi
 fi
 
 # Update package.json or pyproject.toml with project name (only for new projects)
