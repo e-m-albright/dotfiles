@@ -177,6 +177,7 @@ dev_cli=(
     go                  # Go programming language
     golangci-lint       # Go linter aggregator (fast, configurable)
     atlas               # Database schema migration tool (requires ariga/tap)
+    pulumi              # Infrastructure as code (multi-cloud)
 )
 
 mac_cli=(
