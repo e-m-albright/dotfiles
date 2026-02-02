@@ -2,38 +2,35 @@
 
 Opinionated scaffolding for TypeScript, Python, and Go projects — optimized for AI-assisted development and long-term maintainability.
 
-## Two Operations
+## Usage
 
-### 1. Seed a New Project
-
-Create a fresh project with the full skeleton:
+One script, idempotent — run it on new or existing projects:
 
 ```bash
-~/dotfiles/prompts/init.sh typescript my-app
-~/dotfiles/prompts/init.sh python my-api ~/projects
-~/dotfiles/prompts/init.sh golang my-service
+# Create new projects
+~/dotfiles/prompts/scaffold.sh typescript my-app           # SvelteKit (default)
+~/dotfiles/prompts/scaffold.sh typescript astro my-blog    # Astro
+~/dotfiles/prompts/scaffold.sh python my-api               # FastAPI (default)
+~/dotfiles/prompts/scaffold.sh golang my-service           # Chi (default)
+
+# Seed existing projects (use . for current directory)
+~/dotfiles/prompts/scaffold.sh typescript .
+~/dotfiles/prompts/scaffold.sh typescript astro ~/code/my-blog
+~/dotfiles/prompts/scaffold.sh python ~/code/my-api
 ```
 
-You get a git-initialized project with all configs, ready to develop.
+Safe to run multiple times — only adds missing pieces, regenerates AGENTS.md to pick up recipe updates.
 
-### 2. Add Rails to an Existing Project
-
-Add our lightweight scaffolding to an existing codebase:
-
-```bash
-~/dotfiles/prompts/seed.sh typescript ~/code/my-existing-app
-```
-
-This adds **rails** — the minimal structure that guides AI agents and keeps projects organized:
+### What Gets Added
 
 | File/Directory | Purpose |
 |----------------|---------|
-| `AGENTS.md` | Instructions for AI agents (symlinked from recipe) |
+| `AGENTS.md` | Instructions for AI agents (generated from BASE.md + FRAMEWORK.md) |
 | `ABSTRACT.md` | What you're building (you fill this in) |
 | `.agents/` | Working files: plans, research, sessions (gitignored) |
 | `.architecture/` | Architecture Decision Records (versioned) |
 
-Then use Claude Code to bring the project into conformance:
+### Bringing an Existing Project into Conformance
 
 ```bash
 cd ~/code/my-existing-app
@@ -57,15 +54,16 @@ claude "Execute phase 1. Run tests after each change."
 
 ## Available Recipes
 
-| Recipe | Runtime | Framework | Use Case |
-|--------|---------|-----------|----------|
-| [typescript](./typescript/) | Bun | SvelteKit / Astro | Full-stack apps, content sites |
-| [python](./python/) | UV | FastAPI / Reflex | APIs, AI services, analytics |
-| [golang](./golang/) | Go 1.22+ | stdlib + sqlc | High-performance services |
+| Recipe | App Type | Stack | Use Case |
+|--------|----------|-------|----------|
+| `typescript` | `svelte` (default) | Bun + SvelteKit 2 + Svelte 5 + pino | Full-stack apps |
+| `typescript` | `astro` | Bun + Astro 4 | Content sites, blogs |
+| `python` | `fastapi` (default) | UV + FastAPI + SQLAlchemy | APIs, AI services |
+| `golang` | `chi` (default) | Go 1.22+ Chi router + sqlc | APIs, services |
 
 ### TypeScript
 
-Two framework choices within the same ecosystem (Bun, Biome, Tailwind):
+Two framework choices within the same ecosystem (Bun, Biome, Tailwind, pino):
 
 | Framework | Use Case |
 |-----------|----------|
@@ -76,20 +74,17 @@ Use Astro for content-heavy sites. Use SvelteKit for interactive apps. Both can 
 
 ### Python
 
-Flexible recipe covering multiple use cases:
+FastAPI-focused recipe for APIs and services:
 
 - **APIs**: FastAPI for REST/GraphQL
-- **Full-Stack**: Reflex for Python-native UIs
-- **Analytics**: Polars + DuckDB + Marimo notebooks
-- **ML/AI**: PyTorch, JAX, vLLM (see [ML.md](./python/ML.md))
+- **ML/AI**: PydanticAI, Instructor (see [ML.md](./python/ML.md))
 - **CLI**: Typer for command-line tools
-- **Scripts**: Simple UV scripts
 
 ### Golang
 
-Optimized for high-performance services:
+Chi router for APIs and services:
 
-- APIs with minimal dependencies
+- APIs with composable middleware
 - Background workers and data pipelines
 - CLI tools and system utilities
 
@@ -101,13 +96,16 @@ Each recipe contains:
 
 ```
 recipe-name/
-├── AGENTS.md             # AI agent instructions (symlinked into projects)
+├── BASE.md               # Shared patterns (logging, testing, errors)
 ├── STACK.md              # Tech stack choices + rationale
-├── STYLE.md              # Code style guide
+├── framework/            # Framework-specific patterns
+│   └── FRAMEWORK.md      # Combined with BASE.md at scaffold time
 ├── skills/               # Agent skills for specific tools
 │   └── SKILL.md
 └── templates/            # Starter files (.gitignore, justfile, etc.)
 ```
+
+When you run `scaffold.sh`, it concatenates `BASE.md` + `FRAMEWORK.md` into a single `AGENTS.md` in your project.
 
 ---
 
@@ -118,7 +116,7 @@ recipe-name/
 ```
 Layer 1: CURRENT STATE (curated, ~300-500 lines)
 ├── AGENTS.md             # Project instructions (AI + humans)
-└── ABSTRACT.md      # What we're building
+└── ABSTRACT.md           # What we're building
 
 Layer 2: DECISION HISTORY (append-only, versioned)
 ├── .architecture/adr/*.md   # Architecture Decision Records
@@ -153,7 +151,7 @@ Layer 3: WORKING CONTEXT (ephemeral, gitignored)
 
 ```bash
 # Symlink or copy to .cursorrules
-ln -s ~/dotfiles/prompts/typescript/AGENTS.md .cursorrules
+ln -s AGENTS.md .cursorrules
 ```
 
 ### Gemini / ChatGPT
