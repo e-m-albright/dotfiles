@@ -1,4 +1,4 @@
-# AGENTS.md — Golang
+# AGENTS.md — Golang (Base)
 
 Cross-platform instructions for AI coding agents.
 Works with: Claude Code, Cursor, Windsurf, Gemini, ChatGPT, GitHub Copilot.
@@ -9,7 +9,6 @@ Works with: Claude Code, Cursor, Windsurf, Gemini, ChatGPT, GitHub Copilot.
 
 ```yaml
 Runtime:     Go 1.22+
-Router:      stdlib net/http (Go 1.22 patterns)
 Database:    sqlc + pgx/v5 + PostgreSQL
 Config:      envconfig
 Logging:     slog (stdlib)
@@ -20,7 +19,7 @@ Tasks:       Just
 
 ---
 
-## Commands
+## Commands (Shared)
 
 ```bash
 # Development
@@ -50,87 +49,7 @@ just update                # Update dependencies
 
 ---
 
-## Project Structure
-
-```
-cmd/
-├── server/
-│   └── main.go            # Application entry point
-internal/
-├── config/
-│   └── config.go          # Environment configuration
-├── handler/               # HTTP handlers
-│   ├── handler.go         # Handler struct + constructor
-│   └── user.go            # User-related handlers
-├── service/               # Business logic
-│   └── user.go
-├── repository/            # Database access
-│   └── user.go
-├── model/                 # Domain types
-│   └── user.go
-└── db/
-    ├── migrations/        # SQL migrations
-    ├── queries/           # sqlc SQL files
-    └── sqlc.yaml          # sqlc configuration
-pkg/                       # Shared packages (if any)
-tests/
-└── integration/           # Integration tests
-```
-
----
-
-## Patterns
-
-### HTTP Handler (Go 1.22+)
-
-```go
-package handler
-
-import (
-    "encoding/json"
-    "log/slog"
-    "net/http"
-
-    "myapp/internal/service"
-)
-
-type Handler struct {
-    logger  *slog.Logger
-    userSvc *service.UserService
-}
-
-func New(logger *slog.Logger, userSvc *service.UserService) *Handler {
-    return &Handler{
-        logger:  logger,
-        userSvc: userSvc,
-    }
-}
-
-func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-    // Go 1.22+ pattern routing
-    mux.HandleFunc("GET /users", h.ListUsers)
-    mux.HandleFunc("GET /users/{id}", h.GetUser)
-    mux.HandleFunc("POST /users", h.CreateUser)
-    mux.HandleFunc("PUT /users/{id}", h.UpdateUser)
-    mux.HandleFunc("DELETE /users/{id}", h.DeleteUser)
-}
-
-func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
-    id := r.PathValue("id") // Go 1.22+ path values
-
-    user, err := h.userSvc.GetByID(r.Context(), id)
-    if err != nil {
-        h.logger.Error("failed to get user", "id", id, "error", err)
-        http.Error(w, "user not found", http.StatusNotFound)
-        return
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(user)
-}
-```
-
-### Service Layer
+## Service Layer
 
 ```go
 package service
@@ -175,7 +94,9 @@ func (s *UserService) Create(ctx context.Context, input model.CreateUserInput) (
 }
 ```
 
-### sqlc Query
+---
+
+## sqlc Query
 
 ```sql
 -- internal/db/queries/user.sql
@@ -206,7 +127,9 @@ RETURNING id, email, name, created_at, updated_at;
 DELETE FROM users WHERE id = $1;
 ```
 
-### Configuration
+---
+
+## Configuration
 
 ```go
 package config
@@ -238,7 +161,9 @@ func Load() (*Config, error) {
 }
 ```
 
-### Logging with slog
+---
+
+## Logging with slog
 
 ```go
 package main
@@ -272,7 +197,9 @@ logger.Error("failed to connect", "error", err)
 logger.With("request_id", reqID).Info("handling request")
 ```
 
-### Error Handling
+---
+
+## Error Handling
 
 ```go
 package apperror
@@ -320,7 +247,9 @@ func Internal(err error) *AppError {
 }
 ```
 
-### Database Connection
+---
+
+## Database Connection
 
 ```go
 package db
@@ -353,50 +282,6 @@ func NewPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
     }
 
     return pool, nil
-}
-```
-
-### Testing
-
-```go
-package handler_test
-
-import (
-    "encoding/json"
-    "net/http"
-    "net/http/httptest"
-    "testing"
-
-    "myapp/internal/handler"
-    "myapp/internal/model"
-)
-
-func TestGetUser(t *testing.T) {
-    // Setup
-    h := handler.New(mockLogger, mockUserSvc)
-    mux := http.NewServeMux()
-    h.RegisterRoutes(mux)
-
-    // Create request
-    req := httptest.NewRequest("GET", "/users/123", nil)
-    rec := httptest.NewRecorder()
-
-    // Execute
-    mux.ServeHTTP(rec, req)
-
-    // Assert
-    if rec.Code != http.StatusOK {
-        t.Errorf("expected status 200, got %d", rec.Code)
-    }
-
-    var user model.User
-    if err := json.NewDecoder(rec.Body).Decode(&user); err != nil {
-        t.Fatalf("failed to decode response: %v", err)
-    }
-
-    if user.ID != "123" {
-        t.Errorf("expected user ID 123, got %s", user.ID)
-    }
 }
 ```
 
@@ -446,7 +331,6 @@ chore(deps): bump pgx to v5.7.0
 
 ### Always
 
-- Use Go 1.22+ HTTP routing patterns (`GET /users/{id}`)
 - Use `context.Context` for cancellation and timeouts
 - Use `slog` for logging (stdlib, Go 1.21+)
 - Use `fmt.Errorf("context: %w", err)` for error wrapping

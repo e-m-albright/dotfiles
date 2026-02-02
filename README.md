@@ -37,30 +37,31 @@ The installer is idempotent — safe to re-run anytime.
 
 The `prompts/` directory contains opinionated recipes for TypeScript, Python, and Go projects.
 
-### New Project (Seed)
+### Usage
 
-Create a fresh project with our full skeleton:
-
-```bash
-~/dotfiles/prompts/init.sh typescript my-app
-~/dotfiles/prompts/init.sh python my-api
-~/dotfiles/prompts/init.sh golang my-service
-```
-
-### Existing Project (Rails)
-
-Add our project structure to an existing codebase:
+One script, idempotent — run it on new or existing projects:
 
 ```bash
-~/dotfiles/prompts/seed.sh typescript ~/code/my-existing-app
+# Create new projects
+~/dotfiles/prompts/scaffold.sh typescript my-app           # SvelteKit (default)
+~/dotfiles/prompts/scaffold.sh typescript astro my-blog    # Astro
+~/dotfiles/prompts/scaffold.sh python my-api               # FastAPI (default)
+~/dotfiles/prompts/scaffold.sh golang my-service           # Chi (default)
+
+# Seed existing projects (use . for current directory)
+~/dotfiles/prompts/scaffold.sh typescript .
+~/dotfiles/prompts/scaffold.sh typescript astro ~/code/my-blog
+~/dotfiles/prompts/scaffold.sh python ~/code/my-api
 ```
+
+Safe to run multiple times — only adds missing pieces, regenerates AGENTS.md to pick up recipe updates.
 
 This adds the **rails** — lightweight scaffolding that guides AI agents and keeps projects maintainable:
 
 ```
 my-project/
-├── AGENTS.md           # Instructions for AI agents (symlinked from recipe)
-├── ABSTRACT.md    # What you're building (you fill this in)
+├── AGENTS.md           # Instructions for AI agents (generated from recipe)
+├── ABSTRACT.md         # What you're building (you fill this in)
 ├── .agents/            # Working files, gitignored (plans, research, sessions)
 └── .architecture/      # Architecture decisions, versioned (ADRs)
 ```
@@ -84,11 +85,12 @@ claude "Execute phase 1. Run tests after each change."
 
 ### Available Recipes
 
-| Recipe | Runtime | Framework | Use Case |
-|--------|---------|-----------|----------|
-| `typescript` | Bun | SvelteKit / Astro | Full-stack apps, content sites |
-| `python` | UV | FastAPI / Reflex | APIs, AI services, analytics |
-| `golang` | Go 1.22+ | stdlib + sqlc | High-performance services |
+| Recipe | App Type | Stack | Use Case |
+|--------|----------|-------|----------|
+| `typescript` | `svelte` (default) | Bun + SvelteKit 2 + Svelte 5 + pino | Full-stack apps |
+| `typescript` | `astro` | Bun + Astro 4 | Content sites, blogs |
+| `python` | `fastapi` (default) | UV + FastAPI + SQLAlchemy | APIs, AI services |
+| `golang` | `chi` (default) | Go 1.22+ Chi router + sqlc | APIs, services |
 
 See [`prompts/README.md`](prompts/README.md) for the full recipe documentation.
 
@@ -176,9 +178,16 @@ dotfiles/
 ├── editors/                # Cursor + VS Code settings
 ├── macos/                  # Homebrew, Dock, SSH setup
 └── prompts/                # Project recipes + scaffolding
-    ├── typescript/         # SvelteKit / Astro recipe
-    ├── python/             # FastAPI / Reflex recipe
-    ├── golang/             # Go recipe
+    ├── typescript/         # TypeScript recipes
+    │   ├── BASE.md         # Shared TypeScript patterns
+    │   ├── svelte/         # SvelteKit-specific
+    │   └── astro/          # Astro-specific
+    ├── python/             # Python recipes
+    │   ├── BASE.md         # Shared Python patterns
+    │   └── fastapi/        # FastAPI-specific
+    ├── golang/             # Go recipes
+    │   ├── BASE.md         # Shared Go patterns
+    │   └── chi/            # Chi router patterns
     ├── shared/             # Cross-language guides
     └── templates/          # ABSTRACT.md template
 ```
