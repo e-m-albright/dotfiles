@@ -127,12 +127,26 @@ claude "create a dashboard component with a sidebar, header, and main content ar
 
 > **For building AI-powered applications**, not for coding assistance.
 
+### Agent SDKs
+
 | Framework | Language | Use Case | Maturity |
 |-----------|----------|----------|----------|
-| **PydanticAI** | Python | Agents with tool calling | Production-ready |
-| **Instructor** | Python | Structured outputs from LLMs | Production-ready |
+| **PydanticAI** | Python | Agents with tool calling, type-safe | Production-ready |
+| **Google ADK** | Python | Multi-agent systems, hierarchical agents | Production-ready |
+| **CrewAI** | Python | Role-based multi-agent collaboration | Production-ready |
+| **AutoGen** | Python | Async multi-agent conversations | Production-ready |
+| **LangGraph** | Python/TS | Graph-based workflows, complex orchestration | Production-ready |
+| **LlamaIndex Agents** | Python | RAG-heavy agents, knowledge retrieval | Production-ready |
+| **OpenAI Agents SDK** | Python | OpenAI-ecosystem agents, built-in tools | Production-ready |
 | **Mastra** | TypeScript | Agents with tool calling, workflows | Production-ready |
-| **LangGraph** | Python/TS | Complex multi-agent orchestration | Production-ready, heavy |
+| **Strands Agents** | Python | Strong observability, AWS-optimized | Production-ready |
+| **Smolagents** | Python | Minimal, code-centric agents | Production-ready |
+
+### Specialized Tools
+
+| Tool | Language | Use Case | Notes |
+|------|----------|----------|-------|
+| **Instructor** | Python | Structured outputs from LLMs | Not a full agent framework, pairs with others |
 
 ### Decision Tree
 
@@ -140,14 +154,38 @@ claude "create a dashboard component with a sidebar, header, and main content ar
 What language?
 ├── Python
 │   ├── Need structured output? → Instructor
-│   ├── Need tool calling? → PydanticAI
-│   └── Need multi-agent? → LangGraph
+│   ├── Need tool calling (simple)? → PydanticAI
+│   ├── Need multi-agent (role-based)? → CrewAI or Google ADK
+│   ├── Need multi-agent (async/chat)? → AutoGen
+│   ├── Need multi-agent (graph-based)? → LangGraph
+│   ├── Need RAG-heavy agents? → LlamaIndex Agents
+│   └── Need minimal/code-centric? → Smolagents
 └── TypeScript
     ├── Need agents + workflows? → Mastra
     └── Need multi-agent? → LangGraph
 ```
 
-> **Note**: Mastra is useful when you want agent capabilities in TypeScript without a separate Python backend. For most projects, PydanticAI + a TypeScript frontend is cleaner.
+### Framework Comparison
+
+| Feature | PydanticAI | Google ADK | CrewAI | AutoGen | LangGraph |
+|---------|------------|------------|--------|---------|-----------|
+| Type safety | ★★★ | ★★☆ | ★☆☆ | ★☆☆ | ★★☆ |
+| Multi-agent | ★☆☆ | ★★★ | ★★★ | ★★★ | ★★★ |
+| Learning curve | Low | Medium | Low | Medium | High |
+| Provider lock-in | None | None (LiteLLM) | None | None | None |
+| Built-in eval | No | Yes | No | No | Yes |
+| MCP support | Yes | Yes | No | No | Yes |
+
+### Quick Recommendations
+
+- **Simple agents with tools**: PydanticAI (best DX, type-safe)
+- **Multi-agent with hierarchy**: Google ADK (enterprise-ready, good tooling)
+- **Multi-agent with roles**: CrewAI (easy setup, clear mental model)
+- **Async conversations**: AutoGen (event-driven, real-time)
+- **RAG/knowledge-heavy agents**: LlamaIndex Agents (best retrieval integration)
+- **Complex workflows**: LangGraph (most flexible, steepest learning curve)
+
+> **Note**: Google ADK is optimized for Google Cloud but works anywhere. It supports Anthropic, OpenAI, Meta, Mistral and more via LiteLLM integration, avoiding vendor lock-in. For most projects, PydanticAI + a TypeScript frontend is cleanest. Use CrewAI or ADK when you need multi-agent coordination.
 
 ---
 
@@ -254,7 +292,8 @@ Prototyping:
 | Full-stack prototype | bolt.new |
 | Svelte components | Claude Code |
 | React components (then adapt) | v0.dev |
-| Python agents | PydanticAI |
+| Python agents (simple) | PydanticAI |
+| Python agents (multi-agent) | CrewAI or Google ADK |
 | Structured outputs | Instructor |
 | Presentations | gamma.app |
 
@@ -264,7 +303,7 @@ Prototyping:
 |------|-----|
 | Devin | Expensive, Claude Code is better for most tasks |
 | Specialized Svelte generators | Immature, Claude Code is more reliable |
-| LangChain (directly) | Bloated, use PydanticAI + Instructor instead |
+| LangChain (directly) | Bloated, use PydanticAI or specialized frameworks instead |
 | Multiple coding assistants simultaneously | Conflicts, context confusion |
 
 ---
