@@ -14,7 +14,7 @@
 │ Layer 1: CURRENT STATE (Living, curated)                           │
 │ "What is true right now?"                                          │
 │ ├── AGENTS.md (300-500 lines, project instructions for everyone)   │
-│ └── PROJECT_BRIEF.md (what we're building, context)                │
+│ └── ABSTRACT.md (what we're building, context)                │
 ├─────────────────────────────────────────────────────────────────────┤
 │ Layer 2: DECISION HISTORY (Append-only, evolvable)                 │
 │ "Why did we decide this? How has thinking evolved?"                │
@@ -41,7 +41,7 @@
 your-project/
 │
 ├── AGENTS.md                      # Layer 1: Project instructions (for humans + AI)
-├── PROJECT_BRIEF.md               # Layer 1: What we're building
+├── ABSTRACT.md               # Layer 1: What we're building
 │
 ├── .architecture/                    # Layer 2: Decision history (versioned)
 │   ├── adr/                       # Architecture Decision Records
@@ -73,7 +73,7 @@ your-project/
 # Keep these versioned:
 # .architecture/        (decision history)
 # AGENTS.md          (project instructions)
-# PROJECT_BRIEF.md   (project context)
+# ABSTRACT.md   (project context)
 ```
 
 ---
@@ -164,7 +164,7 @@ We will use Better Auth for authentication because [...]
 | Document | Style | Update Pattern |
 |----------|-------|----------------|
 | `AGENTS.md` | Curated | Edit in place, keep current |
-| `PROJECT_BRIEF.md` | Curated | Edit in place, keep current |
+| `ABSTRACT.md` | Curated | Edit in place, keep current |
 | `.architecture/adr/*.md` | Append-only | Don't edit, supersede instead |
 | `.architecture/CHANGELOG.md` | Append-only | Add entries, never remove |
 | `.agents/*` | Ephemeral | Delete when done |
@@ -299,7 +299,7 @@ ls .architecture/adr/ | grep -i "auth\|api"
 
 ```markdown
 ## Read in Order
-1. PROJECT_BRIEF.md (what we're building)
+1. ABSTRACT.md (what we're building)
 2. AGENTS.md (how we build it)
 3. .architecture/_index.md (key decisions)
 4. .architecture/CHANGELOG.md (recent changes)

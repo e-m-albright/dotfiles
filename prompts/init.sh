@@ -77,7 +77,7 @@ Available Recipes:
 What Gets Created:
   <project-name>/
   ├── AGENTS.md           # Symlinked from recipe (for AI agents)
-  ├── PROJECT_BRIEF.md    # Template for you to fill in
+  ├── ABSTRACT.md    # Template for you to fill in
   ├── .agents/            # Working files (gitignored)
   │   └── plans/, research/, prompts/, sessions/
   ├── .architecture/         # Architecture decisions (versioned)
@@ -245,13 +245,13 @@ cat > "$PROJECT_PATH/.architecture/adr/_index.md" << 'EOF'
 | — | (none yet) | — | — |
 EOF
 
-# Copy PROJECT_BRIEF.md template
-print_step "Creating PROJECT_BRIEF.md template"
-cp "$PROMPTS_DIR/templates/PROJECT_BRIEF.md" "$PROJECT_PATH/PROJECT_BRIEF.md"
+# Copy ABSTRACT.md template
+print_step "Creating ABSTRACT.md template"
+cp "$PROMPTS_DIR/templates/ABSTRACT.md" "$PROJECT_PATH/ABSTRACT.md"
 
-# Update PROJECT_BRIEF.md with project name
-sed -i '' "s/\[Project Name\]/$PROJECT_NAME/g" "$PROJECT_PATH/PROJECT_BRIEF.md" 2>/dev/null || \
-    sed -i "s/\[Project Name\]/$PROJECT_NAME/g" "$PROJECT_PATH/PROJECT_BRIEF.md" 2>/dev/null || true
+# Update ABSTRACT.md with project name
+sed -i '' "s/\[Project Name\]/$PROJECT_NAME/g" "$PROJECT_PATH/ABSTRACT.md" 2>/dev/null || \
+    sed -i "s/\[Project Name\]/$PROJECT_NAME/g" "$PROJECT_PATH/ABSTRACT.md" 2>/dev/null || true
 
 # Update package.json or similar with project name (if exists)
 if [[ -f "$PROJECT_PATH/package.json" ]]; then
@@ -290,7 +290,7 @@ echo -e "${BLUE}Next steps:${NC}"
 echo ""
 echo "  1. cd $PROJECT_PATH"
 echo ""
-echo "  2. Edit PROJECT_BRIEF.md to describe what you're building"
+echo "  2. Edit ABSTRACT.md to describe what you're building"
 echo ""
 
 case "$RECIPE" in
@@ -329,11 +329,11 @@ esac
 echo ""
 echo -e "${BLUE}Project structure:${NC}"
 echo "  - AGENTS.md        → Instructions for AI coding agents"
-echo "  - PROJECT_BRIEF.md → Your project description (edit this!)"
+echo "  - ABSTRACT.md → Your project description (edit this!)"
 echo "  - .agents/         → Working files (gitignored)"
 echo "  - .architecture/      → Architecture decisions (versioned)"
 echo ""
 echo -e "${BLUE}Start building with Claude Code:${NC}"
 echo ""
-echo '  claude "Read AGENTS.md and PROJECT_BRIEF.md. Create a plan for the first feature."'
+echo '  claude "Read AGENTS.md and ABSTRACT.md. Create a plan for the first feature."'
 echo ""

@@ -60,7 +60,7 @@ This adds the **rails** — lightweight scaffolding that guides AI agents and ke
 ```
 my-project/
 ├── AGENTS.md           # Instructions for AI agents (symlinked from recipe)
-├── PROJECT_BRIEF.md    # What you're building (you fill this in)
+├── ABSTRACT.md    # What you're building (you fill this in)
 ├── .agents/            # Working files, gitignored (plans, research, sessions)
 └── .architecture/      # Architecture decisions, versioned (ADRs)
 ```
@@ -180,7 +180,7 @@ dotfiles/
     ├── python/             # FastAPI / Reflex recipe
     ├── golang/             # Go recipe
     ├── shared/             # Cross-language guides
-    └── templates/          # PROJECT_BRIEF.md template
+    └── templates/          # ABSTRACT.md template
 ```
 
 ---

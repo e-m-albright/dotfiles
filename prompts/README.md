@@ -29,7 +29,7 @@ This adds **rails** — the minimal structure that guides AI agents and keeps pr
 | File/Directory | Purpose |
 |----------------|---------|
 | `AGENTS.md` | Instructions for AI agents (symlinked from recipe) |
-| `PROJECT_BRIEF.md` | What you're building (you fill this in) |
+| `ABSTRACT.md` | What you're building (you fill this in) |
 | `.agents/` | Working files: plans, research, sessions (gitignored) |
 | `.architecture/` | Architecture Decision Records (versioned) |
 
@@ -38,7 +38,7 @@ Then use Claude Code to bring the project into conformance:
 ```bash
 cd ~/code/my-existing-app
 
-# 1. Fill out PROJECT_BRIEF.md first
+# 1. Fill out ABSTRACT.md first
 
 # 2. Audit against our guidelines
 claude "Read AGENTS.md and audit this codebase. Create a report listing
@@ -118,7 +118,7 @@ recipe-name/
 ```
 Layer 1: CURRENT STATE (curated, ~300-500 lines)
 ├── AGENTS.md             # Project instructions (AI + humans)
-└── PROJECT_BRIEF.md      # What we're building
+└── ABSTRACT.md      # What we're building
 
 Layer 2: DECISION HISTORY (append-only, versioned)
 ├── .architecture/adr/*.md   # Architecture Decision Records

@@ -12,8 +12,8 @@
      1. SYMLINK to your project root:
         ln -s ~/dotfiles/prompts/{recipe}/AGENTS.md ./AGENTS.md
 
-     2. CREATE a PROJECT_BRIEF.md in your project root describing
-        what you're building (see templates/PROJECT_BRIEF.md)
+     2. CREATE a ABSTRACT.md in your project root describing
+        what you're building (see templates/ABSTRACT.md)
 
      3. The agent will read both files to understand your project
      ============================================================ -->

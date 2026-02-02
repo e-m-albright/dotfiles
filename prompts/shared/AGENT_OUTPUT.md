@@ -106,7 +106,7 @@ One-paragraph description of what this plan accomplishes.
 ## Attribution
 - Research: 🤖 AI-SUGGESTED
 - Approach: 🤖→👤 AI-REFINED (human approved)
-- Constraints: 👤 HUMAN (from PROJECT_BRIEF.md)
+- Constraints: 👤 HUMAN (from ABSTRACT.md)
 
 ## Context
 Why are we doing this? What problem does it solve?

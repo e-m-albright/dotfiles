@@ -74,7 +74,7 @@ Examples:
 
 What Gets Added (won't overwrite existing files):
   AGENTS.md           # Symlinked from recipe
-  PROJECT_BRIEF.md    # Template for you to fill in
+  ABSTRACT.md    # Template for you to fill in
   .agents/            # Working files directory
   .architecture/         # Architecture decisions directory
 
@@ -138,16 +138,16 @@ else
     ln -s "$RECIPE_DIR/AGENTS.md" "AGENTS.md"
 fi
 
-# Copy PROJECT_BRIEF.md (or skip if exists)
-if [[ -e "PROJECT_BRIEF.md" ]]; then
-    print_skip "PROJECT_BRIEF.md"
+# Copy ABSTRACT.md (or skip if exists)
+if [[ -e "ABSTRACT.md" ]]; then
+    print_skip "ABSTRACT.md"
 else
-    print_step "Creating PROJECT_BRIEF.md template"
-    cp "$PROMPTS_DIR/templates/PROJECT_BRIEF.md" "PROJECT_BRIEF.md"
+    print_step "Creating ABSTRACT.md template"
+    cp "$PROMPTS_DIR/templates/ABSTRACT.md" "ABSTRACT.md"
     # Try to extract project name from directory
     PROJECT_NAME="$(basename "$PROJECT_PATH")"
-    sed -i '' "s/\[Project Name\]/$PROJECT_NAME/g" "PROJECT_BRIEF.md" 2>/dev/null || \
-        sed -i "s/\[Project Name\]/$PROJECT_NAME/g" "PROJECT_BRIEF.md" 2>/dev/null || true
+    sed -i '' "s/\[Project Name\]/$PROJECT_NAME/g" "ABSTRACT.md" 2>/dev/null || \
+        sed -i "s/\[Project Name\]/$PROJECT_NAME/g" "ABSTRACT.md" 2>/dev/null || true
 fi
 
 # Create .agents directory structure
@@ -249,14 +249,14 @@ print_success "Project seeded successfully!"
 echo ""
 echo -e "${BLUE}What was added:${NC}"
 echo "  - AGENTS.md        → Instructions for AI coding agents"
-echo "  - PROJECT_BRIEF.md → Your project description (edit this!)"
+echo "  - ABSTRACT.md → Your project description (edit this!)"
 echo "  - .agents/         → Working files (gitignored)"
 echo "  - .architecture/      → Architecture decisions (versioned)"
 
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
 echo ""
-echo "  1. Edit PROJECT_BRIEF.md to describe your project"
+echo "  1. Edit ABSTRACT.md to describe your project"
 echo ""
 echo "  2. Audit the codebase against our guidelines:"
 echo ""
