@@ -198,7 +198,7 @@ ide=(
 productivity=(
     # rectangle            # Window management
     # flycut               # Clipboard manager
-    raycast                # Launcher + actions; can replace Rectangle/Flycut
+    # raycast                # Launcher + actions; can replace Rectangle/Flycut
     warp                   # AI terminal (modern UX)
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
