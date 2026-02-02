@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(firecrawl --status:*)",
-      "Bash(firecrawl search:*)",
-      "Bash(firecrawl scrape:*)"
-    ]
-  }
-}
