@@ -333,12 +333,18 @@ Prototyping:
 | **OpenClaw** (prev MoltBot) | Open-source self-hosted AI agent/personal assistant | Runs on Mac mini or Cloudflare Workers; integrations for chat, AI models, tools |
 | **claude-supermemory** | Persistent memory for Claude Code across sessions | Context injection, automatic capture, codebase indexing |
 | **claude-subconscious** | Letta agent that observes Claude Code sessions | Accumulates patterns across sessions, provides async guidance via CLAUDE.md |
+| **OpenCode** | Open-source local-first AI coding agent | Go-based autonomous pair programmer; supports Claude/GPT/Gemini/Ollama; terminal/desktop/VS Code; privacy-first (code stays local); 95k+ stars |
+| **Open WebUI** | Self-hosted AI platform interface | Unified UI for any AI model (Ollama/OpenAI/Anthropic); Python extensions; RAG/voice/vision; Docker install; 328k+ community members |
+| **oh-my-claudecode** | Multi-agent orchestration plugin for Claude Code | "Oh-My-Zsh for Claude Code"; autopilot/ultrapilot/swarm modes; 32+ agents, 40+ skills; zero config, natural language commands |
 
 **Links**:
 - OpenClaw: https://github.com/openclaw/openclaw
 - OpenClaw + Cloudflare: https://blog.cloudflare.com/moltworker-self-hosted-ai-agent/
 - claude-supermemory: https://github.com/supermemoryai/claude-supermemory
 - claude-subconscious: https://github.com/letta-ai/claude-subconscious
+- OpenCode: https://github.com/opencode-ai/opencode | https://opencode.ai/
+- Open WebUI: https://github.com/open-webui | https://www.openwebui.com/
+- oh-my-claudecode: https://github.com/Yeachan-Heo/oh-my-claudecode
 
 ### Agent Protocols
 
