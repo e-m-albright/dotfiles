@@ -71,6 +71,17 @@ Phase 3 - SCALE                      └── Polars + DuckDB (analytics)
 | **Framework** | Reflex | Streamlit is limited. Dash is verbose. Reflex is React-like in pure Python. |
 | **Use Case** | Internal tools, dashboards, data apps where you don't need JS expertise. |
 
+#### Reflex i18n (when needed)
+
+Reflex has no built-in i18n support. Wire translations through Reflex state manually:
+
+| Approach | Notes |
+|----------|-------|
+| **gettext + Babel** | Python stdlib + locale data (dates, numbers, currencies). Proven, massive ecosystem. Store translations in `.po` files, serve via state. |
+| **Project Fluent** | Mozilla's modern i18n format. Better than gettext for complex plurals and gender. More expressive `.ftl` syntax. |
+
+Store the current locale and translated strings in `rx.State`. Components read from state; language switching triggers re-render. Verbose but works until Reflex adds native support.
+
 ### CLI Tools
 
 | Category | Choice | Why Not Alternatives |
