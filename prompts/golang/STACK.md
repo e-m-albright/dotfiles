@@ -10,6 +10,7 @@
 | **Module System** | Go Modules | Standard, no alternatives needed. |
 | **Linter** | golangci-lint | Combines 100+ linters, fast, configurable. |
 | **Formatter** | gofmt/goimports | Built-in, standard. No bikeshedding. |
+| **Git Hooks** | Lefthook | Husky is JS-based. Lefthook is Go-based, parallel execution, YAML config. |
 | **Task Runner** | Just | Makefiles work but Just is more readable. |
 
 ## Framework Philosophy

@@ -217,6 +217,29 @@ m.greeting({ name: 'Evan' }); // "Hello, Evan!"
 
 ---
 
+## AI & LLM Integration (add when needed)
+
+### API Clients
+
+| Category | Choice | Notes |
+|----------|--------|-------|
+| **Anthropic** | @anthropic-ai/sdk | Official SDK, streaming, tool use. |
+| **Google AI** | @google/genai | Official SDK for Gemini. |
+| **OpenAI** | openai | Official SDK, async support. |
+| **General** | LiteLLM (via Python) | Unified interface to 100+ LLMs. No mature TS equivalent. |
+
+### Agent Frameworks
+
+| Category | Choice | Notes |
+|----------|--------|-------|
+| **TypeScript-native** | Mastra | From the Gatsby team. Workflow-driven, strict typing, built-in observability (OpenTelemetry), one-command deploys to Vercel/Cloudflare/Netlify. Best option if your stack is TypeScript. |
+| **Multi-agent** | LangGraph.js | Graph-based workflows. Heavy but powerful for complex orchestration. |
+
+> **For Python-backed AI services** in a TypeScript frontend stack, use PydanticAI on the Python side.
+> For full framework comparison, see `~/dotfiles/prompts/shared/AI_TOOLS.md`.
+
+---
+
 ## Services
 
 > See `shared/SERVICES.md` for detailed comparisons.

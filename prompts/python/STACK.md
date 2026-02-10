@@ -207,23 +207,21 @@ trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(otlp_exporter)
 
 | Category | Choice | Notes |
 |----------|--------|-------|
-| **OpenAI** | openai | Official SDK, async support. |
 | **Anthropic** | anthropic | Official SDK, excellent typing. |
-| **Google AI** | google-generativeai | Official SDK for Gemini. |
-| **Perplexity** | httpx | No official SDK; use httpx with their HTTP API. |
+| **Google AI** | google-genai | Official SDK for Gemini. |
+| **OpenAI** | openai | Official SDK, async support. |
 | **General** | litellm | Unified interface to 100+ LLMs. Good for switching providers. |
 
 ### Agent Frameworks
 
-| Category | Choice | Why Not Alternatives |
-|----------|--------|---------------------|
-| **Primary** | PydanticAI | LangChain is bloated, magic-heavy. PydanticAI is Pydantic-native, type-safe, minimal abstraction. |
+| Category | Choice | Notes |
+|----------|--------|-------|
+| **Primary** | PydanticAI | Pydantic-native, type-safe, minimal abstraction. Best DX for single-agent tool calling. |
 | **Structured Outputs** | Instructor | Lightweight. Just structured outputs from LLMs, no agent complexity. |
-| **Complex Multi-Agent** | LangGraph | Only when you need state machines + multi-agent orchestration. Heavy, but powerful. |
 
 > **Start simple**: Use raw API clients + Instructor for structured outputs.
 > Add PydanticAI when you need tool calling and agent loops.
-> LangGraph is last resort for complex multi-agent workflows.
+> For multi-agent, complex orchestration, or framework comparison, see `~/dotfiles/prompts/shared/AI_TOOLS.md`.
 
 ### PydanticAI Example
 
@@ -426,6 +424,5 @@ dev-dependencies = [
 | **Beartype** | Pydantic handles runtime validation. Only add if you need it at API boundaries. |
 | **Loguru** | structlog is the pick. One logger per project. |
 | **SQLModel** | Maintenance mode. Use SQLAlchemy 2.0 directly. |
-| **LangChain** | Bloated. Use PydanticAI + Instructor instead. |
 | **Alembic** | Atlas is faster, better DX. |
 | **mypy** | Pyright is faster, better IDE integration. |

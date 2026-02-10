@@ -127,26 +127,28 @@ claude "create a dashboard component with a sidebar, header, and main content ar
 
 > **For building AI-powered applications**, not for coding assistance.
 
-### Agent SDKs
+### Recommended Picks
 
-| Framework | Language | Use Case | Maturity |
-|-----------|----------|----------|----------|
-| **PydanticAI** | Python | Agents with tool calling, type-safe | Production-ready |
-| **Google ADK** | Python | Multi-agent systems, hierarchical agents | Production-ready |
-| **CrewAI** | Python | Role-based multi-agent collaboration | Production-ready |
-| **AutoGen** | Python | Async multi-agent conversations | Production-ready |
-| **LangGraph** | Python/TS | Graph-based workflows, complex orchestration | Production-ready |
-| **LlamaIndex Agents** | Python | RAG-heavy agents, knowledge retrieval | Production-ready |
-| **OpenAI Agents SDK** | Python | OpenAI-ecosystem agents, built-in tools | Production-ready |
-| **Mastra** | TypeScript | Agents with tool calling, workflows | Production-ready |
-| **Strands Agents** | Python | Strong observability, AWS-optimized | Production-ready |
-| **Smolagents** | Python | Minimal, code-centric agents | Production-ready |
+| Framework | Language | Best For |
+|-----------|----------|----------|
+| **PydanticAI** | Python | Single-agent tool calling, type-safe, best DX. Our default for Python. |
+| **Mastra** | TypeScript | Workflow-driven agents with strict typing. Our default for TypeScript. |
+| **Instructor** | Python | Structured outputs from LLMs. Not a full agent framework — pairs with any SDK. |
 
-### Specialized Tools
+### Full Framework Comparison
 
-| Tool | Language | Use Case | Notes |
-|------|----------|----------|-------|
-| **Instructor** | Python | Structured outputs from LLMs | Not a full agent framework, pairs with others |
+| Framework | Language | Strengths | Weaknesses |
+|-----------|----------|-----------|------------|
+| **PydanticAI** | Python | Pydantic-native, type-safe, minimal abstraction, MCP support. Best DX for single-agent work. | Limited multi-agent support. |
+| **Mastra** | TypeScript | From the Gatsby team. Strict typing, built-in observability (OpenTelemetry), one-command deploys to Vercel/Cloudflare/Netlify. | Younger ecosystem, TS-only. |
+| **Google ADK** | Python | Multi-agent with hierarchy, built-in eval, MCP support. Works with any provider via LiteLLM. | Medium learning curve, Google-flavored API. |
+| **OpenAI Agents SDK** | Python | Thin runtime, nearly matches LangGraph in benchmarks, extremely simple to get started. | Vendor lock-in (OpenAI-first), limited customizability. |
+| **Agno** (prev. Phidata) | Python | Fastest agent framework. Lean, performant, good multi-agent team support, strong observability via Agent OS. | Smaller community than PydanticAI. |
+| **LangGraph** | Python/TS | Graph-based workflows, most flexible orchestration, built-in eval, MCP support. | Steepest learning curve, heavy dependency chain. LangChain ecosystem can feel bloated. |
+| **Strands Agents** (AWS) | Python | Lightweight, provider-agnostic. Define tools as functions, pick a model, run. Minimal overhead. | Early ecosystem, AWS-adjacent. |
+| **CrewAI** | Python | Role-based multi-agent teams. Quick setup, clear mental model, wide adoption. | Debugging can be frustrating, less type-safe. |
+| **DSPy** | Python | Different paradigm: optimizes reasoning pipelines through eval-driven iteration rather than manual prompts. | Research-oriented, not for typical app development. |
+| **Smolagents** | Python | Minimal, code-centric agents. HuggingFace ecosystem. | Limited features, niche. |
 
 ### Decision Tree
 
@@ -155,37 +157,29 @@ What language?
 ├── Python
 │   ├── Need structured output? → Instructor
 │   ├── Need tool calling (simple)? → PydanticAI
+│   ├── Need speed + minimal overhead? → Agno
 │   ├── Need multi-agent (role-based)? → CrewAI or Google ADK
-│   ├── Need multi-agent (async/chat)? → AutoGen
 │   ├── Need multi-agent (graph-based)? → LangGraph
-│   ├── Need RAG-heavy agents? → LlamaIndex Agents
-│   └── Need minimal/code-centric? → Smolagents
+│   ├── Need minimal, provider-agnostic? → Strands Agents
+│   ├── OpenAI-only, want simplicity? → OpenAI Agents SDK
+│   └── Optimizing reasoning pipelines? → DSPy
 └── TypeScript
     ├── Need agents + workflows? → Mastra
-    └── Need multi-agent? → LangGraph
+    └── Need multi-agent orchestration? → LangGraph.js
 ```
-
-### Framework Comparison
-
-| Feature | PydanticAI | Google ADK | CrewAI | AutoGen | LangGraph |
-|---------|------------|------------|--------|---------|-----------|
-| Type safety | ★★★ | ★★☆ | ★☆☆ | ★☆☆ | ★★☆ |
-| Multi-agent | ★☆☆ | ★★★ | ★★★ | ★★★ | ★★★ |
-| Learning curve | Low | Medium | Low | Medium | High |
-| Provider lock-in | None | None (LiteLLM) | None | None | None |
-| Built-in eval | No | Yes | No | No | Yes |
-| MCP support | Yes | Yes | No | No | Yes |
 
 ### Quick Recommendations
 
 - **Simple agents with tools**: PydanticAI (best DX, type-safe)
+- **TypeScript agents**: Mastra (strict typing, built-in observability, easy deploys)
 - **Multi-agent with hierarchy**: Google ADK (enterprise-ready, good tooling)
 - **Multi-agent with roles**: CrewAI (easy setup, clear mental model)
-- **Async conversations**: AutoGen (event-driven, real-time)
-- **RAG/knowledge-heavy agents**: LlamaIndex Agents (best retrieval integration)
-- **Complex workflows**: LangGraph (most flexible, steepest learning curve)
+- **Speed-critical agents**: Agno (fastest runtime, lean abstractions)
+- **Minimal, drop-in agents**: Strands Agents (define tools, pick model, go)
+- **Complex graph workflows**: LangGraph (most flexible, steepest learning curve)
+- **Eval-driven optimization**: DSPy (for research-heavy or experiment-driven work)
 
-> **Note**: Google ADK is optimized for Google Cloud but works anywhere. It supports Anthropic, OpenAI, Meta, Mistral and more via LiteLLM integration, avoiding vendor lock-in. For most projects, PydanticAI + a TypeScript frontend is cleanest. Use CrewAI or ADK when you need multi-agent coordination.
+> **Start with PydanticAI (Python) or Mastra (TypeScript).** Add multi-agent frameworks only when single-agent + tool calling isn't enough. Google ADK is the best multi-agent option if you need hierarchy and eval.
 
 ---
 
@@ -293,6 +287,7 @@ Prototyping:
 | Svelte components | Claude Code |
 | React components (then adapt) | v0.dev |
 | Python agents (simple) | PydanticAI |
+| TypeScript agents | Mastra |
 | Python agents (multi-agent) | CrewAI or Google ADK |
 | Structured outputs | Instructor |
 | Presentations | gamma.app |
@@ -303,7 +298,6 @@ Prototyping:
 |------|-----|
 | Devin | Expensive, Claude Code is better for most tasks |
 | Specialized Svelte generators | Immature, Claude Code is more reliable |
-| LangChain (directly) | Bloated, use PydanticAI or specialized frameworks instead |
 | Multiple coding assistants simultaneously | Conflicts, context confusion |
 
 ---
