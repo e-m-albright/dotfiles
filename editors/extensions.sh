@@ -72,7 +72,6 @@ install_extension "ms-azuretools.vscode-docker"
 install_extension "ms-python.python"          # Python language support + Pylance
 install_extension "ms-python.debugpy"        # Python debugging
 install_extension "charliermarsh.ruff"       # Fast Python linter/formatter (replaces flake8/pylint)
-install_extension "marimo-team.marimo"       # Marimo notebooks (reactive Python notebooks)
 
 # ML / Data Science
 install_extension "ms-toolsai.jupyter"        # Jupyter notebook support

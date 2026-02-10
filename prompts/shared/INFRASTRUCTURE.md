@@ -20,7 +20,7 @@ These patterns apply across all recipes when you need containerization or infras
 
 ```dockerfile
 # Build stage
-FROM python:3.12-slim as builder
+FROM python:3.14-slim as builder
 
 WORKDIR /app
 
@@ -34,7 +34,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
 # Runtime stage
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -99,7 +99,7 @@ CMD ["bun", "./build/index.js"]
 
 ```dockerfile
 # Build stage
-FROM golang:1.22-alpine as builder
+FROM golang:1.25-alpine as builder
 
 WORKDIR /app
 
@@ -220,7 +220,12 @@ Thumbs.db
 
 ## Infrastructure as Code
 
-### Pulumi over Terraform
+> **When to use IaC**: Most projects can deploy directly to Railway, Vercel, or Fly.io without any IaC.
+> Add Pulumi when you need multi-environment infrastructure (dev/staging/prod) or complex AWS/GCP setups.
+
+### Pulumi (Consider for Later)
+
+Pulumi lets you define infrastructure in TypeScript/Python/Go instead of HCL. Benefits over Terraform:
 
 | Feature | Pulumi | Terraform |
 |---------|--------|-----------|

@@ -215,6 +215,58 @@ if [[ ! -f "$RECIPE_DIR/BASE.md" ]]; then
 fi
 
 # -----------------------------------------------------------------------------
+# Pre-flight Checks: Verify Required Tools
+# -----------------------------------------------------------------------------
+
+check_command() {
+    local cmd="$1"
+    local name="$2"
+    local install="$3"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        print_warning "Missing: $name"
+        echo -e "  Install with: ${YELLOW}$install${NC}"
+        return 1
+    fi
+    return 0
+}
+
+preflight_ok=true
+
+case "$RECIPE" in
+    typescript)
+        if ! check_command "bun" "Bun" "curl -fsSL https://bun.sh/install | bash"; then
+            preflight_ok=false
+        fi
+        ;;
+    python)
+        if ! check_command "uv" "UV" "curl -LsSf https://astral.sh/uv/install.sh | sh"; then
+            preflight_ok=false
+        fi
+        ;;
+    golang)
+        if ! check_command "go" "Go" "brew install go"; then
+            preflight_ok=false
+        fi
+        ;;
+esac
+
+# Always check for git
+if ! check_command "git" "Git" "brew install git"; then
+    preflight_ok=false
+fi
+
+if [[ "$preflight_ok" == false ]]; then
+    echo ""
+    print_warning "Some tools are missing. Install them first or run: ~/dotfiles/install.sh"
+    echo ""
+    read -p "Continue anyway? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
+# -----------------------------------------------------------------------------
 # Determine Mode: New Project vs Seed Existing
 # -----------------------------------------------------------------------------
 

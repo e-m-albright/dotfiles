@@ -88,9 +88,9 @@ claude "Execute phase 1. Run tests after each change."
 | Recipe | App Type | Stack | Use Case |
 |--------|----------|-------|----------|
 | `typescript` | `svelte` (default) | Bun + SvelteKit 2 + Svelte 5 + pino | Full-stack apps |
-| `typescript` | `astro` | Bun + Astro 4 | Content sites, blogs |
+| `typescript` | `astro` | Bun + Astro 6 | Content sites, blogs |
 | `python` | `fastapi` (default) | UV + FastAPI + SQLAlchemy | APIs, AI services |
-| `golang` | `chi` (default) | Go 1.22+ Chi router + sqlc | APIs, services |
+| `golang` | `chi` (default) | Go 1.25+ Chi router + sqlc | APIs, services |
 
 See [`prompts/README.md`](prompts/README.md) for the full recipe documentation.
 
@@ -110,8 +110,8 @@ See [`prompts/README.md`](prompts/README.md) for the full recipe documentation.
 |---------|---------|-------|
 | **Node.js** | fnm | LTS version, auto-switches per project |
 | **Bun** | direct | Preferred JS runtime (faster than Node) |
-| **Python** | uv | Python 3.12, fast package management |
-| **Go** | brew | Go 1.22+, with gopls, delve, air, sqlc, templ |
+| **Python** | uv | Python 3.14, fast package management |
+| **Go** | brew | Go 1.25+, with gopls, delve, air, sqlc, templ |
 
 ### Editors
 
@@ -152,11 +152,19 @@ AI=1 PRODUCTIVITY=1 SOCIAL=0 ~/dotfiles/macos/brew.sh
 ### The `dotfiles` Command
 
 ```bash
-dotfiles help      # Show available commands
-dotfiles update    # Update OS + package managers
-dotfiles clean     # Clear caches
-dotfiles brew      # Re-run Homebrew setup
-dotfiles dock      # Reset Dock layout
+dotfiles help        # Show available commands
+dotfiles doctor      # Check all tools are installed correctly
+dotfiles update      # Update OS, Homebrew, and Node.js LTS
+dotfiles clean       # Clear Homebrew caches
+dotfiles brew        # Re-run Homebrew setup
+dotfiles dock        # Reset Dock layout
+dotfiles completions # Output shell completions (source in .zshrc)
+```
+
+Enable tab completion:
+```bash
+# Add to ~/.zshrc
+eval "$(dotfiles completions)"
 ```
 
 ### Git

@@ -7,6 +7,7 @@ ARROW="￫"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Get dotfiles dir (so run this script from anywhere)
@@ -18,18 +19,121 @@ sub_help () {
     printf "\n"
     printf "Commands:\n"
     printf "   help             This help message\n"
-    printf "   update           Update packages and pkg managers (OS, brew, node, npm, yarn, commposer)\n"
-    printf "   clean            Clean up caches (brew, npm, yarn, composer)\n"
-    printf "   brew             Run brew script\n"
-    printf "   dock             Run MacOS dock script\n"
-    printf "   claude-instructions  Add AGENTS.md/ABSTRACT.md to ~/.claude/CLAUDE.md (idempotent)\n"
+    printf "   doctor           Check that all tools are installed correctly\n"
+    printf "   update           Update OS, Homebrew, and Node.js LTS\n"
+    printf "   clean            Clean up Homebrew caches\n"
+    printf "   brew             Run Homebrew setup script\n"
+    printf "   dock             Reset macOS Dock layout\n"
+    printf "   claude-instructions  Update ~/.claude/CLAUDE.md with AGENTS.md reference\n"
+    printf "   completions      Output shell completions (source this in your shell)\n"
+}
+
+sub_doctor () {
+    printf "${BLUE}%s Checking dotfiles installation...${NC}\n\n" "$ARROW"
+
+    local all_ok=true
+
+    # Check function
+    check_tool() {
+        local name="$1"
+        local cmd="$2"
+        local install_hint="$3"
+
+        if command -v "$cmd" >/dev/null 2>&1; then
+            local version
+            version=$("$cmd" --version 2>/dev/null | head -1 || echo "installed")
+            printf "  ${GREEN}✓${NC} %-20s %s\n" "$name" "$version"
+        else
+            printf "  ${RED}✗${NC} %-20s ${YELLOW}%s${NC}\n" "$name" "$install_hint"
+            all_ok=false
+        fi
+    }
+
+    printf "${BLUE}Core Tools${NC}\n"
+    check_tool "Homebrew" "brew" "Run install.sh"
+    check_tool "Git" "git" "brew install git"
+    check_tool "jq" "jq" "brew install jq"
+    check_tool "yq" "yq" "brew install yq"
+
+    printf "\n${BLUE}Editors${NC}\n"
+    check_tool "Cursor" "cursor" "brew install --cask cursor"
+    check_tool "VS Code" "code" "brew install --cask visual-studio-code"
+
+    printf "\n${BLUE}Runtimes${NC}\n"
+    check_tool "Bun" "bun" "curl -fsSL https://bun.sh/install | bash"
+    check_tool "FNM" "fnm" "curl -fsSL https://fnm.vercel.app/install | bash"
+    check_tool "UV" "uv" "curl -LsSf https://astral.sh/uv/install.sh | sh"
+    check_tool "Go" "go" "brew install go"
+
+    # Check Node.js via fnm
+    if command -v fnm >/dev/null 2>&1; then
+        if fnm list 2>/dev/null | grep -q "lts-latest\|v"; then
+            local node_version
+            node_version=$(node --version 2>/dev/null || echo "not active")
+            printf "  ${GREEN}✓${NC} %-20s %s\n" "Node.js" "$node_version"
+        else
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: fnm install --lts${NC}\n" "Node.js"
+        fi
+    fi
+
+    # Check Python via uv
+    if command -v python3.14 >/dev/null 2>&1; then
+        printf "  ${GREEN}✓${NC} %-20s %s\n" "Python" "$(python3.14 --version 2>/dev/null)"
+    elif command -v python3 >/dev/null 2>&1; then
+        printf "  ${YELLOW}○${NC} %-20s %s ${YELLOW}(consider: uv python install 3.14)${NC}\n" "Python" "$(python3 --version 2>/dev/null)"
+    else
+        printf "  ${RED}✗${NC} %-20s ${YELLOW}Run: uv python install 3.14${NC}\n" "Python"
+        all_ok=false
+    fi
+
+    printf "\n${BLUE}AI Tools${NC}\n"
+    check_tool "Claude Code" "claude" "brew install claude-code"
+    check_tool "Ollama" "ollama" "brew install ollama"
+
+    printf "\n${BLUE}Dev Tools${NC}\n"
+    check_tool "Just" "just" "brew install just"
+    check_tool "Delta" "delta" "brew install git-delta"
+    check_tool "golangci-lint" "golangci-lint" "brew install golangci-lint"
+
+    printf "\n${BLUE}Configuration${NC}\n"
+    # Check symlinks
+    if [[ -L ~/.zshrc ]] && [[ "$(readlink ~/.zshrc)" == *"dotfiles"* ]]; then
+        printf "  ${GREEN}✓${NC} %-20s symlinked\n" ".zshrc"
+    else
+        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}not symlinked to dotfiles${NC}\n" ".zshrc"
+    fi
+
+    if [[ -L ~/.gitconfig ]] && [[ "$(readlink ~/.gitconfig)" == *"dotfiles"* ]]; then
+        printf "  ${GREEN}✓${NC} %-20s symlinked\n" ".gitconfig"
+    else
+        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}not symlinked to dotfiles${NC}\n" ".gitconfig"
+    fi
+
+    if [[ -f ~/.gitconfig.local ]]; then
+        printf "  ${GREEN}✓${NC} %-20s configured\n" "Git identity"
+    else
+        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run install.sh to set up${NC}\n" "Git identity"
+    fi
+
+    if [[ -f ~/.claude/CLAUDE.md ]]; then
+        printf "  ${GREEN}✓${NC} %-20s exists\n" "Claude memory"
+    else
+        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-instructions${NC}\n" "Claude memory"
+    fi
+
+    printf "\n"
+    if $all_ok; then
+        printf "${GREEN}%s All checks passed!${NC}\n" "$ARROW"
+    else
+        printf "${YELLOW}%s Some tools are missing. Run install.sh or install individually.${NC}\n" "$ARROW"
+    fi
 }
 
 sub_update () {
     sudo softwareupdate -i -a
     brew update
     brew upgrade
-    
+
     # Update Node.js to latest LTS via fnm
     if command -v fnm >/dev/null 2>&1; then
         eval "$(fnm env)"
@@ -37,7 +141,7 @@ sub_update () {
         fnm use --install-if-missing lts-latest
         fnm default lts-latest
     fi
-    
+
     printf "${GREEN}%s Success! Update command finished.${NC}\n" "$ARROW"
 }
 
@@ -61,6 +165,30 @@ sub_claude_instructions() {
     printf "${GREEN}%s Claude system instructions updated (~/.claude/CLAUDE.md).${NC}\n" "$ARROW"
 }
 
+sub_completions() {
+    cat << 'EOF'
+# Zsh completions for dotfiles command
+# Add to ~/.zshrc: eval "$(dotfiles completions)"
+
+_dotfiles() {
+    local -a commands
+    commands=(
+        'help:Show help message'
+        'doctor:Check that all tools are installed'
+        'update:Update OS, Homebrew, and Node.js'
+        'clean:Clean up caches'
+        'brew:Run Homebrew setup'
+        'dock:Reset macOS Dock'
+        'claude-instructions:Update Claude memory file'
+        'completions:Output shell completions'
+    )
+    _describe 'command' commands
+}
+
+compdef _dotfiles dotfiles
+EOF
+}
+
 case $COMMAND_NAME in
     "" | "-h" | "--help")
         sub_help
@@ -68,6 +196,12 @@ case $COMMAND_NAME in
     claude-instructions)
         shift
         sub_claude_instructions "$@"
+        ;;
+    completions)
+        sub_completions
+        ;;
+    doctor)
+        sub_doctor
         ;;
     *)
         shift

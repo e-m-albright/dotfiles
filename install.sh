@@ -153,40 +153,13 @@ else
     print_info "UV already installed"
 fi
 
-# Only install Python 3.12 if it's not already installed via UV
-if ! command -v python3.12 >/dev/null 2>&1; then
-    print_action "Installing Python 3.12 via UV..."
-    uv python install 3.12 >/dev/null 2>&1
-    print_success "Python 3.12 installed"
+# Only install Python 3.14 if it's not already installed via UV
+if ! command -v python3.14 >/dev/null 2>&1; then
+    print_action "Installing Python 3.14 via UV..."
+    uv python install 3.14 >/dev/null 2>&1
+    print_success "Python 3.14 installed"
 else
-    print_info "Python 3.12 already installed"
-fi
-
-# Install Marimo (Python notebook alternative)
-print_section "Marimo"
-if command -v uv >/dev/null 2>&1; then
-    # Try to install Marimo via uv
-    if ! uv pip list 2>/dev/null | grep -q "^marimo "; then
-        print_action "Installing Marimo..."
-        if uv pip install marimo >/dev/null 2>&1; then
-            print_success "Marimo installed"
-        else
-            print_info "Marimo installation skipped (will install manually)"
-        fi
-    else
-        print_info "Marimo already installed"
-    fi
-elif command -v pip3 >/dev/null 2>&1; then
-    if ! pip3 list 2>/dev/null | grep -q "^marimo "; then
-        print_action "Installing Marimo..."
-        if pip3 install --user marimo >/dev/null 2>&1; then
-            print_success "Marimo installed"
-        else
-            print_info "Marimo installation skipped (will install manually)"
-        fi
-    else
-        print_info "Marimo already installed"
-    fi
+    print_info "Python 3.14 already installed"
 fi
 
 # Install Jupyter (for compatibility with traditional notebooks)
@@ -247,14 +220,13 @@ fi
 print_header "📚 Prompts & Recipes"
 print_section "Recipe Book"
 # Make scripts executable
-chmod +x "$DOTFILES_DIR/prompts/init.sh" 2>/dev/null || true
-chmod +x "$DOTFILES_DIR/prompts/seed.sh" 2>/dev/null || true
+chmod +x "$DOTFILES_DIR/prompts/scaffold.sh" 2>/dev/null || true
 chmod +x "$DOTFILES_DIR/.agents/generate-permissions.sh" 2>/dev/null || true
 # Remove old 'recipe' symlink if it exists (deprecated)
 rm -f "$DOTFILES_DIR/bin/recipe" 2>/dev/null || true
 print_success "Recipe book configured"
-print_info "  New project:      ~/dotfiles/prompts/init.sh <recipe> <name>"
-print_info "  Existing project: ~/dotfiles/prompts/seed.sh <recipe> <path>"
+print_info "  Usage: ~/dotfiles/prompts/scaffold.sh <recipe> [app-type] <path>"
+print_info "  Example: ~/dotfiles/prompts/scaffold.sh typescript svelte my-app"
 
 # Claude system instructions (AGENTS.md / ABSTRACT.md)
 print_section "Claude system instructions"

@@ -57,9 +57,9 @@ claude "Execute phase 1. Run tests after each change."
 | Recipe | App Type | Stack | Use Case |
 |--------|----------|-------|----------|
 | `typescript` | `svelte` (default) | Bun + SvelteKit 2 + Svelte 5 + pino | Full-stack apps |
-| `typescript` | `astro` | Bun + Astro 4 | Content sites, blogs |
+| `typescript` | `astro` | Bun + Astro 6 | Content sites, blogs |
 | `python` | `fastapi` (default) | UV + FastAPI + SQLAlchemy | APIs, AI services |
-| `golang` | `chi` (default) | Go 1.22+ Chi router + sqlc | APIs, services |
+| `golang` | `chi` (default) | Go 1.25+ Chi router + sqlc | APIs, services |
 
 ### TypeScript
 

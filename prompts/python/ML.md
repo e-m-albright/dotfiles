@@ -332,17 +332,14 @@ scalene --web train.py  # Opens browser with profile
 
 | Category | Choice | Why |
 |----------|--------|-----|
-| **Primary** | Marimo | Reactive, git-friendly (.py files), reproducible. |
-| **Fallback** | Jupyter | Industry standard, broad compatibility. |
-
-Both are installed via the base Python setup.
+| **Primary** | Jupyter | Industry standard, broad compatibility. |
+| **Watch** | Marimo | Reactive, git-friendly (.py files). Consider for new projects. |
 
 ```bash
-# Marimo (preferred)
-marimo edit notebook.py
-
-# Jupyter (fallback)
+# Jupyter
 jupyter lab
+
+# Or use VS Code's built-in Jupyter support
 ```
 
 ---

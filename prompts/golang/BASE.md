@@ -8,7 +8,7 @@ Works with: Claude Code, Cursor, Windsurf, Gemini, ChatGPT, GitHub Copilot.
 ## Quick Reference
 
 ```yaml
-Runtime:     Go 1.22+
+Runtime:     Go 1.25+
 Database:    sqlc + pgx/v5 + PostgreSQL
 Config:      envconfig
 Logging:     slog (stdlib)

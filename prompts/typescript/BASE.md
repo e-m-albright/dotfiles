@@ -13,9 +13,11 @@ Styling:     Tailwind CSS v4
 Logging:     pino (structured JSON)
 Testing:     Vitest (+ Playwright for interactive apps)
 Profiling:   Lighthouse CLI
-Linting:     Biome
+Linting:     Biome v2 (type-aware, no tsc required)
 Tasks:       Just
 ```
+
+> **Biome v2**: First type-aware linter that doesn't require TypeScript compiler. Catches type-related issues (unused variables with inference, type narrowing) without the overhead of running tsc.
 
 > **Testing Philosophy**: Match testing to complexity. Static content sites (blogs, portfolios) need minimal testing — if it builds, it works. Save E2E testing for apps with auth, forms, and complex interactions.
 

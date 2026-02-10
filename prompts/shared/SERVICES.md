@@ -102,7 +102,7 @@
 # docker-compose.yml
 services:
   meilisearch:
-    image: getmeili/meilisearch:v1.6
+    image: getmeili/meilisearch:v1.35
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
     volumes:
@@ -143,13 +143,12 @@ await resend.emails.send({
 
 | Category | Primary Pick | Alternative | Notes |
 |----------|-------------|-------------|-------|
-| **Self-Hosted** | Better Auth | Lucia | Better Auth: full-featured. Lucia: lightweight, DIY. |
+| **Self-Hosted** | Better Auth | — | Full-featured, TypeScript-first, active development. |
 | **Managed** | Clerk | Auth0 | Clerk: modern DX. Auth0: enterprise features. |
 
 ### When to Use What
 
-- **Better Auth**: Default. Self-hosted, full control, TypeScript-first.
-- **Lucia**: Lightweight auth primitives. When you want to build your own.
+- **Better Auth**: Default. Self-hosted, full control, TypeScript-first, excellent SvelteKit integration.
 - **Clerk**: When you don't want to manage auth infrastructure.
 
 ### Better Auth Setup

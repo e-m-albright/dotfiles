@@ -382,7 +382,7 @@ requires-python = ">=3.12"
 | **API Service** | + `fastapi`, `uvicorn`, `pydantic`, `structlog`, `sentry-sdk` | — |
 | **+ Database** | — | `sqlalchemy`, `asyncpg`, `atlas` |
 | **+ Background Jobs** | — | `arq`, `redis` |
-| **Analytics** | `polars`, `duckdb` | `marimo` (notebooks) |
+| **Analytics** | `polars`, `duckdb` | `jupyter` (notebooks) |
 | **Full-Stack App** | `reflex` | — |
 | **AI/LLM Service** | `openai`/`anthropic`, `instructor` | `pydantic-ai` (tool calling) |
 

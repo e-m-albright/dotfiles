@@ -25,7 +25,6 @@ Curated extension list optimized for **SvelteKit + Python** development.
 - **python** - Python language support + Pylance (fast type checking)
 - **debugpy** - Python debugging support
 - **ruff** - Fast Python linter/formatter (replaces flake8/pylint/black)
-- **marimo** - Reactive Python notebooks (alternative to Jupyter, stores as .py files)
 
 ### ML / Data Science
 - **jupyter** - Jupyter notebook support
@@ -54,7 +53,7 @@ Curated extension list optimized for **SvelteKit + Python** development.
 
 ### SvelteKit Stack
 - **Svelte extension** - Essential for .svelte file support
-- **Biome** preferred over ESLint+Prettier (35x faster, single tool)
+- **Biome v2** preferred over ESLint+Prettier (35x faster, type-aware without tsc, single tool)
 - **Pretty TS Errors** - Makes TypeScript error messages actually readable
 - **Playwright** - Modern E2E testing
 - **Tailwind IntelliSense** - Essential for Tailwind-heavy projects

@@ -138,6 +138,3 @@ fi
 # Local overrides (not in dotfiles repo)
 # =============================================================================
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
-
-# add Pulumi ESC to the PATH
-export PATH=$PATH:$HOME/.pulumi/bin

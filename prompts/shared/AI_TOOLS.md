@@ -236,7 +236,7 @@ Prototyping:
 ### MCP Integration (Claude Code)
 
 ```json
-// ~/.config/claude/config.json
+// ~/.claude/settings.json
 {
   "mcpServers": {
     "filesystem": {
@@ -312,13 +312,13 @@ Prototyping:
 
 | Tool | Pricing Model | Typical Cost |
 |------|---------------|--------------|
-| Claude Code | API usage | $20-100/month depending on usage |
-| Cursor | Subscription | $20/month |
+| Claude Code | API usage (Claude Pro/Max) | $20-100/month (Pro $20, Max from $100) |
+| Cursor | Subscription | $20/month (Pro), $60/month (Pro+), $200/month (Ultra) |
 | bolt.new | Credits | Free tier + $20/month |
 | v0.dev | Credits | Free tier + usage |
 | GitHub Copilot | Subscription | $10-19/month |
 
-**Budget recommendation**: Claude Code + Cursor = ~$40-50/month for full AI-assisted development.
+**Budget recommendation**: Claude Pro ($20) + Cursor Pro ($20) = $40/month for full AI-assisted development. Upgrade to Max/Pro+ when you need higher limits.
 
 ---
 
@@ -375,6 +375,19 @@ Prototyping:
 - Feast: https://feast.dev/
 - tsfresh: https://tsfresh.readthedocs.io/
 - River: https://github.com/online-ml/river
+
+### Runtimes & Tools
+
+| Tool | What It Does | Why Watch |
+|------|--------------|-----------|
+| **Deno 2** | TypeScript-first runtime | Native TypeScript, built-in tooling, Node.js compatibility mode; mature alternative to Bun for TypeScript-first serverless |
+| **Marimo** | Reactive Python notebooks | Git-friendly .py files instead of .ipynb; reactive execution; modern Jupyter alternative |
+| **Pulumi** | Infrastructure as Code | TypeScript/Python/Go for cloud infra; more flexible than Terraform; consider for multi-cloud projects |
+
+**Links**:
+- Deno: https://deno.com/
+- Marimo: https://marimo.io/
+- Pulumi: https://www.pulumi.com/
 
 ### To Investigate
 
