@@ -14,6 +14,7 @@ Logging:     pino (structured JSON)
 Testing:     Vitest (+ Playwright for interactive apps)
 Profiling:   Lighthouse CLI
 Linting:     Biome v2 (type-aware, no tsc required)
+Git Hooks:   Lefthook (parallel, YAML config)
 Tasks:       Just
 ```
 
@@ -234,6 +235,22 @@ export class ValidationError extends AppError {
 
 ---
 
+## Git Hooks (Lefthook)
+
+Use [Lefthook](https://github.com/evilmartians/lefthook) for git hooks. It's Go-based, runs hooks in parallel, and uses simple YAML config. Configure in `lefthook.yml` at project root.
+
+```bash
+# Install hooks after cloning
+bunx lefthook install
+
+# Run pre-commit manually
+bunx lefthook run pre-commit
+```
+
+Typical pre-commit hooks: lint, format check, type check. Keep hooks fast — move slow checks (full test suite, E2E) to CI.
+
+---
+
 ## Git Conventions
 
 ### Commit Messages
@@ -266,6 +283,17 @@ refactor/db-drizzle
 3. **Update .agents/README.md** — Keep index of all agent-generated files
 4. **Clean working files** — Delete when no longer needed
 5. **Architecture decisions** — Go in `.architecture/adr/`, not `.agents/`
+
+---
+
+## Stack Reference
+
+For full technology choices, alternatives, and rationale, read:
+
+- **Stack & tools**: `~/dotfiles/prompts/typescript/STACK.md`
+- **Style guide**: `~/dotfiles/prompts/typescript/STYLE.md`
+
+Review these files when choosing dependencies, evaluating alternatives, or setting up new project infrastructure. They contain detailed "why not X" comparisons and phased installation guidance.
 
 ---
 

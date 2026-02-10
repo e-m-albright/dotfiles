@@ -224,9 +224,29 @@ Phase 3 - SCALE / SPECIAL
 
 ### Documentation (add later, not at start)
 
+**Astro-based (recommended)**
+
+| Category | Choice | Why Not Alternatives |
+|----------|--------|---------------------|
+| **Docs** | Starlight | Astro's official docs theme. Fast, accessible, built-in search, i18n, sidebar from file structure. Most OSS docs projects are converging here. Write MDX, it handles everything else. |
+
+**Svelte-based (not recommended)**
+
+| Option | Status |
+|--------|--------|
+| SveltePress | Thin ecosystem compared to Astro's. Less mature, fewer plugins, smaller community. |
+| KitDocs | SvelteKit-based. Works but hasn't seen much momentum. |
+| SvelteKit + mdsvex | Viable but you'd rebuild what Starlight gives you for free. |
+
+**Framework-agnostic alternatives**
+
 | Category | Choice | Notes |
 |----------|--------|-------|
-| **Docs** | VitePress or Starlight | Modern, fast, Vite-based. Add only when you need public docs. |
+| **Vue-powered** | VitePress | Phenomenal DX. Vue knowledge barely required — mostly markdown. Very fast, huge community. |
+| **React-powered** | Docusaurus | Meta-backed, battle-tested. Heavier than Vite-based options. |
+| **Python-powered** | MkDocs (Material) | Zero JS framework needed. Surprisingly good if you just want markdown files without a JS build pipeline. |
+
+> **Default to Starlight** unless you have a specific reason not to. It's the best docs DX in the ecosystem right now.
 
 ---
 

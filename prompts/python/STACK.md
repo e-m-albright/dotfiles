@@ -17,8 +17,8 @@ Phase 1 - ALWAYS (every project)     Phase 2 - WHEN NEEDED (specific features)
 ├── UV (package manager)             ├── FastAPI (APIs)
 ├── Ruff (lint + format)             ├── SQLAlchemy + asyncpg (database)
 ├── Pyright (type checking)          ├── Typer + Rich (CLI tools)
-└── Just (task runner)               ├── Arq (background jobs)
-                                     ├── PydanticAI (AI agents)
+├── Lefthook (git hooks)             ├── Arq (background jobs)
+└── Just (task runner)               ├── PydanticAI (AI agents)
 Phase 3 - SCALE                      └── Polars + DuckDB (analytics)
 ├── OpenTelemetry (2+ services)
 ├── Hypothesis (edge case testing)
@@ -349,9 +349,13 @@ scalene --profile-only=my_module.slow_function script.py
 
 ### Documentation (add later, not at start)
 
-| Category | Choice | Notes |
-|----------|--------|-------|
-| **Docs** | MkDocs + Material | Sphinx is complex. MkDocs is simpler, Material theme is modern. |
+| Category | Choice | Why Not Alternatives |
+|----------|--------|---------------------|
+| **Python-native** | MkDocs + Material | Sphinx is complex. MkDocs is simpler, Material theme is modern. Zero JS framework needed. |
+| **Best overall** | Starlight (Astro) | If you don't mind a Node build step. Fast, accessible, built-in search, i18n. Most OSS docs are converging here. |
+| **Alternative** | VitePress | Vue-powered but mostly markdown. Phenomenal DX, huge community. |
+
+> **MkDocs for Python-only teams**, Starlight if you're already in a polyglot setup or want the best docs DX.
 
 ---
 

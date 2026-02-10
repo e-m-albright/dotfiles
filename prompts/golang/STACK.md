@@ -81,6 +81,16 @@
 | **Hot Reload** | air | Fast, reliable file watcher for Go. |
 | **API Docs** | swaggo/swag | Generates OpenAPI from code comments. |
 
+### Documentation (add later, not at start)
+
+| Category | Choice | Why Not Alternatives |
+|----------|--------|---------------------|
+| **Best overall** | Starlight (Astro) | Fast, accessible, built-in search, i18n, sidebar from file structure. Write MDX, it handles everything else. |
+| **No JS needed** | MkDocs + Material | Python-based, zero JS framework. Surprisingly good for pure markdown docs. |
+| **Alternative** | VitePress | Vue-powered but mostly markdown. Phenomenal DX, huge community. |
+
+> **Starlight is the default recommendation.** MkDocs if you want zero JS tooling.
+
 ---
 
 ## Version Requirements

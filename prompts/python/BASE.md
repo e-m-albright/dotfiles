@@ -14,6 +14,7 @@ Logging:     structlog + Rich
 Testing:     pytest + pytest-asyncio + Hypothesis
 Linting:     Ruff (lint + format)
 Types:       Pyright
+Git Hooks:   Lefthook (parallel, YAML config)
 Tasks:       Just
 Debugging:   icecream + ipdb
 ```
@@ -290,6 +291,22 @@ class ValidationError(AppError):
 
 ---
 
+## Git Hooks (Lefthook)
+
+Use [Lefthook](https://github.com/evilmartians/lefthook) for git hooks. It's Go-based, runs hooks in parallel, and uses simple YAML config. Configure in `lefthook.yml` at project root.
+
+```bash
+# Install hooks after cloning
+uv run lefthook install
+
+# Run pre-commit manually
+uv run lefthook run pre-commit
+```
+
+Typical pre-commit hooks: lint, format check, type check. Keep hooks fast — move slow checks (full test suite) to CI.
+
+---
+
 ## Git Conventions
 
 ### Commit Messages
@@ -314,6 +331,17 @@ chore(deps): bump fastapi to 0.115.0
 3. **Update .agents/README.md** — Keep index of all agent-generated files
 4. **Clean working files** — Delete when no longer needed
 5. **Architecture decisions** — Go in `.architecture/adr/`, not `.agents/`
+
+---
+
+## Stack Reference
+
+For full technology choices, alternatives, and rationale, read:
+
+- **Stack & tools**: `~/dotfiles/prompts/python/STACK.md`
+- **Style guide**: `~/dotfiles/prompts/python/STYLE.md`
+
+Review these files when choosing dependencies, evaluating alternatives, or setting up new project infrastructure. They contain detailed "why not X" comparisons and phased installation guidance.
 
 ---
 
