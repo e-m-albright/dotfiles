@@ -256,6 +256,15 @@ print_success "Recipe book configured"
 print_info "  New project:      ~/dotfiles/prompts/init.sh <recipe> <name>"
 print_info "  Existing project: ~/dotfiles/prompts/seed.sh <recipe> <path>"
 
+# Claude system instructions (AGENTS.md / ABSTRACT.md)
+print_section "Claude system instructions"
+if "$DOTFILES_DIR/macos/claude_instructions.sh" 2>/dev/null; then
+    print_success "Claude system instructions updated (~/.claude/CLAUDE.md)"
+else
+    print_warning "Could not update ~/.claude/CLAUDE.md"
+    print_info "  One-off: dotfiles claude-instructions"
+fi
+
 # Agent Permissions (safe commands for agentic tools)
 print_section "Agent Permissions"
 # Merge safe commands into ~/.claude/settings.json (requires yq + jq)

@@ -22,6 +22,7 @@ sub_help () {
     printf "   clean            Clean up caches (brew, npm, yarn, composer)\n"
     printf "   brew             Run brew script\n"
     printf "   dock             Run MacOS dock script\n"
+    printf "   claude-instructions  Add AGENTS.md/ABSTRACT.md to ~/.claude/CLAUDE.md (idempotent)\n"
 }
 
 sub_update () {
@@ -55,9 +56,18 @@ sub_dock () {
     printf "${GREEN}%s Success! MacOS dock command finished.${NC}\n" "$ARROW"
 }
 
+sub_claude_instructions() {
+    "$DOTFILES_DIR/macos/claude_instructions.sh"
+    printf "${GREEN}%s Claude system instructions updated (~/.claude/CLAUDE.md).${NC}\n" "$ARROW"
+}
+
 case $COMMAND_NAME in
     "" | "-h" | "--help")
         sub_help
+        ;;
+    claude-instructions)
+        shift
+        sub_claude_instructions "$@"
         ;;
     *)
         shift
