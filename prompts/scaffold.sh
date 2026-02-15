@@ -255,6 +255,9 @@ if ! check_command "git" "Git" "brew install git"; then
     preflight_ok=false
 fi
 
+# Lefthook (optional but recommended for git hooks)
+check_command "lefthook" "Lefthook" "brew install lefthook" || true
+
 if [[ "$preflight_ok" == false ]]; then
     echo ""
     print_warning "Some tools are missing. Install them first or run: ~/dotfiles/install.sh"
@@ -474,6 +477,12 @@ Generated from dotfiles/prompts/$RECIPE/$APP_TYPE"
     fi
 fi
 
+# Install git hooks (lefthook)
+if [[ -f "lefthook.yml" ]] && command -v lefthook >/dev/null 2>&1; then
+    print_step "Installing git hooks (lefthook)"
+    lefthook install -q 2>/dev/null || true
+fi
+
 # -----------------------------------------------------------------------------
 # Summary
 # -----------------------------------------------------------------------------
@@ -505,7 +514,10 @@ if [[ "$IS_NEW_PROJECT" == true ]]; then
             echo "  4. Set up environment:"
             echo "     cp .env.example .env"
             echo ""
-            echo "  5. Start development:"
+            echo "  5. Install git hooks:"
+            echo "     just hooks-install"
+            echo ""
+            echo "  6. Start development:"
             echo "     just dev"
             ;;
         python)
@@ -515,7 +527,10 @@ if [[ "$IS_NEW_PROJECT" == true ]]; then
             echo "  4. Set up environment:"
             echo "     cp .env.example .env"
             echo ""
-            echo "  5. Start development:"
+            echo "  5. Install git hooks:"
+            echo "     just hooks-install"
+            echo ""
+            echo "  6. Start development:"
             echo "     just dev"
             ;;
         golang)
@@ -525,7 +540,10 @@ if [[ "$IS_NEW_PROJECT" == true ]]; then
             echo "  4. Set up environment:"
             echo "     cp .env.example .env"
             echo ""
-            echo "  5. Start development:"
+            echo "  5. Install git hooks:"
+            echo "     just hooks-install"
+            echo ""
+            echo "  6. Start development:"
             echo "     just dev"
             ;;
     esac

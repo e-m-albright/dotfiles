@@ -1,0 +1,39 @@
+# =============================================================================
+# Lefthook Configuration
+# =============================================================================
+# Git hooks powered by Lefthook (https://github.com/evilmartians/lefthook)
+# Faster than Husky/pre-commit, parallel execution, Go-based
+# =============================================================================
+
+parallel: true
+
+pre-commit:
+  parallel: true
+  commands:
+    # Format and lint staged Go files
+    fmt:
+      glob: "*.go"
+      run: gofmt -w {staged_files} && goimports -w {staged_files}
+      stage_fixed: true
+
+    # Lint with golangci-lint
+    lint:
+      glob: "*.go"
+      run: golangci-lint run
+
+    # Vet
+    vet:
+      glob: "*.go"
+      run: go vet ./...
+
+pre-push:
+  parallel: true
+  commands:
+    # Run tests before pushing
+    test:
+      run: go test ./...
+
+# Skip hooks with LEFTHOOK=0 or --no-verify
+skip_output:
+  - meta
+  - summary

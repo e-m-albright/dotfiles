@@ -1,0 +1,34 @@
+# =============================================================================
+# Lefthook Configuration
+# =============================================================================
+# Git hooks powered by Lefthook (https://github.com/evilmartians/lefthook)
+# Faster than pre-commit, parallel execution, Go-based
+# =============================================================================
+
+parallel: true
+
+pre-commit:
+  parallel: true
+  commands:
+    # Lint and format staged files
+    ruff:
+      glob: "*.py"
+      run: uv run ruff check --fix {staged_files} && uv run ruff format {staged_files}
+      stage_fixed: true
+
+    # Type check (runs on staged Python files)
+    pyright:
+      glob: "*.py"
+      run: uv run pyright
+
+pre-push:
+  parallel: true
+  commands:
+    # Run tests before pushing
+    test:
+      run: uv run pytest
+
+# Skip hooks with LEFTHOOK=0 or --no-verify
+skip_output:
+  - meta
+  - summary

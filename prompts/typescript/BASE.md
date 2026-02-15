@@ -241,10 +241,11 @@ Use [Lefthook](https://github.com/evilmartians/lefthook) for git hooks. It's Go-
 
 ```bash
 # Install hooks after cloning
-bunx lefthook install
+lefthook install
+# Or: bunx lefthook install  # when lefthook not installed globally
 
 # Run pre-commit manually
-bunx lefthook run pre-commit
+lefthook run pre-commit
 ```
 
 Typical pre-commit hooks: lint, format check, type check. Keep hooks fast — move slow checks (full test suite, E2E) to CI.

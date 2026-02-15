@@ -184,8 +184,8 @@ build:
 
 # Install git hooks
 hooks-install:
-    uv run lefthook install
+    lefthook install
 
 # Run pre-commit hooks manually
 hooks-run:
-    uv run lefthook run pre-commit
+    lefthook run pre-commit

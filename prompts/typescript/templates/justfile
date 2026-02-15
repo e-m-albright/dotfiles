@@ -144,11 +144,11 @@ add-dev *packages:
 
 # Install git hooks
 hooks-install:
-    bunx lefthook install
+    lefthook install
 
 # Run pre-commit hooks manually
 hooks-run:
-    bunx lefthook run pre-commit
+    lefthook run pre-commit
 
 # -----------------------------------------------------------------------------
 # Utilities

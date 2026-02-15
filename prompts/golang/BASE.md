@@ -306,10 +306,7 @@ func NewPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 Use [Lefthook](https://github.com/evilmartians/lefthook) for git hooks. It's Go-based, runs hooks in parallel, and uses simple YAML config. Configure in `lefthook.yml` at project root.
 
 ```bash
-# Install (via brew or go install)
-brew install lefthook
-
-# Install hooks after cloning
+# Install (via dotfiles/brew.sh or: brew install lefthook)
 lefthook install
 
 # Run pre-commit manually

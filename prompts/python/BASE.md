@@ -296,11 +296,12 @@ class ValidationError(AppError):
 Use [Lefthook](https://github.com/evilmartians/lefthook) for git hooks. It's Go-based, runs hooks in parallel, and uses simple YAML config. Configure in `lefthook.yml` at project root.
 
 ```bash
-# Install hooks after cloning
-uv run lefthook install
+# Install hooks after cloning (lefthook installed globally via dotfiles; uv run for CI)
+lefthook install
+# Or: uv run lefthook install  # when lefthook not installed globally
 
 # Run pre-commit manually
-uv run lefthook run pre-commit
+lefthook run pre-commit
 ```
 
 Typical pre-commit hooks: lint, format check, type check. Keep hooks fast — move slow checks (full test suite) to CI.
