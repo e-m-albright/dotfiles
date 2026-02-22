@@ -247,10 +247,9 @@ print(result.data)  # CityInfo(country="France", population=2161000)
 
 | Category | Choice | When to Use |
 |----------|--------|-------------|
-| **AI-Native Crawling** | Firecrawl | LLM-optimized output, handles JS, bypasses blocks. Best for feeding to LLMs. |
-| **Alternative** | Crawl4AI | Open-source Firecrawl alternative. Self-hosted. |
-| **Search API** | Tavily | AI-optimized search API. Good for RAG pipelines. |
-| **Alternative** | Exa | Semantic search API. Better for finding similar content. |
+| **Search API** | Exa | Semantic search API. Best for finding similar content for RAG/LLMs. |
+| **Alternative** | Tavily | AI-optimized search API. Good for RAG pipelines. |
+| **AI-Native Crawling** | Crawl4AI | Open-source crawler. Self-hosted. When you need to scrape a specific URL. |
 | **Browser Automation** | Playwright | When you need full browser control. Async, better than Selenium. |
 | **Traditional Scraping** | Scrapy | High-volume traditional scraping. Use when AI extraction isn't needed. |
 

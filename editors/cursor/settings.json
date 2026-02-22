@@ -138,5 +138,6 @@
     "Superforms",
     "Sveltekit",
     "tailwindcss"
-  ]
+  ],
+  "workbench.colorTheme": "Cursor Dark Midnight"
 }

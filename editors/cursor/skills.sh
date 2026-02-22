@@ -22,7 +22,6 @@ fi
 
 # Skills to install (owner/repo as used by: npx skills add <owner/repo>)
 SKILLS=(
-    firecrawl/cli
     # Uncomment or add more from editors/cursor/SKILLS.md:
     # wshobson/agents/fastapi-templates
     # wshobson/agents/python-testing-patterns
