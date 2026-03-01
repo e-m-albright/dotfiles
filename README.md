@@ -24,10 +24,10 @@ git clone https://github.com/e-m-albright/dotfiles ~/dotfiles
 
 **What you get:**
 - Shell: Zsh + Oh My Zsh + custom theme
-- Runtimes: Bun, Node.js (fnm), Python (uv), Go
-- Editor: Cursor (with VS Code as fallback)
-- CLI: Git, just, jq, tmux, delta, and more
-- AI: Claude Code, Gemini CLI, Ollama
+- Runtimes: Bun, Node.js (fnm), Python (uv)
+- Editor: Cursor (with VS Code as fallback) + MCP servers
+- CLI: Git, gh, just, jq, tmux, delta, and more
+- AI: Claude Code, Claude Desktop
 
 The installer is idempotent — safe to re-run anytime.
 
@@ -102,7 +102,7 @@ See [`prompts/README.md`](prompts/README.md) for the full recipe documentation.
 
 - **Zsh + Oh My Zsh**: Battle-tested shell framework
 - **Custom theme**: Two-line prompt with git branch status
-- **Warp**: Modern terminal with AI features
+- **Rectangle**: Window management
 
 ### Runtimes
 
@@ -111,11 +111,12 @@ See [`prompts/README.md`](prompts/README.md) for the full recipe documentation.
 | **Node.js** | fnm | LTS version, auto-switches per project |
 | **Bun** | direct | Preferred JS runtime (faster than Node) |
 | **Python** | uv | Python 3.14, fast package management |
-| **Go** | brew | Go 1.25+, with gopls, delve, air, sqlc, templ |
+
+> **Go** is available but disabled by default — enable in `brew.sh` and `install.sh` if needed.
 
 ### Editors
 
-- **Cursor**: Primary editor (AI-native, VS Code compatible)
+- **Cursor**: Primary editor (AI-native, VS Code compatible, MCP servers configured)
 - **VS Code**: Fallback when needed
 
 Both share the same extension list. See `editors/` for configs.
@@ -133,9 +134,19 @@ Both share the same extension list. See `editors/` for configs.
 
 | Tool | Purpose |
 |------|---------|
-| **Claude Code** | Agentic coding assistant |
-| **Gemini CLI** | Google's CLI assistant |
-| **Ollama** | Local model runtime |
+| **Claude Code** | Agentic coding assistant (CLI) |
+| **Claude Desktop** | Claude macOS app |
+
+### MCP Servers (Cursor)
+
+| Server | Purpose |
+|--------|---------|
+| **Exa** | AI-powered web search for research |
+| **Linear** | Issue tracking integration |
+| **Notion** | Documentation integration |
+| ~~Datadog~~ | Observability (disabled, enable when needed) |
+
+Configure API keys in `~/.cursor/mcp.json` (symlinked from `editors/cursor/mcp.json`).
 
 ---
 

@@ -376,12 +376,39 @@ Prototyping:
 |------|--------------|-----------|
 | **Deno 2** | TypeScript-first runtime | Native TypeScript, built-in tooling, Node.js compatibility mode; mature alternative to Bun for TypeScript-first serverless |
 | **Marimo** | Reactive Python notebooks | Git-friendly .py files instead of .ipynb; reactive execution; modern Jupyter alternative |
+| **Hex** | Hosted notebook platform | Collaborative SQL + Python notebooks; great for data teams; alternative to Jupyter/Marimo for shared analysis |
 | **Pulumi** | Infrastructure as Code | TypeScript/Python/Go for cloud infra; more flexible than Terraform; consider for multi-cloud projects |
+| **Temporal** | Durable workflow engine | Reliable distributed workflows, task queues, retries; use instead of rolling your own job queue or saga pattern |
+| **Exa AI** | AI-powered web search API | Semantic search for agents; free tier available; good MCP integration for research tasks |
 
 **Links**:
 - Deno: https://deno.com/
 - Marimo: https://marimo.io/
+- Hex: https://hex.tech/
 - Pulumi: https://www.pulumi.com/
+- Temporal: https://temporal.io/
+- Exa: https://exa.ai/
+
+### Tunneling
+
+For exposing local services (webhooks, demos, mobile testing):
+
+| Tool | Notes |
+|------|-------|
+| **cloudflared** | Preferred. Free, no account needed for quick tunnels. `brew install cloudflared` then `cloudflared tunnel --url localhost:3000` |
+| **ngrok** | Alternative. More features (custom domains, inspection). Free tier available. |
+
+### Monorepo Tools
+
+When a project outgrows a single package:
+
+| Tool | Language | Notes |
+|------|----------|-------|
+| **moon** | Any (Rust-based) | Preferred. Fast, language-agnostic, smart caching, project graph. Best DX. |
+| **Turborepo** | JS/TS | Vercel ecosystem. Good for pure JS/TS monorepos. Simpler than moon. |
+| **Pants** | Python/Go/Java | Best for large polyglot repos. Steeper learning curve. |
+
+> **Start with moon** unless you're JS/TS-only (Turborepo) or have a large polyglot backend (Pants).
 
 ### To Investigate
 

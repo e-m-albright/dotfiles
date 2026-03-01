@@ -59,6 +59,11 @@ print_warn() {
     printf "  ${WARN} ${YELLOW}%s${NC}\n" "$1"
 }
 
+# Alias for compatibility (some scripts use print_warning)
+print_warning() {
+    print_warn "$1"
+}
+
 print_action() {
     local msg="$1"
     local pkg="${msg%% *}"

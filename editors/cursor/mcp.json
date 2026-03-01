@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "exa": {
+      "url": "https://mcp.exa.ai/mcp"
+    },
+    "linear": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.linear.app/mcp"]
+    },
+    "notion": {
+      "url": "https://mcp.notion.com/mcp"
+    }
+  },
+  "disabled": {
+    "datadog": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-datadog"],
+      "env": {
+        "DD_API_KEY": "",
+        "DD_APP_KEY": ""
+      },
+      "note": "Enable when using Datadog for observability"
+    }
+  }
+}

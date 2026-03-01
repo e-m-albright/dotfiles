@@ -55,13 +55,13 @@ install_packages() {
     [[ ${#pkgs[@]} -eq 0 ]] && return 0
     for pkg in "${pkgs[@]}"; do
         [[ -z "$pkg" ]] || [[ "$pkg" =~ ^[[:space:]]*# ]] && continue
-        # Check if binary exists first (works for tap formulas too)
-        if command -v "$pkg" >/dev/null 2>&1; then
-            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$pkg"
+        # Check brew list first (authoritative for Homebrew-managed packages)
+        if brew list "$pkg" &>/dev/null 2>&1; then
+            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (Homebrew)${NC}\n" "$pkg"
             continue
         fi
-        # Also check brew list (for non-tap formulas)
-        if brew list "$pkg" &>/dev/null 2>&1; then
+        # Fallback: check if binary exists (works for tap formulas, manual installs)
+        if command -v "$pkg" >/dev/null 2>&1; then
             printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$pkg"
             continue
         fi
@@ -107,24 +107,25 @@ install_casks() {
 
 install_any() {
     # Prefer formula; fall back to cask.
-    # Optimized: Check binary first (fast), then brew list (slower but necessary)
     local name="$1"
     [[ -z "$name" ]] || [[ "$name" =~ ^[[:space:]]*# ]] && return 0
     
-    # Fast check: if binary exists, it's installed (works for most CLI tools)
-    # Try common binary name variations (much faster than brew list)
-    local bin_name="${name//-/_}"  # claude-code -> claude_code
-    local bin_name2="${name//-/}"  # claude-code -> claudecode
+    # Check brew list first (authoritative source, shows Homebrew origin)
+    if brew list "$name" &>/dev/null 2>&1; then
+        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (Homebrew formula)${NC}\n" "$name"
+        return 0
+    fi
+    if brew list --cask "$name" &>/dev/null 2>&1; then
+        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (Homebrew cask)${NC}\n" "$name"
+        return 0
+    fi
+
+    # Fallback: check if binary exists (manual installs, tap formulas)
+    local bin_name="${name//-/_}"
+    local bin_name2="${name//-/}"
     if command -v "$name" >/dev/null 2>&1 || \
        command -v "$bin_name" >/dev/null 2>&1 || \
        command -v "$bin_name2" >/dev/null 2>&1; then
-        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
-        return 0
-    fi
-    
-    # Slower check: use brew list (only if binary check failed)
-    # Combine both checks with || to short-circuit (faster than separate if statements)
-    if brew list "$name" &>/dev/null 2>&1 || brew list --cask "$name" &>/dev/null 2>&1; then
         printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
         return 0
     fi
@@ -152,9 +153,11 @@ core_cli=(
     git                 # Version control
     git-lfs             # Git Large File Storage
     git-delta           # Beautiful git diffs (used by .gitconfig)
+    gh                  # GitHub CLI (PRs, issues, actions)
     jq                  # JSON processor
     yq                  # YAML processor (like jq for YAML)
     wget                # Web downloader
+    # libpq             # PostgreSQL client library (psql, pg_dump — enable if needed)
 )
 
 terminal_cli=(
@@ -174,10 +177,11 @@ dev_cli=(
     duckdb              # Fast analytical database (SQL for analytics)
     hyperfine           # Command-line benchmarking tool
     py-spy              # Sampling profiler for Python programs
-    go                  # Go programming language
-    golangci-lint       # Go linter aggregator (fast, configurable)
+    # go                # Go programming language (disabled — install per-project if needed)
+    # golangci-lint     # Go linter aggregator (disabled — install with Go if needed)
     atlas               # Database schema migration tool (requires ariga/tap)
     lefthook            # Git hooks (language-agnostic, parallel execution)
+    fnm                 # Fast Node Manager (node version switching)
 )
 
 mac_cli=(
@@ -187,7 +191,7 @@ mac_cli=(
 # Applications (casks)
 essentials=(
     google-chrome       # Web browser
-    # iterm2            # Terminal emulator (using Warp instead)
+    # iterm2            # Terminal emulator (disabled)
 )
 
 # Editors
@@ -197,20 +201,20 @@ ide=(
 )
 
 productivity=(
-    # rectangle            # Window management
+    rectangle              # Window management
     # flycut               # Clipboard manager
-    # raycast                # Launcher + actions; can replace Rectangle/Flycut
-    warp                   # AI terminal (modern UX)
+    # raycast              # Launcher + actions; can replace Rectangle/Flycut
+    # warp                 # AI terminal (disabled — visual glitches on fresh install)
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
-    granola                # AI notepad for meetings (auto-transcribes, enhances notes)
+    # granola              # AI notepad for meetings (disabled)
 )
 
 dev_apps=(
     # docker-desktop    # Consider OrbStack instead (faster, lower resource usage on macOS)
     orbstack            # Docker Desktop alternative (faster, better macOS integration)
     linear-linear       # Project management & issue tracking
-    google-cloud-sdk
+    # google-cloud-sdk  # Google Cloud SDK (disabled — install per-project if needed)
 )
 
 social_apps=(
@@ -226,21 +230,22 @@ social_apps=(
 # AI Tools
 ai_cli=(
     claude-code          # Anthropic CLI agent
-    gemini-cli           # Google Gemini CLI
-    ollama               # Local LLM runtime
-    huggingface-cli      # Hugging Face CLI (model management, downloads)
+    claude               # Claude Desktop (macOS app)
+    # gemini-cli         # Google Gemini CLI (disabled)
+    # ollama             # Local LLM runtime (disabled — install per-project if needed)
+    # huggingface-cli    # Hugging Face CLI (disabled — install per-project if needed)
 )
 
-quicklook_plugins=(
-    qlcolorcode
-    qlstephen
-    qlmarkdown
-    quicklook-json
-    qlprettypatch
-    quicklook-csv
-    webpquicklook
-    qlvideo
-)
+# Infrastructure (disabled by default — enable per-need)
+# infra_cli=(
+#     awscli              # AWS CLI
+#     leapp               # Cloud credentials manager
+#     geodesic            # Cloud automation shell (via cloudposse)
+#     atmos               # Terraform orchestration (via cloudposse)
+#     opentofu            # Open-source Terraform alternative
+#     # terraform          # HashiCorp IaC (consider opentofu instead)
+#     doppler             # Secrets management
+# )
 
 # Formulae (formula-only installs, not casks)
 formulae=(
@@ -311,6 +316,3 @@ if [[ "$AI" == "1" ]]; then
         done
     fi
 fi
-
-print_section "Quick Look Plugins"
-install_casks "${quicklook_plugins[@]}"

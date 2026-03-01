@@ -223,6 +223,21 @@ Thumbs.db
 > **When to use IaC**: Most projects can deploy directly to Railway, Vercel, or Fly.io without any IaC.
 > Add Pulumi when you need multi-environment infrastructure (dev/staging/prod) or complex AWS/GCP setups.
 
+### CLI Tools (Install When Needed)
+
+These are **not installed globally** — add them per-project or enable in `brew.sh` when needed:
+
+| Tool | Purpose | Install |
+|------|---------|---------|
+| **awscli** | AWS CLI | `brew install awscli` |
+| **leapp** | Cloud credentials manager | `brew install --cask leapp` |
+| **geodesic** | Cloud automation shell | `brew install cloudposse/tap/geodesic` |
+| **atmos** | Terraform orchestration | `brew install cloudposse/tap/atmos` |
+| **opentofu** | Open-source Terraform fork | `brew install opentofu` |
+| **doppler** | Secrets management | `brew install dopplerhq/cli/doppler` |
+
+> **Note**: Prefer OpenTofu over Terraform (open-source, compatible). Use Doppler for secrets management across environments.
+
 ### Pulumi (Consider for Later)
 
 Pulumi lets you define infrastructure in TypeScript/Python/Go instead of HCL. Benefits over Terraform:

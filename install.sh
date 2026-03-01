@@ -57,43 +57,40 @@ fi
 
 # Languages & Runtimes
 print_header "🔧 Languages & Runtimes"
-# -- Go
-print_section "Go"
-if ! command -v go >/dev/null 2>&1; then
-    print_action "Installing Go..."
-    brew install go >/dev/null 2>&1
-    print_success "Go installed"
-else
-    print_info "Go already installed ($(go version | awk '{print $3}'))"
-fi
 
-# Go tools (installed globally)
-print_action "Installing Go tools..."
-GO_TOOLS=(
-    "golang.org/x/tools/gopls@latest"           # LSP server
-    "github.com/go-delve/delve/cmd/dlv@latest"  # Debugger
-    "github.com/air-verse/air@latest"           # Live reload
-    "github.com/sqlc-dev/sqlc/cmd/sqlc@latest"  # SQL codegen
-    "github.com/pressly/goose/v3/cmd/goose@latest"  # Migrations
-    "github.com/a-h/templ/cmd/templ@latest"     # HTML templates
-    "honnef.co/go/tools/cmd/staticcheck@latest" # Static analysis
-)
-for tool in "${GO_TOOLS[@]}"; do
-    tool_name=$(basename "${tool%@*}")
-    if ! command -v "$tool_name" >/dev/null 2>&1; then
-        go install "$tool" >/dev/null 2>&1 && print_info "  $tool_name installed" || print_info "  $tool_name skipped"
-    else
-        print_info "  $tool_name already installed"
-    fi
-done
-print_success "Go tools configured"
+# -- Go (disabled — install per-project if needed)
+# To enable: uncomment go/golangci-lint in macos/brew.sh and uncomment this block
+# print_section "Go"
+# if ! command -v go >/dev/null 2>&1; then
+#     print_action "Installing Go..."
+#     brew install go >/dev/null 2>&1
+#     print_success "Go installed"
+# else
+#     print_info "Go already installed ($(go version | awk '{print $3}'))"
+# fi
+# GO_TOOLS=(
+#     "golang.org/x/tools/gopls@latest"
+#     "github.com/go-delve/delve/cmd/dlv@latest"
+#     "github.com/air-verse/air@latest"
+#     "github.com/sqlc-dev/sqlc/cmd/sqlc@latest"
+#     "github.com/pressly/goose/v3/cmd/goose@latest"
+#     "github.com/a-h/templ/cmd/templ@latest"
+#     "honnef.co/go/tools/cmd/staticcheck@latest"
+# )
+# for tool in "${GO_TOOLS[@]}"; do
+#     tool_name=$(basename "${tool%@*}")
+#     if ! command -v "$tool_name" >/dev/null 2>&1; then
+#         go install "$tool" >/dev/null 2>&1 && print_info "  $tool_name installed" || print_info "  $tool_name skipped"
+#     else
+#         print_info "  $tool_name already installed"
+#     fi
+# done
+# print_success "Go tools configured"
 
-# -- Node.js / FNM (Fast Node Manager)
+# -- Node.js / FNM (Fast Node Manager — installed via brew in brew.sh)
 print_section "Node.js / FNM"
 if ! command -v fnm >/dev/null 2>&1; then
-    print_action "Installing FNM..."
-    curl -fsSL https://fnm.vercel.app/install | bash >/dev/null 2>&1
-    print_success "FNM installed"
+    print_info "FNM not found (should be installed via brew.sh)"
 else
     print_info "FNM already installed"
 fi
@@ -162,20 +159,9 @@ else
     print_info "Python 3.14 already installed"
 fi
 
-# Install Jupyter (for compatibility with traditional notebooks)
-print_section "Jupyter"
-if command -v uv >/dev/null 2>&1; then
-    if ! uv tool list 2>/dev/null | grep -q "^jupyter "; then
-        print_action "Installing Jupyter..."
-        if uv tool install jupyter >/dev/null 2>&1; then
-            print_success "Jupyter installed"
-        else
-            print_info "Jupyter installation skipped (will install manually)"
-        fi
-    else
-        print_info "Jupyter already installed"
-    fi
-fi
+# Jupyter / Marimo — install per-project, not globally
+# Use: uv add jupyter marimo (in project virtualenv)
+# See also: Hex (hex.tech) for hosted notebook collaboration
 
 # Editor configurations (VS Code & Cursor)
 print_header "📝 Editor Configuration"
@@ -194,9 +180,10 @@ if command -v cursor >/dev/null 2>&1; then
     . "$DOTFILES_DIR/editors/cursor/extensions.sh"
     mkdir -p ~/Library/Application\ Support/Cursor/User
     ln -sf "$DOTFILES_DIR/editors/cursor/settings.json" ~/Library/Application\ Support/Cursor/User/settings.json 2>/dev/null || true
-    # Global Cursor CLI config
+    # Global Cursor CLI config + MCP servers
     mkdir -p ~/.cursor
     ln -sf "$DOTFILES_DIR/editors/cursor/cli-config.json" ~/.cursor/cli-config.json 2>/dev/null || true
+    ln -sf "$DOTFILES_DIR/editors/cursor/mcp.json" ~/.cursor/mcp.json 2>/dev/null || true
     
     # Install Cursor CLI agent (command-line tool)
     if ! command -v agent >/dev/null 2>&1; then
@@ -257,3 +244,45 @@ mkdir -p ~/code
 
 # Final completion message
 print_completion "✨ Dotfiles setup complete!"
+
+# ==========================================================================
+# Manual Follow-Up Steps
+# ==========================================================================
+print_header "📋 Manual Follow-Up Steps"
+printf "\n"
+printf "  ${BOLD}The following steps require manual action:${NC}\n"
+printf "\n"
+
+printf "  ${CYAN}1.${NC} ${BOLD}MCP Server API Keys${NC}\n"
+printf "     Edit ${PKG_COLOR}~/.cursor/mcp.json${NC} and add your API keys:\n"
+printf "     ${CYAN}•${NC} Exa AI     — Get key at ${CYAN}https://exa.ai${NC}\n"
+printf "     ${CYAN}•${NC} Linear     — Get key at ${CYAN}https://linear.app/settings/api${NC}\n"
+printf "     ${CYAN}•${NC} Notion     — Get key at ${CYAN}https://www.notion.so/my-integrations${NC}\n"
+printf "\n"
+
+printf "  ${CYAN}2.${NC} ${BOLD}Claude Code${NC}\n"
+printf "     Run ${PKG_COLOR}claude${NC} and follow the login prompts to authenticate.\n"
+printf "\n"
+
+printf "  ${CYAN}3.${NC} ${BOLD}GitHub CLI${NC}\n"
+printf "     Run ${PKG_COLOR}gh auth login${NC} to authenticate with GitHub.\n"
+printf "\n"
+
+printf "  ${CYAN}4.${NC} ${BOLD}Git Identity${NC}\n"
+printf "     Verify your identity: ${PKG_COLOR}git config user.name && git config user.email${NC}\n"
+printf "\n"
+
+printf "  ${CYAN}5.${NC} ${BOLD}Rectangle${NC}\n"
+printf "     Open Rectangle and grant Accessibility permissions in System Settings.\n"
+printf "\n"
+
+printf "  ${CYAN}6.${NC} ${BOLD}SSH Keys${NC}\n"
+printf "     If not auto-configured, add your SSH key to GitHub:\n"
+printf "     ${PKG_COLOR}pbcopy < ~/.ssh/id_ed25519.pub${NC} → ${CYAN}https://github.com/settings/keys${NC}\n"
+printf "\n"
+
+printf "  ${YELLOW}Optional:${NC}\n"
+printf "     ${CYAN}•${NC} Enable Datadog MCP — uncomment in ${PKG_COLOR}~/.cursor/mcp.json${NC}\n"
+printf "     ${CYAN}•${NC} Enable infra tools — uncomment ${PKG_COLOR}infra_cli${NC} in ${PKG_COLOR}macos/brew.sh${NC}\n"
+printf "     ${CYAN}•${NC} Enable Go — uncomment in ${PKG_COLOR}macos/brew.sh${NC} and ${PKG_COLOR}install.sh${NC}\n"
+printf "\n"
