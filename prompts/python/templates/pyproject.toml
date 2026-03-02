@@ -9,7 +9,7 @@ name = "my-python-app"
 version = "0.1.0"
 description = "My Python application"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "Your Name", email = "you@example.com" }]
 
@@ -68,11 +68,11 @@ ml = [
 app = "app.main:main"
 
 # =============================================================================
-# UV Configuration
+# Dependency Groups (PEP 735)
 # =============================================================================
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=6.0.0",
@@ -86,9 +86,11 @@ dev-dependencies = [
 # =============================================================================
 # Ruff Configuration
 # =============================================================================
+# Note: Ruff supports up to py313. Use py313 until Ruff adds Python 3.14 support.
+# =============================================================================
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 line-length = 100
 indent-width = 4
 
@@ -140,7 +142,7 @@ line-ending = "auto"
 # =============================================================================
 
 [tool.pyright]
-pythonVersion = "3.12"
+pythonVersion = "3.14"
 typeCheckingMode = "strict"
 reportMissingImports = true
 reportMissingTypeStubs = false

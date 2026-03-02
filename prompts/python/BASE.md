@@ -8,7 +8,7 @@ Works with: Claude Code, Cursor, Windsurf, Gemini, ChatGPT, GitHub Copilot.
 ## Quick Reference
 
 ```yaml
-Runtime:     Python 3.12+ (via UV)
+Runtime:     Python 3.14 (via UV)
 Validation:  Pydantic v2
 Logging:     structlog + Rich
 Testing:     pytest + pytest-asyncio + Hypothesis

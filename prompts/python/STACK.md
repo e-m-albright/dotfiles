@@ -34,7 +34,7 @@ Phase 3 - SCALE                      └── Polars + DuckDB (analytics)
 | Category | Choice | Why Not Alternatives |
 |----------|--------|---------------------|
 | **Package Manager** | UV | pip is slow, Poetry is complex. UV is 10-100x faster, Rust-based, handles Python versions too. |
-| **Python Version** | 3.12+ | 3.12 has better typing, faster startup, improved error messages. |
+| **Python Version** | 3.14 | Latest stable. Better typing, faster startup, improved error messages. |
 | **Linter + Formatter** | Ruff | Flake8/Black/isort are 3 tools. Ruff does all, 10-100x faster. |
 | **Type Checker** | Pyright | Mypy is slower, less accurate. Pyright (via Pylance) has better DX. |
 | **Task Runner** | Just | Make is arcane. Just is readable, cross-platform, modern. |
@@ -347,7 +347,7 @@ scalene --profile-only=my_module.slow_function script.py
 | Category | Choice | Notes |
 |----------|--------|-------|
 | **Containers** | Docker | Dockerfile + docker-compose for local dev. |
-| **Base Image** | python:3.12-slim | Smaller than full image. Use alpine only if size critical. |
+| **Base Image** | python:3.14-slim | Smaller than full image. Use alpine only if size critical. |
 
 ### Infrastructure as Code
 
@@ -371,17 +371,18 @@ scalene --profile-only=my_module.slow_function script.py
 
 ```toml
 [project]
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 ```
 
 ## Critical Notes
 
 1. **UV over pip**: Always use `uv pip install` or `uv sync` — never raw pip
-2. **Pydantic v2 syntax**: Use `model_config = ConfigDict(...)` not `class Config:`
-3. **SQLAlchemy 2.0 syntax**: Use `select()` not `session.query()`
-4. **Async by default**: Use `async def` for FastAPI handlers and DB operations
-5. **structlog over logging**: Structured logs are searchable and parseable
-6. **Start minimal**: Don't install analytics tools for a simple API
+2. **Ruff target-version**: Use `py313` until Ruff adds Python 3.14 support (project can still use `requires-python = ">=3.14"`)
+3. **Pydantic v2 syntax**: Use `model_config = ConfigDict(...)` not `class Config:`
+4. **SQLAlchemy 2.0 syntax**: Use `select()` not `session.query()`
+5. **Async by default**: Use `async def` for FastAPI handlers and DB operations
+6. **structlog over logging**: Structured logs are searchable and parseable
+7. **Start minimal**: Don't install analytics tools for a simple API
 
 ## Quick Reference: What to Install When
 
@@ -398,11 +399,11 @@ requires-python = ">=3.12"
 | **Full-Stack App** | `reflex` | — |
 | **AI/LLM Service** | `openai`/`anthropic`, `instructor` | `pydantic-ai` (tool calling) |
 
-### Dev Dependencies
+### Dev Dependencies (PEP 735)
 
 ```toml
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     # Phase 1 - Always
     "pytest",
     "pytest-asyncio",
