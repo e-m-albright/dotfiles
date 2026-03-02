@@ -1,0 +1,45 @@
+---
+description: Go conventions -- stdlib-first, explicit dependencies
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Go
+
+## Tooling
+
+- Use `go mod tidy` after adding/removing imports.
+- Use `golangci-lint` for linting when configured.
+- Use `just` as the task runner when a justfile is present.
+
+## Patterns
+
+- Accept interfaces, return structs.
+- Use `context.Context` as the first parameter for cancellation and timeouts.
+- Use `fmt.Errorf("context: %w", err)` for error wrapping.
+- Use `slog` for structured logging (stdlib, Go 1.21+).
+- Pass dependencies explicitly via constructor functions -- no global state.
+- Use guard clauses and early returns to reduce nesting.
+
+## Critical Rules
+
+### Always
+
+- Check and handle every error.
+- Use `context.Context` for all I/O operations.
+- Wrap errors with context before returning.
+- Run `just check` (or `golangci-lint run`) before committing.
+
+### Never
+
+- Use `panic` for expected errors -- return errors.
+- Use global variables for state -- inject dependencies.
+- Use `interface{}` -- use generics or specific types.
+- Use `init()` for complex logic -- keep it for simple registrations.
+- Ignore errors with `_` unless explicitly justified.
+
+### Ask First
+
+- Adding new dependencies.
+- Changing database schema or API contracts.
+- Deleting files.

@@ -1,8 +1,5 @@
 {
   "mcpServers": {
-    "exa": {
-      "url": "https://mcp.exa.ai/mcp"
-    },
     "linear": {
       "command": "npx",
       "args": ["-y", "mcp-remote", "https://mcp.linear.app/mcp"]

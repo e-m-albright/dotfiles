@@ -1,37 +1,41 @@
 # Project Memory & Decision Organization
 
-**Philosophy**: Maintain a clear, layered system that distinguishes current state from historical evolution, with attribution for context—not to create rules that can never be questioned.
+**Philosophy**: Maintain a clear, layered system that distinguishes current state from working context, with attribution for context—not to create rules that can never be questioned.
 
 > **Key Insight**: The best project memory files are hand-curated, ~300-500 lines max.
 > Auto-generated documentation becomes "balls of mud." Quality over quantity.
 
 ---
 
-## The Three-Layer System
+## The Two-Layer System
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │ Layer 1: CURRENT STATE (Living, curated)                           │
 │ "What is true right now?"                                          │
-│ ├── AGENTS.md (300-500 lines, project instructions for everyone)   │
-│ └── ABSTRACT.md (what we're building, context)                │
+│ └── AGENTS.md (project instructions + project context)             │
+│     ├── How we build (conventions, stack, process)                  │
+│     └── Project Context section (what we're building, why)          │
 ├─────────────────────────────────────────────────────────────────────┤
-│ Layer 2: DECISION HISTORY (Append-only, evolvable)                 │
-│ "Why did we decide this? How has thinking evolved?"                │
-│ ├── .architecture/adr/*.md (Architecture Decision Records)            │
-│ └── .architecture/CHANGELOG.md (timeline with context)                │
-├─────────────────────────────────────────────────────────────────────┤
-│ Layer 3: WORKING CONTEXT (Ephemeral, gitignored)                   │
-│ "What am I working on right now?"                                  │
+│ Layer 2: WORKING CONTEXT (Ephemeral + decisions)                   │
+│ "What am I working on? Why did we decide this?"                    │
 │ ├── .agents/plans/* (implementation plans)                         │
 │ ├── .agents/research/* (investigation notes)                       │
-│ └── .agents/sessions/* (conversation logs)                         │
+│ ├── .agents/sessions/* (conversation logs)                         │
+│ ├── .agents/prompts/* (key prompts that led to decisions)          │
+│ └── .agents/decisions/* (ADRs — versioned, committed to git)       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+### What's Versioned
+
+- `AGENTS.md` — always committed. Source of truth for current state.
+- `.agents/decisions/` — committed to git via `!.agents/decisions/` in `.gitignore`. This is the only versioned subset of `.agents/`.
+- Everything else in `.agents/` — gitignored. Ephemeral working files.
+
 ### Naming
 
-`AGENTS.md` is the cross-platform convention that works with Claude Code, Cursor, Gemini, ChatGPT, and others. Think of it as **project instructions for everyone**—humans and AI alike.
+`AGENTS.md` is the cross-platform convention that works with Claude Code, Cursor, Gemini, ChatGPT, and others. Think of it as **project instructions for everyone**—humans and AI alike. It now includes a "Project Context" section covering what you're building and why (previously a separate `ABSTRACT.md` file).
 
 ---
 
@@ -40,20 +44,16 @@
 ```
 your-project/
 │
-├── AGENTS.md                      # Layer 1: Project instructions (for humans + AI)
-├── ABSTRACT.md               # Layer 1: What we're building
+├── AGENTS.md                      # Layer 1: Project instructions + context
 │
-├── .architecture/                    # Layer 2: Decision history (versioned)
-│   ├── adr/                       # Architecture Decision Records
+├── .agents/                       # Layer 2: Working memory + decisions
+│   ├── decisions/                 # Architecture Decision Records (versioned)
 │   │   ├── 0001-database-choice.md
 │   │   ├── 0002-api-design.md
 │   │   ├── 0003-supersedes-0002.md
-│   │   └── _index.md              # Decision index (maintained)
+│   │   ├── _index.md              # Decision index (maintained)
+│   │   └── CHANGELOG.md           # Timeline of decisions with context
 │   │
-│   ├── CHANGELOG.md               # Timeline of decisions with context
-│   └── README.md                  # How decisions are made here
-│
-├── .agents/                       # Layer 3: Working memory (gitignored)
 │   ├── plans/                     # Implementation plans (date-prefixed)
 │   ├── research/                  # Investigation notes
 │   ├── prompts/                   # Key prompts that led to decisions
@@ -62,18 +62,16 @@ your-project/
 └── .gitignore
 ```
 
-### What Gets Versioned
+### .gitignore Setup
 
 ```gitignore
 # .gitignore
 
-# Working memory (ephemeral)
+# Working memory (ephemeral by default)
 .agents/
 
-# Keep these versioned:
-# .architecture/        (decision history)
-# AGENTS.md          (project instructions)
-# ABSTRACT.md   (project context)
+# Keep decisions versioned
+!.agents/decisions/
 ```
 
 ---
@@ -164,12 +162,11 @@ We will use Better Auth for authentication because [...]
 | Document | Style | Update Pattern |
 |----------|-------|----------------|
 | `AGENTS.md` | Curated | Edit in place, keep current |
-| `ABSTRACT.md` | Curated | Edit in place, keep current |
-| `.architecture/adr/*.md` | Append-only | Don't edit, supersede instead |
-| `.architecture/CHANGELOG.md` | Append-only | Add entries, never remove |
-| `.agents/*` | Ephemeral | Delete when done |
+| `.agents/decisions/*.md` | Append-only | Don't edit, supersede instead |
+| `.agents/decisions/CHANGELOG.md` | Append-only | Add entries, never remove |
+| `.agents/*` (other) | Ephemeral | Delete when done |
 
-**The rule**: Layer 1 is edited. Layer 2 is appended. Layer 3 is deleted.
+**The rule**: Layer 1 is edited. Decisions are appended. Working files are deleted.
 
 ---
 
@@ -274,13 +271,13 @@ All decisions can be revisited. Attribution helps you work effectively:
 cat AGENTS.md | grep -A5 "## Architecture"
 
 # 2. Check relevant decisions
-ls .architecture/adr/ | grep -i "auth\|api"
+ls .agents/decisions/ | grep -i "auth\|api"
 
 # 3. Create a plan
 # Create .agents/plans/2026-02-01-feature-x.md
 
 # 4. If architectural decision needed, draft ADR
-# Create .architecture/adr/0006-feature-x-approach.md (status: proposed)
+# Create .agents/decisions/0006-feature-x-approach.md (status: proposed)
 
 # 5. Review and approve
 # Change status to "accepted", add attribution
@@ -291,18 +288,17 @@ ls .architecture/adr/ | grep -i "auth\|api"
 ```bash
 # If confused about what's current:
 # 1. AGENTS.md is the source of truth for current state
-# 2. .architecture/CHANGELOG.md shows the evolution
-# 3. ADRs explain the "why" behind each decision
+# 2. .agents/decisions/CHANGELOG.md shows the evolution
+# 3. ADRs in .agents/decisions/ explain the "why" behind each decision
 ```
 
 ### Onboarding (Human or AI)
 
 ```markdown
 ## Read in Order
-1. ABSTRACT.md (what we're building)
-2. AGENTS.md (how we build it)
-3. .architecture/_index.md (key decisions)
-4. .architecture/CHANGELOG.md (recent changes)
+1. AGENTS.md (what we're building + how we build it)
+2. .agents/decisions/_index.md (key decisions)
+3. .agents/decisions/CHANGELOG.md (recent changes)
 ```
 
 ---
@@ -406,8 +402,8 @@ Chosen option: **Option B** because [justification]
 | Question | Where to Look |
 |----------|---------------|
 | What's the current approach? | `AGENTS.md` |
-| Why did we choose this? | `.architecture/adr/XXXX-*.md` |
-| What changed recently? | `.architecture/CHANGELOG.md` |
+| Why did we choose this? | `.agents/decisions/XXXX-*.md` |
+| What changed recently? | `.agents/decisions/CHANGELOG.md` |
 | What are we working on now? | `.agents/plans/` |
 | Who made this decision? | Check attribution tags |
 | Can I change this? | Yes—but loop in people with context first |

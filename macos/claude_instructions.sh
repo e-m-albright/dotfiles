@@ -9,7 +9,7 @@ set -e
 CLAUDE_MD="${CLAUDE_MD:-$HOME/.claude/CLAUDE.md}"
 # Unique block so we only add once
 MARKER="AGENTS.md in this repository if present"
-INSTRUCTION="Read and follow the instructions in AGENTS.md in this repository if present. Look for ABSTRACT.md for context on this repository."
+INSTRUCTION="Read and follow the instructions in AGENTS.md in this repository if present. Read all .cursor/rules/*.mdc files for process and coding conventions."
 
 ensure_claude_instructions() {
     mkdir -p "$(dirname "$CLAUDE_MD")"

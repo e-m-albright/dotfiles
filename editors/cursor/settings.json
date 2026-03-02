@@ -139,5 +139,6 @@
     "Sveltekit",
     "tailwindcss"
   ],
-  "workbench.colorTheme": "Cursor Dark Midnight"
+  "workbench.colorTheme": "Cursor Dark Midnight",
+  "cursor.cpp.enablePartialAccepts": true
 }

@@ -1,0 +1,12 @@
+---
+description: Where agents store working files, plans, and decisions
+alwaysApply: true
+---
+
+# Agent Artifacts
+
+- All working files go in `.agents/` -- never scatter files in the project root.
+- Date-prefix files: `YYYY-MM-DD-description.md`.
+- Write an ADR in `.agents/decisions/` for significant architectural choices.
+- Clean up working files when they're incorporated or abandoned.
+- `.agents/decisions/` is versioned (committed to git). Everything else in `.agents/` is gitignored.

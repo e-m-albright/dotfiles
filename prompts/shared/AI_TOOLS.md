@@ -183,6 +183,67 @@ What language?
 
 ---
 
+## LLM Evals & Observability
+
+> **For monitoring, evaluating, and improving AI applications** — not general app observability (see `INFRASTRUCTURE.md` for Sentry/OTel).
+
+### Recommended Picks
+
+| Tool | Best For | Notes |
+|------|----------|-------|
+| **Langfuse** | All-in-one tracing + eval. Our default. | Open-source (MIT), self-hostable, framework-agnostic. Best starting point. |
+| **Braintrust** | Prompt experimentation + CI/CD evals | End-to-end: traces become eval cases in one click, GitHub Actions integration. Best for systematic prompt improvement. |
+| **Logfire** | Python/Pydantic-native observability | Built by the Pydantic team. Auto-traces Pydantic validations and PydanticAI agents. Best DX if your AI stack is PydanticAI. |
+
+### Full Comparison
+
+| Feature | Langfuse | Braintrust | Logfire |
+|---------|----------|------------|---------|
+| **License** | Open-source (MIT) | Commercial (free tier: 1M spans/mo) | Commercial (free tier available) |
+| **Self-host** | Yes | No | Enterprise only |
+| **Tracing** | Full LLM traces, spans, scores | Full traces + proxy | OpenTelemetry-native |
+| **Evals** | Custom eval pipelines | Built-in eval framework, CI/CD | Via PydanticAI integration |
+| **Prompt management** | Yes (versioned prompts) | Yes (experiments + datasets) | No |
+| **Framework support** | Any (OpenAI, Anthropic, LangChain, PydanticAI, etc.) | Any (via proxy or SDK) | Python-focused (Pydantic, PydanticAI, FastAPI) |
+| **Strength** | Flexibility, open-source, universal | Eval-to-production loop, PM-friendly | Zero-config for Pydantic stack |
+| **Weakness** | Build-your-own eval infra | Vendor lock-in | Python-only, no prompt management |
+
+### Decision Tree
+
+```
+What's your AI stack?
+├── PydanticAI (Python-only)?
+│   ├── Want zero-config tracing? → Logfire
+│   └── Need evals + prompt management? → Langfuse (+ Logfire for tracing)
+├── Multi-framework / multi-language?
+│   ├── Want open-source / self-host? → Langfuse
+│   └── Want eval CI/CD on PRs? → Braintrust
+└── Just starting?
+    └── Langfuse (most flexible, open-source, easy to switch later)
+```
+
+### Quick Start
+
+```python
+# Langfuse — works with any framework
+from langfuse import Langfuse
+langfuse = Langfuse()
+trace = langfuse.trace(name="my-agent-run")
+
+# Logfire — zero-config for PydanticAI
+import logfire
+logfire.configure()
+logfire.instrument_pydantic_ai()
+
+# Braintrust — wrap any LLM call
+from braintrust import init_logger
+logger = init_logger(project="my-project")
+```
+
+> **Start with Langfuse** unless you're pure PydanticAI (Logfire) or need eval CI/CD in GitHub Actions (Braintrust). All three can coexist — Langfuse for tracing, Braintrust for evals, Logfire for Pydantic debugging.
+
+---
+
 ## Content & Image Generation
 
 > **For developer workflows**, not core product features.
@@ -290,6 +351,9 @@ Prototyping:
 | TypeScript agents | Mastra |
 | Python agents (multi-agent) | CrewAI or Google ADK |
 | Structured outputs | Instructor |
+| LLM tracing/eval (general) | Langfuse |
+| LLM eval CI/CD | Braintrust |
+| PydanticAI tracing | Logfire |
 | Presentations | gamma.app |
 
 ### Skip These

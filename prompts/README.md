@@ -1,10 +1,12 @@
 # Project Recipes
 
-Opinionated scaffolding for TypeScript, Python, and Go projects — optimized for AI-assisted development and long-term maintainability.
+Opinionated scaffolding for TypeScript, Python, and Go projects -- optimized for AI-assisted development and long-term maintainability.
+
+**Philosophy**: Dotfiles seeds and influences. Projects own themselves.
 
 ## Usage
 
-One script, idempotent — run it on new or existing projects:
+One script, idempotent -- run it on new or existing projects:
 
 ```bash
 # Create new projects
@@ -15,38 +17,50 @@ One script, idempotent — run it on new or existing projects:
 
 # Seed existing projects (use . for current directory)
 ~/dotfiles/prompts/scaffold.sh typescript .
-~/dotfiles/prompts/scaffold.sh typescript astro ~/code/my-blog
 ~/dotfiles/prompts/scaffold.sh python ~/code/my-api
+
+# Force regenerate everything (including AGENTS.md)
+~/dotfiles/prompts/scaffold.sh --force python .
 ```
 
-Safe to run multiple times — only adds missing pieces, regenerates AGENTS.md to pick up recipe updates.
+Safe to run multiple times -- only adds missing pieces. AGENTS.md is generated once, then project-owned (use `--force` to regenerate).
 
-### What Gets Added
+### What Gets Created
 
-| File/Directory | Purpose |
-|----------------|---------|
-| `AGENTS.md` | Instructions for AI agents (generated from BASE.md + FRAMEWORK.md) |
-| `ABSTRACT.md` | What you're building (you fill this in) |
-| `.agents/` | Working files: plans, research, sessions (gitignored) |
-| `.architecture/` | Architecture Decision Records (versioned) |
+| File/Directory | Purpose | Ownership |
+|----------------|---------|-----------|
+| `AGENTS.md` | Project instructions + context (code patterns + project brief) | Project-owned (edit freely) |
+| `.cursor/rules/*.mdc` | Cursor rules for process, safety, and coding conventions | Universal = symlinked, Recipe = copied |
+| `.agents/` | Working files: plans, research, sessions (gitignored) | Project-owned |
+| `.agents/decisions/` | Architecture Decision Records (versioned) | Project-owned |
+
+### On Re-run
+
+- **AGENTS.md** -- NOT overwritten (project owns it). Use `--force` to regenerate.
+- **Universal rules** -- re-symlinked (always up to date from dotfiles).
+- **Recipe rules** -- skip existing files (project may have customized).
+- **.agents/** -- created if missing, `decisions/` subdirectory ensured.
 
 ### Bringing an Existing Project into Conformance
 
 ```bash
 cd ~/code/my-existing-app
 
-# 1. Fill out ABSTRACT.md first
+# 1. Scaffold to add rules and generate AGENTS.md
+~/dotfiles/prompts/scaffold.sh python .
 
-# 2. Audit against our guidelines
-claude "Read AGENTS.md and audit this codebase. Create a report listing
-what conforms, what needs to change, and recommended priority. Don't
-change anything yet."
+# 2. Edit the 'Project Context' section in AGENTS.md
 
-# 3. Plan the conformance
+# 3. Audit against our guidelines
+claude "Read AGENTS.md and .cursor/rules/. Audit this codebase. Create a
+report in .agents/research/ listing what conforms, what needs to change,
+and recommended priority. Don't change anything yet."
+
+# 4. Plan the conformance
 claude "Create a phased plan in .agents/plans/ to bring this project
 into conformance. Each phase should be safe and incremental."
 
-# 4. Execute incrementally
+# 5. Execute incrementally
 claude "Execute phase 1. Run tests after each change."
 ```
 
@@ -67,10 +81,8 @@ Two framework choices within the same ecosystem (Bun, Biome, Tailwind, pino):
 
 | Framework | Use Case |
 |-----------|----------|
-| **SvelteKit** | Full-stack apps — SSR, API routes, forms, auth |
-| **Astro** | Content sites — blogs, portfolios, docs, marketing |
-
-Use Astro for content-heavy sites. Use SvelteKit for interactive apps. Both can use Svelte components.
+| **SvelteKit** | Full-stack apps -- SSR, API routes, forms, auth |
+| **Astro** | Content sites -- blogs, portfolios, docs, marketing |
 
 ### Python
 
@@ -96,7 +108,7 @@ Each recipe contains:
 
 ```
 recipe-name/
-├── BASE.md               # Shared patterns (logging, testing, errors)
+├── BASE.md               # Shared code patterns (logging, testing, errors)
 ├── STACK.md              # Tech stack choices + rationale
 ├── framework/            # Framework-specific patterns
 │   └── FRAMEWORK.md      # Combined with BASE.md at scaffold time
@@ -105,67 +117,46 @@ recipe-name/
 └── templates/            # Starter files (.gitignore, justfile, etc.)
 ```
 
-When you run `scaffold.sh`, it concatenates `BASE.md` + `FRAMEWORK.md` into a single `AGENTS.md` in your project.
+At scaffold time: BASE.md + FRAMEWORK.md become the "Code Patterns" section of the generated AGENTS.md. Behavioral rules (git safety, tickets, critical rules) live in `.cursor/rules/*.mdc` files instead.
 
 ---
 
 ## Project Organization
 
-### Three-Layer Memory System
+### Two-Layer System
 
 ```
-Layer 1: CURRENT STATE (curated, ~300-500 lines)
-├── AGENTS.md             # Project instructions (AI + humans)
-└── ABSTRACT.md           # What we're building
+Layer 1: CURRENT STATE (project-owned, curated)
+├── AGENTS.md               # Project instructions + context
+└── .cursor/rules/*.mdc     # Behavioral rules (symlinked + project-specific)
 
-Layer 2: DECISION HISTORY (append-only, versioned)
-├── .architecture/adr/*.md   # Architecture Decision Records
-└── .architecture/CHANGELOG.md
-
-Layer 3: WORKING CONTEXT (ephemeral, gitignored)
-├── .agents/plans/        # Implementation plans
-├── .agents/research/     # Investigation notes
-└── .agents/sessions/     # Conversation logs
+Layer 2: WORKING CONTEXT (.agents/)
+├── .agents/decisions/      # Architecture Decision Records (versioned)
+├── .agents/plans/          # Implementation plans (gitignored)
+├── .agents/research/       # Investigation notes (gitignored)
+└── .agents/sessions/       # Conversation logs (gitignored)
 ```
-
-### Decision Attribution
-
-| Tag | Meaning |
-|-----|---------|
-| 👤 HUMAN | Human made this call |
-| 🤖 AI-SUGGESTED | AI proposed, human approved |
-| 🤖→👤 AI-REFINED | AI explored, human decided |
-| ⚠️ ASSUMED | Nobody explicitly decided (validate this) |
 
 ---
 
 ## AI Agent Integration
 
-### Claude Code
+### Claude Code / Gemini
 
-```bash
-# AGENTS.md is automatically loaded from project root
-```
+AGENTS.md is automatically loaded from project root. It includes a pointer to read `.cursor/rules/` for behavioral rules.
 
 ### Cursor
 
-```bash
-# Symlink or copy to .cursorrules
-ln -s AGENTS.md .cursorrules
-```
-
-### Gemini / ChatGPT
-
-Paste AGENTS.md content at the start of your conversation.
+`.cursor/rules/*.mdc` files are loaded natively with glob-based scoping and always-apply support.
 
 ---
 
 ## Philosophy
 
-- **One pick per category** — No "it depends." Every choice is justified.
-- **Start minimal** — Add tools when you need them, not before.
-- **Agent-first** — All configs work with Claude, Cursor, Gemini, ChatGPT.
-- **Human-readable** — Every file is organized, commented, and skimmable.
+- **One pick per category** -- No "it depends." Every choice is justified.
+- **Start minimal** -- Add tools when you need them, not before.
+- **Projects own themselves** -- Dotfiles seeds good defaults; projects can diverge.
+- **Agent-first** -- All configs work with Claude, Cursor, Gemini, ChatGPT.
 
 ---
 
@@ -178,4 +169,5 @@ See `shared/` for cross-language guides:
 | `SERVICES.md` | Cloud services (hosting, database, auth, etc.) |
 | `INFRASTRUCTURE.md` | Docker, Pulumi, observability |
 | `AI_TOOLS.md` | AI development workflow |
+| `CUSTOMER_DISCOVERY.md` | Customer interview questions & exploration areas |
 | `PROJECT_MEMORY.md` | Decision organization system |

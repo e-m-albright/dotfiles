@@ -5,8 +5,15 @@
 # Creates or updates a project with dotfiles recipe structure.
 # Safe to run multiple times — idempotent.
 #
+# Philosophy: Dotfiles seeds and influences. Projects own themselves.
+# - Universal .cursor/rules/ are SYMLINKED (auto-update from dotfiles)
+# - Recipe-specific .cursor/rules/ are COPIED (project can customize)
+# - AGENTS.md is GENERATED once, then project-owned (never overwritten)
+# - Re-running refreshes rules but respects project customizations
+#
 # Usage:
 #   ./prompts/scaffold.sh <recipe> [app-type] <project-path>
+#   ./prompts/scaffold.sh --force <recipe> [app-type] <project-path>
 #
 # Examples:
 #   ./prompts/scaffold.sh typescript svelte my-new-app    # Creates new project
@@ -14,6 +21,7 @@
 #   ./prompts/scaffold.sh typescript my-app               # Defaults to svelte
 #   ./prompts/scaffold.sh python .                        # Defaults to fastapi
 #   ./prompts/scaffold.sh golang chi ~/projects/my-svc
+#   ./prompts/scaffold.sh --force python .                # Force regenerate all
 # =============================================================================
 
 set -euo pipefail
@@ -28,6 +36,10 @@ NC='\033[0m' # No Color
 # Get script directory (where dotfiles/prompts lives)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROMPTS_DIR="$SCRIPT_DIR"
+DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+RULES_DIR="$DOTFILES_DIR/.cursor/rules"
+
+FORCE=false
 
 # -----------------------------------------------------------------------------
 # Functions
@@ -63,7 +75,6 @@ print_success() {
     echo -e "${GREEN}✓${NC} $1"
 }
 
-# Get default app type for a recipe
 get_default_app_type() {
     local recipe="$1"
     case "$recipe" in
@@ -74,7 +85,6 @@ get_default_app_type() {
     esac
 }
 
-# Check if an argument is a valid app type for a recipe
 is_valid_app_type() {
     local recipe="$1"
     local app_type="$2"
@@ -82,13 +92,11 @@ is_valid_app_type() {
     [[ -d "$app_dir" && -f "$app_dir/FRAMEWORK.md" ]]
 }
 
-# Check if path looks like an existing directory or current dir
 is_existing_path() {
     local path="$1"
     [[ "$path" == "." ]] || [[ -d "$path" ]]
 }
 
-# List available app types for a recipe
 list_app_types() {
     local recipe="$1"
     for dir in "$PROMPTS_DIR/$recipe"/*/; do
@@ -96,6 +104,58 @@ list_app_types() {
             basename "$dir"
         fi
     done
+}
+
+# Symlink a rule file (universal rules — auto-update from dotfiles)
+symlink_rule() {
+    local rule_name="$1"
+    local target="$RULES_DIR/$rule_name"
+    local link=".cursor/rules/$rule_name"
+
+    if [[ ! -f "$target" ]]; then
+        print_warning "Rule not found in dotfiles: $rule_name"
+        return
+    fi
+
+    if [[ -L "$link" ]]; then
+        local current_target
+        current_target="$(readlink "$link")"
+        if [[ "$current_target" == "$target" ]]; then
+            print_skip ".cursor/rules/$rule_name (symlink)"
+            return
+        fi
+        rm "$link"
+        print_update ".cursor/rules/$rule_name (symlink updated)"
+    elif [[ -f "$link" ]] && [[ "$FORCE" != true ]]; then
+        print_skip ".cursor/rules/$rule_name (project-owned)"
+        return
+    fi
+
+    ln -s "$target" "$link"
+    print_step "Symlinked .cursor/rules/$rule_name"
+}
+
+# Copy a rule file (recipe-specific — project can customize)
+copy_rule() {
+    local rule_name="$1"
+    local source="$RULES_DIR/$rule_name"
+
+    if [[ ! -f "$source" ]]; then
+        print_warning "Rule not found in dotfiles: $rule_name"
+        return
+    fi
+
+    if [[ -f ".cursor/rules/$rule_name" ]] && [[ "$FORCE" != true ]]; then
+        print_skip ".cursor/rules/$rule_name"
+        return
+    fi
+
+    cp "$source" ".cursor/rules/$rule_name"
+    if [[ "$FORCE" == true ]] && [[ -f ".cursor/rules/$rule_name" ]]; then
+        print_update ".cursor/rules/$rule_name (force copied)"
+    else
+        print_step "Copied .cursor/rules/$rule_name"
+    fi
 }
 
 show_help() {
@@ -106,9 +166,10 @@ Creates or updates a project with dotfiles recipe structure.
 Safe to run multiple times — only adds missing pieces.
 
 Usage:
-  $(basename "$0") <recipe> [app-type] <project-path>
+  $(basename "$0") [--force] <recipe> [app-type] <project-path>
 
 Arguments:
+  --force        Force regenerate AGENTS.md and overwrite existing rules
   recipe         Recipe to use: typescript, python, golang
   app-type       Optional framework type (defaults per recipe)
   project-path   Path to project (creates if doesn't exist)
@@ -124,20 +185,30 @@ Examples:
   $(basename "$0") typescript my-app         # defaults to svelte
   $(basename "$0") python .                  # defaults to fastapi
   $(basename "$0") golang ~/projects/my-svc  # defaults to chi
+  $(basename "$0") --force python .          # force regenerate all
 
 What Gets Created (idempotent — skips existing):
-  AGENTS.md           # Combined base + framework instructions
-  ABSTRACT.md         # Template for you to fill in
-  .agents/            # Working files directory (gitignored)
-  .architecture/      # Architecture decisions directory
+  AGENTS.md              # Project instructions + context (project-owned)
+  .cursor/rules/*.mdc    # Cursor rules (universal=symlinked, recipe=copied)
+  .agents/               # Working files directory (gitignored)
+  .agents/decisions/     # Architecture Decision Records (versioned)
 
-If AGENTS.md exists, it will be regenerated to pick up any recipe updates.
+On re-run:
+  - AGENTS.md is NOT overwritten (project owns it). Use --force to regenerate.
+  - Universal rules are re-symlinked (always up to date).
+  - Recipe rules skip existing files (project may have customized).
+  - .agents/ is created if missing, decisions/ ensured.
 EOF
 }
 
 # -----------------------------------------------------------------------------
 # Argument Parsing
 # -----------------------------------------------------------------------------
+
+if [[ $# -ge 1 ]] && [[ "$1" == "--force" ]]; then
+    FORCE=true
+    shift
+fi
 
 if [[ $# -lt 2 ]] || [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
     show_help
@@ -147,7 +218,6 @@ fi
 RECIPE="$1"
 shift
 
-# Validate recipe exists
 RECIPE_DIR="$PROMPTS_DIR/$RECIPE"
 if [[ ! -d "$RECIPE_DIR" ]]; then
     print_error "Recipe '$RECIPE' not found"
@@ -161,9 +231,7 @@ if [[ ! -d "$RECIPE_DIR" ]]; then
     exit 1
 fi
 
-# Parse remaining arguments: [app-type] <project-path>
 if [[ $# -eq 1 ]]; then
-    # Single arg — could be app-type (need path) or path (use default app-type)
     if is_valid_app_type "$RECIPE" "$1"; then
         print_error "Missing project path"
         echo "Usage: $(basename "$0") $RECIPE $1 <project-path>"
@@ -177,10 +245,7 @@ elif [[ $# -ge 2 ]]; then
         APP_TYPE="$1"
         PROJECT_PATH="$2"
     else
-        # First arg isn't a valid app type
-        # Could be: unknown app type, or project-path with extra args
         if is_existing_path "$1" || [[ ! "$1" =~ ^[a-z]+$ ]]; then
-            # Looks like a path, use default app type
             APP_TYPE="$(get_default_app_type "$RECIPE")"
             PROJECT_PATH="$1"
         else
@@ -193,7 +258,6 @@ elif [[ $# -ge 2 ]]; then
     fi
 fi
 
-# Validate app type
 if [[ -z "$APP_TYPE" ]]; then
     print_error "No app types available for recipe '$RECIPE'"
     exit 1
@@ -208,14 +272,13 @@ if [[ ! -d "$APP_DIR" ]] || [[ ! -f "$APP_DIR/FRAMEWORK.md" ]]; then
     exit 1
 fi
 
-# Validate base recipe has required files
 if [[ ! -f "$RECIPE_DIR/BASE.md" ]]; then
     print_error "Recipe '$RECIPE' is missing BASE.md"
     exit 1
 fi
 
 # -----------------------------------------------------------------------------
-# Pre-flight Checks: Verify Required Tools
+# Pre-flight Checks
 # -----------------------------------------------------------------------------
 
 check_command() {
@@ -250,12 +313,10 @@ case "$RECIPE" in
         ;;
 esac
 
-# Always check for git
 if ! check_command "git" "Git" "brew install git"; then
     preflight_ok=false
 fi
 
-# Lefthook (optional but recommended for git hooks)
 check_command "lefthook" "Lefthook" "brew install lefthook" || true
 
 if [[ "$preflight_ok" == false ]]; then
@@ -270,7 +331,7 @@ if [[ "$preflight_ok" == false ]]; then
 fi
 
 # -----------------------------------------------------------------------------
-# Determine Mode: New Project vs Seed Existing
+# Determine Mode
 # -----------------------------------------------------------------------------
 
 IS_NEW_PROJECT=false
@@ -278,26 +339,21 @@ if [[ ! -d "$PROJECT_PATH" ]]; then
     IS_NEW_PROJECT=true
 fi
 
-# Resolve or create project path
 if [[ "$IS_NEW_PROJECT" == true ]]; then
-    # Get parent directory and project name
     PROJECT_NAME="$(basename "$PROJECT_PATH")"
     PARENT_DIR="$(dirname "$PROJECT_PATH")"
 
-    # Ensure parent exists
     if [[ ! -d "$PARENT_DIR" ]] && [[ "$PARENT_DIR" != "." ]]; then
         print_error "Parent directory '$PARENT_DIR' does not exist"
         exit 1
     fi
 
-    # Resolve to absolute path (parent must exist)
     if [[ "$PARENT_DIR" == "." ]]; then
         PROJECT_PATH="$(pwd)/$PROJECT_NAME"
     else
         PROJECT_PATH="$(cd "$PARENT_DIR" && pwd)/$PROJECT_NAME"
     fi
 else
-    # Existing directory — resolve to absolute
     PROJECT_PATH="$(cd "$PROJECT_PATH" && pwd)"
     PROJECT_NAME="$(basename "$PROJECT_PATH")"
 fi
@@ -318,7 +374,7 @@ echo -e "Location: ${BLUE}$PROJECT_PATH${NC}\n"
 
 cd "$PROJECT_PATH"
 
-# Copy template files (only for new projects, from app-type specific or recipe templates)
+# Copy template files (only for new projects)
 if [[ "$IS_NEW_PROJECT" == true ]]; then
     if [[ -d "$APP_DIR/templates" ]]; then
         print_step "Copying template files (from $APP_TYPE)"
@@ -331,95 +387,117 @@ if [[ "$IS_NEW_PROJECT" == true ]]; then
     fi
 fi
 
-# Generate AGENTS.md (always regenerate to pick up recipe updates)
-if [[ -e "AGENTS.md" ]]; then
-    print_update "AGENTS.md (regenerated from $RECIPE/$APP_TYPE)"
+# ---- Cursor Rules ----
+mkdir -p ".cursor/rules"
+
+# Universal rules (symlinked — auto-update from dotfiles)
+symlink_rule "global-process.mdc"
+symlink_rule "tickets-and-prs.mdc"
+symlink_rule "agent-artifacts.mdc"
+symlink_rule "github-workflow.mdc"
+
+# Recipe-specific rules (copied — project can customize)
+case "$RECIPE" in
+    python)
+        copy_rule "python-uv-ruff.mdc"
+        copy_rule "shell-automation.mdc"
+        ;;
+    typescript)
+        copy_rule "javascript-typescript.mdc"
+        ;;
+    golang)
+        copy_rule "golang.mdc"
+        copy_rule "shell-automation.mdc"
+        ;;
+esac
+
+# ---- AGENTS.md (project-owned) ----
+if [[ -e "AGENTS.md" ]] && [[ "$FORCE" != true ]]; then
+    print_skip "AGENTS.md (project-owned)"
 else
-    print_step "Generating AGENTS.md (base + $APP_TYPE)"
-fi
-{
-    cat "$RECIPE_DIR/BASE.md"
-    echo ""
-    echo "---"
-    echo ""
-    cat "$APP_DIR/FRAMEWORK.md"
-} > "AGENTS.md"
+    if [[ -e "AGENTS.md" ]]; then
+        print_update "AGENTS.md (force regenerated from $RECIPE/$APP_TYPE)"
+    else
+        print_step "Generating AGENTS.md (base + $APP_TYPE)"
+    fi
+    {
+        cat << HEADER
+# AGENTS.md
 
-# Create ABSTRACT.md (skip if exists)
-if [[ -e "ABSTRACT.md" ]]; then
-    print_skip "ABSTRACT.md"
-else
-    print_step "Creating ABSTRACT.md template"
-    cp "$PROMPTS_DIR/templates/ABSTRACT.md" "ABSTRACT.md"
-    sed -i '' "s/\[Project Name\]/$PROJECT_NAME/g" "ABSTRACT.md" 2>/dev/null || \
-        sed -i "s/\[Project Name\]/$PROJECT_NAME/g" "ABSTRACT.md" 2>/dev/null || true
-fi
-
-# Create .agents directory structure
-if [[ -d ".agents" ]]; then
-    print_skip ".agents/"
-else
-    print_step "Creating .agents/ directory"
-    mkdir -p ".agents/plans"
-    mkdir -p ".agents/research"
-    mkdir -p ".agents/prompts"
-    mkdir -p ".agents/sessions"
-
-    cat > ".agents/README.md" << 'EOF'
-# Working Files (Layer 3)
-
-This directory contains ephemeral agent-generated artifacts. Gitignored by default.
-
-## Structure
-
-```
-.agents/
-├── plans/      # Implementation plans
-├── research/   # Investigation notes
-├── prompts/    # Key prompts that led to decisions
-└── sessions/   # Conversation logs
-```
-
-## Naming Convention
-
-Use date-prefixed names: `YYYY-MM-DD-description.md`
+Read all \`.cursor/rules/*.mdc\` files for process, safety, and coding conventions.
 
 ---
 
-**Note**: Architecture decisions go in `.architecture/adr/`, not here.
+## Project Context
+
+<!-- Fill this in to describe YOUR project. Delete sections that don't apply. -->
+
+### Overview
+
+<!-- What does this project do? What problem does it solve? Who is it for? -->
+
+### Goals
+
+- [ ] Goal 1
+- [ ] Goal 2
+
+### Non-Goals
+
+- Not building X
+- Not supporting Y
+
+### Technical Constraints
+
+- Deployment target: [platform]
+- Must work with: [existing systems]
+
+### Domain Context
+
+<!-- Key terms, business rules, entities, and relationships -->
+
+---
+
+## Code Patterns
+
+HEADER
+        cat "$RECIPE_DIR/BASE.md"
+        echo ""
+        echo "---"
+        echo ""
+        cat "$APP_DIR/FRAMEWORK.md"
+    } > "AGENTS.md"
+
+    sed -i '' "s/\[Project Name\]/$PROJECT_NAME/g" "AGENTS.md" 2>/dev/null || \
+        sed -i "s/\[Project Name\]/$PROJECT_NAME/g" "AGENTS.md" 2>/dev/null || true
+fi
+
+# ---- .agents/ directory ----
+mkdir -p ".agents/plans"
+mkdir -p ".agents/research"
+mkdir -p ".agents/decisions"
+mkdir -p ".agents/sessions"
+
+if [[ ! -f ".agents/README.md" ]]; then
+    cat > ".agents/README.md" << 'EOF'
+# Working Files
+
+Agent-generated artifacts: plans, research, and sessions are gitignored.
+Architecture decisions in `decisions/` are versioned.
+
+```
+.agents/
+├── plans/        # Implementation plans
+├── research/     # Investigation notes
+├── decisions/    # Architecture Decision Records (versioned)
+└── sessions/     # Conversation logs
+```
+
+Use date-prefixed names: `YYYY-MM-DD-description.md`
 EOF
 fi
 
-# Create .architecture directory structure
-if [[ -d ".architecture" ]]; then
-    print_skip ".architecture/"
-else
-    print_step "Creating .architecture/ directory"
-    mkdir -p ".architecture/adr"
-
-    cat > ".architecture/README.md" << 'EOF'
-# Decision History (Layer 2)
-
-This directory contains versioned Architecture Decision Records (ADRs).
-
-## Structure
-
-```
-.architecture/
-├── adr/           # Architecture Decision Records
-│   └── 0001-*.md  # Numbered ADRs
-└── CHANGELOG.md   # Timeline of decisions
-```
-
-## Attribution Tags
-
-- 👤 HUMAN: Human made this call
-- 🤖 AI-SUGGESTED: AI proposed, human approved
-- 🤖→👤 AI-REFINED: AI explored, human decided
-- ⚠️ ASSUMED: Nobody explicitly decided (validate this)
-EOF
-
-    cat > ".architecture/adr/_index.md" << 'EOF'
+if [[ ! -f ".agents/decisions/_index.md" ]]; then
+    cat > ".agents/decisions/_index.md" << 'EOF'
 # Architecture Decision Records
 
 | ADR | Title | Status | Date |
@@ -428,17 +506,16 @@ EOF
 EOF
 fi
 
-# Handle .gitignore
+# ---- .gitignore ----
 if [[ -f ".gitignore" ]]; then
-    # Existing .gitignore — just ensure .agents/ is present
     if ! grep -q "^\.agents/" ".gitignore" 2>/dev/null; then
         print_step "Adding .agents/ to .gitignore"
         echo "" >> ".gitignore"
         echo "# Working files (ephemeral)" >> ".gitignore"
         echo ".agents/" >> ".gitignore"
+        echo "!.agents/decisions/" >> ".gitignore"
     fi
 else
-    # No .gitignore — copy the curated template
     if [[ -f "$RECIPE_DIR/templates/.gitignore" ]]; then
         print_step "Creating .gitignore (from template)"
         cp "$RECIPE_DIR/templates/.gitignore" ".gitignore"
@@ -446,6 +523,7 @@ else
         print_step "Creating .gitignore"
         echo "# Working files (ephemeral)" > ".gitignore"
         echo ".agents/" >> ".gitignore"
+        echo "!.agents/decisions/" >> ".gitignore"
     fi
 fi
 
@@ -491,10 +569,10 @@ print_success "Project scaffolded successfully!"
 
 echo ""
 echo -e "${BLUE}What's in place:${NC}"
-echo "  - AGENTS.md        → Instructions for AI coding agents ($RECIPE + $APP_TYPE)"
-echo "  - ABSTRACT.md      → Your project description (edit this!)"
-echo "  - .agents/         → Working files (gitignored)"
-echo "  - .architecture/   → Architecture decisions (versioned)"
+echo "  - AGENTS.md              → Project instructions + context (you own this)"
+echo "  - .cursor/rules/*.mdc    → Cursor rules (universal=symlinked, recipe=copied)"
+echo "  - .agents/               → Working files (gitignored)"
+echo "  - .agents/decisions/     → Architecture decisions (versioned)"
 
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
@@ -503,7 +581,7 @@ echo ""
 if [[ "$IS_NEW_PROJECT" == true ]]; then
     echo "  1. cd $PROJECT_PATH"
     echo ""
-    echo "  2. Edit ABSTRACT.md to describe what you're building"
+    echo "  2. Edit the 'Project Context' section in AGENTS.md"
     echo ""
 
     case "$RECIPE" in
@@ -548,23 +626,22 @@ if [[ "$IS_NEW_PROJECT" == true ]]; then
             ;;
     esac
 else
-    echo "  1. Edit ABSTRACT.md to describe your project"
+    echo "  1. Edit the 'Project Context' section in AGENTS.md"
     echo ""
     echo "  2. Audit the codebase against our guidelines:"
     echo ""
-    echo '     claude "Read AGENTS.md and audit this codebase. Create a report in'
-    echo '     .agents/research/ listing what conforms, what needs to change, and'
-    echo '     recommended priority. Don'\''t make changes yet."'
+    echo '     claude "Read AGENTS.md and .cursor/rules/. Audit this codebase.'
+    echo '     Create a report in .agents/research/ listing what conforms,'
+    echo '     what needs to change, and recommended priority."'
     echo ""
     echo "  3. Create a conformance plan:"
     echo ""
     echo '     claude "Based on the audit, create a phased plan in .agents/plans/'
-    echo '     to bring this project into conformance. Each phase should be safe'
-    echo '     and incremental."'
+    echo '     to bring this project into conformance."'
 fi
 
 echo ""
-echo -e "${BLUE}Start building with Claude Code:${NC}"
+echo -e "${BLUE}Start building:${NC}"
 echo ""
-echo '  claude "Read AGENTS.md and ABSTRACT.md. Create a plan for the first feature."'
+echo '  claude "Read AGENTS.md and .cursor/rules/. Create a plan for the first feature."'
 echo ""

@@ -54,16 +54,16 @@ One script, idempotent — run it on new or existing projects:
 ~/dotfiles/prompts/scaffold.sh python ~/code/my-api
 ```
 
-Safe to run multiple times — only adds missing pieces, regenerates AGENTS.md to pick up recipe updates.
+Safe to run multiple times -- only adds missing pieces. AGENTS.md is generated once, then project-owned (use `--force` to regenerate).
 
-This adds the **rails** — lightweight scaffolding that guides AI agents and keeps projects maintainable:
+This adds the **rails** -- lightweight scaffolding that guides AI agents and keeps projects maintainable:
 
 ```
 my-project/
-├── AGENTS.md           # Instructions for AI agents (generated from recipe)
-├── ABSTRACT.md         # What you're building (you fill this in)
-├── .agents/            # Working files, gitignored (plans, research, sessions)
-└── .architecture/      # Architecture decisions, versioned (ADRs)
+├── AGENTS.md              # Project instructions + context (project-owned)
+├── .cursor/rules/*.mdc    # Cursor rules (universal=symlinked, recipe=copied)
+├── .agents/               # Working files, gitignored (plans, research, sessions)
+└── .agents/decisions/     # Architecture Decision Records (versioned)
 ```
 
 Then use Claude Code to bring the project into conformance:
@@ -208,7 +208,7 @@ dotfiles/
     │   ├── BASE.md         # Shared Go patterns
     │   └── chi/            # Chi router patterns
     ├── shared/             # Cross-language guides
-    └── templates/          # ABSTRACT.md template
+    └── templates/          # Starter files (.gitignore, justfile, etc.)
 ```
 
 ---

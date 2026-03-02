@@ -1,0 +1,48 @@
+---
+description: Core process and safety rules for all projects
+alwaysApply: true
+---
+
+# Global Process Rules
+
+## Repo Awareness
+
+- Detect stack, tooling, and package manager from existing project files before proposing commands.
+- Prefer existing project scripts and task runners over introducing new ones.
+- Respect the repo's formatter, linter, package manager, and hook system -- don't override without asking.
+
+## Change Philosophy
+
+- Smallest change that solves the request. Avoid scope creep.
+- If assumptions are required, state them briefly and proceed with the safest default.
+- For tests/format/lint, run only what is relevant to changed files unless asked for a full suite.
+- Generate or update tests when adding new logic, refactoring, or fixing bugs.
+
+## Research & Libraries
+
+- Check the current date before researching. Training data may be stale.
+- Search for latest documentation before using a library. Don't assume built-in knowledge is current.
+- If a library has moved to a new major version, verify you're using the new API.
+
+## Git Safety
+
+- Never run destructive git operations (force push, hard reset) unless explicitly asked.
+- Before commits or PRs, summarize impact and verification steps.
+- Don't auto-push or auto-merge without explicit instruction.
+- Conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`.
+
+## Secrets & Compliance
+
+- Never commit secrets, `.env` files, or credentials. Warn if a staged file looks sensitive.
+- Prefer Doppler (`doppler run`) over `.env` files when configured.
+- Be aware of Drata compliance tooling -- don't bypass required checks or approval gates.
+
+## AI Eval & Observability
+
+- Check for Langfuse, Braintrust, or Logfire before adding tracing or eval instrumentation.
+- Don't introduce a second observability tool if one is already configured.
+
+## Incident & Issue Tracking
+
+- Be aware of Rootly for incident management -- don't auto-close issues tied to active incidents.
+- Reference issues by ID in the tracking system (Linear, GitHub Issues).

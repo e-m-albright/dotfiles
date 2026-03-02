@@ -2,14 +2,19 @@
 
 ## Directory: `.agents/`
 
-Working files, plans, and research go in `.agents/` at the project root. This keeps the main codebase clean while preserving useful context. The `.agents/` convention works across Claude Code, Cursor, Gemini, ChatGPT, and other AI tools.
+Working files, plans, research, and decisions go in `.agents/` at the project root. This keeps the main codebase clean while preserving useful context. The `.agents/` convention works across Claude Code, Cursor, Gemini, ChatGPT, and other AI tools.
 
-> **See also**: `PROJECT_MEMORY.md` for the full three-layer decision organization system.
+> **See also**: `PROJECT_MEMORY.md` for the full two-layer decision organization system.
 
 ### Structure
 
 ```
 .agents/
+├── decisions/                # Architecture Decision Records (versioned)
+│   ├── 0001-database-choice.md
+│   ├── 0002-api-design.md
+│   ├── _index.md             # Decision index (maintained)
+│   └── CHANGELOG.md          # Timeline of decisions with context
 ├── plans/                    # Implementation plans and designs
 │   ├── YYYY-MM-DD-feature-name.md
 │   └── ...
@@ -31,6 +36,7 @@ Working files, plans, and research go in `.agents/` at the project root. This ke
 3. **Clean up when done** — Delete scratch files after they're incorporated or abandoned
 4. **Version plans** — Create new version files rather than editing approved plans
 5. **Include attribution** — Note who contributed what for context
+6. **Decisions are versioned** — `.agents/decisions/` is committed to git; everything else is gitignored
 
 ### Attribution Tags
 
@@ -55,20 +61,8 @@ Attribution provides context for future readers (human or AI):
 | Code experiments | `.agents/` | Delete when done |
 | Debug notes | `.agents/` | Delete when done |
 | Conversation logs | `.agents/sessions/` | Gitignored |
-| **Architecture decisions** | `.architecture/adr/` | Versioned (Layer 2) |
-| **Decision timeline** | `.architecture/CHANGELOG.md` | Versioned (Layer 2) |
-
-### Where Architecture Decisions Go
-
-**Important**: Architecture Decision Records (ADRs) go in `.architecture/adr/`, not `.agents/`. They're part of project history (Layer 2), not working files (Layer 3).
-
-```
-# Wrong
-.agents/plans/2024-01-15-adr-database.md
-
-# Right
-.architecture/adr/0001-database-choice.md
-```
+| **Architecture decisions** | `.agents/decisions/` | **Versioned** (committed to git) |
+| **Decision timeline** | `.agents/decisions/CHANGELOG.md` | **Versioned** (committed to git) |
 
 ### .gitignore Entry
 
@@ -76,19 +70,18 @@ Attribution provides context for future readers (human or AI):
 # Working files (ephemeral by default)
 .agents/
 
-# Optionally version working files you want to keep:
-# !.agents/plans/
-# !.agents/research/
+# Keep decisions versioned
+!.agents/decisions/
 ```
 
 ### What Gets Auto-Discovered
 
-Claude Code automatically loads `AGENTS.md` at project root. It does NOT auto-discover `.agents/` or `.architecture/`. Reference them in `AGENTS.md` if you want AI to know about them:
+Claude Code automatically loads `AGENTS.md` at project root. It does NOT auto-discover `.agents/`. Reference it in `AGENTS.md` if you want AI to know about decisions and working files:
 
 ```markdown
 ## Project Organization
 - Working files: `.agents/`
-- Decision history: `.architecture/`
+- Decision history: `.agents/decisions/`
 ```
 
 ### Plan File Format
@@ -106,7 +99,7 @@ One-paragraph description of what this plan accomplishes.
 ## Attribution
 - Research: 🤖 AI-SUGGESTED
 - Approach: 🤖→👤 AI-REFINED (human approved)
-- Constraints: 👤 HUMAN (from ABSTRACT.md)
+- Constraints: 👤 HUMAN (from AGENTS.md project context)
 
 ## Context
 Why are we doing this? What problem does it solve?
@@ -122,7 +115,7 @@ How will we implement this?
 - Question that needs human input ⚠️ ASSUMED
 
 ## Related
-- ADR: decisions/adr/000X-related.md
+- ADR: .agents/decisions/000X-related.md
 - Previous plan: .agents/plans/YYYY-MM-DD-previous.md
 ```
 
@@ -210,6 +203,6 @@ See ADR-000X for the decision.
 
 | Directory | Purpose | Versioned | Auto-Discovered |
 |-----------|---------|-----------|-----------------|
-| `AGENTS.md` | Project instructions | Yes | Yes (Claude, Cursor, etc.) |
-| `.architecture/` | Decision history | Yes | No (reference in AGENTS.md) |
-| `.agents/` | Working files | No (gitignored) | No |
+| `AGENTS.md` | Project instructions + context | Yes | Yes (Claude, Cursor, etc.) |
+| `.agents/decisions/` | Architecture decisions & ADRs | Yes | No (reference in AGENTS.md) |
+| `.agents/` (other) | Working files | No (gitignored) | No |

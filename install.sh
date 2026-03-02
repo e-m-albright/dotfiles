@@ -215,7 +215,7 @@ print_success "Recipe book configured"
 print_info "  Usage: ~/dotfiles/prompts/scaffold.sh <recipe> [app-type] <path>"
 print_info "  Example: ~/dotfiles/prompts/scaffold.sh typescript svelte my-app"
 
-# Claude system instructions (AGENTS.md / ABSTRACT.md)
+# Claude system instructions (AGENTS.md)
 print_section "Claude system instructions"
 if "$DOTFILES_DIR/macos/claude_instructions.sh" 2>/dev/null; then
     print_success "Claude system instructions updated (~/.claude/CLAUDE.md)"
