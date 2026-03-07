@@ -81,6 +81,7 @@ get_default_app_type() {
         typescript) echo "svelte" ;;
         python) echo "fastapi" ;;
         golang) echo "chi" ;;
+        rust) echo "axum" ;;
         *) echo "" ;;
     esac
 }
@@ -178,6 +179,7 @@ Available app types:
   typescript:    svelte (default), astro
   python:        fastapi (default)
   golang:        chi (default)
+  rust:          axum (default), tauri
 
 Examples:
   $(basename "$0") typescript svelte my-new-app
@@ -311,6 +313,11 @@ case "$RECIPE" in
             preflight_ok=false
         fi
         ;;
+    rust)
+        if ! check_command "cargo" "Rust/Cargo" "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"; then
+            preflight_ok=false
+        fi
+        ;;
 esac
 
 if ! check_command "git" "Git" "brew install git"; then
@@ -407,6 +414,10 @@ case "$RECIPE" in
         ;;
     golang)
         copy_rule "golang.mdc"
+        copy_rule "shell-automation.mdc"
+        ;;
+    rust)
+        copy_rule "rust.mdc"
         copy_rule "shell-automation.mdc"
         ;;
 esac
@@ -540,6 +551,12 @@ if [[ "$IS_NEW_PROJECT" == true ]]; then
         sed -i '' "s/name = \"my-python-app\"/name = \"$PROJECT_NAME\"/g" "pyproject.toml" 2>/dev/null || \
             sed -i "s/name = \"my-python-app\"/name = \"$PROJECT_NAME\"/g" "pyproject.toml" 2>/dev/null || true
     fi
+
+    if [[ -f "Cargo.toml" ]]; then
+        print_step "Updating Cargo.toml"
+        sed -i '' "s/name = \"my-rust-app\"/name = \"$PROJECT_NAME\"/g" "Cargo.toml" 2>/dev/null || \
+            sed -i "s/name = \"my-rust-app\"/name = \"$PROJECT_NAME\"/g" "Cargo.toml" 2>/dev/null || true
+    fi
 fi
 
 # Initialize git repository (only for new projects without git)
@@ -623,6 +640,41 @@ if [[ "$IS_NEW_PROJECT" == true ]]; then
             echo ""
             echo "  6. Start development:"
             echo "     just dev"
+            ;;
+        rust)
+            case "$APP_TYPE" in
+                tauri)
+                    echo "  3. Create the Tauri + SvelteKit project:"
+                    echo "     bun create tauri@latest ."
+                    echo "     # Choose: Svelte, TypeScript, Bun when prompted"
+                    echo ""
+                    echo "  4. Install required cargo tools:"
+                    echo "     cargo install cargo-audit"
+                    echo ""
+                    echo "  5. Install git hooks:"
+                    echo "     just hooks-install"
+                    echo ""
+                    echo "  6. Start development:"
+                    echo "     just dev"
+                    ;;
+                *)
+                    echo "  3. Install required cargo tools:"
+                    echo "     cargo install cargo-watch cargo-audit sqlx-cli"
+                    echo ""
+                    echo "  4. Set up environment:"
+                    echo "     cp .env.example .env"
+                    echo "     # Edit .env and set DATABASE_URL"
+                    echo ""
+                    echo "  5. Generate SQLx offline query cache:"
+                    echo "     cargo sqlx prepare"
+                    echo ""
+                    echo "  6. Install git hooks:"
+                    echo "     just hooks-install"
+                    echo ""
+                    echo "  7. Start development:"
+                    echo "     just dev"
+                    ;;
+            esac
             ;;
     esac
 else

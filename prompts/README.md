@@ -14,6 +14,7 @@ One script, idempotent -- run it on new or existing projects:
 ~/dotfiles/prompts/scaffold.sh typescript astro my-blog    # Astro
 ~/dotfiles/prompts/scaffold.sh python my-api               # FastAPI (default)
 ~/dotfiles/prompts/scaffold.sh golang my-service           # Chi (default)
+~/dotfiles/prompts/scaffold.sh rust my-service             # Axum (default)
 
 # Seed existing projects (use . for current directory)
 ~/dotfiles/prompts/scaffold.sh typescript .
@@ -74,6 +75,8 @@ claude "Execute phase 1. Run tests after each change."
 | `typescript` | `astro` | Bun + Astro 6 | Content sites, blogs |
 | `python` | `fastapi` (default) | UV + FastAPI + SQLAlchemy | APIs, AI services |
 | `golang` | `chi` (default) | Go 1.25+ Chi router + sqlc | APIs, services |
+| `rust` | `axum` (default) | Tokio + Axum + SQLx + tracing | High-perf APIs, systems |
+| `rust` | `tauri` | Tauri v2 + SvelteKit + Bun | Desktop apps, CLIs with UI |
 
 ### TypeScript
 
@@ -99,6 +102,17 @@ Chi router for APIs and services:
 - APIs with composable middleware
 - Background workers and data pipelines
 - CLI tools and system utilities
+
+### Rust
+
+Two framework choices sharing the same base (thiserror/anyhow, tracing, envy):
+
+| Framework | Use Case |
+|-----------|----------|
+| **Axum** | REST APIs, background services, high-throughput HTTP |
+| **Tauri** | Desktop apps with a SvelteKit frontend and Rust backend |
+
+Tauri projects are bootstrapped with `bun create tauri@latest` — the scaffold adds AGENTS.md, rules, and a justfile on top.
 
 ---
 

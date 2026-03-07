@@ -1,0 +1,134 @@
+# =============================================================================
+# Justfile — Tauri v2 + SvelteKit
+# =============================================================================
+# Run `just` to see all available commands
+# =============================================================================
+
+# Default recipe: show help
+default:
+    @just --list
+
+# -----------------------------------------------------------------------------
+# Development
+# -----------------------------------------------------------------------------
+
+# Start Tauri app with hot reload (Rust + frontend)
+dev:
+    cargo tauri dev
+
+# Start frontend only (faster, no Rust rebuild)
+dev-ui:
+    bun run dev
+
+# Build production app (all platforms)
+build:
+    cargo tauri build
+
+# Build frontend only
+build-ui:
+    bun run build
+
+# Preview production frontend
+preview:
+    bun run preview
+
+# -----------------------------------------------------------------------------
+# Quality
+# -----------------------------------------------------------------------------
+
+# Run all checks
+check: fmt-check clippy test lint-ui
+
+# Lint Rust (treat warnings as errors)
+clippy:
+    cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+
+# Fix clippy warnings automatically
+clippy-fix:
+    cargo clippy --manifest-path src-tauri/Cargo.toml --fix -- -D warnings
+
+# Format Rust
+fmt:
+    cargo fmt --manifest-path src-tauri/Cargo.toml
+
+# Check Rust formatting (for CI)
+fmt-check:
+    cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+
+# Lint frontend (biome or eslint — adjust to your setup)
+lint-ui:
+    bun run lint
+
+# Type-check frontend
+typecheck:
+    bun run check
+
+# Run all CI checks
+ci: fmt-check clippy test lint-ui typecheck
+
+# -----------------------------------------------------------------------------
+# Testing
+# -----------------------------------------------------------------------------
+
+# Run Rust tests
+test:
+    cargo test --manifest-path src-tauri/Cargo.toml
+
+# Run Rust tests with output
+test-v:
+    cargo test --manifest-path src-tauri/Cargo.toml -- --nocapture
+
+# Run specific test
+test-filter pattern:
+    cargo test --manifest-path src-tauri/Cargo.toml {{pattern}} -- --nocapture
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+
+# Install frontend dependencies
+install:
+    bun install
+
+# Update Rust dependencies
+update-rust:
+    cargo update --manifest-path src-tauri/Cargo.toml
+
+# Update frontend dependencies
+update-ui:
+    bun update
+
+# Update all
+update: update-rust update-ui
+
+# Security audit (Rust)
+audit:
+    cargo audit --manifest-path src-tauri/Cargo.toml
+
+# -----------------------------------------------------------------------------
+# Tauri Utilities
+# -----------------------------------------------------------------------------
+
+# Generate app icons from a single source image
+icons src="app-icon.png":
+    cargo tauri icon {{src}}
+
+# Add a Tauri plugin
+plugin name:
+    cargo tauri add {{name}}
+
+# Check Tauri config
+info:
+    cargo tauri info
+
+# -----------------------------------------------------------------------------
+# Git Hooks
+# -----------------------------------------------------------------------------
+
+# Install git hooks
+hooks-install:
+    lefthook install
+
+# Run pre-commit hooks manually
+hooks-run:
+    lefthook run pre-commit

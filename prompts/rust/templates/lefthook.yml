@@ -1,0 +1,38 @@
+# =============================================================================
+# Lefthook Configuration
+# =============================================================================
+# Git hooks powered by Lefthook (https://github.com/evilmartians/lefthook)
+# Faster than Husky/pre-commit, parallel execution, Go-based
+# =============================================================================
+
+parallel: true
+
+pre-commit:
+  parallel: true
+  commands:
+    # Check formatting (fast — no compilation needed)
+    fmt:
+      glob: "*.rs"
+      run: cargo fmt -- --check
+
+    # Lint with clippy (warnings as errors)
+    clippy:
+      glob: "*.rs"
+      run: cargo clippy -- -D warnings
+
+    # Verify SQLx offline cache is up to date
+    sqlx:
+      glob: "{src/**/*.rs,migrations/*.sql}"
+      run: cargo sqlx prepare --check
+
+pre-push:
+  parallel: false
+  commands:
+    # Run tests before pushing
+    test:
+      run: cargo test
+
+# Skip hooks with LEFTHOOK=0 environment variable
+skip_output:
+  - meta
+  - summary

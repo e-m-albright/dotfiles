@@ -272,6 +272,28 @@ install_packages "${terminal_cli[@]}"
 print_section "Developer CLI"
 install_packages "${dev_cli[@]}"
 
+# Rust via rustup (official installer; preferred over Homebrew for version management)
+print_section "Rust (rustup)"
+if command -v rustup >/dev/null 2>&1 || command -v cargo >/dev/null 2>&1; then
+    print_info "Rust already installed ($(rustc --version 2>/dev/null || echo 'rustup/cargo present'))"
+else
+    print_action "Installing Rust via rustup..."
+    if curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y; then
+        # Source cargo env so rustc/cargo are available in this session
+        [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+        # Ensure .zprofile has cargo env (rustup adds it, but idempotent guard)
+        if ! grep -q '.cargo/env' "$HOME/.zprofile" 2>/dev/null; then
+            echo >> "$HOME/.zprofile"
+            echo '# Rust (rustup)' >> "$HOME/.zprofile"
+            echo '[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"' >> "$HOME/.zprofile"
+            print_success "Added Rust to .zprofile"
+        fi
+        print_success "Rust installed ($(rustc --version 2>/dev/null))"
+    else
+        print_warn "Failed to install Rust via rustup"
+    fi
+fi
+
 print_section "Network CLI"
 install_packages "${network_cli[@]}"
 

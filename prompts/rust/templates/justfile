@@ -1,0 +1,195 @@
+# =============================================================================
+# Justfile — Rust Project
+# =============================================================================
+# Run `just` to see all available commands
+# =============================================================================
+
+# Default recipe: show help
+default:
+    @just --list
+
+# Binary name (matches [[bin]] name in Cargo.toml)
+binary := "server"
+
+# -----------------------------------------------------------------------------
+# Development
+# -----------------------------------------------------------------------------
+
+# Start development server with hot reload (requires cargo-watch)
+dev:
+    cargo watch -x "run --bin {{binary}}"
+
+# Build (debug)
+build:
+    cargo build
+
+# Build for production (optimized, stripped)
+build-prod:
+    cargo build --release
+
+# Run the server
+run:
+    cargo run --bin {{binary}}
+
+# Run the release binary
+run-prod: build-prod
+    ./target/release/{{binary}}
+
+# -----------------------------------------------------------------------------
+# Quality
+# -----------------------------------------------------------------------------
+
+# Run all checks (fmt, clippy, test)
+check: fmt-check clippy test
+
+# Lint with clippy (treat warnings as errors)
+clippy:
+    cargo clippy -- -D warnings
+
+# Fix clippy warnings automatically where possible
+clippy-fix:
+    cargo clippy --fix -- -D warnings
+
+# Format code
+fmt:
+    cargo fmt
+
+# Check formatting (for CI)
+fmt-check:
+    cargo fmt -- --check
+
+# Run all checks CI would run
+ci: fmt-check clippy test-race
+
+# -----------------------------------------------------------------------------
+# Testing
+# -----------------------------------------------------------------------------
+
+# Run all tests
+test:
+    cargo test
+
+# Run tests with output (no capture)
+test-v:
+    cargo test -- --nocapture
+
+# Run tests with race detector (thread sanitizer)
+test-race:
+    RUSTFLAGS="-Z sanitizer=thread" cargo +nightly test
+
+# Run specific test by name
+test-filter pattern:
+    cargo test {{pattern}} -- --nocapture
+
+# Run integration tests only
+test-integration:
+    cargo test --test '*' -- --nocapture
+
+# Generate coverage report (requires cargo-llvm-cov)
+test-cov:
+    cargo llvm-cov --html
+    @echo "Coverage report: target/llvm-cov/html/index.html"
+
+# Run tests in watch mode
+test-watch:
+    cargo watch -x test
+
+# -----------------------------------------------------------------------------
+# Database
+# -----------------------------------------------------------------------------
+
+# Run all pending migrations
+db-migrate:
+    sqlx migrate run
+
+# Revert last migration
+db-rollback:
+    sqlx migrate revert
+
+# Create a new migration file
+db-new name:
+    sqlx migrate add {{name}}
+
+# Show migration status
+db-status:
+    sqlx migrate info
+
+# Open database shell
+db-shell:
+    psql "${DATABASE_URL}"
+
+# Generate SQLx offline query cache (commit .sqlx/ to repo)
+sqlx-prepare:
+    cargo sqlx prepare
+
+# Verify offline query cache is up to date
+sqlx-check:
+    cargo sqlx prepare --check
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+
+# Update all dependencies
+update:
+    cargo update
+
+# Security audit (requires cargo-audit)
+audit:
+    cargo audit
+
+# Show outdated dependencies (requires cargo-outdated)
+outdated:
+    cargo outdated
+
+# -----------------------------------------------------------------------------
+# Code Generation
+# -----------------------------------------------------------------------------
+
+# Run all code generators
+generate:
+    cargo build  # SQLx macros run at compile time
+
+# -----------------------------------------------------------------------------
+# Utilities
+# -----------------------------------------------------------------------------
+
+# Clean build artifacts
+clean:
+    cargo clean
+
+# Show binary size (release)
+size: build-prod
+    ls -lh target/release/{{binary}}
+
+# Run with verbose logging
+debug:
+    RUST_LOG=debug cargo run --bin {{binary}}
+
+# Check for compile errors without producing output (fastest check)
+check-fast:
+    cargo check
+
+# -----------------------------------------------------------------------------
+# Docker
+# -----------------------------------------------------------------------------
+
+# Build Docker image
+docker-build:
+    docker build -t {{binary}}:latest .
+
+# Run in Docker
+docker-run:
+    docker run -p 3000:3000 --env-file .env {{binary}}:latest
+
+# -----------------------------------------------------------------------------
+# Git Hooks
+# -----------------------------------------------------------------------------
+
+# Install git hooks
+hooks-install:
+    lefthook install
+
+# Run pre-commit hooks manually
+hooks-run:
+    lefthook run pre-commit

@@ -1,0 +1,37 @@
+# =============================================================================
+# Lefthook Configuration
+# =============================================================================
+# Git hooks powered by Lefthook (https://github.com/evilmartians/lefthook)
+# =============================================================================
+
+parallel: true
+
+pre-commit:
+  parallel: true
+  commands:
+    # Check Rust formatting
+    fmt:
+      glob: "src-tauri/**/*.rs"
+      run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+
+    # Lint Rust
+    clippy:
+      glob: "src-tauri/**/*.rs"
+      run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+
+    # Check frontend types/lint (adjust command to match your setup)
+    ui-check:
+      glob: "src/**/*.{ts,svelte}"
+      run: bun run check
+
+pre-push:
+  parallel: false
+  commands:
+    # Run Rust tests
+    test:
+      run: cargo test --manifest-path src-tauri/Cargo.toml
+
+# Skip hooks with LEFTHOOK=0 environment variable
+skip_output:
+  - meta
+  - summary
