@@ -208,6 +208,7 @@ productivity=(
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
     # granola              # AI notepad for meetings (disabled)
+    obsidian               # Knowledge base & note-taking (Markdown)
 )
 
 dev_apps=(
