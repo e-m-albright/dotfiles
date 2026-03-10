@@ -204,7 +204,7 @@ productivity=(
     rectangle              # Window management
     # flycut               # Clipboard manager
     # raycast              # Launcher + actions; can replace Rectangle/Flycut
-    # warp                 # AI terminal (disabled — visual glitches on fresh install)
+    warp                   # AI terminal
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
     # granola              # AI notepad for meetings (disabled)

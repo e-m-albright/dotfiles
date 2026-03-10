@@ -24,7 +24,7 @@ apps=(
     "/Applications/Linear.app"
     # "/Applications/Visual Studio Code.app"
     "/Applications/Cursor.app"
-    # "/Applications/Warp.app"
+    "/Applications/Warp.app"
     # "/Applications/Raycast.app"
     # "/Applications/OrbStack.app"
 )
