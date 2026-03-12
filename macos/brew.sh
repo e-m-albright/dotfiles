@@ -161,7 +161,7 @@ core_cli=(
 )
 
 terminal_cli=(
-    tmux                # Terminal multiplexer
+    # tmux              # Terminal multiplexer (disabled)
     "bash-completion@2" # Bash completion
 )
 
@@ -204,7 +204,8 @@ productivity=(
     rectangle              # Window management
     # flycut               # Clipboard manager
     # raycast              # Launcher + actions; can replace Rectangle/Flycut
-    warp                   # AI terminal
+    # warp                 # AI terminal (disabled)
+    ghostty                # GPU-accelerated terminal
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
     # granola              # AI notepad for meetings (disabled)
