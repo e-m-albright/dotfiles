@@ -48,6 +48,7 @@ Seed new or existing projects with cross-vendor AI rules that work with Claude C
 dotfiles scaffold typescript my-app           # SvelteKit (default)
 dotfiles scaffold typescript astro my-blog    # Astro
 dotfiles scaffold python my-api               # FastAPI (default)
+dotfiles scaffold python cli my-tool          # Typer CLI
 dotfiles scaffold golang my-service           # Chi (default)
 dotfiles scaffold rust my-tool                # Axum (default)
 
@@ -85,6 +86,7 @@ my-project/
 | `typescript` | `svelte` (default) | Bun + SvelteKit 2 + Svelte 5 | Full-stack apps |
 | `typescript` | `astro` | Bun + Astro | Content sites, blogs |
 | `python` | `fastapi` (default) | UV + FastAPI + SQLAlchemy | APIs, AI services |
+| `python` | `cli` | UV + Typer + Rich | CLI tools, scripts |
 | `golang` | `chi` (default) | Go 1.25+ Chi router + sqlc | APIs, services |
 | `rust` | `axum` (default) | Tokio + Axum + SQLx | APIs, services |
 | `rust` | `tauri` | Tauri 2 + SvelteKit | Desktop apps |
