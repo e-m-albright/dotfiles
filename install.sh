@@ -163,16 +163,8 @@ fi
 # Use: uv add jupyter marimo (in project virtualenv)
 # See also: Hex (hex.tech) for hosted notebook collaboration
 
-# Editor configurations (VS Code & Cursor)
+# Editor configurations
 print_header "📝 Editor Configuration"
-# VS Code
-if command -v code >/dev/null 2>&1; then
-    print_section "VS Code"
-    . "$DOTFILES_DIR/editors/vscode/extensions.sh"
-    mkdir -p ~/Library/Application\ Support/Code/User
-    ln -sf "$DOTFILES_DIR/editors/vscode/settings.json" ~/Library/Application\ Support/Code/User/settings.json 2>/dev/null || true
-    print_success "VS Code configured"
-fi
 
 # Cursor
 if command -v cursor >/dev/null 2>&1; then
@@ -215,18 +207,13 @@ print_success "Recipe book configured"
 print_info "  Usage: ~/dotfiles/prompts/scaffold.sh <recipe> [app-type] <path>"
 print_info "  Example: ~/dotfiles/prompts/scaffold.sh typescript svelte my-app"
 
-# Claude system instructions (AGENTS.md)
-print_section "Claude system instructions"
-if "$DOTFILES_DIR/macos/claude_instructions.sh" 2>/dev/null; then
-    print_success "Claude system instructions updated (~/.claude/CLAUDE.md)"
-else
-    print_warning "Could not update ~/.claude/CLAUDE.md"
-    print_info "  One-off: dotfiles claude-instructions"
-fi
+# Claude Code (instructions, plugins, voice, permissions)
+print_header "🤖 Claude Code"
+print_section "Setup"
+. "$DOTFILES_DIR/claude/setup.sh"
 
 # Agent Permissions (safe commands for agentic tools)
 print_section "Agent Permissions"
-# Merge safe commands into ~/.claude/settings.json (requires yq + jq)
 if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     "$DOTFILES_DIR/.agents/generate-permissions.sh" claude >/dev/null 2>&1 && \
         print_success "Claude Code permissions merged into ~/.claude/settings.json" || \
@@ -262,6 +249,7 @@ printf "\n"
 
 printf "  ${CYAN}2.${NC} ${BOLD}Claude Code${NC}\n"
 printf "     Run ${PKG_COLOR}claude${NC} and follow the login prompts to authenticate.\n"
+printf "     Plugins and settings are auto-configured. Edit ${PKG_COLOR}~/dotfiles/claude/plugins.yaml${NC} to customize.\n"
 printf "\n"
 
 printf "  ${CYAN}3.${NC} ${BOLD}GitHub CLI${NC}\n"

@@ -69,7 +69,7 @@ Curated extension list optimized for **SvelteKit + Python** development.
 
 ## Settings Highlights
 
-The settings files (`vscode/settings.json`, `cursor/settings.json`) include:
+The settings file (`cursor/settings.json`) includes:
 
 - **Tab size 2** - Matches our TypeScript/Svelte style
 - **Format on save** - Automatic code formatting
@@ -83,4 +83,3 @@ The settings files (`vscode/settings.json`, `cursor/settings.json`) include:
 
 - **Biome vs ESLint+Prettier**: New projects should use Biome. ESLint+Prettier are kept for legacy projects.
 - For project-specific AI rules, see `prompts/*/AGENTS.md` rather than editor-level config.
-- Settings are kept in sync between VS Code and Cursor.

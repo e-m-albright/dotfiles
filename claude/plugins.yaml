@@ -1,0 +1,37 @@
+# Claude Code plugins to enable in ~/.claude/settings.json
+# These are official plugins from the claude-plugins-official marketplace.
+# Run: ~/dotfiles/claude/setup.sh (or install.sh will do it automatically)
+#
+# To add a plugin: add it here and re-run setup.sh
+# To disable a plugin: remove it and re-run setup.sh (or toggle in Claude Code)
+
+# LSP integrations (type checking & diagnostics in-session)
+- pyright-lsp
+- typescript-lsp
+- rust-analyzer-lsp
+
+# Development workflows
+- feature-dev
+- code-review
+- code-simplifier
+- commit-commands
+- pr-review-toolkit
+- claude-md-management
+- claude-code-setup
+
+# Agent SDK
+- agent-sdk-dev
+
+# Tooling
+- context7
+- playwright
+- frontend-design
+- playground
+
+# Quality & security
+- security-guidance
+- superpowers
+- explanatory-output-style
+
+# Integrations
+- Notion

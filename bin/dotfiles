@@ -24,6 +24,7 @@ sub_help () {
     printf "   clean            Clean up Homebrew caches\n"
     printf "   brew             Run Homebrew setup script\n"
     printf "   dock             Reset macOS Dock layout\n"
+    printf "   claude-setup         Configure Claude Code (plugins, voice, instructions)\n"
     printf "   claude-instructions  Update ~/.claude/CLAUDE.md with AGENTS.md reference\n"
     printf "   completions      Output shell completions (source this in your shell)\n"
 }
@@ -57,7 +58,6 @@ sub_doctor () {
 
     printf "\n${BLUE}Editors${NC}\n"
     check_tool "Cursor" "cursor" "brew install --cask cursor"
-    check_tool "VS Code" "code" "brew install --cask visual-studio-code"
 
     printf "\n${BLUE}Runtimes${NC}\n"
     check_tool "Bun" "bun" "curl -fsSL https://bun.sh/install | bash"
@@ -165,6 +165,11 @@ sub_claude_instructions() {
     printf "${GREEN}%s Claude system instructions updated (~/.claude/CLAUDE.md).${NC}\n" "$ARROW"
 }
 
+sub_claude_setup() {
+    . "$DOTFILES_DIR/claude/setup.sh"
+    printf "${GREEN}%s Claude Code setup complete.${NC}\n" "$ARROW"
+}
+
 sub_completions() {
     cat << 'EOF'
 # Zsh completions for dotfiles command
@@ -179,6 +184,7 @@ _dotfiles() {
         'clean:Clean up caches'
         'brew:Run Homebrew setup'
         'dock:Reset macOS Dock'
+        'claude-setup:Configure Claude Code plugins and settings'
         'claude-instructions:Update Claude memory file'
         'completions:Output shell completions'
     )
@@ -192,6 +198,10 @@ EOF
 case $COMMAND_NAME in
     "" | "-h" | "--help")
         sub_help
+        ;;
+    claude-setup)
+        shift
+        sub_claude_setup "$@"
         ;;
     claude-instructions)
         shift
