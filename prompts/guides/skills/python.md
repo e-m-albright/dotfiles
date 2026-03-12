@@ -144,5 +144,5 @@ src/app/
 ├── services/         # Business logic
 └── db/
     ├── session.py    # Database connection
-    └── migrations/   # Alembic
+    └── migrations/   # Atlas
 ```

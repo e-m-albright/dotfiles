@@ -1,7 +1,7 @@
 ---
 name: golang-stdlib-stack
 description: |
-  Use this skill when working with Go 1.22+ projects.
+  Use this skill when working with Go 1.25+ projects.
   Covers: stdlib HTTP routing, sqlc, pgx, slog logging, error handling.
 ---
 
@@ -17,10 +17,10 @@ description: |
 
 ## Critical Patterns
 
-### Go 1.22+ HTTP Routing
+### Go 1.25+ HTTP Routing
 
 ```go
-// New routing syntax (Go 1.22+)
+// New routing syntax (Go 1.25+)
 mux := http.NewServeMux()
 
 // Method + path pattern
@@ -32,7 +32,7 @@ mux.HandleFunc("DELETE /users/{id}", h.DeleteUser)
 
 // Access path values
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
-    id := r.PathValue("id")  // Go 1.22+ path value extraction
+    id := r.PathValue("id")  // Go 1.25+ path value extraction
     // ...
 }
 ```
@@ -132,7 +132,7 @@ migrate up                  # Run migrations
 
 ## Common Mistakes to Avoid
 
-1. **Using Gin/Chi for simple APIs** — Go 1.22+ stdlib is sufficient
+1. **Using Gin/Chi for simple APIs** — Go 1.25+ stdlib is sufficient
 2. **Using zerolog/zap** — slog is built-in since Go 1.21
 3. **Using GORM** — sqlc generates type-safe code from SQL
 4. **Ignoring errors** — Always check and handle errors

@@ -20,12 +20,32 @@ set -eo pipefail
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DOTFILES_DIR="$(dirname "$SCRIPT_DIR")"
 SETTINGS_FILE="$HOME/.claude/settings.json"
+CLAUDE_JSON="$HOME/.claude.json"
+DESKTOP_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 PLUGINS_YAML="$SCRIPT_DIR/plugins.yaml"
+MCP_JSON="$SCRIPT_DIR/mcp.json"
+HOOKS_JSON="$SCRIPT_DIR/hooks.json"
 
 # Source print utils if available
 if [[ -n "${print_section:-}" ]] || source "$DOTFILES_DIR/macos/print_utils.sh" 2>/dev/null; then
     :
 fi
+
+# Require jq for all operations
+require_jq() {
+    if ! command -v jq >/dev/null 2>&1; then
+        print_warning "jq not found — skipping (brew install jq)"
+        return 1
+    fi
+    return 0
+}
+
+# Helper: backup and ensure settings file exists
+ensure_settings() {
+    mkdir -p "$HOME/.claude"
+    [[ -f "$SETTINGS_FILE" ]] || echo '{}' > "$SETTINGS_FILE"
+    cp "$SETTINGS_FILE" "$SETTINGS_FILE.bak"
+}
 
 # --- System instructions (CLAUDE.md) ---
 setup_instructions() {
@@ -36,28 +56,12 @@ setup_instructions() {
 
 # --- Plugins ---
 setup_plugins() {
-    if [[ ! -f "$PLUGINS_YAML" ]]; then
-        print_warning "No plugins.yaml found at $PLUGINS_YAML"
-        return 0
-    fi
+    [[ -f "$PLUGINS_YAML" ]] || { print_warning "No plugins.yaml found"; return 0; }
+    command -v yq >/dev/null 2>&1 || { print_warning "yq not found — skipping plugins"; return 0; }
+    require_jq || return 0
 
-    # Require yq for YAML parsing
-    if ! command -v yq >/dev/null 2>&1; then
-        print_warning "yq not found — skipping plugin setup (brew install yq)"
-        return 0
-    fi
-    if ! command -v jq >/dev/null 2>&1; then
-        print_warning "jq not found — skipping plugin setup (brew install jq)"
-        return 0
-    fi
+    ensure_settings
 
-    mkdir -p "$HOME/.claude"
-    [[ -f "$SETTINGS_FILE" ]] || echo '{}' > "$SETTINGS_FILE"
-
-    # Backup
-    cp "$SETTINGS_FILE" "$SETTINGS_FILE.bak"
-
-    # Build enabledPlugins object from YAML list
     local plugins_json
     plugins_json=$(yq eval '.[]' "$PLUGINS_YAML" 2>/dev/null | while IFS= read -r plugin; do
         [[ -z "$plugin" || "$plugin" =~ ^# ]] && continue
@@ -68,7 +72,6 @@ setup_plugins() {
         add // {}
     ')
 
-    # Merge into settings.json (preserves permissions and other keys)
     jq --argjson plugins "$plugins_json" '.enabledPlugins = $plugins' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
 
     local count
@@ -76,17 +79,77 @@ setup_plugins() {
     print_success "Enabled $count Claude Code plugins"
 }
 
-# --- Voice ---
-setup_voice() {
-    if [[ ! -f "$SETTINGS_FILE" ]]; then
-        return 0
-    fi
+# --- MCP Servers (Claude Code) ---
+setup_mcp() {
+    [[ -f "$MCP_JSON" ]] || { print_info "No mcp.json found — skipping MCP setup"; return 0; }
+    require_jq || return 0
+
+    mkdir -p "$HOME/.claude"
+    [[ -f "$CLAUDE_JSON" ]] || echo '{}' > "$CLAUDE_JSON"
+    cp "$CLAUDE_JSON" "$CLAUDE_JSON.bak"
+
+    local mcp_servers
+    mcp_servers=$(jq '.mcpServers // {}' "$MCP_JSON")
+
+    jq --argjson servers "$mcp_servers" '.mcpServers = ($servers + (.mcpServers // {}))' "$CLAUDE_JSON.bak" > "$CLAUDE_JSON"
+
+    local count
+    count=$(echo "$mcp_servers" | jq 'length')
+    print_success "Configured $count MCP servers (Claude Code)"
+}
+
+# --- MCP Servers (Claude Desktop) ---
+setup_desktop_mcp() {
+    [[ -f "$MCP_JSON" ]] || return 0
+    require_jq || return 0
+
+    local desktop_dir
+    desktop_dir="$(dirname "$DESKTOP_CONFIG")"
+    mkdir -p "$desktop_dir"
+    [[ -f "$DESKTOP_CONFIG" ]] || echo '{}' > "$DESKTOP_CONFIG"
+    cp "$DESKTOP_CONFIG" "$DESKTOP_CONFIG.bak"
+
+    local mcp_servers
+    mcp_servers=$(jq '.mcpServers // {}' "$MCP_JSON")
+
+    # Merge dotfiles MCPs with existing (existing take precedence for project-local servers)
+    jq --argjson servers "$mcp_servers" '.mcpServers = ($servers + (.mcpServers // {}))' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
+
+    local count
+    count=$(echo "$mcp_servers" | jq 'length')
+    print_success "Configured $count MCP servers (Claude Desktop)"
+}
+
+# --- Hooks ---
+setup_hooks() {
+    [[ -f "$HOOKS_JSON" ]] || { print_info "No hooks.json found — skipping hooks"; return 0; }
+    require_jq || return 0
+
+    ensure_settings
+
+    local hooks
+    hooks=$(jq '.hooks // {}' "$HOOKS_JSON")
+
+    jq --argjson hooks "$hooks" '.hooks = $hooks' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
+
+    # Count hook events configured
+    local events
+    events=$(echo "$hooks" | jq 'keys | length')
+    print_success "Configured $events hook events (format-on-save, notifications)"
+}
+
+# --- Voice + notification channel ---
+setup_preferences() {
+    [[ -f "$SETTINGS_FILE" ]] || return 0
     cp "$SETTINGS_FILE" "$SETTINGS_FILE.bak"
-    jq '.voiceEnabled = true' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
-    print_info "Voice mode enabled"
+    jq '.voiceEnabled = true | .preferredNotifChannel = "terminal_bell"' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
+    print_info "Voice mode + terminal bell enabled"
 }
 
 # --- Main ---
 setup_instructions
 setup_plugins
-setup_voice
+setup_mcp
+setup_desktop_mcp
+setup_hooks
+setup_preferences

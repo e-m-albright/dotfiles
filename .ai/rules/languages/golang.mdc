@@ -14,8 +14,8 @@ alwaysApply: false
 
 ## Code Patterns
 
-- **stdlib-first** — prefer stdlib over third-party when reasonable.
-- **slog** for structured logging (stdlib, Go 1.21+).
+- **stdlib-first** — prefer stdlib over third-party when reasonable. Exception: chi/v5 for HTTP routing (better middleware, grouping).
+- **slog** for structured logging (stdlib).
 - **sqlc** for database queries — generates type-safe Go from SQL.
 - **pgx/v5** as the Postgres driver.
 - **envconfig** for configuration from environment variables.
@@ -56,4 +56,5 @@ migrations/                — SQL migration files
 
 - Adding new dependencies.
 - Changing database schema.
+- Modifying auth flow.
 - Deleting files.

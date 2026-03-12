@@ -178,6 +178,17 @@ fi
 # Use: uv add jupyter marimo (in project virtualenv)
 # See also: Hex (hex.tech) for hosted notebook collaboration
 
+# Terminal configuration
+print_header "💻 Terminal Configuration"
+print_section "Ghostty"
+if command -v ghostty >/dev/null 2>&1 || [[ -d "/Applications/Ghostty.app" ]]; then
+    mkdir -p ~/.config/ghostty
+    ln -sf "$DOTFILES_DIR/terminal/ghostty.config" ~/.config/ghostty/config 2>/dev/null || true
+    print_success "Ghostty configured (notifications enabled)"
+else
+    print_info "Ghostty not installed — skipping config"
+fi
+
 # Editor configurations
 print_header "📝 Editor Configuration"
 

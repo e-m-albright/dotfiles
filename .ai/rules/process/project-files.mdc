@@ -93,19 +93,14 @@ coverage/
 # AI tools
 .agents/
 !.agents/decisions/
-.ai/rules/global-process.mdc
-.ai/rules/style-principles.mdc
-.ai/rules/github-workflow.mdc
-.ai/rules/tickets-and-prs.mdc
-.ai/rules/agent-artifacts.mdc
 .cursor/rules/
 ```
 
 **Key rules:**
 - Always gitignore `.env` but keep `.env.example`
 - Gitignore `.agents/` but keep `decisions/`
-- Gitignore symlinked `.ai/rules/` (universal process rules)
-- Gitignore `.cursor/rules/` entirely (auto-generated symlinks)
+- Commit `.ai/rules/` (all rules are copied, not symlinked)
+- Gitignore `.cursor/rules/` (auto-generated symlinks to `.ai/rules/`)
 
 ## README.md
 

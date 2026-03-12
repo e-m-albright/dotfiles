@@ -6,7 +6,7 @@ alwaysApply: false
 
 # TypeScript
 
-## Runtime & Package Management
+## Tooling
 
 - **Bun** is the runtime. Not Node unless compatibility requires it.
 - Detect lockfile (`bun.lock`, `pnpm-lock.yaml`, etc.) and use matching package manager.

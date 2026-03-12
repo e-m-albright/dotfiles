@@ -1,0 +1,30 @@
+# Lefthook git hooks for dotfiles repo
+# Install hooks: lefthook install
+
+pre-commit:
+  parallel: true
+  commands:
+    shellcheck:
+      glob: "*.sh"
+      run: |
+        for f in {staged_files}; do
+          shellcheck -S warning "$f" 2>/dev/null || true
+        done
+    syntax-check:
+      glob: "*.sh"
+      run: |
+        for f in {staged_files}; do
+          bash -n "$f"
+        done
+    yaml-lint:
+      glob: "*.{yaml,yml}"
+      run: |
+        for f in {staged_files}; do
+          yq eval '.' "$f" >/dev/null 2>&1 || echo "Invalid YAML: $f"
+        done
+    json-lint:
+      glob: "*.json"
+      run: |
+        for f in {staged_files}; do
+          jq '.' "$f" >/dev/null 2>&1 || echo "Invalid JSON: $f"
+        done

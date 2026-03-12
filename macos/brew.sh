@@ -163,6 +163,7 @@ dev_cli=(
 
 mac_cli=(
     dockutil            # Dock management
+    terminal-notifier   # macOS notifications from CLI (used by Claude Code hooks)
 )
 
 # Applications (casks)

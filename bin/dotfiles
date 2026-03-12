@@ -24,6 +24,8 @@ sub_help () {
     printf "   clean            Clean up Homebrew caches\n"
     printf "   brew             Run Homebrew setup script\n"
     printf "   dock             Reset macOS Dock layout\n"
+    printf "   stale            Find disabled packages still installed\n"
+    printf "   profile-shell    Profile shell startup time\n"
     printf "   claude-setup         Configure Claude Code (plugins, voice, instructions)\n"
     printf "   claude-instructions  Update ~/.claude/CLAUDE.md with AGENTS.md reference\n"
     printf "   completions      Output shell completions (source this in your shell)\n"
@@ -129,6 +131,30 @@ sub_doctor () {
         else
             printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-setup${NC}\n" "Claude plugins"
         fi
+
+        local hook_count
+        hook_count=$(jq '.hooks // {} | keys | length' ~/.claude/settings.json 2>/dev/null || echo "0")
+        if [[ "$hook_count" -gt 0 ]]; then
+            printf "  ${GREEN}✓${NC} %-20s %s events configured\n" "Claude hooks" "$hook_count"
+        else
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-setup${NC}\n" "Claude hooks"
+        fi
+    fi
+
+    if [[ -f ~/.claude.json ]] && command -v jq >/dev/null 2>&1; then
+        local mcp_count
+        mcp_count=$(jq '.mcpServers // {} | length' ~/.claude.json 2>/dev/null || echo "0")
+        if [[ "$mcp_count" -gt 0 ]]; then
+            printf "  ${GREEN}✓${NC} %-20s %s servers\n" "Claude MCP" "$mcp_count"
+        else
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-setup${NC}\n" "Claude MCP"
+        fi
+    fi
+
+    if [[ -f ~/.config/ghostty/config ]]; then
+        printf "  ${GREEN}✓${NC} %-20s configured\n" "Ghostty"
+    elif [[ -d "/Applications/Ghostty.app" ]]; then
+        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run install.sh to configure${NC}\n" "Ghostty"
     fi
 
     printf "\n"
@@ -180,6 +206,82 @@ sub_claude_setup() {
     printf "${GREEN}%s Claude Code setup complete.${NC}\n" "$ARROW"
 }
 
+sub_stale() {
+    printf "${BLUE}%s Checking for stale artifacts...${NC}\n\n" "$ARROW"
+
+    # Check for brew packages that were disabled but might still be installed
+    printf "${BLUE}Disabled brew packages still installed:${NC}\n"
+    local found=false
+    local disabled_pkgs=(
+        "visual-studio-code" "iterm2" "warp" "granola" "docker-desktop"
+        "terraform" "signal" "discord" "whatsapp" "super-productivity"
+        "go" "golangci-lint" "ollama" "gemini-cli"
+    )
+    for pkg in "${disabled_pkgs[@]}"; do
+        if brew list "$pkg" &>/dev/null 2>&1 || brew list --cask "$pkg" &>/dev/null 2>&1; then
+            printf "  ${YELLOW}○${NC} %-25s ${YELLOW}brew uninstall %s${NC}\n" "$pkg" "$pkg"
+            found=true
+        fi
+    done
+    if ! $found; then
+        printf "  ${GREEN}✓${NC} No stale packages found\n"
+    fi
+
+    # Check for stale symlinks in home directory
+    printf "\n${BLUE}Broken symlinks in ~/:${NC}\n"
+    local broken=false
+    for link in ~/.zshrc ~/.zprofile ~/.zshenv ~/.gitconfig ~/.gitignore_global; do
+        if [[ -L "$link" ]] && [[ ! -e "$link" ]]; then
+            printf "  ${RED}✗${NC} %s → %s (broken)\n" "$link" "$(readlink "$link")"
+            broken=true
+        fi
+    done
+    if ! $broken; then
+        printf "  ${GREEN}✓${NC} All symlinks valid\n"
+    fi
+
+    # Check for old VS Code config remnants
+    printf "\n${BLUE}Old editor configs:${NC}\n"
+    local old=false
+    if [[ -d ~/Library/Application\ Support/Code/User ]] && \
+       [[ -L ~/Library/Application\ Support/Code/User/settings.json ]] && \
+       [[ "$(readlink ~/Library/Application\ Support/Code/User/settings.json 2>/dev/null)" == *"dotfiles"* ]]; then
+        printf "  ${YELLOW}○${NC} VS Code settings still symlinked to dotfiles\n"
+        printf "     ${CYAN}rm ~/Library/Application\\ Support/Code/User/settings.json${NC}\n"
+        old=true
+    fi
+    if ! $old; then
+        printf "  ${GREEN}✓${NC} No stale editor configs\n"
+    fi
+
+    printf "\n"
+}
+
+sub_profile_shell() {
+    printf "${BLUE}%s Profiling shell startup...${NC}\n\n" "$ARROW"
+    # Time total startup
+    local total
+    total=$( { time zsh -i -c exit 2>&1; } 2>&1 | grep real | awk '{print $2}')
+    printf "  Total startup time: ${BOLD}%s${NC}\n\n" "$total"
+
+    # Detailed breakdown using zsh XTRACE
+    printf "  ${BLUE}Top 10 slowest operations:${NC}\n"
+    ZSHRC_PROFILE=1 zsh -i -c exit 2>&1 | \
+        awk '{ gsub(/^[0-9]+\.[0-9]+/, "", $0); print }' 2>/dev/null || true
+
+    # Simpler approach: time individual sourced files
+    printf "\n  ${BLUE}File-by-file timing:${NC}\n"
+    for f in ~/.zshenv ~/.zprofile ~/.zshrc; do
+        if [[ -f "$f" ]]; then
+            local t
+            t=$( { time zsh -c "source $f" 2>/dev/null; } 2>&1 | grep real | awk '{print $2}')
+            printf "  %-30s %s\n" "$(basename "$f")" "$t"
+        fi
+    done
+    printf "\n"
+    printf "  ${YELLOW}Tip:${NC} If startup is slow, check for heavy evals (fnm env, brew shellenv).\n"
+}
+
 sub_completions() {
     cat << 'EOF'
 # Zsh completions for dotfiles command
@@ -194,6 +296,8 @@ _dotfiles() {
         'clean:Clean up caches'
         'brew:Run Homebrew setup'
         'dock:Reset macOS Dock'
+        'stale:Find disabled packages still installed'
+        'profile-shell:Profile shell startup time'
         'claude-setup:Configure Claude Code plugins and settings'
         'claude-instructions:Update Claude memory file'
         'completions:Output shell completions'
@@ -208,6 +312,9 @@ EOF
 case $COMMAND_NAME in
     "" | "-h" | "--help")
         sub_help
+        ;;
+    profile-shell)
+        sub_profile_shell
         ;;
     claude-setup)
         shift

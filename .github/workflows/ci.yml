@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax check all shell scripts
+        run: |
+          find . -name '*.sh' -not -path './.git/*' | while read -r f; do
+            bash -n "$f" || exit 1
+          done
+          echo "All shell scripts pass syntax check"
+
+      - name: Validate JSON files
+        run: |
+          find . -name '*.json' -not -path './.git/*' -not -path './.claude/*' | while read -r f; do
+            python3 -m json.tool "$f" >/dev/null || exit 1
+          done
+          echo "All JSON files are valid"
+
+      - name: Validate YAML files
+        run: |
+          find . -name '*.yaml' -o -name '*.yml' | grep -v '.git/' | while read -r f; do
+            python3 -c "import yaml; yaml.safe_load(open('$f'))" || exit 1
+          done
+          echo "All YAML files are valid"
+
+      - name: Check for secrets patterns
+        run: |
+          PATTERNS="password=|api_key=|secret_key=|AWS_SECRET|PRIVATE_KEY"
+          if grep -rn --include='*.sh' --include='*.json' --include='*.yaml' -E "$PATTERNS" . --exclude-dir=.git; then
+            echo "::warning::Possible secrets found in committed files"
+          fi
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          severity: warning
+          ignore_paths: ".git"

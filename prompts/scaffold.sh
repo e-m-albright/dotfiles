@@ -165,41 +165,39 @@ is_existing_path() {
     [[ "$path" == "." ]] || [[ -d "$path" ]]
 }
 
-# Symlink a rule file into .ai/rules/ (universal rules — auto-update from dotfiles)
-symlink_ai_rule() {
+# Copy a universal rule file into .ai/rules/ (re-copied on --force or re-scaffold)
+# Previously symlinked; now copied so projects don't depend on dotfiles path.
+# To update rules across projects: re-run scaffold.sh --force in each project.
+copy_universal_rule() {
     local rule_path="$1"  # e.g., "process/global-process.mdc"
     local rule_name
     rule_name="$(basename "$rule_path")"
     local source="$AI_RULES_DIR/$rule_path"
-    local link=".ai/rules/$rule_name"
+    local dest=".ai/rules/$rule_name"
 
     if [[ ! -f "$source" ]]; then
         print_warning "Rule not found in dotfiles: $rule_path"
         return
     fi
 
-    # Compute relative path from .ai/rules/ to the dotfiles source
-    local abs_link_dir
-    abs_link_dir="$(cd "$(dirname "$link")" 2>/dev/null && pwd || mkdir -p "$(dirname "$link")" && cd "$(dirname "$link")" && pwd)"
-    local rel_source
-    rel_source="$(python3 -c "import os.path; print(os.path.relpath('$source', '$abs_link_dir'))")"
+    # If it's a stale symlink from old scaffold, replace it
+    if [[ -L "$dest" ]]; then
+        rm "$dest"
+    fi
 
-    if [[ -L "$link" ]]; then
-        local current_target
-        current_target="$(readlink "$link")"
-        if [[ "$current_target" == "$rel_source" || "$current_target" == "$source" ]]; then
-            print_skip ".ai/rules/$rule_name (symlink)"
-            return
-        fi
-        rm "$link"
-        print_update ".ai/rules/$rule_name (symlink updated)"
-    elif [[ -f "$link" ]] && [[ "$FORCE" != true ]]; then
-        print_skip ".ai/rules/$rule_name (project-owned)"
+    # Check if content is already up to date
+    if [[ -f "$dest" ]] && diff -q "$source" "$dest" >/dev/null 2>&1; then
+        print_skip ".ai/rules/$rule_name"
         return
     fi
 
-    ln -s "$rel_source" "$link"
-    print_step "Symlinked .ai/rules/$rule_name"
+    if [[ -f "$dest" ]] && [[ "$FORCE" != true ]]; then
+        print_skip ".ai/rules/$rule_name (project-owned, differs from dotfiles)"
+        return
+    fi
+
+    cp "$source" "$dest"
+    print_step "Copied .ai/rules/$rule_name"
 }
 
 # Copy a rule file into .ai/rules/ (recipe-specific — project can customize)
@@ -488,9 +486,9 @@ mkdir -p ".ai/rules"
 echo ""
 echo -e "${BLUE}Setting up AI rules...${NC}"
 
-# Universal rules (symlinked — auto-update from dotfiles)
+# Universal rules (copied — re-run scaffold.sh --force to update)
 for rule in "${UNIVERSAL_RULES[@]}"; do
-    symlink_ai_rule "$rule"
+    copy_universal_rule "$rule"
 done
 
 # Recipe-specific rules (copied — project can customize)
