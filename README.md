@@ -5,7 +5,7 @@ Opinionated Mac setup + project scaffolding for fast, maintainable development.
 **Two things happen here:**
 
 1. **Machine setup** — Run `install.sh` and get a fully configured dev environment
-2. **Project scaffolding** — Seed new or existing projects with thoughtful structure
+2. **Project scaffolding** — Seed new or existing projects with cross-vendor AI rules
 
 ---
 
@@ -20,14 +20,18 @@ xcode-select --install
 # 2. Clone and run
 git clone https://github.com/e-m-albright/dotfiles ~/dotfiles
 ~/dotfiles/install.sh
+
+# 3. Re-run anytime (idempotent)
+dotfiles install
 ```
 
 **What you get:**
 - Shell: Zsh + Oh My Zsh + custom theme
-- Runtimes: Bun, Node.js (fnm), Python (uv)
-- Editor: Cursor (with VS Code as fallback) + MCP servers
-- CLI: Git, gh, just, jq, tmux, delta, and more
-- AI: Claude Code, Claude Desktop
+- Runtimes: Go, Rust, Bun, Node.js (fnm), Python (uv)
+- Editor: Cursor + MCP servers
+- Terminal: Ghostty (GPU-accelerated, desktop notifications)
+- CLI: Git, gh, just, jq, delta, hyperfine, and more
+- AI: Claude Code (with plugins, hooks, MCP servers), Claude Desktop
 
 The installer is idempotent — safe to re-run anytime.
 
@@ -39,36 +43,37 @@ Seed new or existing projects with cross-vendor AI rules that work with Claude C
 
 ### Usage
 
-One script, idempotent — run it on new or existing projects:
-
 ```bash
 # Create new projects
-~/dotfiles/prompts/scaffold.sh typescript my-app           # SvelteKit (default)
-~/dotfiles/prompts/scaffold.sh typescript astro my-blog    # Astro
-~/dotfiles/prompts/scaffold.sh python my-api               # FastAPI (default)
-~/dotfiles/prompts/scaffold.sh golang my-service           # Chi (default)
-~/dotfiles/prompts/scaffold.sh rust my-tool                # Axum (default)
+dotfiles scaffold typescript my-app           # SvelteKit (default)
+dotfiles scaffold typescript astro my-blog    # Astro
+dotfiles scaffold python my-api               # FastAPI (default)
+dotfiles scaffold golang my-service           # Chi (default)
+dotfiles scaffold rust my-tool                # Axum (default)
 
 # Seed existing projects (use . for current directory)
-~/dotfiles/prompts/scaffold.sh typescript .
-~/dotfiles/prompts/scaffold.sh python ~/code/my-api
+dotfiles scaffold typescript .
+dotfiles scaffold python ~/code/my-api
+
+# Force-update rules in an existing project
+dotfiles scaffold --force python .
 ```
 
-Safe to run multiple times -- only adds missing pieces. AGENTS.md is generated once, then project-owned (use `--force` to regenerate).
+Safe to run multiple times — only adds missing pieces. AGENTS.md is generated once, then project-owned (use `--force` to regenerate).
 
 This adds cross-vendor AI rules — lightweight scaffolding that guides AI agents:
 
 ```
 my-project/
 ├── AGENTS.md              # ~30 lines: pointers + project context (project-owned)
-├── .ai/rules/*.mdc        # AI rules (universal=symlinked, recipe=copied)
+├── .ai/rules/*.mdc        # AI rules (universal + recipe-specific, all copied)
 ├── .cursor/rules/*.mdc    # Cursor symlinks → .ai/rules/ (auto-generated)
 ├── .agents/               # Working files, gitignored (plans, research, sessions)
 └── .agents/decisions/     # Architecture Decision Records (versioned)
 ```
 
 **How rules are deployed:**
-- **Universal rules** (process, style) are symlinked — auto-update from dotfiles
+- **Universal rules** (process, style) are copied — re-run with `--force` to update from dotfiles
 - **Recipe rules** (language, framework, stack) are copied — project can customize
 - **Cursor symlinks** are auto-generated relative links to `.ai/rules/`
 - Only rules relevant to the recipe are deployed, not the entire library
@@ -90,8 +95,8 @@ my-project/
 
 ### Shell & Terminal
 
-- **Zsh + Oh My Zsh**: Battle-tested shell framework
-- **Custom theme**: Two-line prompt with git branch status
+- **Zsh + Oh My Zsh**: Custom two-line prompt with git status, venv indicator, error-aware prompt character
+- **Ghostty**: GPU-accelerated terminal with desktop notifications
 - **Rectangle**: Window management
 
 ### Runtimes
@@ -101,42 +106,49 @@ my-project/
 | **Node.js** | fnm | LTS version, auto-switches per project |
 | **Bun** | direct | Preferred JS runtime (faster than Node) |
 | **Python** | uv | Python 3.14, fast package management |
-
-> **Go** is available but disabled by default — enable in `brew.sh` and `install.sh` if needed.
+| **Go** | brew | With gopls, delve, air, sqlc, goose, templ, staticcheck |
+| **Rust** | rustup | Via official installer (not Homebrew) |
 
 ### Editors
 
 - **Cursor**: Primary editor (AI-native, VS Code compatible, MCP servers configured)
-- **VS Code**: Fallback when needed
-
-Both share the same extension list. See `editors/` for configs.
 
 ### CLI Tools
 
 | Category | Tools |
 |----------|-------|
-| **Git** | delta (diffs), gh (GitHub CLI) |
-| **Task runner** | just |
-| **Data** | jq, yq |
-| **Utils** | tmux, ripgrep, fd, bat, eza |
+| **Core** | git, git-lfs, delta (diffs), gh (GitHub CLI), jq, yq, wget |
+| **System** | htop, iftop, nmap, dockutil, terminal-notifier |
+| **Dev** | just (task runner), lefthook (git hooks), hyperfine (benchmarks), atlas (migrations), duckdb |
 
 ### AI Tools
 
 | Tool | Purpose |
 |------|---------|
-| **Claude Code** | Agentic coding assistant (CLI) |
+| **Claude Code** | Agentic coding assistant (CLI) with plugins, hooks, MCP servers |
 | **Claude Desktop** | Claude macOS app |
 
-### MCP Servers (Cursor)
+### MCP Servers
+
+Configured for both Claude Code and Cursor:
 
 | Server | Purpose |
 |--------|---------|
-| **Exa** | AI-powered web search for research |
 | **Linear** | Issue tracking integration |
 | **Notion** | Documentation integration |
-| ~~Datadog~~ | Observability (disabled, enable when needed) |
 
 Configure API keys in `~/.cursor/mcp.json` (symlinked from `editors/cursor/mcp.json`).
+
+### Claude Code
+
+Setup is automated via `dotfiles claude-setup` (also runs during install):
+
+- **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
+- **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt), terminal notifications on completion
+- **MCP servers**: Linear, Notion
+- **Preferences**: Voice mode, terminal bell
+
+See `claude/` for all configuration files.
 
 ---
 
@@ -147,19 +159,25 @@ Configure API keys in `~/.cursor/mcp.json` (symlinked from `editors/cursor/mcp.j
 Edit `macos/brew.sh` to customize packages. Organized by category with opt-in toggles:
 
 ```bash
-AI=1 PRODUCTIVITY=1 SOCIAL=0 ~/dotfiles/macos/brew.sh
+AI=1 PRODUCTIVITY=1 SOCIAL=0 dotfiles brew
 ```
 
 ### The `dotfiles` Command
 
 ```bash
-dotfiles help        # Show available commands
-dotfiles doctor      # Check all tools are installed correctly
-dotfiles update      # Update OS, Homebrew, and Node.js LTS
-dotfiles clean       # Clear Homebrew caches
-dotfiles brew        # Re-run Homebrew setup
-dotfiles dock        # Reset Dock layout
-dotfiles completions # Output shell completions (source in .zshrc)
+dotfiles help                # Show available commands
+dotfiles install             # Re-run full setup (install.sh)
+dotfiles doctor              # Check all tools are installed correctly
+dotfiles update              # Update OS, Homebrew, and Node.js LTS
+dotfiles clean               # Clear Homebrew caches
+dotfiles brew                # Re-run Homebrew setup
+dotfiles dock                # Reset Dock layout
+dotfiles scaffold            # Scaffold a project with AI rules
+dotfiles stale               # Find disabled packages still installed
+dotfiles profile-shell       # Profile shell startup time
+dotfiles claude-setup        # Configure Claude Code (plugins, hooks, MCP)
+dotfiles claude-instructions # Update ~/.claude/CLAUDE.md
+dotfiles completions         # Output shell completions
 ```
 
 Enable tab completion:
@@ -184,8 +202,10 @@ dotfiles/
 ├── bin/                    # CLI tools (dotfiles command)
 ├── shell/                  # Zsh config + theme
 ├── git/                    # Git config + global ignores
-├── editors/                # Cursor + VS Code settings
-├── macos/                  # Homebrew, Dock, SSH setup
+├── editors/                # Cursor settings + MCP servers
+├── terminal/               # Ghostty config
+├── claude/                 # Claude Code setup (plugins, hooks, MCP servers)
+├── macos/                  # Homebrew, Dock, SSH, print utilities
 ├── .ai/rules/              # Cross-vendor AI rules (canonical source)
 │   ├── process/            # Universal: safety, style, workflow
 │   ├── languages/          # Language ergonomics: TS, Python, Go, Rust
