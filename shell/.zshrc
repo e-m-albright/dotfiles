@@ -143,3 +143,6 @@ fi
 # =============================================================================
 # shellcheck source=/dev/null
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# bun completions
+[ -s "/Users/evan/.bun/_bun" ] && source "/Users/evan/.bun/_bun"
