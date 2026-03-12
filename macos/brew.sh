@@ -133,36 +133,39 @@ core_cli=(
     jq                  # JSON processor
     yq                  # YAML processor (like jq for YAML)
     wget                # Web downloader
-    # libpq             # PostgreSQL client library (psql, pg_dump — enable if needed)
-)
-
-terminal_cli=(
-    # tmux              # Terminal multiplexer (disabled)
+    openssl             # TLS/crypto toolkit
     "bash-completion@2" # Bash completion
+    # tmux              # Terminal multiplexer (disabled)
 )
 
-network_cli=(
+system_cli=(
+    htop                # System monitoring
+    iftop               # Network traffic monitoring
     nmap                # Network mapping
+    dockutil            # Dock management
+    terminal-notifier   # macOS notifications from CLI (used by Claude Code hooks)
 )
 
 dev_cli=(
-    openssl             # Security tools
-    htop                # System monitoring
-    iftop               # Network traffic monitoring
     just                # Command runner (like make, but simpler)
-    duckdb              # Fast analytical database (SQL for analytics)
-    hyperfine           # Command-line benchmarking tool
-    py-spy              # Sampling profiler for Python programs
-    go                  # Go programming language
-    golangci-lint       # Go linter aggregator
-    atlas               # Database schema migration tool (requires ariga/tap)
     lefthook            # Git hooks (language-agnostic, parallel execution)
+    hyperfine           # Command-line benchmarking tool
+    atlas               # Database schema migration tool (requires ariga/tap)
+    duckdb              # Fast analytical database (SQL for analytics)
+    # libpq             # PostgreSQL client library (psql, pg_dump — enable if needed)
+)
+
+node_cli=(
     fnm                 # Fast Node Manager (node version switching)
 )
 
-mac_cli=(
-    dockutil            # Dock management
-    terminal-notifier   # macOS notifications from CLI (used by Claude Code hooks)
+go_cli=(
+    go                  # Go programming language
+    golangci-lint       # Go linter aggregator
+)
+
+python_cli=(
+    py-spy              # Sampling profiler for Python programs
 )
 
 # Applications (casks)
@@ -245,11 +248,20 @@ print_success "Taps configured"
 print_section "Core CLI"
 install_packages "${core_cli[@]}"
 
-print_section "Terminal CLI"
-install_packages "${terminal_cli[@]}"
+print_section "System"
+install_packages "${system_cli[@]}"
 
-print_section "Developer CLI"
+print_section "Developer Tools"
 install_packages "${dev_cli[@]}"
+
+print_section "Node.js"
+install_packages "${node_cli[@]}"
+
+print_section "Go"
+install_packages "${go_cli[@]}"
+
+print_section "Python"
+install_packages "${python_cli[@]}"
 
 # Rust via rustup (official installer; preferred over Homebrew for version management)
 print_section "Rust (rustup)"
@@ -272,12 +284,6 @@ else
         print_warn "Failed to install Rust via rustup"
     fi
 fi
-
-print_section "Network CLI"
-install_packages "${network_cli[@]}"
-
-print_section "macOS CLI"
-install_packages "${mac_cli[@]}"
 
 print_header "🖥️  Installing Applications"
 print_section "Essentials"
