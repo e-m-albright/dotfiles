@@ -34,7 +34,7 @@ sub_help () {
 }
 
 sub_doctor () {
-    printf "${BLUE}%s Checking dotfiles installation...${NC}\n\n" "$ARROW"
+    printf "${BLUE}%b Checking dotfiles installation...${NC}\n\n" "$ARROW"
 
     local all_ok=true
 
@@ -160,9 +160,9 @@ sub_doctor () {
 
     printf "\n"
     if $all_ok; then
-        printf "${GREEN}%s All checks passed!${NC}\n" "$ARROW"
+        printf "${GREEN}%b All checks passed!${NC}\n" "$ARROW"
     else
-        printf "${YELLOW}%s Some tools are missing. Run install.sh or install individually.${NC}\n" "$ARROW"
+        printf "${YELLOW}%b Some tools are missing. Run install.sh or install individually.${NC}\n" "$ARROW"
     fi
 }
 
@@ -179,36 +179,36 @@ sub_update () {
         fnm default lts-latest
     fi
 
-    printf "${GREEN}%s Success! Update command finished.${NC}\n" "$ARROW"
+    printf "${GREEN}%b Success! Update command finished.${NC}\n" "$ARROW"
 }
 
 sub_clean () {
     brew cleanup
-    printf "${GREEN}%s Success! Clean command finished.${NC}\n" "$ARROW"
+    printf "${GREEN}%b Success! Clean command finished.${NC}\n" "$ARROW"
 }
 
 sub_brew () {
     . "$DOTFILES_DIR/macos/brew.sh"
-    printf "${GREEN}%s Success! Brew command finished.${NC}\n" "$ARROW"
+    printf "${GREEN}%b Success! Brew command finished.${NC}\n" "$ARROW"
 }
 
 sub_dock () {
     . "$DOTFILES_DIR/macos/dock.sh"
-    printf "${GREEN}%s Success! MacOS dock command finished.${NC}\n" "$ARROW"
+    printf "${GREEN}%b Success! MacOS dock command finished.${NC}\n" "$ARROW"
 }
 
 sub_claude_instructions() {
     "$DOTFILES_DIR/macos/claude_instructions.sh"
-    printf "${GREEN}%s Claude system instructions updated (~/.claude/CLAUDE.md).${NC}\n" "$ARROW"
+    printf "${GREEN}%b Claude system instructions updated (~/.claude/CLAUDE.md).${NC}\n" "$ARROW"
 }
 
 sub_claude_setup() {
     . "$DOTFILES_DIR/claude/setup.sh"
-    printf "${GREEN}%s Claude Code setup complete.${NC}\n" "$ARROW"
+    printf "${GREEN}%b Claude Code setup complete.${NC}\n" "$ARROW"
 }
 
 sub_stale() {
-    printf "${BLUE}%s Checking for stale artifacts...${NC}\n\n" "$ARROW"
+    printf "${BLUE}%b Checking for stale artifacts...${NC}\n\n" "$ARROW"
 
     # Check for brew packages that were disabled but might still be installed
     printf "${BLUE}Disabled brew packages still installed:${NC}\n"
@@ -267,7 +267,7 @@ sub_scaffold() {
 }
 
 sub_profile_shell() {
-    printf "${BLUE}%s Profiling shell startup...${NC}\n\n" "$ARROW"
+    printf "${BLUE}%b Profiling shell startup...${NC}\n\n" "$ARROW"
     # Time total startup
     local total
     total=$( { time zsh -i -c exit 2>&1; } 2>&1 | grep real | awk '{print $2}')
@@ -353,7 +353,7 @@ case $COMMAND_NAME in
             shift
             "sub_${COMMAND_NAME}" "$@"
         else
-            printf "${RED}%s Error: '%s' is not a known command.${NC}\n" "$ARROW" "$COMMAND_NAME" >&2
+            printf "${RED}%b Error: '%s' is not a known command.${NC}\n" "$ARROW" "$COMMAND_NAME" >&2
             sub_help
             exit 1
         fi
