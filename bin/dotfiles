@@ -121,6 +121,16 @@ sub_doctor () {
         printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-instructions${NC}\n" "Claude memory"
     fi
 
+    if [[ -f ~/.claude/settings.json ]] && command -v jq >/dev/null 2>&1; then
+        local plugin_count
+        plugin_count=$(jq '.enabledPlugins // {} | length' ~/.claude/settings.json 2>/dev/null || echo "0")
+        if [[ "$plugin_count" -gt 0 ]]; then
+            printf "  ${GREEN}✓${NC} %-20s %s plugins enabled\n" "Claude plugins" "$plugin_count"
+        else
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-setup${NC}\n" "Claude plugins"
+        fi
+    fi
+
     printf "\n"
     if $all_ok; then
         printf "${GREEN}%s All checks passed!${NC}\n" "$ARROW"
@@ -214,10 +224,11 @@ case $COMMAND_NAME in
         sub_doctor
         ;;
     *)
-        shift
-        sub_${COMMAND_NAME} $@
-        if [ $? = 127 ]; then
-            printf "${RED}%s Error: '%s' is not a known command or has errors.${NC}\n" "$ARROW" "$COMMAND_NAME" >&2
+        if declare -f "sub_${COMMAND_NAME}" >/dev/null 2>&1; then
+            shift
+            "sub_${COMMAND_NAME}" "$@"
+        else
+            printf "${RED}%s Error: '%s' is not a known command.${NC}\n" "$ARROW" "$COMMAND_NAME" >&2
             sub_help
             exit 1
         fi

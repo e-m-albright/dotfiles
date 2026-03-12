@@ -33,10 +33,13 @@ alwaysApply: true
 
 ## Error Handling
 
-- **Fail fast** — validate inputs at boundaries.
+- **Fail fast** — validate inputs at system boundaries (user input, external APIs). Trust internal code.
 - **Be specific** — `UserNotFoundError` not `Error("something went wrong")`.
-- **Never swallow exceptions** — no empty `catch` blocks.
+- **Never swallow exceptions** — no empty `catch` blocks. At minimum, log with context.
 - **Log context** — include relevant IDs, timestamps, request info.
+- **Propagate, don't catch-and-rethrow** — only catch when you can actually handle or add context.
+- **No defensive coding against impossible states** — if a type says it's not null, don't null-check it.
+- **Errors are data** — use typed errors (Result types, custom exceptions) over strings.
 
 ## Testing
 

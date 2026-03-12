@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail  # Removed 'u' to allow empty arrays
+set -eo pipefail  # Not using -u: brew env vars and optional arrays may be unset
 
 # Source shared print functions
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -49,99 +49,76 @@ print_success "Homebrew updated"
 # Installation Functions
 # =============================================================================
 
-# Function to install packages if not already installed
-install_packages() {
-    local pkgs=("$@")
-    [[ ${#pkgs[@]} -eq 0 ]] && return 0
-    for pkg in "${pkgs[@]}"; do
-        [[ -z "$pkg" ]] || [[ "$pkg" =~ ^[[:space:]]*# ]] && continue
-        # Check brew list first (authoritative for Homebrew-managed packages)
-        if brew list "$pkg" &>/dev/null 2>&1; then
-            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (Homebrew)${NC}\n" "$pkg"
-            continue
-        fi
-        # Fallback: check if binary exists (works for tap formulas, manual installs)
-        if command -v "$pkg" >/dev/null 2>&1; then
-            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$pkg"
-            continue
-        fi
-        printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$pkg"
-        if brew install "$pkg" 2>&1; then
-            printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$pkg"
-        else
-            printf "  ${WARN} ${YELLOW}Failed to install ${PKG_COLOR}%s${NC} ${YELLOW}(may not be available via Homebrew)${NC}\n" "$pkg"
-        fi
-    done
-}
-
-# Function to install cask packages if not already installed
-install_casks() {
-    local casks=("$@")
-    [[ ${#casks[@]} -eq 0 ]] && return 0
-    for cask in "${casks[@]}"; do
-        [[ -z "$cask" ]] || [[ "$cask" =~ ^[[:space:]]*# ]] && continue
-        
-        # Check if installed via Homebrew
-        if brew list --cask "$cask" &>/dev/null 2>&1; then
-            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (Homebrew)${NC}\n" "$cask"
-            continue
-        fi
-        
-        # Check if app exists in /Applications (case-insensitive, common patterns)
-        # Convert cask name to app name: granola -> Granola.app, google-chrome -> Google Chrome.app
-        local app_pattern="${cask//-/*}"  # granola -> granola, google-chrome -> google*chrome
-        if find /Applications -maxdepth 1 -iname "*${app_pattern}*.app" 2>/dev/null | grep -q .; then
-            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (manual)${NC}\n" "$cask"
-            continue
-        fi
-        
-        # Try to install via Homebrew
-        printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$cask"
-        if brew install --cask "$cask" 2>&1; then
-            printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$cask"
-        else
-            printf "  ${WARN} ${YELLOW}Failed to install ${PKG_COLOR}%s${NC} ${YELLOW}(may not be available via Homebrew)${NC}\n" "$cask"
-        fi
-    done
-}
-
-install_any() {
-    # Prefer formula; fall back to cask.
+# Unified install helper. Checks if already present, then installs.
+# Usage: _brew_install <name> [formula|cask|auto]
+_brew_install() {
     local name="$1"
+    local mode="${2:-formula}"
     [[ -z "$name" ]] || [[ "$name" =~ ^[[:space:]]*# ]] && return 0
-    
-    # Check brew list first (authoritative source, shows Homebrew origin)
-    if brew list "$name" &>/dev/null 2>&1; then
-        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (Homebrew formula)${NC}\n" "$name"
-        return 0
-    fi
-    if brew list --cask "$name" &>/dev/null 2>&1; then
-        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed (Homebrew cask)${NC}\n" "$name"
-        return 0
-    fi
 
-    # Fallback: check if binary exists (manual installs, tap formulas)
-    local bin_name="${name//-/_}"
-    local bin_name2="${name//-/}"
-    if command -v "$name" >/dev/null 2>&1 || \
-       command -v "$bin_name" >/dev/null 2>&1 || \
-       command -v "$bin_name2" >/dev/null 2>&1; then
+    # Check if already installed via Homebrew
+    if brew list "$name" &>/dev/null 2>&1 || brew list --cask "$name" &>/dev/null 2>&1; then
         printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
         return 0
     fi
 
-    printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$name"
-    if brew install "$name" &>/dev/null 2>&1; then
-        printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed (formula)${NC}\n" "$name"
-        return 0
-    fi
-    if brew install --cask "$name" &>/dev/null 2>&1; then
-        printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed (cask)${NC}\n" "$name"
+    # Check if binary exists on PATH (tap formulas, manual installs)
+    if command -v "$name" >/dev/null 2>&1; then
+        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
         return 0
     fi
 
-    printf "  ${WARN} ${YELLOW}Skipped ${PKG_COLOR}%s${NC} ${YELLOW}(not available via Homebrew)${NC}\n" "$name"
+    # For casks, also check /Applications
+    if [[ "$mode" == "cask" || "$mode" == "auto" ]]; then
+        local app_pattern="${name//-/*}"
+        if find /Applications -maxdepth 1 -iname "*${app_pattern}*.app" 2>/dev/null | grep -q .; then
+            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
+            return 0
+        fi
+    fi
+
+    # Install
+    printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$name"
+
+    case "$mode" in
+        formula)
+            if brew install "$name" 2>&1; then
+                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$name"
+            else
+                printf "  ${WARN} ${YELLOW}Failed to install %s${NC}\n" "$name"
+            fi
+            ;;
+        cask)
+            if brew install --cask "$name" 2>&1; then
+                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$name"
+            else
+                printf "  ${WARN} ${YELLOW}Failed to install %s${NC}\n" "$name"
+            fi
+            ;;
+        auto)
+            if brew install "$name" &>/dev/null 2>&1; then
+                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$name"
+            elif brew install --cask "$name" &>/dev/null 2>&1; then
+                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$name"
+            else
+                printf "  ${WARN} ${YELLOW}Skipped %s (not available)${NC}\n" "$name"
+            fi
+            ;;
+    esac
     return 0
+}
+
+# Convenience wrappers for batch installs
+install_packages() {
+    for pkg in "$@"; do _brew_install "$pkg" formula; done
+}
+
+install_casks() {
+    for pkg in "$@"; do _brew_install "$pkg" cask; done
+}
+
+install_any() {
+    _brew_install "$1" auto
 }
 
 # =============================================================================
@@ -197,7 +174,7 @@ essentials=(
 # Editors
 ide=(
     cursor                 # Primary: AI-native editor (VS Code compatible)
-    visual-studio-code     # Fallback: when Cursor isn't suitable
+    # visual-studio-code   # Disabled: using Cursor exclusively
 )
 
 productivity=(

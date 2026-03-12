@@ -45,10 +45,12 @@ alwaysApply: false
 
 ## Never
 
-- Use `any` — use `unknown` and narrow.
-- Skip error handling on async operations.
+- Use `any` — if you're tempted, the type design is wrong. Use `unknown` and narrow.
+- Skip error handling on async operations — unhandled rejections crash the process.
 - Commit `.env` files — use `.env.example`.
 - Mutate props directly — derive new values.
+- `try/catch` around code that can't throw — only wrap genuinely fallible operations.
+- Re-export types just for convenience — import from the source.
 
 ## Ask First
 

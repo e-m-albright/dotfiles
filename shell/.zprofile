@@ -10,5 +10,4 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-# Rust (rustup)
-[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+# Rust — sourced in .zshenv, no need to duplicate here

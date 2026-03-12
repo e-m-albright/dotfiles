@@ -83,3 +83,12 @@ print_completion() {
     printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
     printf "\n"
 }
+
+# Checklist items: [ ] for required, [-] for optional
+print_todo() {
+    printf "  ${YELLOW}[ ]${NC} %s\n" "$1"
+}
+
+print_todo_optional() {
+    printf "  ${CYAN}[-]${NC} ${CYAN}%s${NC}\n" "$1"
+}

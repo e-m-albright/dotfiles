@@ -17,9 +17,14 @@ alwaysApply: true
 - If assumptions are required, state them briefly and proceed with the safest default.
 - For tests/format/lint, run only what is relevant to changed files unless asked for a full suite.
 - Generate or update tests when adding new logic, refactoring, or fixing bugs.
+- Prefer explicit over clever. A 3-line `if/else` is better than a one-line ternary with side effects.
+- Never add a dependency for something achievable in <20 lines of straightforward code.
+- When choosing between two approaches, pick the one that's easier to delete later.
+- Three similar lines of code is better than a premature abstraction.
 
-## Research & Libraries
+## Research Before Coding
 
+- Before writing code that uses an unfamiliar API or library, read the relevant source or docs first. Don't guess at APIs.
 - Check the current date before researching. Training data may be stale.
 - Search for latest documentation before using a library. Don't assume built-in knowledge is current.
 - If a library has moved to a new major version, verify you're using the new API.

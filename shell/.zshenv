@@ -8,4 +8,3 @@
 
 # UV / Python tools
 export PATH="$HOME/.local/bin:$PATH"
-. "$HOME/.cargo/env"

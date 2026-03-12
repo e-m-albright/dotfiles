@@ -8,8 +8,11 @@ source "$DOTFILES_DIR/macos/print_utils.sh"
 # Install oh-my-zsh if not already installed
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
     print_action "Installing Oh My Zsh..."
-    RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" >/dev/null 2>&1
-    print_success "Oh My Zsh installed"
+    if RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" >/dev/null 2>&1; then
+        print_success "Oh My Zsh installed"
+    else
+        print_warning "Oh My Zsh install failed — continuing anyway"
+    fi
 fi
 
 # Set zsh as default shell
@@ -31,10 +34,16 @@ ln -sfv "$DOTFILES_DIR/shell/amuse.zsh-theme" ~/.oh-my-zsh/custom/themes/amuse.z
 if [ ! -f ~/.gitconfig.local ]; then
     print_section "Git Identity"
     print_action "Setting up git identity..."
-    printf "  Enter your full name: "
-    read git_name
-    printf "  Enter your email: "
-    read git_email
+    git_name=""
+    while [[ -z "$git_name" ]]; do
+        printf "  Enter your full name: "
+        read git_name
+    done
+    git_email=""
+    while [[ -z "$git_email" ]]; do
+        printf "  Enter your email: "
+        read git_email
+    done
     cat > ~/.gitconfig.local << EOF
 # Local git identity (not committed to dotfiles repo)
 [user]
@@ -134,8 +143,11 @@ fi
 print_section "Bun"
 if ! command -v bun >/dev/null 2>&1; then
     print_action "Installing Bun..."
-    curl -fsSL https://bun.sh/install | bash >/dev/null 2>&1
-    print_success "Bun installed"
+    if curl -fsSL https://bun.sh/install | bash >/dev/null 2>&1; then
+        print_success "Bun installed"
+    else
+        print_warning "Bun install failed — install manually: curl -fsSL https://bun.sh/install | bash"
+    fi
 else
     print_info "Bun already installed"
 fi
@@ -144,8 +156,11 @@ fi
 print_section "Python / UV"
 if ! command -v uv >/dev/null 2>&1; then
     print_action "Installing UV..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
-    print_success "UV installed"
+    if curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; then
+        print_success "UV installed"
+    else
+        print_warning "UV install failed — install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    fi
 else
     print_info "UV already installed"
 fi
@@ -233,44 +248,21 @@ mkdir -p ~/code
 print_completion "✨ Dotfiles setup complete!"
 
 # ==========================================================================
-# Manual Follow-Up Steps
+# Manual Follow-Up Checklist
 # ==========================================================================
-print_header "📋 Manual Follow-Up Steps"
+print_header "📋 Next Steps"
 printf "\n"
-printf "  ${BOLD}The following steps require manual action:${NC}\n"
+printf "  ${BOLD}Required:${NC}\n"
+print_todo "Run ${PKG_COLOR}claude${NC} to authenticate (plugins auto-configured)"
+print_todo "Run ${PKG_COLOR}gh auth login${NC} to authenticate GitHub CLI"
+print_todo "Add SSH key to GitHub: ${PKG_COLOR}pbcopy < ~/.ssh/id_ed25519.pub${NC}"
+print_todo "Open Rectangle and grant Accessibility permissions"
+print_todo "Verify git identity: ${PKG_COLOR}git config user.name && git config user.email${NC}"
 printf "\n"
-
-printf "  ${CYAN}1.${NC} ${BOLD}MCP Server API Keys${NC}\n"
-printf "     Edit ${PKG_COLOR}~/.cursor/mcp.json${NC} and add your API keys:\n"
-printf "     ${CYAN}•${NC} Exa AI     — Get key at ${CYAN}https://exa.ai${NC}\n"
-printf "     ${CYAN}•${NC} Linear     — Get key at ${CYAN}https://linear.app/settings/api${NC}\n"
-printf "     ${CYAN}•${NC} Notion     — Get key at ${CYAN}https://www.notion.so/my-integrations${NC}\n"
+printf "  ${BOLD}Optional:${NC}\n"
+print_todo_optional "Edit ${PKG_COLOR}~/.cursor/mcp.json${NC} to add MCP server API keys"
+print_todo_optional "Edit ${PKG_COLOR}~/dotfiles/claude/plugins.yaml${NC} to customize Claude Code plugins"
+print_todo_optional "Enable Go — uncomment in ${PKG_COLOR}macos/brew.sh${NC} and ${PKG_COLOR}install.sh${NC}"
 printf "\n"
-
-printf "  ${CYAN}2.${NC} ${BOLD}Claude Code${NC}\n"
-printf "     Run ${PKG_COLOR}claude${NC} and follow the login prompts to authenticate.\n"
-printf "     Plugins and settings are auto-configured. Edit ${PKG_COLOR}~/dotfiles/claude/plugins.yaml${NC} to customize.\n"
-printf "\n"
-
-printf "  ${CYAN}3.${NC} ${BOLD}GitHub CLI${NC}\n"
-printf "     Run ${PKG_COLOR}gh auth login${NC} to authenticate with GitHub.\n"
-printf "\n"
-
-printf "  ${CYAN}4.${NC} ${BOLD}Git Identity${NC}\n"
-printf "     Verify your identity: ${PKG_COLOR}git config user.name && git config user.email${NC}\n"
-printf "\n"
-
-printf "  ${CYAN}5.${NC} ${BOLD}Rectangle${NC}\n"
-printf "     Open Rectangle and grant Accessibility permissions in System Settings.\n"
-printf "\n"
-
-printf "  ${CYAN}6.${NC} ${BOLD}SSH Keys${NC}\n"
-printf "     If not auto-configured, add your SSH key to GitHub:\n"
-printf "     ${PKG_COLOR}pbcopy < ~/.ssh/id_ed25519.pub${NC} → ${CYAN}https://github.com/settings/keys${NC}\n"
-printf "\n"
-
-printf "  ${YELLOW}Optional:${NC}\n"
-printf "     ${CYAN}•${NC} Enable Datadog MCP — uncomment in ${PKG_COLOR}~/.cursor/mcp.json${NC}\n"
-printf "     ${CYAN}•${NC} Enable infra tools — uncomment ${PKG_COLOR}infra_cli${NC} in ${PKG_COLOR}macos/brew.sh${NC}\n"
-printf "     ${CYAN}•${NC} Enable Go — uncomment in ${PKG_COLOR}macos/brew.sh${NC} and ${PKG_COLOR}install.sh${NC}\n"
+printf "  Run ${PKG_COLOR}dotfiles doctor${NC} to verify everything is set up correctly.\n"
 printf "\n"

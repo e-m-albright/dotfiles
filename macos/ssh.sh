@@ -6,8 +6,18 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/print_utils.sh"
 
 print_header "🔐 SSH Setup"
-# Configuration
-EMAIL="ichbinevan@gmail.com"
+# Pull email from git identity (set during install.sh) or prompt
+if [[ -f "$HOME/.gitconfig.local" ]]; then
+    EMAIL=$(git config --file "$HOME/.gitconfig.local" user.email 2>/dev/null || echo "")
+fi
+if [[ -z "${EMAIL:-}" ]]; then
+    printf "  Enter email for SSH key: "
+    read EMAIL
+    if [[ -z "$EMAIL" ]]; then
+        print_warning "Email required for SSH key generation"
+        exit 1
+    fi
+fi
 SSH_KEY="$HOME/.ssh/id_ed25519"
 SSH_CONFIG="$HOME/.ssh/config"
 

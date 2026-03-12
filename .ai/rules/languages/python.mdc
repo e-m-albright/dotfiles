@@ -41,10 +41,12 @@ alwaysApply: false
 ## Never
 
 - `Any` type — use specific types or `Unknown`.
-- Mutable default arguments (`def f(items: list = [])` is wrong).
+- Mutable default arguments (`def f(items: list = [])` — use `None` and default in body).
 - Import with `*` — always explicit imports.
-- Bare `except` — be specific.
+- Bare `except` or `except Exception` without re-raise — be specific about what you catch.
 - `print()` in production — use structlog.
+- Catch and ignore errors — at minimum log them with `structlog.get_logger().warning()`.
+- `isinstance` chains — use match/case or polymorphism.
 
 ## Ask First
 

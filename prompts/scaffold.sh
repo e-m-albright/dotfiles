@@ -178,10 +178,16 @@ symlink_ai_rule() {
         return
     fi
 
+    # Compute relative path from .ai/rules/ to the dotfiles source
+    local abs_link_dir
+    abs_link_dir="$(cd "$(dirname "$link")" 2>/dev/null && pwd || mkdir -p "$(dirname "$link")" && cd "$(dirname "$link")" && pwd)"
+    local rel_source
+    rel_source="$(python3 -c "import os.path; print(os.path.relpath('$source', '$abs_link_dir'))")"
+
     if [[ -L "$link" ]]; then
         local current_target
         current_target="$(readlink "$link")"
-        if [[ "$current_target" == "$source" ]]; then
+        if [[ "$current_target" == "$rel_source" || "$current_target" == "$source" ]]; then
             print_skip ".ai/rules/$rule_name (symlink)"
             return
         fi
@@ -192,7 +198,7 @@ symlink_ai_rule() {
         return
     fi
 
-    ln -s "$source" "$link"
+    ln -s "$rel_source" "$link"
     print_step "Symlinked .ai/rules/$rule_name"
 }
 
@@ -397,6 +403,9 @@ case "$RECIPE" in
 esac
 
 if ! check_command "git" "Git" "brew install git"; then
+    preflight_ok=false
+fi
+if ! check_command "curl" "curl" "brew install curl"; then
     preflight_ok=false
 fi
 
