@@ -18,6 +18,7 @@ sub_help () {
     printf "%s Usage: ${YELLOW}%s <command>${NC}\n" "$ARROW" "$BIN_NAME"
     printf "\n"
     printf "Commands:\n"
+    printf "   install          Run full dotfiles setup (install.sh)\n"
     printf "   help             This help message\n"
     printf "   doctor           Check that all tools are installed correctly\n"
     printf "   update           Update OS, Homebrew, and Node.js LTS\n"
@@ -257,6 +258,10 @@ sub_stale() {
     printf "\n"
 }
 
+sub_install() {
+    . "$DOTFILES_DIR/install.sh"
+}
+
 sub_scaffold() {
     "$DOTFILES_DIR/prompts/scaffold.sh" "$@"
 }
@@ -294,6 +299,7 @@ sub_completions() {
 _dotfiles() {
     local -a commands
     commands=(
+        'install:Run full dotfiles setup'
         'help:Show help message'
         'doctor:Check that all tools are installed'
         'update:Update OS, Homebrew, and Node.js'
@@ -317,6 +323,9 @@ EOF
 case $COMMAND_NAME in
     "" | "-h" | "--help")
         sub_help
+        ;;
+    install)
+        sub_install
         ;;
     profile-shell)
         sub_profile_shell
