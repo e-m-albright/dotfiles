@@ -4,9 +4,9 @@
       "command": "npx",
       "args": ["-y", "mcp-remote", "https://mcp.linear.app/mcp"]
     },
-    "notion": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://mcp.notion.com/mcp"]
+    "granola": {
+      "command": "uvx",
+      "args": ["granola-mcp"]
     }
   }
 }

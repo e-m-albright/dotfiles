@@ -4,19 +4,9 @@
       "command": "npx",
       "args": ["-y", "mcp-remote", "https://mcp.linear.app/mcp"]
     },
-    "notion": {
-      "url": "https://mcp.notion.com/mcp"
-    }
-  },
-  "disabled": {
-    "datadog": {
+    "context7": {
       "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-datadog"],
-      "env": {
-        "DD_API_KEY": "",
-        "DD_APP_KEY": ""
-      },
-      "note": "Enable when using Datadog for observability"
+      "args": ["-y", "@upstash/context7-mcp@latest"]
     }
   }
 }

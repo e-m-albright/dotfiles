@@ -127,17 +127,23 @@ my-project/
 |------|---------|
 | **Claude Code** | Agentic coding assistant (CLI) with plugins, hooks, MCP servers |
 | **Claude Desktop** | Claude macOS app |
+| **Cursor** | AI-native editor with MCP servers |
 
-### MCP Servers
+### External Connections
 
-Configured for both Claude Code and Cursor:
+Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) > plugins (tool-specific).
 
-| Server | Purpose |
-|--------|---------|
-| **Linear** | Issue tracking integration |
-| **Notion** | Documentation integration |
+| Service | Method | Claude Code | Cursor | Notes |
+|---------|--------|:-----------:|:------:|-------|
+| **GitHub** | CLI (`gh`) | yes | yes | CLI only — no MCP needed |
+| **Linear** | MCP (`mcp-remote`) | yes | yes | Issue tracking |
+| **Context7** | MCP (`@upstash/context7-mcp`) | plugin | yes | Up-to-date library docs |
+| **Granola** | MCP (`granola-mcp` via `uvx`) | yes | — | Meeting notes (reads local cache, no API key) |
+| **Notion** | Plugin | yes | — | Claude Code / Claude Desktop only |
+| **Gmail** | claude.ai cloud MCP | yes | — | Claude Code only (not reproducible in config) |
+| **Google Calendar** | claude.ai cloud MCP | yes | — | Claude Code only (not reproducible in config) |
 
-Configure API keys in `~/.cursor/mcp.json` (symlinked from `editors/cursor/mcp.json`).
+MCP config: `claude/mcp.json` (Claude Code + Desktop) and `editors/cursor/mcp.json` (Cursor).
 
 ### Claude Code
 
@@ -145,7 +151,8 @@ Setup is automated via `dotfiles claude-setup` (also runs during install):
 
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt), terminal notifications on completion
-- **MCP servers**: Linear, Notion
+- **MCP servers**: Linear, Granola (standalone); Context7, Notion, Playwright (via plugins)
+- **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
 - **Preferences**: Voice mode, terminal bell
 
 See `claude/` for all configuration files.

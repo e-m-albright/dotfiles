@@ -21,7 +21,7 @@ UNBOLD="%b"
 # Line 2: $ (red if last command failed)
 PROMPT='
 ${BOLD}${PINK}%~${UNBOLD}${RESET} $(git_prompt_info)$(_venv_info)${DIM}%*${RESET}
-%(?.${YELLOW}.${RED})$${RESET} '
+%(?.${YELLOW}.${RED})\$${RESET} '
 
 # Git branch display
 ZSH_THEME_GIT_PROMPT_PREFIX="${BOLD}${GREEN}("
