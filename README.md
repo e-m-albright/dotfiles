@@ -213,6 +213,12 @@ dotfiles/
 
 ---
 
+## TODO
+
+- [ ] **Evaluate Raycast** — Could replace both Rectangle (window management) and Flycut (clipboard manager) with a single tool. Already commented out in `macos/brew.sh`. Prioritize trying this.
+
+---
+
 ## Philosophy
 
 **Machine setup:**
