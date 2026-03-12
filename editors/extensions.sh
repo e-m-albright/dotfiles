@@ -13,6 +13,7 @@ fi
 # Colors
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
+# shellcheck disable=SC2034 # available for use
 BOLD='\033[1m'
 NC='\033[0m'
 CHECK="${GREEN}✓${NC}"

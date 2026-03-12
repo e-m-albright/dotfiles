@@ -1,3 +1,4 @@
+#!/bin/bash
 # Get dotfiles dir (so run this script from anywhere)
 export DOTFILES_DIR
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -18,7 +19,7 @@ fi
 # Set zsh as default shell
 if [ "$SHELL" != "$(which zsh)" ]; then
     print_action "Setting zsh as default shell..."
-    chsh -s $(which zsh) >/dev/null 2>&1
+    chsh -s "$(which zsh)" >/dev/null 2>&1
     print_success "Shell changed to zsh"
 fi
 

@@ -279,6 +279,7 @@ shift
 
 # Validate recipe
 VALID_RECIPES="typescript python golang rust"
+# shellcheck disable=SC2076 # intentional literal match
 if [[ ! " $VALID_RECIPES " =~ " $RECIPE " ]]; then
     print_error "Unknown recipe '$RECIPE'"
     echo ""

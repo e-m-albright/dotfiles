@@ -8,6 +8,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+# shellcheck disable=SC2034 # available for use
 MAGENTA='\033[0;35m'
 DIM='\033[2m'
 BOLD='\033[1m'

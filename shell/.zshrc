@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # =============================================================================
 # ZSH Configuration
 # =============================================================================
@@ -8,6 +9,7 @@
 # =============================================================================
 HISTFILE=~/.zsh_history
 HISTSIZE=100000
+# shellcheck disable=SC2034 # used by zsh
 SAVEHIST=100000
 setopt APPEND_HISTORY
 setopt HIST_IGNORE_ALL_DUPS
@@ -37,6 +39,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 # Oh My Zsh
 # =============================================================================
 export ZSH="$HOME/.oh-my-zsh"
+# shellcheck disable=SC2034 # used by oh-my-zsh
 ZSH_THEME="amuse"
 
 # Auto-update settings
@@ -44,6 +47,7 @@ zstyle ':omz:update' mode auto
 zstyle ':omz:update' frequency 14
 
 # Plugins (minimal for fast startup)
+# shellcheck disable=SC2034 # used by oh-my-zsh
 plugins=(
     git         # Git aliases and completions
     z           # Jump to frequent directories
@@ -96,7 +100,7 @@ alias reload='source ~/.zshrc'
 # Functions
 # =============================================================================
 # Create directory and cd into it
-mkcd() { mkdir -p "$@" && cd "$_"; }
+mkcd() { mkdir -p "$@" && cd "$_" || return; }
 
 # Extract archives
 extract() {
@@ -131,9 +135,11 @@ fi
 [[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
 
 # OrbStack
+# shellcheck source=/dev/null
 [[ -f ~/.orbstack/shell/init.zsh ]] && source ~/.orbstack/shell/init.zsh
 
 # =============================================================================
 # Local overrides (not in dotfiles repo)
 # =============================================================================
+# shellcheck source=/dev/null
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
