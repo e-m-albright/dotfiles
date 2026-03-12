@@ -4,9 +4,9 @@
 # Run `just` to see all available commands
 # =============================================================================
 
-# Default recipe: show help
-default:
-    @just --list
+# Show all available commands
+@default:
+    just --list --unsorted --list-heading $'\e[1;34m Available Commands:\e[0m\n'
 
 # Binary name (matches [[bin]] name in Cargo.toml)
 binary := "server"
@@ -102,7 +102,8 @@ test-watch:
 db-migrate:
     sqlx migrate run
 
-# Revert last migration
+# Rollback one migration
+[confirm("⚠ This will rollback a migration. Continue? [y/N]")]
 db-rollback:
     sqlx migrate revert
 
@@ -181,6 +182,11 @@ docker-build:
 # Run in Docker
 docker-run:
     docker run -p 3000:3000 --env-file .env {{binary}}:latest
+
+# Deploy (customize per project)
+[confirm("⚠ This will deploy to production. Continue? [y/N]")]
+deploy:
+    @echo "Add your deploy command here (e.g., railway up, fly deploy)"
 
 # -----------------------------------------------------------------------------
 # Git Hooks

@@ -1,0 +1,138 @@
+---
+description: Conventions for justfiles, .gitignore, README, and other common project files
+alwaysApply: false
+---
+
+# Project Files
+
+## Justfile Conventions
+
+**Default command** is always a colorized help listing — not `just --list`:
+
+```just
+# Show all available commands
+@default:
+    just --list --unsorted --list-heading $'\e[1;34m Available Commands:\e[0m\n'
+```
+
+**Section organization** — group recipes under comment headers:
+
+```
+Development → Quality → Testing → Database → Dependencies → Git Hooks → Utilities → Deployment
+```
+
+**Naming patterns:**
+- `dev`, `build`, `run` — primary actions
+- `test`, `test-cov`, `test-watch`, `test-filter` — testing variants
+- `lint`, `format`, `typecheck`, `check` — quality (check = all)
+- `db-migrate`, `db-rollback`, `db-new`, `db-shell` — database
+- `hooks-install`, `hooks-run` — git hooks
+- `ci` — runs all checks (what CI would run)
+- `clean`, `clean-all` — cleanup (clean-all includes deps/venv)
+
+**Confirm gate** — any command that alters production or destroys data:
+
+```just
+[confirm("⚠ This will reset the database. Continue? [y/N]")]
+db-reset:
+    # ...
+
+[confirm("⚠ This will deploy to production. Continue? [y/N]")]
+deploy-prod:
+    # ...
+```
+
+Commands that MUST have confirm gates:
+- `db-reset`, `db-rollback` (on prod)
+- `deploy-*` (any deployment)
+- `clean-all` (removes deps)
+- Any `--force` or destructive operation
+
+**Variables** at the top for project-specific values:
+
+```just
+binary := "myapp"
+port := "8000"
+```
+
+**Recipe comments** — every recipe gets a doc comment (shown in `--list`):
+
+```just
+# Run tests with coverage report
+test-cov:
+```
+
+## .gitignore
+
+**Structure** — group by category with section comments:
+
+```gitignore
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment
+.env
+.env.local
+!.env.example
+
+# Testing & coverage
+coverage/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# AI tools
+.agents/
+!.agents/decisions/
+.ai/rules/global-process.mdc
+.ai/rules/style-principles.mdc
+.ai/rules/github-workflow.mdc
+.ai/rules/tickets-and-prs.mdc
+.ai/rules/agent-artifacts.mdc
+.cursor/rules/
+```
+
+**Key rules:**
+- Always gitignore `.env` but keep `.env.example`
+- Gitignore `.agents/` but keep `decisions/`
+- Gitignore symlinked `.ai/rules/` (universal process rules)
+- Gitignore `.cursor/rules/` entirely (auto-generated symlinks)
+
+## README.md
+
+**Minimal template** — fill in as the project grows:
+
+```markdown
+# Project Name
+
+One-line description.
+
+## Quick Start
+
+\`\`\`bash
+just install
+just dev
+\`\`\`
+
+## Commands
+
+Run `just` to see all available commands.
+```
+
+Don't over-document upfront. Let the README grow with the project.
+
+## .env.example
+
+- Include every env var the app needs with placeholder values
+- Group by category (app, database, auth, external services)
+- Add comments explaining non-obvious vars
+- Never include real secrets — use descriptive placeholders

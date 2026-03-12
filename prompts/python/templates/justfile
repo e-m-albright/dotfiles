@@ -4,9 +4,9 @@
 # Run `just` to see all available commands
 # =============================================================================
 
-# Default recipe: show help
-default:
-    @just --list
+# Show all available commands
+@default:
+    just --list --unsorted --list-heading $'\e[1;34m Available Commands:\e[0m\n'
 
 # -----------------------------------------------------------------------------
 # Environment
@@ -124,6 +124,7 @@ db-upgrade:
     uv run alembic upgrade head
 
 # Rollback one migration
+[confirm("⚠ This will rollback a migration. Continue? [y/N]")]
 db-downgrade:
     uv run alembic downgrade -1
 
@@ -157,6 +158,7 @@ clean:
     find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
 # Clean everything including venv
+[confirm("⚠ This will remove the virtual environment. Continue? [y/N]")]
 clean-all: clean
     rm -rf .venv
 
@@ -177,6 +179,11 @@ ci: install-dev
 # Build for production
 build:
     uv build
+
+# Deploy (customize per project)
+[confirm("⚠ This will deploy to production. Continue? [y/N]")]
+deploy:
+    @echo "Add your deploy command here (e.g., railway up, fly deploy)"
 
 # -----------------------------------------------------------------------------
 # Git Hooks

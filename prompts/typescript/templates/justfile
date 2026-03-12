@@ -5,9 +5,9 @@
 # Run `just <command>` to execute a command
 # =============================================================================
 
-# Default recipe: show help
-default:
-    @just --list
+# Show all available commands
+@default:
+    just --list --unsorted --list-heading $'\e[1;34m Available Commands:\e[0m\n'
 
 # -----------------------------------------------------------------------------
 # Development
@@ -111,6 +111,7 @@ db-push:
     bunx drizzle-kit push
 
 # Reset database (drop all, re-migrate)
+[confirm("⚠ This will reset the database. Continue? [y/N]")]
 db-reset:
     bunx drizzle-kit drop && bun run db:migrate
 
@@ -159,6 +160,7 @@ clean:
     rm -rf .svelte-kit build node_modules/.cache .turbo coverage
 
 # Clean everything (including node_modules)
+[confirm("⚠ This will remove node_modules. Continue? [y/N]")]
 clean-all:
     rm -rf .svelte-kit build node_modules coverage .turbo
 
@@ -179,10 +181,12 @@ storybook-build:
 # -----------------------------------------------------------------------------
 
 # Deploy to Railway
+[confirm("⚠ This will deploy to production. Continue? [y/N]")]
 deploy-railway:
     railway up
 
 # Deploy to Vercel
+[confirm("⚠ This will deploy to production. Continue? [y/N]")]
 deploy-vercel:
     vercel
 

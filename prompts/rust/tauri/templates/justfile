@@ -4,9 +4,9 @@
 # Run `just` to see all available commands
 # =============================================================================
 
-# Default recipe: show help
-default:
-    @just --list
+# Show all available commands
+@default:
+    just --list --unsorted --list-heading $'\e[1;34m Available Commands:\e[0m\n'
 
 # -----------------------------------------------------------------------------
 # Development
