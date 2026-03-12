@@ -59,24 +59,34 @@ Deeper reference docs stay in dotfiles, not scaffolded into projects:
 
 ```
 dotfiles/prompts/guides/
-├── ai-tools.md
-├── infrastructure.md
-├── services.md
-├── customer-discovery.md
-├── project-memory.md
-└── agent-output.md
+├── ai-tools.md             (from shared/AI_TOOLS.md)
+├── infrastructure.md       (from shared/INFRASTRUCTURE.md)
+├── services.md             (from shared/SERVICES.md)
+├── customer-discovery.md   (from shared/CUSTOMER_DISCOVERY.md)
+├── project-memory.md       (from shared/PROJECT_MEMORY.md)
+├── agent-output.md         (from shared/AGENT_OUTPUT.md)
+├── ml-python.md            (from python/ML.md)
+└── skills/                 (from */skills/SKILL.md — AI agent patterns per language)
+    ├── skill-typescript.md
+    ├── skill-python.md
+    ├── skill-golang.md
+    └── skill-rust.md
 ```
 
 ### 3. Selective Deployment via scaffold.sh
 
-scaffold.sh symlinks only relevant rules per recipe + app-type:
+scaffold.sh deploys rules selectively per recipe + app-type.
 
-**Universal (all projects):**
+**Universal rules** are **symlinked** (auto-update from dotfiles):
 - `process/global-process.mdc`
-- `process/style-principles.mdc`
-- `process/git-workflow.mdc`
+- `process/style-principles.mdc` *(new — created from `shared/STYLE_PRINCIPLES.md`)*
+- `process/github-workflow.mdc` *(renamed from `git-workflow.mdc` to match current naming)*
 - `process/tickets-and-prs.mdc`
 - `process/agent-artifacts.mdc`
+
+**Recipe-specific rules** are **copied** (project can customize):
+This preserves the current scaffold.sh behavior — recipe rules are project-owned
+after scaffolding so teams can adapt them without breaking the symlink.
 
 **Per recipe:**
 
@@ -94,20 +104,41 @@ scaffold.sh symlinks only relevant rules per recipe + app-type:
 ```
 my-project/
 ├── AGENTS.md                        # ~30 lines: pointers + project context
-├── .ai/rules/                       # Symlinked (selective, auto-updates)
-│   ├── global-process.mdc           → ~/dotfiles/.ai/rules/process/...
-│   ├── style-principles.mdc         → ~/dotfiles/.ai/rules/process/...
-│   ├── git-workflow.mdc             → ~/dotfiles/.ai/rules/process/...
-│   ├── tickets-and-prs.mdc          → ~/dotfiles/.ai/rules/process/...
-│   ├── agent-artifacts.mdc          → ~/dotfiles/.ai/rules/process/...
-│   ├── python.mdc                   → ~/dotfiles/.ai/rules/languages/...
-│   ├── fastapi.mdc                  → ~/dotfiles/.ai/rules/frameworks/...
-│   └── stack-python.mdc             → ~/dotfiles/.ai/rules/tooling/...
-├── .cursor/rules/                   # Symlinks to .ai/rules/ for Cursor
+├── .ai/rules/                       # Flat directory, mix of symlinks + copies
+│   ├── global-process.mdc           → ~/dotfiles/.ai/rules/process/...  (symlink)
+│   ├── style-principles.mdc         → ~/dotfiles/.ai/rules/process/...  (symlink)
+│   ├── github-workflow.mdc          → ~/dotfiles/.ai/rules/process/...  (symlink)
+│   ├── tickets-and-prs.mdc          → ~/dotfiles/.ai/rules/process/...  (symlink)
+│   ├── agent-artifacts.mdc          → ~/dotfiles/.ai/rules/process/...  (symlink)
+│   ├── python.mdc                   (copied — project can customize)
+│   ├── fastapi.mdc                  (copied — project can customize)
+│   └── stack-python.mdc             (copied — project can customize)
+├── .cursor/rules/                   # Relative symlinks to .ai/rules/ for Cursor
 │   ├── global-process.mdc           → ../.ai/rules/global-process.mdc
 │   ├── python.mdc                   → ../.ai/rules/python.mdc
 │   └── ...
 └── .agents/                         # Working files (unchanged)
+```
+
+**Naming:** Rules are flattened to their basename in `.ai/rules/` (e.g.,
+`languages/python.mdc` → `python.mdc`). Constraint: no two source files
+across categories may share the same basename.
+
+**Cursor symlinks** use relative paths (`../.ai/rules/`) so they work
+regardless of where the project is cloned.
+
+**`.ai/rules/` is gitignored for symlinks, committed for copies.** The
+`.gitignore` uses negation to keep copied (recipe-specific) rules versioned
+while ignoring symlinks (which are machine-specific absolute paths):
+
+```gitignore
+# .ai/rules/ — symlinked process rules are machine-specific
+.ai/rules/global-process.mdc
+.ai/rules/style-principles.mdc
+.ai/rules/github-workflow.mdc
+.ai/rules/tickets-and-prs.mdc
+.ai/rules/agent-artifacts.mdc
+# Recipe-specific rules are committed (they're copies, not symlinks)
 ```
 
 ### 4. Lean AGENTS.md Template
@@ -184,23 +215,42 @@ alwaysApply: [true/false]
 
 Each recipe's 3-5 files (800-1,200+ lines) condense to 3 rule files (~190 lines):
 
+**Python** (has STYLE.md):
+
 | Current File | Lines | Becomes | Lines |
 |-------------|-------|---------|-------|
 | `python/BASE.md` | 296 | `languages/python.mdc` | ~50 |
 | `python/STYLE.md` | 561 | *(deleted — conventions enforced by Ruff config)* | 0 |
 | `python/STACK.md` | 428 | `tooling/stack-python.mdc` | ~80 |
 | `python/fastapi/FRAMEWORK.md` | 342 | `frameworks/fastapi.mdc` | ~60 |
-| **Total** | **1,627** | **3 files** | **~190** |
+| `python/ML.md` | 406 | `prompts/guides/ml-python.md` (moved, not distilled) | 406 |
+| `python/skills/SKILL.md` | 148 | `prompts/guides/skills/skill-python.md` (moved) | 148 |
+| **Total in rules** | **1,627** | **3 rule files** | **~190** |
 
-Same pattern for TypeScript, Go, Rust.
+**TypeScript** (has STYLE.md):
+
+| Current File | Lines | Becomes | Lines |
+|-------------|-------|---------|-------|
+| `typescript/BASE.md` | 241 | `languages/typescript.mdc` | ~50 |
+| `typescript/STYLE.md` | 600 | *(deleted — conventions enforced by Biome config)* | 0 |
+| `typescript/STACK.md` | 367 | `tooling/stack-typescript.mdc` | ~80 |
+| `typescript/svelte/FRAMEWORK.md` | 271 | `frameworks/sveltekit.mdc` | ~60 |
+| `typescript/astro/FRAMEWORK.md` | 162 | `frameworks/astro.mdc` | ~50 |
+
+**Go and Rust** follow the same 3-file pattern (no STYLE.md to delete).
 
 ### 7. Cross-Vendor Discovery
 
 | Tool | How It Discovers Rules |
 |------|----------------------|
 | **Claude Code** | AGENTS.md says "read `.ai/rules/*.mdc`" → Claude reads them |
-| **Cursor** | `.cursor/rules/*.mdc` symlinks → auto-discovered by Cursor |
+| **Cursor** | `.cursor/rules/*.mdc` symlinks → auto-discovered natively |
 | **Gemini CLI** | AGENTS.md says "read `.ai/rules/*.mdc`" → Gemini reads them |
+
+**Assumption:** Claude Code and Gemini CLI follow file-read directives in
+AGENTS.md. This is validated for Claude Code (confirmed behavior). For Gemini
+CLI, this should be validated; if Gemini requires `GEMINI.md`, scaffold.sh
+can generate one with the same pointer directive.
 
 ### 8. Migration from Current System
 
@@ -221,15 +271,21 @@ Same pattern for TypeScript, Go, Rust.
 **Files to delete:**
 - `prompts/python/AGENTS.md` (project-specific GEO file, not a template)
 - `prompts/shared/AGENTS_HEADER.md` (replaced by lean template in scaffold.sh)
-- All `*/STYLE.md` files (conventions enforced by linter configs)
-- All `*/BASE.md` files (content distilled into rule files)
-- All `*/STACK.md` files (content distilled into tooling rules)
-- All `*/FRAMEWORK.md` files (content distilled into framework rules)
+- `prompts/shared/STYLE_PRINCIPLES.md` (migrated to `.ai/rules/process/style-principles.mdc`)
+- `prompts/python/STYLE.md` (conventions enforced by Ruff config, decisions in rule files)
+- `prompts/typescript/STYLE.md` (conventions enforced by Biome config, decisions in rule files)
+- All `*/BASE.md` files (content distilled into language rule files)
+- All `*/STACK.md` files (content distilled into tooling rule files)
+- All `*/FRAMEWORK.md` files (content distilled into framework rule files)
+- All `*/skills/SKILL.md` files (moved to `prompts/guides/skills/`)
+- `prompts/python/ML.md` (moved to `prompts/guides/ml-python.md`)
+- `.cursor/rules/` directory (replaced by `.ai/rules/` as canonical source)
 
 **Files to update:**
-- `prompts/scaffold.sh` — new deployment logic
-- `AGENTS.md` (dotfiles repo) — update pointers
+- `prompts/scaffold.sh` — new deployment logic (`.ai/rules/` + `.cursor/rules/` symlinks)
+- `AGENTS.md` (dotfiles repo) — update pointers to new locations
 - `README.md` — reflect new structure
+- `prompts/README.md` — update or remove (reflects old structure)
 
 ### 9. Superpowers Compatibility
 
