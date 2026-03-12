@@ -149,6 +149,7 @@ system_cli=(
 dev_cli=(
     just                # Command runner (like make, but simpler)
     lefthook            # Git hooks (language-agnostic, parallel execution)
+    shellcheck          # Static analysis for shell scripts
     hyperfine           # Command-line benchmarking tool
     atlas               # Database schema migration tool (requires ariga/tap)
     duckdb              # Fast analytical database (SQL for analytics)
