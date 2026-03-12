@@ -13,6 +13,16 @@ if ! command -v dockutil >/dev/null 2>&1; then
 fi
 
 print_header "⚓ Dock Configuration"
+
+# Dock behavior
+print_section "Preferences"
+defaults write com.apple.dock autohide -bool true
+defaults write com.apple.dock autohide-delay -float 0
+defaults write com.apple.dock autohide-time-modifier -float 0.3
+defaults write com.apple.dock show-recents -bool false
+defaults write com.apple.dock tilesize -int 48
+print_success "Auto-hide enabled (no delay, fast animation, no recents)"
+
 # Apps to add to dock
 apps=(
     "/Applications/Google Chrome.app"

@@ -19,6 +19,13 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 - `.ai/rules/` is the canonical rule library. `prompts/scaffold.sh` copies these into projects. Rules are not symlinked.
 - `prompts/guides/skills/*.md` are implementation references that complement `.ai/rules/`. They should stay consistent with each other.
 
+## Command Style (Reduce Permission Prompts)
+
+- **Prefer dedicated tools** over Bash: use Read instead of `cat`, Glob instead of `find`, Grep instead of `grep`/`rg`, Edit instead of `sed`.
+- **Prefer single commands** over chained `&&` / `||` — each command in a chain triggers separate permission checks.
+- **Avoid `$(...)` substitution in Bash** when the same result can be achieved with a dedicated tool or a simpler command.
+- **Use heredocs for multi-line content** via the Write tool, not `echo`/`cat` redirection in Bash.
+
 ## Common Pitfalls
 
 - `printf "%s"` does not interpret escape codes — use `%b` when the argument contains `\033[` color sequences (see `print_todo`).
