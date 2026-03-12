@@ -237,7 +237,7 @@ fi
 OBSIDIAN_VAULT="$HOME/code/private/notes"
 if [[ -d "$OBSIDIAN_VAULT/.obsidian" ]]; then
     print_section "Obsidian"
-    OBSIDIAN_CONFIGS=(app appearance core-plugins daily-notes graph templates)
+    OBSIDIAN_CONFIGS=(app appearance core-plugins daily-notes graph templates hotkeys)
     for cfg in "${OBSIDIAN_CONFIGS[@]}"; do
         local_file="$DOTFILES_DIR/editors/obsidian/${cfg}.json"
         vault_file="$OBSIDIAN_VAULT/.obsidian/${cfg}.json"

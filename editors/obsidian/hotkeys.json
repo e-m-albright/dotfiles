@@ -1,0 +1,20 @@
+{
+  "obsidian-spaced-repetition:srs-review-flashcards": [
+    { "modifiers": ["Mod"], "key": "Enter" }
+  ],
+  "templater-obsidian:insert-templater": [
+    { "modifiers": ["Alt"], "key": "T" }
+  ],
+  "switcher:open": [
+    { "modifiers": ["Mod"], "key": "P" }
+  ],
+  "command-palette:open": [
+    { "modifiers": ["Mod", "Shift"], "key": "P" }
+  ],
+  "editor:toggle-bold": [
+    { "modifiers": ["Mod"], "key": "B" }
+  ],
+  "graph:open": [
+    { "modifiers": ["Mod", "Shift"], "key": "G" }
+  ]
+}
