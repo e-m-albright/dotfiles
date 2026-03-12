@@ -23,12 +23,24 @@ if [ "$SHELL" != "$(which zsh)" ]; then
 fi
 
 # Dotfile symlinks
-ln -sfv "$DOTFILES_DIR/git/.gitconfig" ~
-ln -sfv "$DOTFILES_DIR/git/.gitignore_global" ~
-ln -sfv "$DOTFILES_DIR/shell/.zprofile" ~
-ln -sfv "$DOTFILES_DIR/shell/.zshenv" ~
-ln -sfv "$DOTFILES_DIR/shell/.zshrc" ~
-ln -sfv "$DOTFILES_DIR/shell/amuse.zsh-theme" ~/.oh-my-zsh/custom/themes/amuse.zsh-theme
+print_section "Symlinks"
+_link() {
+    local src="$1" dest="$2"
+    local name
+    name="$(basename "$dest")"
+    if [[ -L "$dest" ]] && [[ "$(readlink "$dest")" == "$src" ]]; then
+        print_skip "$name"
+    else
+        ln -sf "$src" "$dest"
+        print_step "Linked $name"
+    fi
+}
+_link "$DOTFILES_DIR/git/.gitconfig" ~/.gitconfig
+_link "$DOTFILES_DIR/git/.gitignore_global" ~/.gitignore_global
+_link "$DOTFILES_DIR/shell/.zprofile" ~/.zprofile
+_link "$DOTFILES_DIR/shell/.zshenv" ~/.zshenv
+_link "$DOTFILES_DIR/shell/.zshrc" ~/.zshrc
+_link "$DOTFILES_DIR/shell/amuse.zsh-theme" ~/.oh-my-zsh/custom/themes/amuse.zsh-theme
 
 # Git identity setup (stored in ~/.gitconfig.local, not committed)
 if [ ! -f ~/.gitconfig.local ]; then

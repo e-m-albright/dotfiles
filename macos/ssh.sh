@@ -90,7 +90,8 @@ fi
 
 # Test GitHub SSH connection — skip manual steps if already working
 print_section "GitHub Connection"
-if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+ssh_output=$(ssh -T git@github.com 2>&1 || true)
+if echo "$ssh_output" | grep -q "successfully authenticated"; then
     print_success "GitHub SSH connection healthy"
 else
     # Not connected — copy key and show setup instructions
@@ -104,7 +105,8 @@ else
     printf "\n"
     printf "  ${DIM}Press Enter after adding the key to continue, or Ctrl+C to skip...${NC}"
     read -r
-    if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    ssh_verify=$(ssh -T git@github.com 2>&1 || true)
+    if echo "$ssh_verify" | grep -q "successfully authenticated"; then
         print_success "GitHub SSH connection verified"
     else
         print_warn "Still not connected — verify manually: ssh -T git@github.com"
