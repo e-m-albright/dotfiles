@@ -151,11 +151,13 @@ MCP config: `claude/mcp.json` (Claude Code + Desktop) and `editors/cursor/mcp.js
 
 Setup is automated via `dotfiles claude-setup` (also runs during install):
 
+- **Global instructions**: `~/.claude/CLAUDE.md` installed from `claude/global-claude.md` (process guardrails, command style, project file discovery)
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt), terminal notifications on completion
-- **MCP servers**: Linear, Granola (standalone); Context7, Notion, Playwright (via plugins)
+- **MCP servers**: Linear, Granola, Notion (standalone); Context7, Playwright (via plugins)
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
-- **Preferences**: Voice mode, terminal bell
+- **Preferences**: Voice mode, terminal bell, acceptEdits mode
+- **Desktop**: MCP servers + preferences (cowork, sidebar, web search)
 
 See `claude/` for all configuration files.
 
@@ -184,8 +186,7 @@ dotfiles dock                # Reset Dock layout
 dotfiles scaffold            # Scaffold a project with AI rules
 dotfiles stale               # Find disabled packages still installed
 dotfiles profile-shell       # Profile shell startup time
-dotfiles claude-setup        # Configure Claude Code (plugins, hooks, MCP)
-dotfiles claude-instructions # Update ~/.claude/CLAUDE.md
+dotfiles claude-setup        # Configure Claude Code + Desktop (global config)
 dotfiles completions         # Output shell completions
 ```
 

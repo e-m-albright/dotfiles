@@ -28,8 +28,7 @@ sub_help () {
     printf "   stale            Find disabled packages still installed\n"
     printf "   profile-shell    Profile shell startup time\n"
     printf "   scaffold         Scaffold a new project with AI rules\n"
-    printf "   claude-setup         Configure Claude Code (plugins, voice, instructions)\n"
-    printf "   claude-instructions  Update ~/.claude/CLAUDE.md with AGENTS.md reference\n"
+    printf "   claude-setup         Configure Claude Code + Desktop (global config)\n"
     printf "   completions      Output shell completions (source this in your shell)\n"
 }
 
@@ -119,9 +118,9 @@ sub_doctor () {
     fi
 
     if [[ -f ~/.claude/CLAUDE.md ]]; then
-        printf "  ${GREEN}✓${NC} %-20s exists\n" "Claude memory"
+        printf "  ${GREEN}✓${NC} %-20s exists\n" "Claude instructions"
     else
-        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-instructions${NC}\n" "Claude memory"
+        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-setup${NC}\n" "Claude instructions"
     fi
 
     if [[ -f ~/.claude/settings.json ]] && command -v jq >/dev/null 2>&1; then
@@ -195,11 +194,6 @@ sub_brew () {
 sub_dock () {
     . "$DOTFILES_DIR/macos/dock.sh"
     printf "${GREEN}%b Success! MacOS dock command finished.${NC}\n" "$ARROW"
-}
-
-sub_claude_instructions() {
-    "$DOTFILES_DIR/macos/claude_instructions.sh"
-    printf "${GREEN}%b Claude system instructions updated (~/.claude/CLAUDE.md).${NC}\n" "$ARROW"
 }
 
 sub_claude_setup() {
@@ -309,8 +303,7 @@ _dotfiles() {
         'scaffold:Scaffold a new project with AI rules'
         'stale:Find disabled packages still installed'
         'profile-shell:Profile shell startup time'
-        'claude-setup:Configure Claude Code plugins and settings'
-        'claude-instructions:Update Claude memory file'
+        'claude-setup:Configure Claude Code + Desktop (global config)'
         'completions:Output shell completions'
     )
     _describe 'command' commands
@@ -337,10 +330,6 @@ case $COMMAND_NAME in
     claude-setup)
         shift
         sub_claude_setup "$@"
-        ;;
-    claude-instructions)
-        shift
-        sub_claude_instructions "$@"
         ;;
     completions)
         sub_completions

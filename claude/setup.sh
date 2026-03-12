@@ -25,6 +25,8 @@ DESKTOP_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.j
 PLUGINS_YAML="$SCRIPT_DIR/plugins.yaml"
 MCP_JSON="$SCRIPT_DIR/mcp.json"
 HOOKS_JSON="$SCRIPT_DIR/hooks.json"
+GLOBAL_CLAUDE_MD="$SCRIPT_DIR/global-claude.md"
+DESKTOP_PREFS="$SCRIPT_DIR/desktop-preferences.json"
 
 # Source print utils if available
 if [[ -n "${print_section:-}" ]] || source "$DOTFILES_DIR/macos/print_utils.sh" 2>/dev/null; then
@@ -49,9 +51,11 @@ ensure_settings() {
 
 # --- System instructions (CLAUDE.md) ---
 setup_instructions() {
-    "$DOTFILES_DIR/macos/claude_instructions.sh" 2>/dev/null && \
-        print_success "System instructions (~/.claude/CLAUDE.md)" || \
-        print_warning "Could not update ~/.claude/CLAUDE.md"
+    [[ -f "$GLOBAL_CLAUDE_MD" ]] || { print_warning "No global-claude.md found"; return 0; }
+    mkdir -p "$HOME/.claude"
+    [[ -f "$HOME/.claude/CLAUDE.md" ]] && cp "$HOME/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md.bak"
+    cp "$GLOBAL_CLAUDE_MD" "$HOME/.claude/CLAUDE.md"
+    print_success "System instructions (~/.claude/CLAUDE.md)"
 }
 
 # --- Plugins ---
@@ -98,9 +102,8 @@ setup_mcp() {
     print_success "Configured $count MCP servers (Claude Code)"
 }
 
-# --- MCP Servers (Claude Desktop) ---
-setup_desktop_mcp() {
-    [[ -f "$MCP_JSON" ]] || return 0
+# --- Claude Desktop (MCP servers + preferences) ---
+setup_desktop() {
     require_jq || return 0
 
     local desktop_dir
@@ -109,15 +112,28 @@ setup_desktop_mcp() {
     [[ -f "$DESKTOP_CONFIG" ]] || echo '{}' > "$DESKTOP_CONFIG"
     cp "$DESKTOP_CONFIG" "$DESKTOP_CONFIG.bak"
 
-    local mcp_servers
-    mcp_servers=$(jq '.mcpServers // {}' "$MCP_JSON")
+    # Merge MCP servers (existing take precedence for project-local servers)
+    if [[ -f "$MCP_JSON" ]]; then
+        local mcp_servers
+        mcp_servers=$(jq '.mcpServers // {}' "$MCP_JSON")
+        jq --argjson servers "$mcp_servers" '.mcpServers = ($servers + (.mcpServers // {}))' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
+        cp "$DESKTOP_CONFIG" "$DESKTOP_CONFIG.bak"
 
-    # Merge dotfiles MCPs with existing (existing take precedence for project-local servers)
-    jq --argjson servers "$mcp_servers" '.mcpServers = ($servers + (.mcpServers // {}))' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
+        local count
+        count=$(echo "$mcp_servers" | jq 'length')
+        print_success "Configured $count MCP servers (Claude Desktop)"
+    fi
 
-    local count
-    count=$(echo "$mcp_servers" | jq 'length')
-    print_success "Configured $count MCP servers (Claude Desktop)"
+    # Merge preferences (always read from .bak to avoid read+write same file)
+    if [[ -f "$DESKTOP_PREFS" ]]; then
+        local prefs
+        prefs=$(jq '.preferences // {}' "$DESKTOP_PREFS")
+        jq --argjson prefs "$prefs" '.preferences = ($prefs + (.preferences // {}))' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
+
+        local pref_count
+        pref_count=$(echo "$prefs" | jq 'length')
+        print_success "Configured $pref_count Desktop preferences"
+    fi
 }
 
 # --- Hooks ---
@@ -142,14 +158,14 @@ setup_hooks() {
 setup_preferences() {
     [[ -f "$SETTINGS_FILE" ]] || return 0
     cp "$SETTINGS_FILE" "$SETTINGS_FILE.bak"
-    jq '.voiceEnabled = true | .preferredNotifChannel = "terminal_bell"' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
-    print_info "Voice mode + terminal bell enabled"
+    jq '.voiceEnabled = true | .preferredNotifChannel = "terminal_bell" | .defaultMode = "acceptEdits"' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
+    print_info "Voice mode + terminal bell + acceptEdits enabled"
 }
 
 # --- Main ---
 setup_instructions
 setup_plugins
 setup_mcp
-setup_desktop_mcp
+setup_desktop
 setup_hooks
 setup_preferences
