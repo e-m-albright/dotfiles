@@ -154,6 +154,8 @@ dev_cli=(
     atlas               # Database schema migration tool (requires ariga/tap)
     duckdb              # Fast analytical database (SQL for analytics)
     # libpq             # PostgreSQL client library (psql, pg_dump — enable if needed)
+    # sentry-cli        # Sentry error tracking (releases, source maps, deploys)
+    # datadog-ci        # Datadog CI test visibility & synthetics
 )
 
 node_cli=(
@@ -203,6 +205,7 @@ dev_apps=(
 social_apps=(
     spotify
     slack
+    # slack-cli         # Slack platform dev CLI (app development, not chat)
     # zoom  # just use the web client, tired of this causing the "microphone" active indicator.
     # discord
     whatsapp

@@ -37,3 +37,6 @@
 
 # Integrations
 - Notion
+
+# --- Considered (uncomment to enable) ---
+# - Dagster                              # Data pipeline orchestration & observability
