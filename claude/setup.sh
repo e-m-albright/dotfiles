@@ -27,6 +27,7 @@ MCP_JSON="$SCRIPT_DIR/mcp.json"
 HOOKS_JSON="$SCRIPT_DIR/hooks.json"
 GLOBAL_CLAUDE_MD="$SCRIPT_DIR/global-claude.md"
 DESKTOP_PREFS="$SCRIPT_DIR/desktop-preferences.json"
+MARKETPLACES_JSON="$SCRIPT_DIR/marketplaces.json"
 
 # Source print utils if available
 if [[ -n "${print_section:-}" ]] || source "$DOTFILES_DIR/macos/print_utils.sh" 2>/dev/null; then
@@ -58,6 +59,23 @@ setup_instructions() {
     print_success "System instructions (~/.claude/CLAUDE.md)"
 }
 
+# --- Marketplaces ---
+setup_marketplaces() {
+    [[ -f "$MARKETPLACES_JSON" ]] || { print_info "No marketplaces.json found — skipping"; return 0; }
+    require_jq || return 0
+
+    ensure_settings
+
+    local marketplaces
+    marketplaces=$(jq '. // {}' "$MARKETPLACES_JSON")
+
+    jq --argjson mkts "$marketplaces" '.extraKnownMarketplaces = ($mkts + (.extraKnownMarketplaces // {}))' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
+
+    local count
+    count=$(echo "$marketplaces" | jq 'length')
+    print_success "Configured $count plugin marketplaces"
+}
+
 # --- Plugins ---
 setup_plugins() {
     [[ -f "$PLUGINS_YAML" ]] || { print_warning "No plugins.yaml found"; return 0; }
@@ -69,7 +87,12 @@ setup_plugins() {
     local plugins_json
     plugins_json=$(yq eval '.[]' "$PLUGINS_YAML" 2>/dev/null | while IFS= read -r plugin; do
         [[ -z "$plugin" || "$plugin" =~ ^# ]] && continue
-        printf '"%s@claude-plugins-official": true\n' "$plugin"
+        # If plugin already has @marketplace suffix, use as-is; otherwise default to @claude-plugins-official
+        if [[ "$plugin" == *@* ]]; then
+            printf '"%s": true\n' "$plugin"
+        else
+            printf '"%s@claude-plugins-official": true\n' "$plugin"
+        fi
     done | jq -Rs '
         split("\n") | map(select(length > 0)) |
         map(split(": ") | {(.[0] | gsub("\""; "")): true}) |
@@ -164,6 +187,7 @@ setup_preferences() {
 
 # --- Main ---
 setup_instructions
+setup_marketplaces
 setup_plugins
 setup_mcp
 setup_desktop

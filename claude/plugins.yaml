@@ -1,5 +1,6 @@
 # Claude Code plugins to enable in ~/.claude/settings.json
-# These are official plugins from the claude-plugins-official marketplace.
+# Default marketplace: claude-plugins-official (bare names get this suffix)
+# For other marketplaces: use name@marketplace format
 # Run: ~/dotfiles/claude/setup.sh (or install.sh will do it automatically)
 #
 # To add a plugin: add it here and re-run setup.sh
@@ -26,6 +27,7 @@
 - context7
 - playwright
 - frontend-design
+- frontend-design@claude-code-plugins
 - playground
 
 # Quality & security
