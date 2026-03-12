@@ -5,8 +5,24 @@ alwaysApply: true
 
 # Agent Artifacts
 
-- All working files go in `.agents/` -- never scatter files in the project root.
+## Golden Rule
+
+All intermediate agent output goes in `.agents/` — never scatter files in the project root or `src/`.
+
+## File Placement
+
+| What | Where | Versioned? |
+|------|-------|-----------|
+| Implementation plans | `.agents/plans/` | No (gitignored) |
+| Research & investigation | `.agents/research/` | No (gitignored) |
+| Architecture decisions (ADRs) | `.agents/decisions/` | **Yes** (committed) |
+| Conversation logs | `.agents/sessions/` | No (gitignored) |
+| Scratch/temp files | `.agents/` root | No (gitignored) |
+
+## Conventions
+
 - Date-prefix files: `YYYY-MM-DD-description.md`.
 - Write an ADR in `.agents/decisions/` for significant architectural choices.
 - Clean up working files when they're incorporated or abandoned.
-- `.agents/decisions/` is versioned (committed to git). Everything else in `.agents/` is gitignored.
+- Never create top-level files like `debug.md`, `notes.txt`, `TODO.md` — use `.agents/`.
+- Domain documentation belongs in `docs/` (versioned), not `.agents/` (ephemeral).

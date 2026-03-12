@@ -86,6 +86,7 @@ get_recipe_rules() {
         typescript/svelte)  echo "frameworks/sveltekit.mdc" ;;
         typescript/astro)   echo "frameworks/astro.mdc" ;;
         python/fastapi)     echo "frameworks/fastapi.mdc" ;;
+        python/cli)         ;; # CLI uses language + stack rules only, no framework rule
         golang/chi)         echo "frameworks/chi.mdc" ;;
         rust/axum)          echo "frameworks/axum.mdc" ;;
         rust/tauri)         echo "frameworks/tauri.mdc" ;;
@@ -116,7 +117,7 @@ is_valid_app_type() {
 is_known_app_type() {
     local combo="$1/$2"
     case "$combo" in
-        typescript/svelte|typescript/astro|python/fastapi|golang/chi|rust/axum|rust/tauri)
+        typescript/svelte|typescript/astro|python/fastapi|python/cli|golang/chi|rust/axum|rust/tauri)
             return 0 ;;
         *)
             return 1 ;;
@@ -233,7 +234,7 @@ Arguments:
 
 Available app types:
   typescript:    svelte (default), astro
-  python:        fastapi (default)
+  python:        fastapi (default), cli
   golang:        chi (default)
   rust:          axum (default), tauri
 
@@ -310,7 +311,7 @@ elif [[ $# -ge 2 ]]; then
             echo "Available app types for $RECIPE:"
             case "$RECIPE" in
                 typescript) echo "  - svelte (default), astro" ;;
-                python)     echo "  - fastapi (default)" ;;
+                python)     echo "  - fastapi (default), cli" ;;
                 golang)     echo "  - chi (default)" ;;
                 rust)       echo "  - axum (default), tauri" ;;
             esac
@@ -490,9 +491,31 @@ the current API, not a deprecated one.
 
 ---
 
+## Critical Rules
+
+### Always
+- Type-annotate all function signatures
+- Validate at system boundaries (user input, external APIs, CLI args)
+- Use structured logging (`structlog`/`pino`) — never `print()` or `console.log()`
+- Run `just check` before claiming work is complete
+
+### Never
+- Commit secrets, `.env` files, or credentials
+- Add a dependency for something achievable in <20 lines
+- Skip tests when adding new logic or fixing bugs
+- Use `Any` or untyped interfaces without explicit justification
+
+### Ask First
+- Adding new dependencies or changing the stack
+- Schema changes or data migrations
+- Changing auth flows, permissions, or security boundaries
+- Architectural decisions that affect multiple components
+
+---
+
 ## Project Context
 
-<!-- Fill this in -->
+<!-- Fill in below. For deeper domain knowledge, create docs/DOMAIN.md -->
 
 ### Overview
 <!-- What does this project do? Who is it for? -->
@@ -507,7 +530,28 @@ the current API, not a deprecated one.
 - Deployment target: [platform]
 
 ### Domain Context
-<!-- Key terms, business rules, entities -->
+<!-- Key terms, business rules, entities.
+     If this section grows beyond a few bullets, move it to docs/DOMAIN.md
+     and reference it here. See the DOMAIN.md guide below. -->
+
+---
+
+## Building Domain Knowledge
+
+As you work on this project, you'll learn domain-specific context that
+future agents (and your future self) will need. Capture it:
+
+1. **Start here** — fill in the Project Context section above with basics
+2. **Grow into `docs/DOMAIN.md`** — when domain context outgrows a few bullets,
+   create a dedicated file covering:
+   - **Glossary** — key terms and their precise meanings in this domain
+   - **Entities & relationships** — the core data model in plain language
+   - **Business rules** — constraints that aren't obvious from the code
+   - **User journeys** — the 2-3 critical paths through the system
+3. **Keep it alive** — update domain docs when you learn something new.
+   Stale domain docs are worse than none.
+
+This is project-owned — adapt the structure to what your domain actually needs.
 AGENTS_EOF
 fi
 
@@ -521,18 +565,22 @@ if [[ ! -f ".agents/README.md" ]]; then
     cat > ".agents/README.md" << 'EOF'
 # Working Files
 
-Agent-generated artifacts: plans, research, and sessions are gitignored.
-Architecture decisions in `decisions/` are versioned.
+All intermediate agent output goes here — never scatter files in the project root.
 
 ```
 .agents/
-├── plans/        # Implementation plans
-├── research/     # Investigation notes
-├── decisions/    # Architecture Decision Records (versioned)
-└── sessions/     # Conversation logs
+├── plans/        # Implementation plans (gitignored)
+├── research/     # Investigation notes (gitignored)
+├── decisions/    # Architecture Decision Records (versioned, committed)
+└── sessions/     # Conversation logs (gitignored)
 ```
 
-Use date-prefixed names: `YYYY-MM-DD-description.md`
+## Conventions
+
+- Date-prefix all files: `YYYY-MM-DD-description.md`
+- Only `decisions/` is committed to git — everything else is ephemeral
+- Domain docs belong in `docs/` (versioned), not here
+- Clean up files when incorporated or abandoned
 EOF
 fi
 
@@ -580,16 +628,18 @@ GITIGNORE_AGENTS
         fi
 
         if [[ "$needs_ai_rules" == true ]]; then
-            print_step "Adding symlinked .ai/rules/ to .gitignore"
+            print_step "Adding universal .ai/rules/ to .gitignore"
             cat >> ".gitignore" << 'GITIGNORE_AI'
 
-# .ai/rules/ — symlinked process rules are machine-specific
+# .ai/rules/ — universal process rules (managed by dotfiles scaffold)
+# Re-run `scaffold.sh --force` to update these from dotfiles
 .ai/rules/global-process.mdc
 .ai/rules/style-principles.mdc
 .ai/rules/github-workflow.mdc
 .ai/rules/tickets-and-prs.mdc
 .ai/rules/agent-artifacts.mdc
-# Recipe-specific rules are committed (they're copies, not symlinks)
+.ai/rules/shell-automation.mdc
+# Recipe-specific rules below this line are committed (project-owned)
 GITIGNORE_AI
         fi
 
@@ -694,8 +744,13 @@ if [[ "$IS_NEW_PROJECT" == true ]]; then
             echo "  5. Install git hooks:"
             echo "     just hooks-install"
             echo ""
-            echo "  6. Start development:"
-            echo "     just dev"
+            if [[ "$APP_TYPE" == "cli" ]]; then
+                echo "  6. Run the CLI:"
+                echo "     just run --help"
+            else
+                echo "  6. Start development:"
+                echo "     just dev"
+            fi
             ;;
         golang)
             echo "  3. Initialize Go module:"

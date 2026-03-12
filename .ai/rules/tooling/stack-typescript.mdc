@@ -38,6 +38,7 @@ alwaysApply: false
 | Desktop app | **Tauri** | Only if you need native distribution |
 | Client analytics | **DuckDB-WASM** | Heavy client-side data processing |
 | Observability | **OpenTelemetry** | When 2+ services call each other |
+| Monorepo build | **Turborepo** | Candidates: nx (plugin-heavy), moon (Rust-based). Turborepo: simplest, Vercel-maintained |
 | Dead code | **Knip** | Finds unused exports, deps, files |
 | Component dev | **Histoire** | Storybook alternative, Vite-native |
 | Docs site | **Starlight (Astro)** | Best docs DX in ecosystem |

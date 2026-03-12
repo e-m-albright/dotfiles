@@ -1,0 +1,130 @@
+# =============================================================================
+# Justfile — Python CLI Application
+# =============================================================================
+# Run `just` to see all available commands
+# =============================================================================
+
+# Show all available commands
+@default:
+    just --list --unsorted --list-heading $'\e[1;34m Available Commands:\e[0m\n'
+
+# -----------------------------------------------------------------------------
+# Environment
+# -----------------------------------------------------------------------------
+
+# Install all dependencies
+install:
+    uv sync
+
+# Install with dev dependencies
+install-dev:
+    uv sync --dev
+
+# Update dependencies
+update:
+    uv lock --upgrade
+
+# Add a dependency
+add *packages:
+    uv add {{packages}}
+
+# Add a dev dependency
+add-dev *packages:
+    uv add --dev {{packages}}
+
+# -----------------------------------------------------------------------------
+# Development
+# -----------------------------------------------------------------------------
+
+# Run the CLI
+run *args:
+    uv run app {{args}}
+
+# Open Python shell with project environment
+shell:
+    uv run python
+
+# Run arbitrary command in project environment
+exec *args:
+    uv run {{args}}
+
+# -----------------------------------------------------------------------------
+# Quality
+# -----------------------------------------------------------------------------
+
+# Run all checks
+check: lint typecheck test
+
+# Lint with Ruff
+lint:
+    uv run ruff check .
+
+# Lint and fix
+lint-fix:
+    uv run ruff check --fix .
+
+# Format with Ruff
+format:
+    uv run ruff format .
+
+# Check formatting without fixing
+format-check:
+    uv run ruff format --check .
+
+# Type check with Pyright
+typecheck:
+    uv run pyright
+
+# -----------------------------------------------------------------------------
+# Testing
+# -----------------------------------------------------------------------------
+
+# Run tests
+test:
+    uv run pytest
+
+# Run tests with verbose output
+test-v:
+    uv run pytest -v
+
+# Run tests with coverage
+test-cov:
+    uv run pytest --cov --cov-report=html --cov-report=term-missing
+
+# Run specific test file or pattern
+test-filter pattern:
+    uv run pytest -k "{{pattern}}"
+
+# Run only fast tests (exclude slow markers)
+test-fast:
+    uv run pytest -m "not slow"
+
+# -----------------------------------------------------------------------------
+# Utilities
+# -----------------------------------------------------------------------------
+
+# Clean build artifacts and caches
+clean:
+    rm -rf .pytest_cache .ruff_cache .mypy_cache .coverage htmlcov dist build *.egg-info
+    find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+# Clean everything including venv
+[confirm("⚠ This will remove the virtual environment. Continue? [y/N]")]
+clean-all: clean
+    rm -rf .venv
+
+# Build for distribution
+build:
+    uv build
+
+# -----------------------------------------------------------------------------
+# Git Hooks
+# -----------------------------------------------------------------------------
+
+# Install git hooks
+hooks-install:
+    lefthook install
+
+# Run pre-commit hooks manually
+hooks-run:
+    lefthook run pre-commit

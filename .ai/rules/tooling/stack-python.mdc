@@ -30,6 +30,7 @@ alwaysApply: false
 | HTTP client | **httpx** | requests (sync-only) |
 | AI agents | **PydanticAI** | LangChain (bloated) |
 | Structured LLM output | **Instructor** | — |
+| MCP server | **FastMCP** | Raw MCP SDK (verbose) |
 | Full-stack app | **Reflex** | Streamlit (limited), Dash (verbose) |
 
 ## Phase 3 — At Scale

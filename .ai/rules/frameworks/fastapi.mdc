@@ -57,6 +57,14 @@ just check                 # Lint + typecheck + test
 just db-migrate            # Run migrations
 ```
 
+## MCP Integration
+
+When exposing functionality to Claude Desktop or other MCP clients:
+
+- Use **FastMCP** to define MCP tools alongside your FastAPI app.
+- Service layer is shared — MCP tools and API routes call the same service functions.
+- Keep MCP tool definitions thin (like routes): validate input, call service, return result.
+
 ## Critical
 
 - Never use `time.sleep()` in async code — use `asyncio.sleep()`.
