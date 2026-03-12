@@ -35,7 +35,7 @@ The installer is idempotent — safe to re-run anytime.
 
 ## Project Scaffolding
 
-The `prompts/` directory contains opinionated recipes for TypeScript, Python, and Go projects.
+Seed new or existing projects with cross-vendor AI rules that work with Claude Code, Cursor, and Gemini CLI.
 
 ### Usage
 
@@ -47,52 +47,42 @@ One script, idempotent — run it on new or existing projects:
 ~/dotfiles/prompts/scaffold.sh typescript astro my-blog    # Astro
 ~/dotfiles/prompts/scaffold.sh python my-api               # FastAPI (default)
 ~/dotfiles/prompts/scaffold.sh golang my-service           # Chi (default)
+~/dotfiles/prompts/scaffold.sh rust my-tool                # Axum (default)
 
 # Seed existing projects (use . for current directory)
 ~/dotfiles/prompts/scaffold.sh typescript .
-~/dotfiles/prompts/scaffold.sh typescript astro ~/code/my-blog
 ~/dotfiles/prompts/scaffold.sh python ~/code/my-api
 ```
 
 Safe to run multiple times -- only adds missing pieces. AGENTS.md is generated once, then project-owned (use `--force` to regenerate).
 
-This adds the **rails** -- lightweight scaffolding that guides AI agents and keeps projects maintainable:
+This adds cross-vendor AI rules — lightweight scaffolding that guides AI agents:
 
 ```
 my-project/
-├── AGENTS.md              # Project instructions + context (project-owned)
-├── .cursor/rules/*.mdc    # Cursor rules (universal=symlinked, recipe=copied)
+├── AGENTS.md              # ~30 lines: pointers + project context (project-owned)
+├── .ai/rules/*.mdc        # AI rules (universal=symlinked, recipe=copied)
+├── .cursor/rules/*.mdc    # Cursor symlinks → .ai/rules/ (auto-generated)
 ├── .agents/               # Working files, gitignored (plans, research, sessions)
 └── .agents/decisions/     # Architecture Decision Records (versioned)
 ```
 
-Then use Claude Code to bring the project into conformance:
-
-```bash
-cd ~/code/my-existing-app
-
-# Audit against our guidelines
-claude "Read AGENTS.md and audit this codebase. List what conforms,
-what needs to change, and recommended priority. Don't change anything yet."
-
-# Create a conformance plan
-claude "Create a phased plan in .agents/plans/ to bring this project
-into conformance. Each phase should be safe and incremental."
-
-# Execute incrementally
-claude "Execute phase 1. Run tests after each change."
-```
+**How rules are deployed:**
+- **Universal rules** (process, style) are symlinked — auto-update from dotfiles
+- **Recipe rules** (language, framework, stack) are copied — project can customize
+- **Cursor symlinks** are auto-generated relative links to `.ai/rules/`
+- Only rules relevant to the recipe are deployed, not the entire library
 
 ### Available Recipes
 
 | Recipe | App Type | Stack | Use Case |
 |--------|----------|-------|----------|
-| `typescript` | `svelte` (default) | Bun + SvelteKit 2 + Svelte 5 + pino | Full-stack apps |
-| `typescript` | `astro` | Bun + Astro 6 | Content sites, blogs |
+| `typescript` | `svelte` (default) | Bun + SvelteKit 2 + Svelte 5 | Full-stack apps |
+| `typescript` | `astro` | Bun + Astro | Content sites, blogs |
 | `python` | `fastapi` (default) | UV + FastAPI + SQLAlchemy | APIs, AI services |
 | `golang` | `chi` (default) | Go 1.25+ Chi router + sqlc | APIs, services |
-
-See [`prompts/README.md`](prompts/README.md) for the full recipe documentation.
+| `rust` | `axum` (default) | Tokio + Axum + SQLx | APIs, services |
+| `rust` | `tauri` | Tauri 2 + SvelteKit | Desktop apps |
 
 ---
 
@@ -196,19 +186,15 @@ dotfiles/
 ├── git/                    # Git config + global ignores
 ├── editors/                # Cursor + VS Code settings
 ├── macos/                  # Homebrew, Dock, SSH setup
-└── prompts/                # Project recipes + scaffolding
-    ├── typescript/         # TypeScript recipes
-    │   ├── BASE.md         # Shared TypeScript patterns
-    │   ├── svelte/         # SvelteKit-specific
-    │   └── astro/          # Astro-specific
-    ├── python/             # Python recipes
-    │   ├── BASE.md         # Shared Python patterns
-    │   └── fastapi/        # FastAPI-specific
-    ├── golang/             # Go recipes
-    │   ├── BASE.md         # Shared Go patterns
-    │   └── chi/            # Chi router patterns
-    ├── shared/             # Cross-language guides
-    └── templates/          # Starter files (.gitignore, justfile, etc.)
+├── .ai/rules/              # Cross-vendor AI rules (canonical source)
+│   ├── process/            # Universal: safety, style, workflow
+│   ├── languages/          # Language ergonomics: TS, Python, Go, Rust
+│   ├── frameworks/         # Framework patterns: SvelteKit, Astro, FastAPI, etc.
+│   └── tooling/            # Stack decisions: Pick/Avoid tables, services
+└── prompts/                # Project scaffolding
+    ├── scaffold.sh         # Deploy rules + templates to projects
+    ├── guides/             # Reference docs (not deployed to projects)
+    └── */templates/        # Starter files per recipe (.gitignore, justfile, etc.)
 ```
 
 ---

@@ -1,0 +1,63 @@
+---
+description: Tauri 2 patterns — commands, state, events, IPC
+globs: "**/*.{rs,ts,svelte}"
+alwaysApply: false
+---
+
+# Tauri 2
+
+## Quick Reference
+
+```yaml
+Framework:   Tauri 2 (Rust backend + web frontend)
+Frontend:    SvelteKit or plain Svelte
+IPC:         Tauri commands (invoke) + events
+State:       Managed state via tauri::State
+Plugins:     Tauri plugin ecosystem (fs, dialog, shell, etc.)
+```
+
+## Structure
+
+```
+src-tauri/
+  src/main.rs              — Tauri app setup, command registration
+  src/commands/             — #[tauri::command] handlers
+  src/state.rs             — managed state types
+  Cargo.toml               — Rust dependencies
+  tauri.conf.json           — Tauri configuration
+src/                        — Frontend (SvelteKit/Svelte)
+```
+
+## Commands (Rust ↔ Frontend IPC)
+
+- Define with `#[tauri::command]` attribute.
+- Register in `Builder::new().invoke_handler(tauri::generate_handler![...])`.
+- Call from frontend: `import { invoke } from '@tauri-apps/api/core'`.
+- Commands can be `async` and return `Result<T, E>`.
+- Access managed state via `state: tauri::State<'_, AppState>`.
+
+## State Management
+
+- Register state: `.manage(AppState::new())` in builder.
+- Use `Arc<Mutex<T>>` or `Arc<RwLock<T>>` for mutable shared state.
+- Access in commands via `State<'_, T>` extractor.
+
+## Events
+
+- Emit from Rust: `app.emit("event-name", payload)`.
+- Listen in frontend: `listen("event-name", callback)`.
+- Use for push updates, progress reporting, background task results.
+
+## Security
+
+- Configure `allowlist` in `tauri.conf.json` — deny by default.
+- Validate all IPC inputs on the Rust side.
+- Use CSP headers for the webview.
+
+## Commands
+
+```bash
+just dev                   # Start Tauri dev mode (frontend + backend)
+just build                 # Build distributable
+cargo tauri icon           # Generate app icons from source image
+```

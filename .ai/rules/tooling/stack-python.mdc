@@ -1,0 +1,60 @@
+---
+description: Python stack decisions — tool choices, rationale, installation phases
+alwaysApply: false
+---
+
+# Python Stack Decisions
+
+## Phase 1 — Every Project
+
+| Category | Pick | Avoid |
+|----------|------|-------|
+| Package manager | **UV** | pip (slow), Poetry (complex) |
+| Python version | **3.14** | Older versions |
+| Linter/Formatter | **Ruff** | Black + isort + flake8 (three tools) |
+| Type checker | **Pyright** | mypy (slower, less accurate) |
+| Task runner | **Just** | Make (arcane) |
+| Git hooks | **Lefthook** | Husky, pre-commit |
+
+## Phase 2 — When Needed
+
+| Need | Pick | Avoid |
+|------|------|-------|
+| Web API | **FastAPI** | Flask (no async), Django (heavy) |
+| ORM | **SQLAlchemy 2.0** | SQLModel (maintenance mode), Django ORM |
+| Migrations | **Atlas** | Alembic (slower DX) |
+| Async Postgres driver | **asyncpg** | psycopg2 (sync) |
+| Validation | **Pydantic v2** | marshmallow, attrs |
+| Background jobs | **Arq** | Celery (complex, sync-first) |
+| CLI tools | **Typer + Rich** | Click (verbose), argparse |
+| HTTP client | **httpx** | requests (sync-only) |
+| AI agents | **PydanticAI** | LangChain (bloated) |
+| Structured LLM output | **Instructor** | — |
+| Full-stack app | **Reflex** | Streamlit (limited), Dash (verbose) |
+
+## Phase 3 — At Scale
+
+| Need | Pick | Notes |
+|------|------|-------|
+| DataFrames | **Polars** | Not Pandas (slow, memory-hungry) |
+| Analytics SQL | **DuckDB** | In-process OLAP on Postgres/Parquet |
+| Observability | **OpenTelemetry** | When 2+ services |
+| Property testing | **Hypothesis** | Edge case coverage |
+| Profiling | **Scalene** | CPU + memory + GPU simultaneously |
+| Notebooks | **Marimo** | Jupyter (reproducibility issues) |
+| Docs | **MkDocs + Material** | Sphinx (complex) |
+
+## What NOT to Install
+
+| Tool | Why Skip |
+|------|----------|
+| Beartype | Pydantic handles runtime validation |
+| Loguru | structlog is the pick — one logger |
+| SQLModel | Maintenance mode |
+| Alembic | Atlas is faster, better DX |
+| mypy | Pyright is faster, better IDE integration |
+| Black/isort | Ruff does both |
+
+## Version Requirements
+
+Python >=3.14, Ruff target `py313` (until Ruff adds 3.14 support)

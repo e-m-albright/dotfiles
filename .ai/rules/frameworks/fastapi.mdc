@@ -1,0 +1,63 @@
+---
+description: FastAPI patterns — async routes, dependency injection, service layer
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# FastAPI
+
+## Quick Reference
+
+```yaml
+Framework:   FastAPI + Uvicorn
+Database:    SQLAlchemy 2.0 + asyncpg + Atlas
+Validation:  Pydantic v2
+Agents:      PydanticAI + Instructor
+```
+
+## Structure
+
+```
+src/app/
+  main.py                  — FastAPI app entry point
+  config.py                — Settings via pydantic-settings
+  deps.py                  — Dependency injection
+  api/routes/              — Route handlers
+  models/                  — SQLAlchemy models
+  schemas/                 — Pydantic schemas (Create, Update, Response)
+  services/                — Business logic
+  core/errors.py           — Custom exceptions
+  db/session.py            — Database connection
+tests/
+  conftest.py              — Shared fixtures (async client, db session)
+```
+
+## Patterns
+
+- `async def` for all route handlers and database operations.
+- Dependency injection via `Depends()`. Use `Annotated` for clean signatures:
+  `DBSession = Annotated[AsyncSession, Depends(get_db)]`
+- Service layer between routes and database — routes don't query directly.
+- Separate Pydantic schemas: `Create`, `Update`, `Response` per resource.
+- `model_config = {"from_attributes": True}` for ORM → schema conversion.
+- Register exception handlers for custom `AppError` types.
+
+## Testing
+
+- `pytest` + `pytest-asyncio` + `httpx.AsyncClient` with `ASGITransport`.
+- Transactional fixtures: create tables, yield session, rollback.
+- Override `get_db` dependency in tests.
+
+## Commands
+
+```bash
+just dev                   # Start dev server
+just test                  # Run tests
+just check                 # Lint + typecheck + test
+just db-migrate            # Run migrations
+```
+
+## Critical
+
+- Never use `time.sleep()` in async code — use `asyncio.sleep()`.
+- Use `expire_on_commit=False` in async sessions.

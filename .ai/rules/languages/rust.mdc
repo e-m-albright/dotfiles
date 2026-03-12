@@ -1,0 +1,63 @@
+---
+description: Rust conventions — clippy, thiserror/anyhow, Tokio async, tracing
+globs: "**/*.rs"
+alwaysApply: false
+---
+
+# Rust
+
+## Tooling
+
+- **clippy** for linting — treat warnings as errors in CI.
+- **rustfmt** for formatting — never override.
+- **cargo-watch** for hot reload during development.
+
+## Error Handling
+
+- **thiserror** for domain/library errors (typed, specific).
+- **anyhow** for application-level errors (context chaining, quick prototyping).
+- Use `?` operator for propagation. Add context: `context("failed to parse config")?`.
+- Return `Result<T, E>` from all fallible functions — never panic for expected failures.
+
+## Code Patterns
+
+- **Tokio** for async runtime. Use `#[tokio::main]` for entry point.
+- **tracing** + **tracing-subscriber** for structured logging.
+- **SQLx** for database queries — compile-time checked SQL.
+- **envy** for config — deserialize env vars to struct via serde.
+- **serde** + **serde_json** for serialization.
+- Prefer `impl Trait` over `dyn Trait` when possible (zero-cost).
+- Use `Arc<T>` for shared ownership across async tasks.
+
+## Structure
+
+```
+src/
+  main.rs                  — entry point, server setup
+  lib.rs                   — re-exports, shared types
+  config.rs                — settings via envy
+  error.rs                 — thiserror error types
+  routes/                  — HTTP handlers
+  services/                — business logic
+  db/                      — database access
+migrations/                — SQL migration files
+```
+
+## Always
+
+- Run `cargo clippy` and `cargo test` before committing.
+- Use `#[must_use]` on functions where ignoring the return value is likely a bug.
+- Derive `Debug` on all public types.
+
+## Never
+
+- Use `.unwrap()` in production code — use `?` or `.expect("reason")`.
+- Use `unsafe` without a `// SAFETY:` comment explaining the invariant.
+- Suppress clippy warnings without documented reason.
+
+## Ask First
+
+- Adding new dependencies.
+- Changing database schema.
+- Using `unsafe` code.
+- Deleting files.

@@ -2,22 +2,22 @@
 # =============================================================================
 # Project Scaffold Script
 # =============================================================================
-# Creates or updates a project with dotfiles recipe structure.
+# Creates or updates a project with cross-vendor AI rules.
 # Safe to run multiple times — idempotent.
 #
 # Philosophy: Dotfiles seeds and influences. Projects own themselves.
-# - Universal .cursor/rules/ are SYMLINKED (auto-update from dotfiles)
-# - Recipe-specific .cursor/rules/ are COPIED (project can customize)
+# - Universal .ai/rules/ are SYMLINKED (auto-update from dotfiles)
+# - Recipe-specific .ai/rules/ are COPIED (project can customize)
+# - .cursor/rules/ gets relative symlinks to .ai/rules/ for Cursor
 # - AGENTS.md is GENERATED once, then project-owned (never overwritten)
-# - Re-running refreshes rules but respects project customizations
 #
 # Usage:
 #   ./prompts/scaffold.sh <recipe> [app-type] <project-path>
 #   ./prompts/scaffold.sh --force <recipe> [app-type] <project-path>
 #
 # Examples:
-#   ./prompts/scaffold.sh typescript svelte my-new-app    # Creates new project
-#   ./prompts/scaffold.sh typescript svelte .             # Seeds current dir
+#   ./prompts/scaffold.sh typescript svelte my-new-app
+#   ./prompts/scaffold.sh typescript svelte .
 #   ./prompts/scaffold.sh typescript my-app               # Defaults to svelte
 #   ./prompts/scaffold.sh python .                        # Defaults to fastapi
 #   ./prompts/scaffold.sh golang chi ~/projects/my-svc
@@ -37,9 +37,65 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROMPTS_DIR="$SCRIPT_DIR"
 DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-RULES_DIR="$DOTFILES_DIR/.cursor/rules"
+AI_RULES_DIR="$DOTFILES_DIR/.ai/rules"
 
 FORCE=false
+
+# =============================================================================
+# Universal rules (symlinked — auto-update from dotfiles)
+# =============================================================================
+UNIVERSAL_RULES=(
+    "process/global-process.mdc"
+    "process/style-principles.mdc"
+    "process/github-workflow.mdc"
+    "process/tickets-and-prs.mdc"
+    "process/agent-artifacts.mdc"
+)
+
+# =============================================================================
+# Recipe → rule mappings (copied — project can customize)
+# =============================================================================
+get_recipe_rules() {
+    local recipe="$1"
+    local app_type="$2"
+
+    # Language + stack rules per recipe
+    case "$recipe" in
+        typescript)
+            echo "languages/typescript.mdc"
+            echo "tooling/stack-typescript.mdc"
+            echo "tooling/services.mdc"
+            ;;
+        python)
+            echo "languages/python.mdc"
+            echo "tooling/stack-python.mdc"
+            echo "tooling/services.mdc"
+            echo "process/shell-automation.mdc"
+            ;;
+        golang)
+            echo "languages/golang.mdc"
+            echo "tooling/stack-golang.mdc"
+            echo "tooling/services.mdc"
+            echo "process/shell-automation.mdc"
+            ;;
+        rust)
+            echo "languages/rust.mdc"
+            echo "tooling/stack-rust.mdc"
+            echo "tooling/services.mdc"
+            echo "process/shell-automation.mdc"
+            ;;
+    esac
+
+    # Framework rules per app-type
+    case "$recipe/$app_type" in
+        typescript/svelte)  echo "frameworks/sveltekit.mdc" ;;
+        typescript/astro)   echo "frameworks/astro.mdc" ;;
+        python/fastapi)     echo "frameworks/fastapi.mdc" ;;
+        golang/chi)         echo "frameworks/chi.mdc" ;;
+        rust/axum)          echo "frameworks/axum.mdc" ;;
+        rust/tauri)         echo "frameworks/tauri.mdc" ;;
+    esac
+}
 
 # -----------------------------------------------------------------------------
 # Functions
@@ -89,8 +145,19 @@ get_default_app_type() {
 is_valid_app_type() {
     local recipe="$1"
     local app_type="$2"
-    local app_dir="$PROMPTS_DIR/$recipe/$app_type"
-    [[ -d "$app_dir" && -f "$app_dir/FRAMEWORK.md" ]]
+    local template_dir="$PROMPTS_DIR/$recipe/$app_type/templates"
+    # Valid if there's a templates dir for this app-type, or it's a known combo
+    [[ -d "$template_dir" ]] || [[ -d "$PROMPTS_DIR/$recipe/templates" ]]
+}
+
+is_known_app_type() {
+    local combo="$1/$2"
+    case "$combo" in
+        typescript/svelte|typescript/astro|python/fastapi|golang/chi|rust/axum|rust/tauri)
+            return 0 ;;
+        *)
+            return 1 ;;
+    esac
 }
 
 is_existing_path() {
@@ -98,72 +165,94 @@ is_existing_path() {
     [[ "$path" == "." ]] || [[ -d "$path" ]]
 }
 
-list_app_types() {
-    local recipe="$1"
-    for dir in "$PROMPTS_DIR/$recipe"/*/; do
-        if [[ -f "$dir/FRAMEWORK.md" ]]; then
-            basename "$dir"
-        fi
-    done
-}
+# Symlink a rule file into .ai/rules/ (universal rules — auto-update from dotfiles)
+symlink_ai_rule() {
+    local rule_path="$1"  # e.g., "process/global-process.mdc"
+    local rule_name
+    rule_name="$(basename "$rule_path")"
+    local source="$AI_RULES_DIR/$rule_path"
+    local link=".ai/rules/$rule_name"
 
-# Symlink a rule file (universal rules — auto-update from dotfiles)
-symlink_rule() {
-    local rule_name="$1"
-    local target="$RULES_DIR/$rule_name"
-    local link=".cursor/rules/$rule_name"
-
-    if [[ ! -f "$target" ]]; then
-        print_warning "Rule not found in dotfiles: $rule_name"
+    if [[ ! -f "$source" ]]; then
+        print_warning "Rule not found in dotfiles: $rule_path"
         return
     fi
 
     if [[ -L "$link" ]]; then
         local current_target
         current_target="$(readlink "$link")"
-        if [[ "$current_target" == "$target" ]]; then
-            print_skip ".cursor/rules/$rule_name (symlink)"
+        if [[ "$current_target" == "$source" ]]; then
+            print_skip ".ai/rules/$rule_name (symlink)"
             return
         fi
         rm "$link"
-        print_update ".cursor/rules/$rule_name (symlink updated)"
+        print_update ".ai/rules/$rule_name (symlink updated)"
     elif [[ -f "$link" ]] && [[ "$FORCE" != true ]]; then
-        print_skip ".cursor/rules/$rule_name (project-owned)"
+        print_skip ".ai/rules/$rule_name (project-owned)"
         return
     fi
 
-    ln -s "$target" "$link"
-    print_step "Symlinked .cursor/rules/$rule_name"
+    ln -s "$source" "$link"
+    print_step "Symlinked .ai/rules/$rule_name"
 }
 
-# Copy a rule file (recipe-specific — project can customize)
-copy_rule() {
-    local rule_name="$1"
-    local source="$RULES_DIR/$rule_name"
+# Copy a rule file into .ai/rules/ (recipe-specific — project can customize)
+copy_ai_rule() {
+    local rule_path="$1"  # e.g., "languages/python.mdc"
+    local rule_name
+    rule_name="$(basename "$rule_path")"
+    local source="$AI_RULES_DIR/$rule_path"
 
     if [[ ! -f "$source" ]]; then
-        print_warning "Rule not found in dotfiles: $rule_name"
+        print_warning "Rule not found in dotfiles: $rule_path"
         return
     fi
 
-    if [[ -f ".cursor/rules/$rule_name" ]] && [[ "$FORCE" != true ]]; then
-        print_skip ".cursor/rules/$rule_name"
+    if [[ -f ".ai/rules/$rule_name" ]] && [[ "$FORCE" != true ]]; then
+        print_skip ".ai/rules/$rule_name"
         return
     fi
 
-    cp "$source" ".cursor/rules/$rule_name"
-    if [[ "$FORCE" == true ]] && [[ -f ".cursor/rules/$rule_name" ]]; then
-        print_update ".cursor/rules/$rule_name (force copied)"
+    cp "$source" ".ai/rules/$rule_name"
+    if [[ "$FORCE" == true ]]; then
+        print_update ".ai/rules/$rule_name (force copied)"
     else
-        print_step "Copied .cursor/rules/$rule_name"
+        print_step "Copied .ai/rules/$rule_name"
     fi
+}
+
+# Create relative symlinks in .cursor/rules/ → .ai/rules/ for Cursor discovery
+setup_cursor_symlinks() {
+    mkdir -p ".cursor/rules"
+
+    for rule_file in .ai/rules/*.mdc; do
+        [[ -f "$rule_file" ]] || continue
+        local rule_name
+        rule_name="$(basename "$rule_file")"
+        local cursor_link=".cursor/rules/$rule_name"
+
+        if [[ -L "$cursor_link" ]]; then
+            # Already a symlink — update if target changed
+            local current_target
+            current_target="$(readlink "$cursor_link")"
+            if [[ "$current_target" == "../../.ai/rules/$rule_name" ]]; then
+                continue
+            fi
+            rm "$cursor_link"
+        elif [[ -f "$cursor_link" ]] && [[ "$FORCE" != true ]]; then
+            continue
+        fi
+
+        ln -s "../../.ai/rules/$rule_name" "$cursor_link"
+    done
+    print_step "Cursor symlinks created (.cursor/rules/ → .ai/rules/)"
 }
 
 show_help() {
     cat << EOF
 Project Scaffold Script
 
-Creates or updates a project with dotfiles recipe structure.
+Creates or updates a project with cross-vendor AI rules.
 Safe to run multiple times — only adds missing pieces.
 
 Usage:
@@ -171,7 +260,7 @@ Usage:
 
 Arguments:
   --force        Force regenerate AGENTS.md and overwrite existing rules
-  recipe         Recipe to use: typescript, python, golang
+  recipe         Recipe to use: typescript, python, golang, rust
   app-type       Optional framework type (defaults per recipe)
   project-path   Path to project (creates if doesn't exist)
 
@@ -191,7 +280,8 @@ Examples:
 
 What Gets Created (idempotent — skips existing):
   AGENTS.md              # Project instructions + context (project-owned)
-  .cursor/rules/*.mdc    # Cursor rules (universal=symlinked, recipe=copied)
+  .ai/rules/*.mdc        # AI rules (universal=symlinked, recipe=copied)
+  .cursor/rules/*.mdc    # Cursor symlinks → .ai/rules/ (auto-generated)
   .agents/               # Working files directory (gitignored)
   .agents/decisions/     # Architecture Decision Records (versioned)
 
@@ -199,7 +289,7 @@ On re-run:
   - AGENTS.md is NOT overwritten (project owns it). Use --force to regenerate.
   - Universal rules are re-symlinked (always up to date).
   - Recipe rules skip existing files (project may have customized).
-  - .agents/ is created if missing, decisions/ ensured.
+  - .cursor/rules/ symlinks are refreshed to match .ai/rules/.
 EOF
 }
 
@@ -220,21 +310,17 @@ fi
 RECIPE="$1"
 shift
 
-RECIPE_DIR="$PROMPTS_DIR/$RECIPE"
-if [[ ! -d "$RECIPE_DIR" ]]; then
-    print_error "Recipe '$RECIPE' not found"
+# Validate recipe
+VALID_RECIPES="typescript python golang rust"
+if [[ ! " $VALID_RECIPES " =~ " $RECIPE " ]]; then
+    print_error "Unknown recipe '$RECIPE'"
     echo ""
-    echo "Available recipes:"
-    for dir in "$PROMPTS_DIR"/*/; do
-        if [[ -f "$dir/BASE.md" ]]; then
-            echo "  - $(basename "$dir")"
-        fi
-    done
+    echo "Available recipes: $VALID_RECIPES"
     exit 1
 fi
 
 if [[ $# -eq 1 ]]; then
-    if is_valid_app_type "$RECIPE" "$1"; then
+    if is_known_app_type "$RECIPE" "$1"; then
         print_error "Missing project path"
         echo "Usage: $(basename "$0") $RECIPE $1 <project-path>"
         exit 1
@@ -243,7 +329,7 @@ if [[ $# -eq 1 ]]; then
         PROJECT_PATH="$1"
     fi
 elif [[ $# -ge 2 ]]; then
-    if is_valid_app_type "$RECIPE" "$1"; then
+    if is_known_app_type "$RECIPE" "$1"; then
         APP_TYPE="$1"
         PROJECT_PATH="$2"
     else
@@ -254,29 +340,19 @@ elif [[ $# -ge 2 ]]; then
             print_error "Unknown app type '$1'"
             echo ""
             echo "Available app types for $RECIPE:"
-            list_app_types "$RECIPE" | while read -r t; do echo "  - $t"; done
+            case "$RECIPE" in
+                typescript) echo "  - svelte (default), astro" ;;
+                python)     echo "  - fastapi (default)" ;;
+                golang)     echo "  - chi (default)" ;;
+                rust)       echo "  - axum (default), tauri" ;;
+            esac
             exit 1
         fi
     fi
 fi
 
-if [[ -z "$APP_TYPE" ]]; then
-    print_error "No app types available for recipe '$RECIPE'"
-    exit 1
-fi
-
-APP_DIR="$RECIPE_DIR/$APP_TYPE"
-if [[ ! -d "$APP_DIR" ]] || [[ ! -f "$APP_DIR/FRAMEWORK.md" ]]; then
-    print_error "App type '$APP_TYPE' not found for recipe '$RECIPE'"
-    echo ""
-    echo "Available app types for $RECIPE:"
-    list_app_types "$RECIPE" | while read -r t; do echo "  - $t"; done
-    exit 1
-fi
-
-if [[ ! -f "$RECIPE_DIR/BASE.md" ]]; then
-    print_error "Recipe '$RECIPE' is missing BASE.md"
-    exit 1
+if [[ -z "${APP_TYPE:-}" ]]; then
+    APP_TYPE="$(get_default_app_type "$RECIPE")"
 fi
 
 # -----------------------------------------------------------------------------
@@ -383,103 +459,85 @@ cd "$PROJECT_PATH"
 
 # Copy template files (only for new projects)
 if [[ "$IS_NEW_PROJECT" == true ]]; then
-    if [[ -d "$APP_DIR/templates" ]]; then
+    APP_TEMPLATE_DIR="$PROMPTS_DIR/$RECIPE/$APP_TYPE/templates"
+    RECIPE_TEMPLATE_DIR="$PROMPTS_DIR/$RECIPE/templates"
+
+    if [[ -d "$APP_TEMPLATE_DIR" ]]; then
         print_step "Copying template files (from $APP_TYPE)"
-        cp -r "$APP_DIR/templates/"* "$PROJECT_PATH/" 2>/dev/null || true
-        cp -r "$APP_DIR/templates/".* "$PROJECT_PATH/" 2>/dev/null || true
-    elif [[ -d "$RECIPE_DIR/templates" ]]; then
+        cp -r "$APP_TEMPLATE_DIR/"* "$PROJECT_PATH/" 2>/dev/null || true
+        cp -r "$APP_TEMPLATE_DIR/".* "$PROJECT_PATH/" 2>/dev/null || true
+    elif [[ -d "$RECIPE_TEMPLATE_DIR" ]]; then
         print_step "Copying template files"
-        cp -r "$RECIPE_DIR/templates/"* "$PROJECT_PATH/" 2>/dev/null || true
-        cp -r "$RECIPE_DIR/templates/".* "$PROJECT_PATH/" 2>/dev/null || true
+        cp -r "$RECIPE_TEMPLATE_DIR/"* "$PROJECT_PATH/" 2>/dev/null || true
+        cp -r "$RECIPE_TEMPLATE_DIR/".* "$PROJECT_PATH/" 2>/dev/null || true
     fi
 fi
 
-# ---- Cursor Rules ----
-mkdir -p ".cursor/rules"
+# ---- AI Rules (.ai/rules/) ----
+mkdir -p ".ai/rules"
+
+echo ""
+echo -e "${BLUE}Setting up AI rules...${NC}"
 
 # Universal rules (symlinked — auto-update from dotfiles)
-symlink_rule "global-process.mdc"
-symlink_rule "tickets-and-prs.mdc"
-symlink_rule "agent-artifacts.mdc"
-symlink_rule "github-workflow.mdc"
+for rule in "${UNIVERSAL_RULES[@]}"; do
+    symlink_ai_rule "$rule"
+done
 
 # Recipe-specific rules (copied — project can customize)
-case "$RECIPE" in
-    python)
-        copy_rule "python-uv-ruff.mdc"
-        copy_rule "shell-automation.mdc"
-        ;;
-    typescript)
-        copy_rule "javascript-typescript.mdc"
-        ;;
-    golang)
-        copy_rule "golang.mdc"
-        copy_rule "shell-automation.mdc"
-        ;;
-    rust)
-        copy_rule "rust.mdc"
-        copy_rule "shell-automation.mdc"
-        ;;
-esac
+while IFS= read -r rule; do
+    copy_ai_rule "$rule"
+done < <(get_recipe_rules "$RECIPE" "$APP_TYPE")
+
+# ---- Cursor Symlinks (.cursor/rules/ → .ai/rules/) ----
+echo ""
+setup_cursor_symlinks
 
 # ---- AGENTS.md (project-owned) ----
+echo ""
 if [[ -e "AGENTS.md" ]] && [[ "$FORCE" != true ]]; then
     print_skip "AGENTS.md (project-owned)"
 else
     if [[ -e "AGENTS.md" ]]; then
-        print_update "AGENTS.md (force regenerated from $RECIPE/$APP_TYPE)"
+        print_update "AGENTS.md (force regenerated)"
     else
-        print_step "Generating AGENTS.md (base + $APP_TYPE)"
+        print_step "Generating AGENTS.md"
     fi
-    {
-        cat << HEADER
+    cat > "AGENTS.md" << 'AGENTS_EOF'
 # AGENTS.md
 
-Read all \`.cursor/rules/*.mdc\` files for process, safety, and coding conventions.
+Read all `.ai/rules/*.mdc` files for coding conventions, stack decisions,
+and process rules. Cursor users: rules are also in `.cursor/rules/`.
+
+---
+
+## Research & Library Usage
+
+**Check the current date before researching.** Your training data may be stale.
+When using a library, search for latest docs first. Verify you're using
+the current API, not a deprecated one.
 
 ---
 
 ## Project Context
 
-<!-- Fill this in to describe YOUR project. Delete sections that don't apply. -->
+<!-- Fill this in -->
 
 ### Overview
-
-<!-- What does this project do? What problem does it solve? Who is it for? -->
+<!-- What does this project do? Who is it for? -->
 
 ### Goals
-
 - [ ] Goal 1
-- [ ] Goal 2
 
 ### Non-Goals
-
 - Not building X
-- Not supporting Y
 
 ### Technical Constraints
-
 - Deployment target: [platform]
-- Must work with: [existing systems]
 
 ### Domain Context
-
-<!-- Key terms, business rules, entities, and relationships -->
-
----
-
-## Code Patterns
-
-HEADER
-        cat "$RECIPE_DIR/BASE.md"
-        echo ""
-        echo "---"
-        echo ""
-        cat "$APP_DIR/FRAMEWORK.md"
-    } > "AGENTS.md"
-
-    sed -i '' "s/\[Project Name\]/$PROJECT_NAME/g" "AGENTS.md" 2>/dev/null || \
-        sed -i "s/\[Project Name\]/$PROJECT_NAME/g" "AGENTS.md" 2>/dev/null || true
+<!-- Key terms, business rules, entities -->
+AGENTS_EOF
 fi
 
 # ---- .agents/ directory ----
@@ -518,25 +576,64 @@ EOF
 fi
 
 # ---- .gitignore ----
-if [[ -f ".gitignore" ]]; then
-    if ! grep -q "^\.agents/" ".gitignore" 2>/dev/null; then
-        print_step "Adding .agents/ to .gitignore"
-        echo "" >> ".gitignore"
-        echo "# Working files (ephemeral)" >> ".gitignore"
-        echo ".agents/" >> ".gitignore"
-        echo "!.agents/decisions/" >> ".gitignore"
-    fi
-else
-    if [[ -f "$RECIPE_DIR/templates/.gitignore" ]]; then
-        print_step "Creating .gitignore (from template)"
-        cp "$RECIPE_DIR/templates/.gitignore" ".gitignore"
+update_gitignore() {
+    local needs_agents=false
+    local needs_ai_rules=false
+    local needs_cursor_rules=false
+
+    if [[ -f ".gitignore" ]]; then
+        grep -q "^\.agents/" ".gitignore" 2>/dev/null || needs_agents=true
+        grep -q "^\.ai/rules/global-process" ".gitignore" 2>/dev/null || needs_ai_rules=true
+        grep -q "^\.cursor/rules/" ".gitignore" 2>/dev/null || needs_cursor_rules=true
     else
-        print_step "Creating .gitignore"
-        echo "# Working files (ephemeral)" > ".gitignore"
-        echo ".agents/" >> ".gitignore"
-        echo "!.agents/decisions/" >> ".gitignore"
+        needs_agents=true
+        needs_ai_rules=true
+        needs_cursor_rules=true
     fi
-fi
+
+    if [[ "$needs_agents" == true ]] || [[ "$needs_ai_rules" == true ]] || [[ "$needs_cursor_rules" == true ]]; then
+        if [[ ! -f ".gitignore" ]]; then
+            touch ".gitignore"
+        fi
+
+        echo "" >> ".gitignore"
+
+        if [[ "$needs_agents" == true ]]; then
+            print_step "Adding .agents/ to .gitignore"
+            cat >> ".gitignore" << 'GITIGNORE_AGENTS'
+
+# Working files (ephemeral)
+.agents/
+!.agents/decisions/
+GITIGNORE_AGENTS
+        fi
+
+        if [[ "$needs_ai_rules" == true ]]; then
+            print_step "Adding symlinked .ai/rules/ to .gitignore"
+            cat >> ".gitignore" << 'GITIGNORE_AI'
+
+# .ai/rules/ — symlinked process rules are machine-specific
+.ai/rules/global-process.mdc
+.ai/rules/style-principles.mdc
+.ai/rules/github-workflow.mdc
+.ai/rules/tickets-and-prs.mdc
+.ai/rules/agent-artifacts.mdc
+# Recipe-specific rules are committed (they're copies, not symlinks)
+GITIGNORE_AI
+        fi
+
+        if [[ "$needs_cursor_rules" == true ]]; then
+            print_step "Adding .cursor/rules/ to .gitignore"
+            cat >> ".gitignore" << 'GITIGNORE_CURSOR'
+
+# .cursor/rules/ — auto-generated symlinks to .ai/rules/
+.cursor/rules/
+GITIGNORE_CURSOR
+        fi
+    fi
+}
+
+update_gitignore
 
 # Update package.json or pyproject.toml with project name (only for new projects)
 if [[ "$IS_NEW_PROJECT" == true ]]; then
@@ -587,7 +684,8 @@ print_success "Project scaffolded successfully!"
 echo ""
 echo -e "${BLUE}What's in place:${NC}"
 echo "  - AGENTS.md              → Project instructions + context (you own this)"
-echo "  - .cursor/rules/*.mdc    → Cursor rules (universal=symlinked, recipe=copied)"
+echo "  - .ai/rules/*.mdc        → AI rules (universal=symlinked, recipe=copied)"
+echo "  - .cursor/rules/*.mdc    → Cursor symlinks (auto-generated)"
 echo "  - .agents/               → Working files (gitignored)"
 echo "  - .agents/decisions/     → Architecture decisions (versioned)"
 
@@ -682,7 +780,7 @@ else
     echo ""
     echo "  2. Audit the codebase against our guidelines:"
     echo ""
-    echo '     claude "Read AGENTS.md and .cursor/rules/. Audit this codebase.'
+    echo '     claude "Read AGENTS.md and .ai/rules/. Audit this codebase.'
     echo '     Create a report in .agents/research/ listing what conforms,'
     echo '     what needs to change, and recommended priority."'
     echo ""
@@ -695,5 +793,5 @@ fi
 echo ""
 echo -e "${BLUE}Start building:${NC}"
 echo ""
-echo '  claude "Read AGENTS.md and .cursor/rules/. Create a plan for the first feature."'
+echo '  claude "Read AGENTS.md and .ai/rules/. Create a plan for the first feature."'
 echo ""

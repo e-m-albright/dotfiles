@@ -1,0 +1,54 @@
+---
+description: Python conventions — uv, Ruff, Pydantic v2, async-first, structlog
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python
+
+## Package Management
+
+- **UV** when `uv.lock` is present. Never fall back to `pip install`.
+- `uv add`, `uv run`, `uv sync` — `pyproject.toml` is single source of truth.
+
+## Formatting & Linting
+
+- **Ruff** for both linting and formatting. Don't introduce Black, isort, or flake8 alongside it.
+- Run `ruff check --fix` and `ruff format` scoped to changed files.
+
+## Type Patterns
+
+- Type-annotate all function signatures.
+- Modern union syntax: `str | None` not `Optional[str]`.
+- Lowercase builtins: `list[str]`, `dict[str, int]` not `List`, `Dict`.
+- `from collections.abc` for `Callable`, `Sequence`, `Mapping`.
+
+## Code Patterns
+
+- **Pydantic v2**: `model_config = ConfigDict(...)` not `class Config:`.
+- **SQLAlchemy 2.0**: `select()` not `session.query()`.
+- `async def` for I/O operations, `def` for pure functions.
+- Guard clauses and early returns over deep nesting.
+- `pathlib.Path` over `os.path` for file operations.
+- **structlog** for logging — never stdlib `logging` or `loguru`.
+- `dataclass` for internal data structures, Pydantic for external/API data.
+
+## Always
+
+- Run `just check` before committing.
+- Pydantic models for all external data validation.
+
+## Never
+
+- `Any` type — use specific types or `Unknown`.
+- Mutable default arguments (`def f(items: list = [])` is wrong).
+- Import with `*` — always explicit imports.
+- Bare `except` — be specific.
+- `print()` in production — use structlog.
+
+## Ask First
+
+- Adding new dependencies.
+- Changing database schema.
+- Modifying auth flow.
+- Deleting files.

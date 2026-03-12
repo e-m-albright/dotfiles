@@ -1,0 +1,62 @@
+---
+description: Axum patterns — extractors, state, tower middleware, SQLx
+globs: "**/*.rs"
+alwaysApply: false
+---
+
+# Axum
+
+## Quick Reference
+
+```yaml
+Framework:   Axum 0.8+
+Database:    SQLx + PostgreSQL (compile-time checked)
+Migrations:  sqlx-cli
+Async:       Tokio
+Logging:     tracing + tracing-subscriber
+```
+
+## Structure
+
+```
+src/
+  main.rs                  — entry point, router, server setup
+  config.rs                — settings via envy
+  error.rs                 — AppError with IntoResponse
+  routes/                  — handler modules (one per resource)
+  services/                — business logic
+  db/                      — database queries, pool setup
+  middleware/               — tower middleware layers
+migrations/                — SQLx migration files
+```
+
+## Patterns
+
+- Extractors for request data: `Path`, `Query`, `Json`, `State`.
+- Share state via `State<Arc<AppState>>` — pool, config, services.
+- `impl IntoResponse` for custom error types — map to status codes.
+- Use `Router::new().route("/users", get(list).post(create))`.
+- Tower middleware: `ServiceBuilder::new().layer(...)`.
+- Graceful shutdown: `tokio::signal::ctrl_c()` with `serve().with_graceful_shutdown()`.
+
+## Database (SQLx)
+
+- Compile-time checked queries: `sqlx::query_as!()`.
+- Use `PgPool` from `sqlx::postgres`.
+- Run `sqlx migrate run` for migrations.
+- Set `DATABASE_URL` in `.env` for offline compile-time checking.
+
+## Error Handling
+
+- Define `AppError` enum with `thiserror`.
+- Implement `IntoResponse` to map errors to HTTP status + JSON body.
+- Use `?` operator in handlers — Axum calls `IntoResponse` on `Err`.
+
+## Commands
+
+```bash
+just dev                   # cargo-watch with hot reload
+just build                 # cargo build --release
+just test                  # cargo test
+just db-migrate            # sqlx migrate run
+```

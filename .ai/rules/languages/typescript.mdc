@@ -1,0 +1,58 @@
+---
+description: TypeScript conventions — Biome, Bun runtime, Tailwind v4, strict types
+globs: "**/*.{ts,tsx,js,jsx,mjs,cjs,svelte,astro}"
+alwaysApply: false
+---
+
+# TypeScript
+
+## Runtime & Package Management
+
+- **Bun** is the runtime. Not Node unless compatibility requires it.
+- Detect lockfile (`bun.lock`, `pnpm-lock.yaml`, etc.) and use matching package manager.
+- Never switch package managers in an existing project.
+
+## Formatting & Linting
+
+- **Biome** when `biome.json` is present. Don't introduce Prettier/ESLint alongside it.
+- If no Biome config exists, fall back to whatever the repo already uses.
+- Don't add new lint rules or config files without asking.
+
+## Type Patterns
+
+- Prefer `type` for unions, intersections, mapped types. `interface` for extendable shapes.
+- Use discriminated unions for state — no `{ loading?: boolean; data?: T; error?: Error }`.
+- Use `satisfies` for type narrowing when it improves readability.
+- Use `as const` for immutable arrays/objects.
+- Use `??` (nullish coalescing), not `||` for defaults — `||` swallows empty strings and `0`.
+
+## Code Patterns
+
+- Named exports over default exports.
+- Barrel files (`index.ts`) for re-exports only — no logic.
+- Zod for all external data validation.
+- `pino` for logging — never `console.log` in production.
+
+## Styling
+
+- **Tailwind CSS v4**. Class order: layout → spacing → sizing → colors → typography → effects.
+- Extract repeated class sets to components with `cva` (class-variance-authority).
+
+## Always
+
+- Run type checking before committing (`bun run check`).
+- Handle loading and error states in UI components.
+
+## Never
+
+- Use `any` — use `unknown` and narrow.
+- Skip error handling on async operations.
+- Commit `.env` files — use `.env.example`.
+- Mutate props directly — derive new values.
+
+## Ask First
+
+- Adding new dependencies.
+- Changing database schema.
+- Modifying auth flow.
+- Deleting files.

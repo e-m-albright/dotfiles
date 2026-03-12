@@ -1,0 +1,56 @@
+---
+description: TypeScript stack decisions — tool choices, rationale, installation phases
+alwaysApply: false
+---
+
+# TypeScript Stack Decisions
+
+## Phase 1 — Every Project
+
+| Category | Pick | Avoid |
+|----------|------|-------|
+| Runtime | **Bun** | Node.js (slower), Deno (ecosystem gaps) |
+| Linter/Formatter | **Biome** | ESLint + Prettier (slow, config hell) |
+| Task runner | **Just** | npm scripts (limited), Make (arcane) |
+| Git hooks | **Lefthook** | Husky (slower, JS-based) |
+| Styling | **Tailwind CSS v4** | CSS-in-JS (runtime cost), Sass (verbose) |
+
+## Phase 2 — When Needed
+
+| Need | Pick | Avoid |
+|------|------|-------|
+| Full-stack app | **SvelteKit 2** | Next.js (React bloat), Nuxt (Vue) |
+| Content site | **Astro** | Gatsby (stagnant), Hugo (non-JS) |
+| UI components | **shadcn-svelte + Bits UI** | Chakra/MUI (React-only, heavy) |
+| ORM | **Drizzle** | Prisma (Bun issues, slow cold starts) |
+| Database | **PostgreSQL** | SQLite (lacks concurrent writes) |
+| Auth | **Better Auth** | Auth0 (complex), NextAuth (React-only) |
+| Forms | **Superforms + Zod** | Formik (React-only) |
+| Validation | **Zod** | Yup (worse TS inference) |
+| Data fetching | **TanStack Query** | SWR (React-only) |
+| Charts | **LayerChart** | Recharts (React-only), Chart.js (limited) |
+| i18n (SvelteKit) | **Paraglide JS 2.0** | i18next (runtime overhead) |
+
+## Phase 3 — At Scale
+
+| Need | Pick | Notes |
+|------|------|-------|
+| Desktop app | **Tauri** | Only if you need native distribution |
+| Client analytics | **DuckDB-WASM** | Heavy client-side data processing |
+| Observability | **OpenTelemetry** | When 2+ services call each other |
+| Dead code | **Knip** | Finds unused exports, deps, files |
+| Component dev | **Histoire** | Storybook alternative, Vite-native |
+| Docs site | **Starlight (Astro)** | Best docs DX in ecosystem |
+
+## What NOT to Install
+
+| Tool | Why Skip |
+|------|----------|
+| Prettier | Biome handles formatting |
+| ESLint | Biome handles linting |
+| Storybook | Histoire is lighter, Vite-native |
+| Next.js | Vercel-coupled, complexity creep |
+
+## Version Requirements
+
+Bun >=1.0, Svelte >=5.0, SvelteKit >=2.0, Astro >=4.0, Tailwind >=4.0, Biome >=1.9

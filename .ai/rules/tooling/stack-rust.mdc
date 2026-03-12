@@ -1,0 +1,50 @@
+---
+description: Rust stack decisions — tool choices, rationale, installation phases
+alwaysApply: false
+---
+
+# Rust Stack Decisions
+
+## Phase 1 — Every Project
+
+| Category | Pick | Avoid |
+|----------|------|-------|
+| Toolchain | **stable** | nightly (unless required by dependency) |
+| Linter | **clippy** | — |
+| Formatter | **rustfmt** | — |
+| Task runner | **Just** | Make (arcane) |
+| Git hooks | **Lefthook** | Husky |
+
+## Phase 2 — When Needed
+
+| Need | Pick | Avoid |
+|------|------|-------|
+| Web framework | **Axum** | Actix (macro-heavy), Rocket (slower adoption) |
+| Desktop app | **Tauri 2** | Electron (heavy, not Rust) |
+| Async runtime | **Tokio** | async-std (smaller ecosystem) |
+| Database | **SQLx** | Diesel (compile times, macros) |
+| Serialization | **serde + serde_json** | — |
+| Config | **envy** | config (complex YAML layering) |
+| Domain errors | **thiserror** | manual Error impl |
+| App errors | **anyhow** | — |
+| Logging | **tracing + tracing-subscriber** | log + env_logger (less structured) |
+| HTTP client | **reqwest** | hyper (low-level) |
+| CLI tools | **clap** | structopt (merged into clap) |
+
+## Phase 3 — At Scale
+
+| Need | Pick | Notes |
+|------|------|-------|
+| Observability | **OpenTelemetry** | Via tracing-opentelemetry |
+| Benchmarking | **criterion** | For performance-critical code |
+| Fuzzing | **cargo-fuzz** | For security-critical parsers |
+| Docs | **Starlight (Astro)** | For user docs (rustdoc for API docs) |
+
+## What NOT to Install
+
+| Tool | Why Skip |
+|------|----------|
+| Diesel | Heavy compile times, macro complexity |
+| Actix | Macro-heavy, less ergonomic than Axum |
+| async-std | Smaller ecosystem than Tokio |
+| structopt | Merged into clap v4 |

@@ -1,0 +1,58 @@
+---
+description: Universal code style principles across all languages and frameworks
+alwaysApply: true
+---
+
+# Style Principles
+
+## Code Organization
+
+- **One concept per file** — a file should do one thing well.
+- **Flat over nested** — prefer `components/Button.tsx` over `components/buttons/primary/Button.tsx`.
+- **Colocate related code** — tests next to source, styles next to components.
+- **Index files for re-exports only** — no logic in `index.ts`.
+
+## Naming
+
+- **Descriptive over clever** — `getUserById` not `fetchUsr`.
+- **No abbreviations** — `configuration` not `cfg`, `response` not `res`.
+- **Boolean prefix** — `isActive`, `hasPermission`, `canEdit`.
+
+## Functions
+
+- **Single responsibility** — one function, one job.
+- **Pure when possible** — same input = same output, no side effects.
+- **Early returns** — reduce nesting with guard clauses.
+- **Max 3 parameters** — use objects/structs for more.
+
+## Comments
+
+- **Why, not what** — code shows what; comments explain why.
+- **No commented-out code** — delete it; git remembers.
+- **No TODOs without tickets** — create an issue instead.
+
+## Error Handling
+
+- **Fail fast** — validate inputs at boundaries.
+- **Be specific** — `UserNotFoundError` not `Error("something went wrong")`.
+- **Never swallow exceptions** — no empty `catch` blocks.
+- **Log context** — include relevant IDs, timestamps, request info.
+
+## Testing
+
+- **Behavior, not implementation** — test what it does, not how.
+- **Edge cases** — empty arrays, null values, boundaries.
+- **Don't test framework code** — don't test that React renders.
+
+## Performance
+
+- **Measure before optimizing** — profile, don't guess.
+- **Consider N+1** — database queries, API calls, renders.
+- **Paginate** — never return unbounded lists.
+
+## Security
+
+- **Validate all inputs** — trust nothing from users.
+- **Parameterize queries** — never concatenate SQL.
+- **Secrets in env vars** — never in code or URLs.
+- **HTTPS everywhere** — no exceptions in production.

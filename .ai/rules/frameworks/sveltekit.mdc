@@ -1,0 +1,67 @@
+---
+description: SvelteKit 2 + Svelte 5 patterns — runes, data loading, form actions
+globs: "**/*.{svelte,ts}"
+alwaysApply: false
+---
+
+# SvelteKit
+
+## Quick Reference
+
+```yaml
+Framework:   SvelteKit 2 + Svelte 5 (runes)
+Database:    Drizzle ORM + PostgreSQL
+Auth:        Better Auth (or Lucia for lightweight)
+Forms:       Superforms + Zod
+Components:  shadcn-svelte + Bits UI
+```
+
+## Svelte 5 Runes — Not Legacy Syntax
+
+- `$state()` for reactive state — NOT `let x` reactivity
+- `$derived()` for computed — NOT `$: x = ...`
+- `$effect()` for side effects — NOT `$: { ... }`
+- `$props()` for component props — NOT `export let`
+- `$bindable()` for two-way binding props
+
+## Data Loading
+
+- Use `+page.server.ts` for data that needs auth or DB access.
+- Use `+page.ts` for public data or client-side fetching.
+- Return plain objects from `load` functions — SvelteKit serializes them.
+
+## Form Actions
+
+- Use Superforms + Zod for form handling with progressive enhancement.
+- `superValidate(request, zod(schema))` in actions.
+- `fail(400, { form })` for validation errors.
+
+## Database (Drizzle)
+
+- One table per file in `src/lib/server/db/schema/`.
+- Use `drizzle-zod` to generate Zod schemas from Drizzle tables — single source of truth.
+- Transactions: `await db.transaction(async (tx) => { ... })`.
+
+## Structure
+
+```
+src/lib/components/ui/     — shadcn-svelte components
+src/lib/server/db/         — Drizzle schema + queries
+src/lib/server/auth/       — Auth setup
+src/routes/                — File-based routing
+src/routes/api/            — API routes (+server.ts)
+```
+
+## Commands
+
+```bash
+bun --bun run dev          # Dev server (Bun runtime, not Node)
+bun run build && bun run preview
+bun run db:generate        # Generate migrations
+bun run db:migrate         # Run migrations
+```
+
+## Critical
+
+- Tailwind plugin order: `tailwindcss()` BEFORE `sveltekit()` in vite.config.
+- Use `svelte-adapter-bun` for production (v1.0+, actively maintained).

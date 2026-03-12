@@ -1,0 +1,59 @@
+---
+description: Go conventions — stdlib-first, sqlc, slog, error wrapping
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Go
+
+## Tooling
+
+- **golangci-lint** for linting. Don't introduce separate linters.
+- **gofmt/goimports** for formatting — never override.
+- `go mod tidy` after dependency changes.
+
+## Code Patterns
+
+- **stdlib-first** — prefer stdlib over third-party when reasonable.
+- **slog** for structured logging (stdlib, Go 1.21+).
+- **sqlc** for database queries — generates type-safe Go from SQL.
+- **pgx/v5** as the Postgres driver.
+- **envconfig** for configuration from environment variables.
+- Error wrapping: `fmt.Errorf("context: %w", err)` — always wrap with context.
+- Return errors, don't panic. Panic is for unrecoverable programmer errors.
+
+## Naming
+
+- Short, unexported names for local scope (`ctx`, `db`, `err`).
+- Interfaces describe behavior: `Reader`, `Storer`, `UserService`.
+- Accept interfaces, return structs.
+
+## Structure
+
+```
+cmd/server/main.go         — entry point
+internal/                  — private application code
+  handler/                 — HTTP handlers
+  service/                 — business logic
+  store/                   — database access (sqlc-generated)
+  model/                   — domain types
+migrations/                — SQL migration files
+```
+
+## Always
+
+- Run `just check` (or `golangci-lint run`) before committing.
+- Handle every error — no `_ = err`.
+- Use `context.Context` as first parameter for functions that do I/O.
+
+## Never
+
+- Use `init()` functions — explicit initialization in `main()`.
+- Use global mutable state.
+- Ignore linter warnings without documented reason.
+
+## Ask First
+
+- Adding new dependencies.
+- Changing database schema.
+- Deleting files.

@@ -1,15 +1,15 @@
 # Dotfiles Repository
 
-Read all `.cursor/rules/*.mdc` files for process, safety, and coding conventions.
+Read all `.ai/rules/*.mdc` files for process, safety, and coding conventions.
 
-This is a personal dotfiles and development environment configuration repo. It manages machine setup scripts, editor configs, prompt recipes, and Cursor rules.
+This is a personal dotfiles and development environment configuration repo. It manages machine setup scripts, editor configs, AI rules, and project scaffolding.
 
 ## What This Repo Contains
 
 - `macos/` -- Homebrew packages, macOS system preferences, bootstrap scripts
 - `editors/cursor/` -- Cursor/VS Code settings, extensions, MCP config
-- `prompts/` -- Scaffolding recipes and AGENTS.md templates for new projects
-- `.cursor/rules/` -- Cursor IDE rules (symlinked to projects, also read by Claude/Gemini via this file)
+- `.ai/rules/` -- Cross-vendor AI rules (process, languages, frameworks, tooling)
+- `prompts/` -- Scaffolding recipes, templates, and reference guides
 
 ## Working in This Repo
 
@@ -22,9 +22,9 @@ This is a personal dotfiles and development environment configuration repo. It m
 
 ## Reference Docs
 
-- `prompts/shared/AI_TOOLS.md` -- AI frameworks, evals, coding assistants
-- `prompts/shared/SERVICES.md` -- Cloud services reference
-- `prompts/shared/INFRASTRUCTURE.md` -- Docker, Pulumi, observability
-- `prompts/shared/CUSTOMER_DISCOVERY.md` -- Customer interview methodology
-- `prompts/shared/STYLE_PRINCIPLES.md` -- Universal code style
-- `prompts/shared/PROJECT_MEMORY.md` -- Decision organization system
+- `prompts/guides/ai-tools.md` -- AI frameworks, evals, coding assistants
+- `prompts/guides/services.md` -- Cloud services reference
+- `prompts/guides/infrastructure.md` -- Docker, Pulumi, observability
+- `prompts/guides/customer-discovery.md` -- Customer interview methodology
+- `prompts/guides/project-memory.md` -- Decision organization system
+- `prompts/guides/ml-python.md` -- Python ML/data science patterns

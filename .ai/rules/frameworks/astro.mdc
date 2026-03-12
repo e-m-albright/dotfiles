@@ -1,0 +1,54 @@
+---
+description: Astro patterns — content collections, islands architecture, static-first
+globs: "**/*.{astro,ts,mdx,md}"
+alwaysApply: false
+---
+
+# Astro
+
+## Quick Reference
+
+```yaml
+Framework:   Astro 6 (content-first, zero JS by default)
+Islands:     Svelte components via @astrojs/svelte
+Content:     Content collections with Zod schemas
+Build:       Vite (built-in)
+```
+
+## Content Collections
+
+- Define schemas in `src/content/config.ts` with Zod.
+- `type: 'content'` for Markdown/MDX, `type: 'data'` for JSON/YAML.
+- Query with `getCollection('blog')`, filter with callback.
+
+## Islands Architecture
+
+- Components are static HTML by default — no JS shipped.
+- Add interactivity with hydration directives:
+  - `client:load` — hydrate on page load
+  - `client:idle` — hydrate when browser is idle
+  - `client:visible` — hydrate when scrolled into view
+- Use Svelte for interactive islands (`@astrojs/svelte`).
+
+## Rendering Modes
+
+- `output: 'static'` (default) — full static site.
+- `output: 'server'` — SSR for all pages.
+- `output: 'hybrid'` — static by default, opt-in SSR per page.
+- Per-page override: `export const prerender = true/false`.
+
+## Structure
+
+```
+src/content/config.ts      — collection schemas
+src/content/blog/          — Markdown/MDX content
+src/pages/                 — file-based routing
+src/layouts/               — page layouts
+src/components/            — Astro + Svelte components
+```
+
+## Testing
+
+- If it builds, it works. Content collections validate at build time.
+- Unit test utilities if complex. E2E is usually overkill for content sites.
+- Save Playwright for apps with auth, forms, and interactions.
