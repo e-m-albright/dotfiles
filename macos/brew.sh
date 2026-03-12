@@ -58,13 +58,13 @@ _brew_install() {
 
     # Check if already installed via Homebrew
     if brew list "$name" &>/dev/null 2>&1 || brew list --cask "$name" &>/dev/null 2>&1; then
-        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
+        print_pkg_installed "$name"
         return 0
     fi
 
     # Check if binary exists on PATH (tap formulas, manual installs)
     if command -v "$name" >/dev/null 2>&1; then
-        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
+        print_pkg_installed "$name"
         return 0
     fi
 
@@ -72,36 +72,35 @@ _brew_install() {
     if [[ "$mode" == "cask" || "$mode" == "auto" ]]; then
         local app_pattern="${name//-/*}"
         if find /Applications -maxdepth 1 -iname "*${app_pattern}*.app" 2>/dev/null | grep -q .; then
-            printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}already installed${NC}\n" "$name"
+            print_pkg_installed "$name"
             return 0
         fi
     fi
 
-    # Install
-    printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$name"
+    print_pkg_installing "$name"
 
     case "$mode" in
         formula)
             if brew install "$name" 2>&1; then
-                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$name"
+                print_pkg_done "$name"
             else
-                printf "  ${WARN} ${YELLOW}Failed to install %s${NC}\n" "$name"
+                print_pkg_fail "$name"
             fi
             ;;
         cask)
             if brew install --cask "$name" 2>&1; then
-                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$name"
+                print_pkg_done "$name"
             else
-                printf "  ${WARN} ${YELLOW}Failed to install %s${NC}\n" "$name"
+                print_pkg_fail "$name"
             fi
             ;;
         auto)
             if brew install "$name" &>/dev/null 2>&1; then
-                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$name"
+                print_pkg_done "$name"
             elif brew install --cask "$name" &>/dev/null 2>&1; then
-                printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$name"
+                print_pkg_done "$name"
             else
-                printf "  ${WARN} ${YELLOW}Skipped %s (not available)${NC}\n" "$name"
+                print_pkg_fail "$name"
             fi
             ;;
     esac

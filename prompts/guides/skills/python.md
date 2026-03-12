@@ -1,13 +1,16 @@
 ---
 name: python-fastapi-stack
 description: |
-  Use this skill when working with Python FastAPI projects.
-  Covers: FastAPI, Pydantic v2, SQLAlchemy 2.0, async patterns, UV package manager.
+  Implementation quick-reference for Python FastAPI projects.
+  Complements .ai/rules/ (python.mdc, fastapi.mdc, stack-python.mdc) with runnable code examples.
 ---
 
-# Python/FastAPI Stack
+# Python/FastAPI Quick Reference
 
-## When This Skill Applies
+> For conventions and decisions, see `.ai/rules/python.mdc` and `.ai/rules/stack-python.mdc`.
+> This guide provides implementation patterns and working code examples.
+
+## When This Applies
 
 - Working with `.py` files in a FastAPI project
 - Database operations with SQLAlchemy

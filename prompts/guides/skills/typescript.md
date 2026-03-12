@@ -1,13 +1,16 @@
 ---
 name: sveltekit-bun-stack
 description: |
-  Use this skill when working with SvelteKit 2 + Svelte 5 + Bun projects.
-  Covers: Svelte 5 runes, SvelteKit routing, Drizzle ORM, Tailwind v4, shadcn-svelte.
+  Implementation quick-reference for SvelteKit 2 + Svelte 5 + Bun projects.
+  Complements .ai/rules/ (typescript.mdc, sveltekit.mdc, stack-typescript.mdc) with runnable code examples.
 ---
 
-# SvelteKit + Bun Stack
+# SvelteKit + Bun Quick Reference
 
-## When This Skill Applies
+> For conventions and decisions, see `.ai/rules/typescript.mdc` and `.ai/rules/sveltekit.mdc`.
+> This guide provides implementation patterns and working code examples.
+
+## When This Applies
 
 - Working with `.svelte` files
 - SvelteKit routing (`+page.svelte`, `+server.ts`, etc.)

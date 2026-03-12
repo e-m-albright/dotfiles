@@ -6,8 +6,7 @@
 # Safe to run multiple times — idempotent.
 #
 # Philosophy: Dotfiles seeds and influences. Projects own themselves.
-# - Universal .ai/rules/ are SYMLINKED (auto-update from dotfiles)
-# - Recipe-specific .ai/rules/ are COPIED (project can customize)
+# - All .ai/rules/ are COPIED (project owns them, re-run --force to update)
 # - .cursor/rules/ gets relative symlinks to .ai/rules/ for Cursor
 # - AGENTS.md is GENERATED once, then project-owned (never overwritten)
 #
@@ -26,13 +25,6 @@
 
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
 # Get script directory (where dotfiles/prompts lives)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROMPTS_DIR="$SCRIPT_DIR"
@@ -41,8 +33,11 @@ AI_RULES_DIR="$DOTFILES_DIR/.ai/rules"
 
 FORCE=false
 
+# Source shared print functions
+source "$DOTFILES_DIR/macos/print_utils.sh"
+
 # =============================================================================
-# Universal rules (symlinked — auto-update from dotfiles)
+# Universal rules (copied — re-run with --force to update)
 # =============================================================================
 UNIVERSAL_RULES=(
     "process/global-process.mdc"
@@ -97,39 +92,7 @@ get_recipe_rules() {
     esac
 }
 
-# -----------------------------------------------------------------------------
-# Functions
-# -----------------------------------------------------------------------------
-
-print_header() {
-    echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}  $1${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-}
-
-print_step() {
-    echo -e "${GREEN}→${NC} $1"
-}
-
-print_skip() {
-    echo -e "${YELLOW}○${NC} $1 (already exists)"
-}
-
-print_update() {
-    echo -e "${YELLOW}↻${NC} $1 (updated)"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}✗${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
+# Print functions are provided by print_utils.sh (sourced above)
 
 get_default_app_type() {
     local recipe="$1"

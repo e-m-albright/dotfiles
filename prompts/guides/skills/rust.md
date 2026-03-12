@@ -1,13 +1,16 @@
 ---
 name: rust-axum-stack
 description: |
-  Use this skill when working with Rust projects using Axum, SQLx, Tokio.
-  Covers: HTTP handlers, state management, error handling, SQLx queries, tracing.
+  Implementation quick-reference for Rust Axum projects.
+  Complements .ai/rules/ (rust.mdc, axum.mdc, stack-rust.mdc) with runnable code examples.
 ---
 
-# Rust Axum Stack
+# Rust Axum Quick Reference
 
-## When This Skill Applies
+> For conventions and decisions, see `.ai/rules/rust.mdc` and `.ai/rules/axum.mdc`.
+> This guide provides implementation patterns and working code examples.
+
+## When This Applies
 
 - Working with `.rs` files
 - Axum HTTP handlers and routing

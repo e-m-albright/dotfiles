@@ -1,32 +1,35 @@
 # =============================================================================
 # Custom ZSH Theme
 # =============================================================================
-# Two-line prompt with git branch:
-#   user@host → ~/directory (main*) 14:32:05
-#   $
+# Two-line prompt:
+#   ~/directory (main*) [venv]              14:32:05
+#   $   (yellow on success, red on failure)
 
-# Colors
+# Colors (modern %F{} syntax only)
 CYAN="%F{51}"
 PINK="%F{162}"
 RED="%F{1}"
 YELLOW="%F{226}"
 GREEN="%F{82}"
-RESET="%{$reset_color%}"
+DIM="%F{242}"
+RESET="%f"
 BOLD="%B"
-
-# Components
-_USER="%n@%m"
-_DIR="%~"
-_TIME="%*"
+UNBOLD="%b"
 
 # Main prompt
+# Line 1: dir + git + optional venv/node + dim timestamp
+# Line 2: $ (red if last command failed)
 PROMPT='
-${BOLD}${CYAN}${_USER}${RESET} → ${BOLD}${PINK}${_DIR}${RESET} $(git_prompt_info)${RED}${_TIME}${RESET}
-${YELLOW}\$${RESET} '
+${BOLD}${PINK}%~${UNBOLD}${RESET} $(git_prompt_info)$(_venv_info)${DIM}%*${RESET}
+%(?.${YELLOW}.${RED})$${RESET} '
 
 # Git branch display
-# Shows: (branch) in green, or (branch*) in yellow if dirty
-ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[green]%}("
-ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%} "
-ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[yellow]%}*%{$fg_bold[green]%}"
+ZSH_THEME_GIT_PROMPT_PREFIX="${BOLD}${GREEN}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")${UNBOLD}${RESET} "
+ZSH_THEME_GIT_PROMPT_DIRTY="${YELLOW}*${GREEN}"
 ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+# Python virtualenv indicator
+_venv_info() {
+    [[ -n "$VIRTUAL_ENV" ]] && echo "${DIM}[${VIRTUAL_ENV:t}]${RESET} "
+}

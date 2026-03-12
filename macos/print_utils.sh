@@ -1,26 +1,32 @@
 #!/bin/bash
-# Shared print functions for consistent formatting across installation scripts
+# Shared print functions for consistent formatting across all scripts.
+# Used by: install.sh, brew.sh, scaffold.sh, claude/setup.sh, bin/dotfiles
 
-# Colors and formatting
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
+DIM='\033[2m'
 BOLD='\033[1m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Symbols
 CHECK="${GREEN}✓${NC}"
+CROSS="${RED}✗${NC}"
 BULLET="${CYAN}•${NC}"
 WARN="${YELLOW}⚠${NC}"
 ARROW="${BLUE}→${NC}"
+SKIP="${YELLOW}○${NC}"
+UPDATE="${YELLOW}↻${NC}"
 
-# Package name color (subtle teal/blue)
-PKG_COLOR='\033[0;36m'  # Cyan/teal
+# Package name color
+PKG_COLOR='\033[0;36m'
 
-# Print functions (using printf for better compatibility)
+# --- Headers & Sections ---
+
 print_header() {
     printf "\n"
     printf "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
@@ -33,62 +39,80 @@ print_section() {
     printf "${CYAN}┌─${NC} ${BOLD}${CYAN}%s${NC}\n" "$1"
 }
 
+print_completion() {
+    printf "\n"
+    printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+    printf "${CHECK} ${BOLD}${GREEN}%s${NC}\n" "$1"
+    printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+    printf "\n"
+}
+
+# --- Status messages ---
+
 print_success() {
-    local msg="$1"
-    local pkg="${msg%% *}"
-    local rest="${msg#* }"
-    if [[ "$pkg" != "$msg" ]]; then
-        printf "  ${CHECK} ${GREEN}${PKG_COLOR}%s${NC}${GREEN} %s${NC}\n" "$pkg" "$rest"
-    else
-        printf "  ${CHECK} ${GREEN}%s${NC}\n" "$msg"
-    fi
+    printf "  ${CHECK} ${GREEN}%s${NC}\n" "$1"
 }
 
 print_info() {
-    local msg="$1"
-    local pkg="${msg%% *}"
-    local rest="${msg#* }"
-    if [[ "$pkg" != "$msg" ]]; then
-        printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${CYAN}%s${NC}\n" "$pkg" "$rest"
-    else
-        printf "  ${BULLET} ${CYAN}%s${NC}\n" "$msg"
-    fi
+    printf "  ${BULLET} ${CYAN}%s${NC}\n" "$1"
+}
+
+print_dim() {
+    printf "  ${DIM}%s${NC}\n" "$1"
 }
 
 print_warn() {
     printf "  ${WARN} ${YELLOW}%s${NC}\n" "$1"
 }
 
-# Alias for compatibility (some scripts use print_warning)
-print_warning() {
-    print_warn "$1"
+print_warning() { print_warn "$@"; }
+
+print_error() {
+    printf "  ${CROSS} ${RED}%s${NC}\n" "$1"
 }
+
+# --- Action messages ---
 
 print_action() {
-    local msg="$1"
-    local pkg="${msg%% *}"
-    local rest="${msg#* }"
-    if [[ "$pkg" != "$msg" ]]; then
-        printf "  ${ARROW} ${BOLD}${PKG_COLOR}%s${NC}${BOLD} %s${NC}\n" "$pkg" "$rest"
-    else
-        printf "  ${ARROW} ${BOLD}%s${NC}\n" "$msg"
-    fi
+    printf "  ${ARROW} ${BOLD}%s${NC}\n" "$1"
 }
 
-print_completion() {
-    local msg="$1"
-    printf "\n"
-    printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-    printf "${CHECK} ${BOLD}${GREEN}%s${NC}\n" "$msg"
-    printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-    printf "\n"
+print_step() {
+    printf "  ${CHECK} %s\n" "$1"
 }
 
-# Checklist items: [ ] for required, [-] for optional
+print_skip() {
+    printf "  ${SKIP} %s ${DIM}(already exists)${NC}\n" "$1"
+}
+
+print_update() {
+    printf "  ${UPDATE} %s ${DIM}(updated)${NC}\n" "$1"
+}
+
+# --- Checklist items ---
+
 print_todo() {
     printf "  ${YELLOW}[ ]${NC} %s\n" "$1"
 }
 
 print_todo_optional() {
-    printf "  ${CYAN}[-]${NC} ${CYAN}%s${NC}\n" "$1"
+    printf "  ${CYAN}[-]${NC} ${DIM}%s${NC}\n" "$1"
+}
+
+# --- Package install messages (for brew.sh) ---
+
+print_pkg_installed() {
+    printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${DIM}already installed${NC}\n" "$1"
+}
+
+print_pkg_installing() {
+    printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$1"
+}
+
+print_pkg_done() {
+    printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$1"
+}
+
+print_pkg_fail() {
+    printf "  ${WARN} ${YELLOW}Failed to install %s${NC}\n" "$1"
 }

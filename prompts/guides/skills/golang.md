@@ -1,13 +1,16 @@
 ---
 name: golang-stdlib-stack
 description: |
-  Use this skill when working with Go 1.25+ projects.
-  Covers: stdlib HTTP routing, sqlc, pgx, slog logging, error handling.
+  Implementation quick-reference for Go 1.25+ projects.
+  Complements .ai/rules/ (golang.mdc, chi.mdc, stack-golang.mdc) with runnable code examples.
 ---
 
-# Go stdlib Stack
+# Go stdlib Quick Reference
 
-## When This Skill Applies
+> For conventions and decisions, see `.ai/rules/golang.mdc` and `.ai/rules/stack-golang.mdc`.
+> This guide provides implementation patterns and working code examples.
+
+## When This Applies
 
 - Working with `.go` files
 - HTTP handlers and routing

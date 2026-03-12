@@ -6,5 +6,5 @@
 # Rust
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
-# UV / Python tools
-export PATH="$HOME/.local/bin:$PATH"
+# Dotfiles CLI + UV / Python tools
+export PATH="$HOME/dotfiles/bin:$HOME/.local/bin:$PATH"

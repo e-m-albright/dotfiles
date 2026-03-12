@@ -87,7 +87,6 @@ alias j='just'
 
 # Editors
 alias c='cursor'
-alias v='code'
 
 # System
 alias path='echo $PATH | tr ":" "\n"'
