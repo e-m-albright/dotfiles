@@ -40,6 +40,33 @@ internal/                  — private application code
 migrations/                — SQL migration files
 ```
 
+## Testing
+
+- **stdlib `testing`** — no assertion libraries (testify, etc.). Use `if got != want` style.
+- **Table-driven tests** — the idiomatic pattern for multiple cases:
+  ```go
+  tests := []struct {
+      name string
+      input string
+      want  int
+  }{
+      {"empty", "", 0},
+      {"single", "a", 1},
+  }
+  for _, tt := range tests {
+      t.Run(tt.name, func(t *testing.T) {
+          got := Len(tt.input)
+          if got != tt.want {
+              t.Errorf("Len(%q) = %d, want %d", tt.input, got, tt.want)
+          }
+      })
+  }
+  ```
+- **`httptest`** for HTTP handler tests — `httptest.NewRecorder()` + `httptest.NewRequest()`.
+- **`testcontainers-go`** for integration tests needing real databases.
+- **`t.Helper()`** in test helpers so failures report the caller's line.
+- **`t.Parallel()`** for independent tests — speeds up test suite.
+
 ## Always
 
 - Run `just check` (or `golangci-lint run`) before committing.

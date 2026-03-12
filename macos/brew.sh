@@ -153,8 +153,8 @@ dev_cli=(
     duckdb              # Fast analytical database (SQL for analytics)
     hyperfine           # Command-line benchmarking tool
     py-spy              # Sampling profiler for Python programs
-    # go                # Go programming language (disabled — install per-project if needed)
-    # golangci-lint     # Go linter aggregator (disabled — install with Go if needed)
+    go                  # Go programming language
+    golangci-lint       # Go linter aggregator
     atlas               # Database schema migration tool (requires ariga/tap)
     lefthook            # Git hooks (language-agnostic, parallel execution)
     fnm                 # Fast Node Manager (node version switching)
@@ -185,7 +185,7 @@ productivity=(
     ghostty                # GPU-accelerated terminal
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
-    # granola              # AI notepad for meetings (disabled)
+    granola                # AI notepad for meetings
     obsidian               # Knowledge base & note-taking (Markdown)
 )
 
@@ -201,7 +201,7 @@ social_apps=(
     slack
     # zoom  # just use the web client, tired of this causing the "microphone" active indicator.
     # discord
-    # whatsapp
+    whatsapp
     # super-productivity
     # signal
 )
@@ -211,7 +211,7 @@ ai_cli=(
     claude-code          # Anthropic CLI agent
     claude               # Claude Desktop (macOS app)
     # gemini-cli         # Google Gemini CLI (disabled)
-    # ollama             # Local LLM runtime (disabled — install per-project if needed)
+    # ollama             # Local LLM runtime (disabled)
     # huggingface-cli    # Hugging Face CLI (disabled — install per-project if needed)
 )
 

@@ -40,7 +40,7 @@ tests/
 - Service layer between routes and database — routes don't query directly.
 - Separate Pydantic schemas: `Create`, `Update`, `Response` per resource.
 - `model_config = {"from_attributes": True}` for ORM → schema conversion.
-- Register exception handlers for custom `AppError` types.
+- Register exception handlers for custom `AppError` types — return the standard error envelope: `{"error": {"code": "NOT_FOUND", "message": "..."}}`.
 
 ## Testing
 

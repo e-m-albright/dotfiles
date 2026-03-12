@@ -49,7 +49,7 @@ migrations/                — SQLx migration files
 ## Error Handling
 
 - Define `AppError` enum with `thiserror`.
-- Implement `IntoResponse` to map errors to HTTP status + JSON body.
+- Implement `IntoResponse` to return the standard error envelope: `{"error": {"code": "NOT_FOUND", "message": "..."}}`.
 - Use `?` operator in handlers — Axum calls `IntoResponse` on `Err`.
 
 ## Commands

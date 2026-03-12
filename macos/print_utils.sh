@@ -92,11 +92,11 @@ print_update() {
 # --- Checklist items ---
 
 print_todo() {
-    printf "  ${YELLOW}[ ]${NC} %s\n" "$1"
+    printf "  ${YELLOW}[ ]${NC} %b\n" "$1"
 }
 
 print_todo_optional() {
-    printf "  ${CYAN}[-]${NC} ${DIM}%s${NC}\n" "$1"
+    printf "  ${CYAN}[-]${NC} ${DIM}%b${NC}\n" "$1"
 }
 
 # --- Package install messages (for brew.sh) ---

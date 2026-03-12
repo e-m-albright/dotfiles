@@ -41,6 +41,25 @@ alwaysApply: true
 - **No defensive coding against impossible states** — if a type says it's not null, don't null-check it.
 - **Errors are data** — use typed errors (Result types, custom exceptions) over strings.
 
+## API Error Responses
+
+All HTTP APIs use a consistent error envelope:
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "User not found"
+  }
+}
+```
+
+- **`code`** — machine-readable UPPER_SNAKE constant (e.g. `VALIDATION_ERROR`, `UNAUTHORIZED`, `NOT_FOUND`, `INTERNAL_ERROR`).
+- **`message`** — human-readable description, safe to show to end users.
+- **`detail`** — optional, only in non-production environments for debugging context.
+- Always return the appropriate HTTP status code alongside the error body.
+- Never expose stack traces, internal paths, or raw database errors in `message`.
+
 ## Testing
 
 - **Behavior, not implementation** — test what it does, not how.

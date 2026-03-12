@@ -49,16 +49,16 @@ pub enum AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        let (status, msg) = match &self {
-            AppError::NotFound(m) => (StatusCode::NOT_FOUND, m.clone()),
-            AppError::Validation(m) => (StatusCode::UNPROCESSABLE_ENTITY, m.clone()),
-            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized".into()),
+        let (status, code, msg) = match &self {
+            AppError::NotFound(m) => (StatusCode::NOT_FOUND, "NOT_FOUND", m.clone()),
+            AppError::Validation(m) => (StatusCode::UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", m.clone()),
+            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", "unauthorized".into()),
             AppError::Internal(e) => {
                 tracing::error!("internal: {e:?}");
-                (StatusCode::INTERNAL_SERVER_ERROR, "internal server error".into())
+                (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "internal server error".into())
             }
         };
-        (status, Json(json!({ "error": msg }))).into_response()
+        (status, Json(json!({ "error": { "code": code, "message": msg } }))).into_response()
     }
 }
 ```

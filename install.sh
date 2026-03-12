@@ -67,34 +67,33 @@ fi
 # Languages & Runtimes
 print_header "🔧 Languages & Runtimes"
 
-# -- Go (disabled — install per-project if needed)
-# To enable: uncomment go/golangci-lint in macos/brew.sh and uncomment this block
-# print_section "Go"
-# if ! command -v go >/dev/null 2>&1; then
-#     print_action "Installing Go..."
-#     brew install go >/dev/null 2>&1
-#     print_success "Go installed"
-# else
-#     print_info "Go already installed ($(go version | awk '{print $3}'))"
-# fi
-# GO_TOOLS=(
-#     "golang.org/x/tools/gopls@latest"
-#     "github.com/go-delve/delve/cmd/dlv@latest"
-#     "github.com/air-verse/air@latest"
-#     "github.com/sqlc-dev/sqlc/cmd/sqlc@latest"
-#     "github.com/pressly/goose/v3/cmd/goose@latest"
-#     "github.com/a-h/templ/cmd/templ@latest"
-#     "honnef.co/go/tools/cmd/staticcheck@latest"
-# )
-# for tool in "${GO_TOOLS[@]}"; do
-#     tool_name=$(basename "${tool%@*}")
-#     if ! command -v "$tool_name" >/dev/null 2>&1; then
-#         go install "$tool" >/dev/null 2>&1 && print_info "  $tool_name installed" || print_info "  $tool_name skipped"
-#     else
-#         print_info "  $tool_name already installed"
-#     fi
-# done
-# print_success "Go tools configured"
+# -- Go
+print_section "Go"
+if ! command -v go >/dev/null 2>&1; then
+    print_info "Go not found (should be installed via brew.sh)"
+else
+    print_info "Go already installed ($(go version | awk '{print $3}'))"
+fi
+GO_TOOLS=(
+    "golang.org/x/tools/gopls@latest"
+    "github.com/go-delve/delve/cmd/dlv@latest"
+    "github.com/air-verse/air@latest"
+    "github.com/sqlc-dev/sqlc/cmd/sqlc@latest"
+    "github.com/pressly/goose/v3/cmd/goose@latest"
+    "github.com/a-h/templ/cmd/templ@latest"
+    "honnef.co/go/tools/cmd/staticcheck@latest"
+)
+if command -v go >/dev/null 2>&1; then
+    for tool in "${GO_TOOLS[@]}"; do
+        tool_name=$(basename "${tool%@*}")
+        if ! command -v "$tool_name" >/dev/null 2>&1; then
+            go install "$tool" >/dev/null 2>&1 && print_info "  $tool_name installed" || print_info "  $tool_name skipped"
+        else
+            print_info "  $tool_name already installed"
+        fi
+    done
+    print_success "Go tools configured"
+fi
 
 # -- Node.js / FNM (Fast Node Manager — installed via brew in brew.sh)
 print_section "Node.js / FNM"
@@ -230,8 +229,8 @@ chmod +x "$DOTFILES_DIR/.agents/generate-permissions.sh" 2>/dev/null || true
 # Remove old 'recipe' symlink if it exists (deprecated)
 rm -f "$DOTFILES_DIR/bin/recipe" 2>/dev/null || true
 print_success "Recipe book configured"
-print_info "  Usage: ~/dotfiles/prompts/scaffold.sh <recipe> [app-type] <path>"
-print_info "  Example: ~/dotfiles/prompts/scaffold.sh typescript svelte my-app"
+print_info "  Usage: dotfiles scaffold <recipe> [app-type] <path>"
+print_info "  Example: dotfiles scaffold typescript svelte my-app"
 
 # Claude Code (instructions, plugins, voice, permissions)
 print_header "🤖 Claude Code"
@@ -264,16 +263,14 @@ print_completion "✨ Dotfiles setup complete!"
 print_header "📋 Next Steps"
 printf "\n"
 printf "  ${BOLD}Required:${NC}\n"
-print_todo "Run ${PKG_COLOR}claude${NC} to authenticate (plugins auto-configured)"
-print_todo "Run ${PKG_COLOR}gh auth login${NC} to authenticate GitHub CLI"
-print_todo "Add SSH key to GitHub: ${PKG_COLOR}pbcopy < ~/.ssh/id_ed25519.pub${NC}"
+print_todo "Run ${CYAN}claude${NC} to authenticate (plugins auto-configured)"
+print_todo "Run ${CYAN}gh auth login${NC} to authenticate GitHub CLI"
 print_todo "Open Rectangle and grant Accessibility permissions"
-print_todo "Verify git identity: ${PKG_COLOR}git config user.name && git config user.email${NC}"
+print_todo "Verify git identity: ${CYAN}git config user.name && git config user.email${NC}"
 printf "\n"
 printf "  ${BOLD}Optional:${NC}\n"
-print_todo_optional "Edit ${PKG_COLOR}~/.cursor/mcp.json${NC} to add MCP server API keys"
-print_todo_optional "Edit ${PKG_COLOR}~/dotfiles/claude/plugins.yaml${NC} to customize Claude Code plugins"
-print_todo_optional "Enable Go — uncomment in ${PKG_COLOR}macos/brew.sh${NC} and ${PKG_COLOR}install.sh${NC}"
+print_todo_optional "Edit ${CYAN}~/.cursor/mcp.json${NC} to add MCP server API keys"
+print_todo_optional "Edit ${CYAN}~/dotfiles/claude/plugins.yaml${NC} to customize Claude Code plugins"
 printf "\n"
-printf "  Run ${PKG_COLOR}dotfiles doctor${NC} to verify everything is set up correctly.\n"
+printf "  Run ${CYAN}dotfiles doctor${NC} to verify everything is set up correctly.\n"
 printf "\n"
