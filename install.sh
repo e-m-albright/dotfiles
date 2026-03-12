@@ -233,6 +233,29 @@ if command -v cursor >/dev/null 2>&1; then
     print_success "Cursor configured"
 fi
 
+# Obsidian
+OBSIDIAN_VAULT="$HOME/code/private/notes"
+if [[ -d "$OBSIDIAN_VAULT/.obsidian" ]]; then
+    print_section "Obsidian"
+    OBSIDIAN_CONFIGS=(app appearance core-plugins daily-notes graph templates)
+    for cfg in "${OBSIDIAN_CONFIGS[@]}"; do
+        local_file="$DOTFILES_DIR/editors/obsidian/${cfg}.json"
+        vault_file="$OBSIDIAN_VAULT/.obsidian/${cfg}.json"
+        if [[ -L "$vault_file" ]] && [[ "$(readlink "$vault_file")" == "$local_file" ]]; then
+            print_skip "${cfg}.json"
+        else
+            ln -sf "$local_file" "$vault_file"
+            print_step "Linked ${cfg}.json"
+        fi
+    done
+    # Community plugins
+    chmod +x "$DOTFILES_DIR/editors/obsidian/plugins.sh"
+    . "$DOTFILES_DIR/editors/obsidian/plugins.sh" "$OBSIDIAN_VAULT"
+    print_success "Obsidian configured"
+else
+    print_info "Obsidian vault not found at $OBSIDIAN_VAULT — skipping config"
+fi
+
 # Prompts / Recipe Book
 print_header "📚 Prompts & Recipes"
 print_section "Recipe Book"

@@ -8,6 +8,7 @@ This is a personal dotfiles and development environment configuration repo. It m
 
 - `macos/` -- Homebrew packages, macOS system preferences, bootstrap scripts
 - `editors/cursor/` -- Cursor settings, extensions, MCP config
+- `editors/obsidian/` -- Obsidian vault settings, community plugins, plugin configs
 - `claude/` -- Claude Code plugins, MCP servers, hooks, setup script
 - `.ai/rules/` -- Cross-vendor AI rules (process, languages, frameworks, tooling)
 - `prompts/` -- Scaffolding recipes, templates, and reference guides

@@ -1,0 +1,11 @@
+{
+  "readableLineLength": true,
+  "spellcheck": true,
+  "foldHeading": true,
+  "foldIndent": true,
+  "showFrontmatter": false,
+  "newFileLocation": "current",
+  "attachmentFolderPath": ".attachments",
+  "promptDelete": false,
+  "strictLineBreaks": false
+}

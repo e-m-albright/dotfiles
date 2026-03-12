@@ -114,6 +114,16 @@ my-project/
 ### Editors
 
 - **Cursor**: Primary editor (AI-native, VS Code compatible, MCP servers configured)
+- **Obsidian**: Knowledge base — vault configs + community plugins managed via symlinks
+
+  | Plugin | Purpose |
+  |--------|---------|
+  | **Spaced Repetition** | Flashcards in notes (`question::answer`), SM-2 scheduling |
+  | **Dataview** | Query notes like a database (inline JS/DQL) |
+  | **Templater** | Advanced templates with JS expressions |
+  | **Calendar** | Visual calendar sidebar linked to daily notes |
+  | **Natural Language Dates** | Type `@tomorrow` → date link |
+  | **Linter** | Auto-format markdown on save |
 
 ### CLI Tools
 
@@ -221,7 +231,7 @@ dotfiles/
 ├── bin/                    # CLI tools (dotfiles command)
 ├── shell/                  # Zsh config + theme
 ├── git/                    # Git config + global ignores
-├── editors/                # Cursor settings + MCP servers
+├── editors/                # Cursor settings + MCP servers + Obsidian vault configs
 ├── terminal/               # Ghostty config
 ├── claude/                 # Claude Code setup (plugins, hooks, MCP servers)
 ├── macos/                  # Homebrew, Dock, SSH, print utilities
