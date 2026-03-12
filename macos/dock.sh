@@ -26,7 +26,8 @@ print_success "Auto-hide enabled (no delay, fast animation, no recents)"
 # Apps to add to dock
 apps=(
     "/Applications/Google Chrome.app"
-    "/Applications/Claude.app"  
+    "/Applications/Obsidian.app"
+    "/Applications/Claude.app"
     "/Applications/Spotify.app"
     "/Applications/Slack.app"
     # "/Applications/Discord.app"
