@@ -207,8 +207,11 @@ setup_cursor_symlinks() {
                 continue
             fi
             rm "$cursor_link"
-        elif [[ -f "$cursor_link" ]] && [[ "$FORCE" != true ]]; then
-            continue
+        elif [[ -f "$cursor_link" ]]; then
+            if [[ "$FORCE" != true ]]; then
+                continue
+            fi
+            rm "$cursor_link"
         fi
 
         ln -s "../../.ai/rules/$rule_name" "$cursor_link"
@@ -693,7 +696,7 @@ fi
 # Install git hooks (lefthook)
 if [[ -f "lefthook.yml" ]] && command -v lefthook >/dev/null 2>&1; then
     print_step "Installing git hooks (lefthook)"
-    lefthook install -q 2>/dev/null || true
+    lefthook install 2>/dev/null || true
 fi
 
 # -----------------------------------------------------------------------------
