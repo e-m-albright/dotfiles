@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title \"Claude Code · $(basename \"$PWD\")\" -message 'Done — ready for input' -sound Glass 2>/dev/null || true"
+            "command": "terminal-notifier -title \"Claude Code · $(basename \"$CLAUDE_PROJECT_DIR\")\" -message \"$(cat ~/.claude/agent-status-$PPID 2>/dev/null || echo 'Done — ready for input')\" -sound Glass 2>/dev/null || true"
           }
         ]
       }
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title \"Claude Code · $(basename \"$PWD\")\" -message 'Permission needed' -sound Basso 2>/dev/null || true"
+            "command": "terminal-notifier -title \"Claude Code · $(basename \"$CLAUDE_PROJECT_DIR\")\" -message 'Permission needed' -sound Basso 2>/dev/null || true"
           }
         ]
       }
