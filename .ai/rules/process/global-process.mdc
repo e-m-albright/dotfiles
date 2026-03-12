@@ -29,6 +29,16 @@ alwaysApply: true
 - Search for latest documentation before using a library. Don't assume built-in knowledge is current.
 - If a library has moved to a new major version, verify you're using the new API.
 
+## Documentation Freshness
+
+- When modifying behavior (CLI flags, config format, install steps, API surface), check if docs reference the old behavior. Common stale spots:
+  - README.md — feature lists, usage examples, install instructions
+  - AGENTS.md / CLAUDE.md — directory listings, tool references
+  - CLI help text — `--help` output, subcommand lists, usage strings
+  - Inline comments — "disabled", "enable by...", "requires X"
+- Don't audit every doc on every change. Check only docs that plausibly reference what you changed.
+- Fix stale docs in the same commit as the behavior change, not as a follow-up.
+
 ## Git Safety
 
 - Never run destructive git operations (force push, hard reset) unless explicitly asked.
