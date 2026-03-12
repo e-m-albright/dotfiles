@@ -153,10 +153,6 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Datadog** | MCP / CLI (`datadog-ci`) | APM, logs, dashboards, incident context | Evaluate |
 | **Sentry** | MCP / CLI (`sentry-cli`) | Error tracking, issue triage, release management | Evaluate |
 | **Dagster** | Plugin / MCP | Data pipeline orchestration & observability | Evaluate |
-| **PagerDuty** | MCP | Incident management, on-call schedules, alert context | Evaluate |
-| **Figma** | MCP | Design file access, component inspection, design-to-code | Evaluate |
-| **Jira** | MCP (`mcp-remote`) | Issue tracking (if used alongside or instead of Linear) | Evaluate |
-| **Confluence** | MCP | Team wiki, runbooks, architecture docs | Evaluate |
 
 MCP config: `claude/mcp.json` (Claude Code + Desktop) and `editors/cursor/mcp.json` (Cursor).
 
