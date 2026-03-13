@@ -44,8 +44,10 @@
 
 | Tool | When to Use |
 |------|-------------|
+| **OpenCode** | Model flexibility, mix providers, open-source CLI. TUI-first, plan/build modes. SST team. $10/mo (Zen) or BYO keys. |
 | **GitHub Copilot** | Enterprise teams with GitHub integration |
-| **Windsurf (Codeium)** | Budget-conscious, free tier available |
+| **Windsurf (Codeium)** | Budget-conscious, free tier available. Acquired by OpenAI (2025) — roadmap uncertain. |
+| **Aider** | Lightweight CLI agent with auto git commits. Python-native, many models. Good for scripted workflows. |
 | **Gemini CLI** | Google Cloud-heavy projects |
 
 ### Usage Patterns
@@ -370,7 +372,8 @@ Prototyping:
 
 | Tool | Pricing Model | Typical Cost |
 |------|---------------|--------------|
-| Claude Code | API usage (Claude Pro/Max) | $20-100/month (Pro $20, Max from $100) |
+| Claude Code | API usage (Claude Pro/Max) | $20-200/month (Pro $20, Max from $100) |
+| OpenCode | BYO keys or Zen gateway | $10/mo (Zen open models) or BYO API keys |
 | Cursor | Subscription | $20/month (Pro), $60/month (Pro+), $200/month (Ultra) |
 | bolt.new | Credits | Free tier + $20/month |
 | v0.dev | Credits | Free tier + usage |
@@ -391,7 +394,7 @@ Prototyping:
 | **OpenClaw** (prev MoltBot) | Open-source self-hosted AI agent/personal assistant | Runs on Mac mini or Cloudflare Workers; integrations for chat, AI models, tools |
 | **claude-supermemory** | Persistent memory for Claude Code across sessions | Context injection, automatic capture, codebase indexing |
 | **claude-subconscious** | Letta agent that observes Claude Code sessions | Accumulates patterns across sessions, provides async guidance via CLAUDE.md |
-| **OpenCode** | Open-source local-first AI coding agent | Go-based autonomous pair programmer; supports Claude/GPT/Gemini/Ollama; terminal/desktop/VS Code; privacy-first (code stays local); 95k+ stars |
+| **OpenCode** | Open-source local-first AI coding agent | **Promoted to Tier 2** — see AI Coding Assistants section above. |
 | **Open WebUI** | Self-hosted AI platform interface | Unified UI for any AI model (Ollama/OpenAI/Anthropic); Python extensions; RAG/voice/vision; Docker install; 328k+ community members |
 | **oh-my-claudecode** | Multi-agent orchestration plugin for Claude Code | "Oh-My-Zsh for Claude Code"; autopilot/ultrapilot/swarm modes; 32+ agents, 40+ skills; zero config, natural language commands |
 
@@ -441,7 +444,7 @@ Prototyping:
 | **Deno 2** | TypeScript-first runtime | Native TypeScript, built-in tooling, Node.js compatibility mode; mature alternative to Bun for TypeScript-first serverless |
 | **Marimo** | Reactive Python notebooks | Git-friendly .py files instead of .ipynb; reactive execution; modern Jupyter alternative |
 | **Hex** | Hosted notebook platform | Collaborative SQL + Python notebooks; great for data teams; alternative to Jupyter/Marimo for shared analysis |
-| **Pulumi** | Infrastructure as Code | TypeScript/Python/Go for cloud infra; more flexible than Terraform; consider for multi-cloud projects |
+| **Pulumi** | Infrastructure as Code | **Moved to services.md** — see Infrastructure as Code section. |
 | **Temporal** | Durable workflow engine | Reliable distributed workflows, task queues, retries; use instead of rolling your own job queue or saga pattern |
 | **Exa AI** | AI-powered web search API | Semantic search for agents; free tier available; good MCP integration for research tasks |
 

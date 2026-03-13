@@ -47,19 +47,37 @@
 
 ---
 
+## Infrastructure as Code
+
+| Category | Primary Pick | Alternative | Notes |
+|----------|-------------|-------------|-------|
+| **AWS + TypeScript** | SST | AWS CDK | SST: full-stack IaC in one `sst.config.ts`, Pulumi under the hood, fast local dev. CDK: lower level, use only for resources SST doesn't expose. |
+| **Multi-Cloud** | Pulumi | Terraform / OpenTofu | Pulumi: real languages (TS/Python/Go). Terraform: industry standard (HCL), huge ecosystem. OpenTofu: OSS fork after HashiCorp license change. |
+
+### When to Use What
+
+- **SST**: Default for AWS + TypeScript. Defines Lambda, RDS, S3, queues, frontends in one config. Skip if you need multi-cloud.
+- **Pulumi**: Multi-cloud or when SST doesn't cover your resource. More verbose but more flexible.
+- **Terraform/OpenTofu**: Large infra teams, multi-cloud at scale. Overkill for solo devs on AWS.
+- **AWS CDK**: SST is strictly better DX. Only use raw CDK for L3 constructs SST doesn't expose.
+
+---
+
 ## Database
 
 | Category | Primary Pick | Alternative | Notes |
 |----------|-------------|-------------|-------|
-| **Managed Postgres** | Supabase | Neon | Supabase: Postgres + auth + storage. Neon: pure Postgres, branching. |
-| **Edge SQLite** | Turso | Cloudflare D1 | Turso: libSQL, replicas. D1: Cloudflare-native. |
+| **Managed Postgres** | Supabase | Neon | Supabase: Postgres + auth + storage. Neon: pure Postgres, branching, scale-to-zero. |
+| **Managed MySQL** | PlanetScale | — | Serverless MySQL on Vitess (YouTube's scaler). DB branching, non-blocking migrations. Killed free tier in 2024 ($39/mo min). |
+| **Edge SQLite** | Turso | Cloudflare D1 | Turso: libSQL, replicas, cheap per-tenant isolation. D1: Cloudflare-native. |
 | **Self-Hosted** | PostgreSQL on Railway | — | Just deploy a Postgres container. |
 
 ### When to Use What
 
 - **Supabase**: Need Postgres + extras (auth, storage, realtime). Good free tier.
-- **Neon**: Pure Postgres, need database branching for previews.
-- **Turso**: Edge-first, SQLite-compatible, global reads.
+- **Neon**: Pure Postgres, need database branching for previews. Default "Postgres with nice devex."
+- **PlanetScale**: Strong if you need MySQL or massive horizontal scale. Fewer ecosystem tools than Postgres.
+- **Turso**: Edge-first, SQLite-compatible, global reads. Per-tenant DB isolation is cheap — good for multi-tenant SaaS with audit boundaries.
 
 ### Supabase Accelerators
 
@@ -69,15 +87,32 @@
 
 ---
 
+## NoSQL / Key-Value / Document
+
+| Category | Primary Pick | Alternative | Notes |
+|----------|-------------|-------------|-------|
+| **AWS Native KV** | DynamoDB | — | Single-digit ms at any scale. Pairs with Lambda/SST. Demands access-pattern-first design. |
+| **Document DB** | MongoDB Atlas | — | Flexible JSON docs, aggregation pipeline, built-in full-text search. Less relevant if already using Postgres with JSONB. |
+| **Cache + Queues** | Valkey / Upstash | Dragonfly | Valkey: Redis fork (self-hosted). Upstash: serverless Redis, per-request billing. Dragonfly: extreme perf. |
+
+### When to Use What
+
+- **DynamoDB**: Known, high-throughput access patterns (sessions, event logs, webhook state). Painful for flexible queries. Most solo devs should start with Postgres and migrate if they hit the wall.
+- **MongoDB Atlas**: Variable-schema data, need full-text search without a separate service. Atlas Search is genuinely useful.
+- **Valkey/Upstash**: Almost always needed alongside a primary DB for caching, rate limiting, pub/sub, sessions. Upstash pairs well with serverless (Railway/Vercel) — no persistent server to manage.
+
+---
+
 ## Analytics (OLAP)
 
 > **For heavy analytical queries.** Most apps don't need this—Postgres is fine for dashboards.
 
 | Category | Primary Pick | Alternative | Notes |
 |----------|-------------|-------------|-------|
-| **In-Process** | DuckDB | — | Query Postgres/Parquet with SQL. No server needed. |
-| **Managed** | Tinybird | ClickHouse Cloud | Tinybird: API-first, real-time. ClickHouse: raw power. |
+| **In-Process** | DuckDB | — | Query Postgres/Parquet with SQL. No server needed. Embeds in Python/Node/Rust. |
+| **Managed** | Tinybird | ClickHouse Cloud | Tinybird: API-first, real-time. ClickHouse: raw power, millions of rows/sec ingest. |
 | **Self-Hosted** | ClickHouse | — | Only for serious OLAP workloads at scale. |
+| **Data Warehouse** | Snowflake | BigQuery | Snowflake: multi-cloud, excellent data sharing across orgs. BigQuery: GCP-native, pay-per-query, petabyte-scale. Both integrate with dbt. |
 
 ### When to Use What
 
@@ -85,7 +120,7 @@
 - **Tinybird**: Real-time analytics APIs, user-facing dashboards, event streaming.
 - **ClickHouse**: When DuckDB isn't fast enough (rare). Petabyte-scale analytics.
 
-> **Note**: Most SaaS apps should start with Postgres + DuckDB. Add ClickHouse/Tinybird when you have millions of events and need sub-second queries.
+> **Note**: Most SaaS apps should start with Postgres + DuckDB. Add ClickHouse/Tinybird when you have millions of events and need sub-second queries. Snowflake/BigQuery are for enterprise data integrations — large pharma almost certainly has Snowflake.
 
 ---
 
@@ -210,6 +245,22 @@ services:
 
 ---
 
+## Queues / Event Streaming
+
+| Category | Primary Pick | Alternative | Notes |
+|----------|-------------|-------------|-------|
+| **AWS Native** | SQS / SNS | — | SQS: managed queue (pull). SNS: pub/sub (push). Both integrate with Lambda/SST natively. No ops. |
+| **High-Throughput** | Kafka / Redpanda | — | Log-based streaming. Replay, fan-out, history retention. Redpanda: Kafka-compatible, faster, simpler ops. |
+| **Serverless** | Upstash Kafka / QStash | — | Serverless Kafka + HTTP job queues. QStash: great for delayed jobs from serverless functions. |
+
+### When to Use What
+
+- **SQS/SNS**: Default if you're on AWS. SST wires them to Lambda trivially.
+- **Kafka/Redpanda**: Real-time data feeds, event sourcing, audit logs at scale. Overkill for most early-stage apps.
+- **QStash**: Underrated for webhook delivery and scheduled jobs from serverless (Railway/Vercel). No persistent server needed.
+
+---
+
 ## Payments
 
 | Category | Primary Pick | Notes |
@@ -256,9 +307,14 @@ Tier 3 (At Scale):
 | + Auth | add Better Auth |
 | + Email | add Resend |
 | + Search | add Meilisearch (self-hosted) |
+| + Caching/Queues | add Upstash (Redis + QStash) |
 | SaaS Product | above + Stripe + Umami + PostHog |
 | + AI Features | add Modal or pgvector |
+| + IaC | SST (AWS) or Pulumi (multi-cloud) |
 | At Scale | add Grafana Cloud + OpenTelemetry |
+| + Analytics | add ClickHouse or Snowflake |
+| + Event Streaming | add SQS/SNS (AWS) or Redpanda |
+| Enterprise Data Integration | Snowflake or BigQuery + dbt |
 
 ---
 
