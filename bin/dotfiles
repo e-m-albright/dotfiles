@@ -21,7 +21,7 @@ sub_help () {
     printf "   install          Run full dotfiles setup (install.sh)\n"
     printf "   help             This help message\n"
     printf "   doctor           Check that all tools are installed correctly\n"
-    printf "   update           Update OS, Homebrew, and Node.js LTS\n"
+    printf "   update           Update OS, Homebrew, runtimes, and dev tools\n"
     printf "   clean            Clean up Homebrew caches\n"
     printf "   brew             Run Homebrew setup script\n"
     printf "   dock             Reset macOS Dock layout\n"
@@ -166,24 +166,99 @@ sub_doctor () {
 }
 
 sub_update () {
-    sudo softwareupdate -i -a
-    brew update
-    brew upgrade
+    # shellcheck source=../macos/print_utils.sh
+    source "$DOTFILES_DIR/macos/print_utils.sh"
 
-    # Update Node.js to latest LTS via fnm
+    print_header "Updating everything"
+
+    # --- macOS ---
+    print_section "macOS system updates"
+    if sudo softwareupdate -i -a 2>&1 | tail -1; then
+        print_success "macOS up to date"
+    else
+        print_warn "macOS update finished with warnings (check above)"
+    fi
+
+    # --- Homebrew ---
+    print_section "Homebrew (formulae + casks)"
+    brew update
+    if brew upgrade 2>&1; then
+        print_success "Homebrew packages up to date"
+    fi
+    brew cleanup --prune=30
+    print_dim "Cleaned caches older than 30 days"
+
+    # --- Node.js (fnm) ---
     if command -v fnm >/dev/null 2>&1; then
+        print_section "Node.js (fnm)"
         eval "$(fnm env)"
         fnm install --lts
         fnm use --install-if-missing lts-latest
         fnm default lts-latest
+        print_success "Node.js LTS: $(node --version)"
     fi
 
-    printf "${GREEN}%b Success! Update command finished.${NC}\n" "$ARROW"
+    # --- Bun ---
+    if command -v bun >/dev/null 2>&1; then
+        print_section "Bun"
+        bun upgrade
+        print_success "Bun: $(bun --version)"
+    fi
+
+    # --- Rust (rustup) ---
+    if command -v rustup >/dev/null 2>&1; then
+        print_section "Rust (rustup)"
+        rustup update
+        print_success "Rust: $(rustc --version | awk '{print $2}')"
+    fi
+
+    # --- UV (Python) ---
+    if command -v uv >/dev/null 2>&1; then
+        print_section "UV (Python package manager)"
+        uv self update
+        print_success "UV: $(uv --version)"
+    fi
+
+    # --- Global npm packages ---
+    if command -v npm >/dev/null 2>&1; then
+        print_section "Global npm packages"
+        npm update -g
+        print_success "Global npm packages updated"
+    fi
+
+    # --- Go tools ---
+    if command -v go >/dev/null 2>&1; then
+        print_section "Go tools"
+        local go_tools=(
+            "golang.org/x/tools/gopls@latest"
+            "github.com/go-delve/delve/cmd/dlv@latest"
+            "github.com/air-verse/air@latest"
+            "github.com/sqlc-dev/sqlc/cmd/sqlc@latest"
+            "github.com/pressly/goose/v3/cmd/goose@latest"
+            "github.com/a-h/templ/cmd/templ@latest"
+            "honnef.co/go/tools/cmd/staticcheck@latest"
+        )
+        for tool in "${go_tools[@]}"; do
+            local tool_name
+            tool_name=$(basename "${tool%%@*}")
+            go install "$tool" 2>/dev/null && print_success "$tool_name" || print_warn "Failed: $tool_name"
+        done
+    fi
+
+    print_completion "All updates finished"
 }
 
 sub_clean () {
-    brew cleanup
-    printf "${GREEN}%b Success! Clean command finished.${NC}\n" "$ARROW"
+    # shellcheck source=../macos/print_utils.sh
+    source "$DOTFILES_DIR/macos/print_utils.sh"
+
+    print_header "Cleaning up"
+
+    print_section "Homebrew"
+    brew cleanup --prune=30
+    print_success "Cleared caches older than 30 days"
+
+    print_completion "Cleanup finished"
 }
 
 sub_brew () {
@@ -296,7 +371,7 @@ _dotfiles() {
         'install:Run full dotfiles setup'
         'help:Show help message'
         'doctor:Check that all tools are installed'
-        'update:Update OS, Homebrew, and Node.js'
+        'update:Update OS, Homebrew, runtimes, and dev tools'
         'clean:Clean up caches'
         'brew:Run Homebrew setup'
         'dock:Reset macOS Dock'

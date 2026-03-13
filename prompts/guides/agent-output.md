@@ -191,7 +191,7 @@ When a significant decision emerges from exploration, archive the key prompts:
 > custom auth. Zero downtime required."
 
 ## Human Input
-@evan: "Also need to support HIPAA compliance for healthcare clients."
+@alice: "Also need to support HIPAA compliance for healthcare clients."
 
 ## Outcome
 See ADR-000X for the decision.

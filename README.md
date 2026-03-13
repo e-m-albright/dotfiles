@@ -18,7 +18,7 @@ Opinionated Mac setup + project scaffolding for fast, maintainable development.
 xcode-select --install
 
 # 2. Clone and run
-git clone https://github.com/e-m-albright/dotfiles ~/dotfiles
+git clone https://github.com/<your-username>/dotfiles ~/dotfiles
 ~/dotfiles/install.sh
 
 # 3. Re-run anytime (idempotent)
@@ -198,7 +198,7 @@ AI=1 PRODUCTIVITY=1 SOCIAL=0 dotfiles brew
 dotfiles help                # Show available commands
 dotfiles install             # Re-run full setup (install.sh)
 dotfiles doctor              # Check all tools are installed correctly
-dotfiles update              # Update OS, Homebrew, and Node.js LTS
+dotfiles update              # Update OS, Homebrew, runtimes, and dev tools
 dotfiles clean               # Clear Homebrew caches
 dotfiles brew                # Re-run Homebrew setup
 dotfiles dock                # Reset Dock layout

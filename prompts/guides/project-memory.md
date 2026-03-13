@@ -118,14 +118,14 @@ Use these to provide context, not to create hierarchy:
 
 **Status**: Accepted
 **Date**: 2026-02-01
-**Author**: @evan 👤
+**Author**: @alice 👤
 **AI Involvement**: Claude Code 🤖→👤
 
 ## Attribution
 - Options analysis: 🤖 AI-SUGGESTED (Claude explored 4 options)
-- Security requirements: 👤 HUMAN (@evan specified HIPAA needs)
+- Security requirements: 👤 HUMAN (@alice specified HIPAA needs)
 - Final decision: 👤 HUMAN (team chose Better Auth)
-- Implementation plan: 🤖→👤 AI-REFINED (Claude drafted, @evan approved)
+- Implementation plan: 🤖→👤 AI-REFINED (Claude drafted, @alice approved)
 
 ## Context
 [...]
@@ -314,7 +314,7 @@ ls .agents/decisions/ | grep -i "auth\|api"
 ## 2026-02
 
 ### 2026-02-01: Authentication Overhaul
-- **ADR-0005**: Switch from Lucia to Better Auth 👤 HUMAN (@evan)
+- **ADR-0005**: Switch from Lucia to Better Auth 👤 HUMAN (@alice)
 - **Supersedes**: ADR-0002
 - **Context**: Need OAuth, magic links, 2FA
 - **AI Involvement**: Claude explored options 🤖, human decided 👤
@@ -327,7 +327,7 @@ ls .agents/decisions/ | grep -i "auth\|api"
 ## 2026-01
 
 ### 2026-01-15: Database Choice
-- **ADR-0001**: Use PostgreSQL with Supabase 👤 HUMAN (@evan)
+- **ADR-0001**: Use PostgreSQL with Supabase 👤 HUMAN (@alice)
 - **Context**: Need managed Postgres with auth/storage extras
 - **AI Involvement**: None (human decision from start)
 
