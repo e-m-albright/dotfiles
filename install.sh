@@ -210,11 +210,6 @@ if command -v cursor >/dev/null 2>&1; then
     . "$DOTFILES_DIR/editors/cursor/extensions.sh"
     mkdir -p ~/Library/Application\ Support/Cursor/User
     ln -sf "$DOTFILES_DIR/editors/cursor/settings.json" ~/Library/Application\ Support/Cursor/User/settings.json 2>/dev/null || true
-    # Global Cursor CLI config + MCP servers
-    mkdir -p ~/.cursor
-    ln -sf "$DOTFILES_DIR/editors/cursor/cli-config.json" ~/.cursor/cli-config.json 2>/dev/null || true
-    ln -sf "$DOTFILES_DIR/editors/cursor/mcp.json" ~/.cursor/mcp.json 2>/dev/null || true
-    
     # Install Cursor CLI agent (command-line tool)
     if ! command -v agent >/dev/null 2>&1; then
         print_action "Installing Cursor CLI agent..."
@@ -224,11 +219,8 @@ if command -v cursor >/dev/null 2>&1; then
         print_info "Cursor CLI agent already installed"
     fi
 
-    # Agent skills (npx skills add) — requires Node/npx
-    if command -v fnm >/dev/null 2>&1; then
-        eval "$(fnm env)"
-    fi
-    . "$DOTFILES_DIR/editors/cursor/skills.sh"
+    # Agentic config (MCP, rules, hooks, plugin registration)
+    . "$DOTFILES_DIR/agents/cursor/setup.sh"
 
     print_success "Cursor configured"
 fi
@@ -297,7 +289,7 @@ print_todo "Open Rectangle and grant Accessibility permissions"
 print_todo "Verify git identity: ${CYAN}git config user.name && git config user.email${NC}"
 printf "\n"
 printf "  ${BOLD}Optional:${NC}\n"
-print_todo_optional "Edit ${CYAN}~/.cursor/mcp.json${NC} to add MCP server API keys"
+print_todo_optional "Cursor MCP servers are auto-configured — edit ${CYAN}~/dotfiles/agents/cursor/mcp.json${NC} to customize"
 print_todo_optional "Edit ${CYAN}~/dotfiles/agents/claude/plugins.yaml${NC} to customize Claude Code plugins"
 printf "\n"
 printf "  Run ${CYAN}dotfiles doctor${NC} to verify everything is set up correctly.\n"
