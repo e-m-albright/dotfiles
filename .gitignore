@@ -58,3 +58,4 @@ ehthumbs.db
 # -----------------------------------------------------------------------------
 agents/cursor/.mcp.json
 agents/cursor/rules/shared-rules.mdc
+editors/cursor/.cursorignore
