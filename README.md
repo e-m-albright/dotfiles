@@ -28,7 +28,7 @@ dotfiles install
 **What you get:**
 - Shell: Zsh + Oh My Zsh + custom theme
 - Runtimes: Go, Rust, Bun, Node.js (fnm), Python (uv)
-- Editor: Cursor + MCP servers
+- Editor: Cursor (AI-native, shared MCP servers)
 - Terminal: Ghostty (GPU-accelerated, desktop notifications)
 - CLI: Git, gh, just, jq, delta, hyperfine, and more
 - AI: Claude Code (with plugins, hooks, MCP servers), Claude Desktop
@@ -114,7 +114,7 @@ my-project/
 
 ### Editors
 
-- **Cursor**: Primary editor (AI-native, VS Code compatible, MCP servers configured)
+- **Cursor**: Primary editor (AI-native, VS Code compatible, shared MCP servers, hooks, skills, agents)
 - **Obsidian**: Knowledge base — vault configs + community plugins managed via symlinks
 
   | Plugin | Purpose |
@@ -140,7 +140,7 @@ my-project/
 |------|---------|
 | **Claude Code** | Agentic coding assistant (CLI) with plugins, hooks, MCP servers |
 | **Claude Desktop** | Claude macOS app |
-| **Cursor** | AI-native editor with MCP servers |
+| **Cursor** | AI-native editor with shared MCP servers, hooks, skills, agents |
 
 ### External Connections
 
@@ -156,7 +156,7 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Gmail** | claude.ai cloud MCP | yes | — | Claude Code only (not reproducible in config) |
 | **Google Calendar** | claude.ai cloud MCP | yes | — | Claude Code only (not reproducible in config) |
 
-**Considered** (not yet enabled — add to `claude/mcp.json` when needed):
+**Considered** (not yet enabled — add to `agents/shared/mcp-servers.json` when needed):
 
 | Service | Method | Why consider | Status |
 |---------|--------|-------------|--------|
@@ -165,18 +165,18 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Sentry** | MCP / CLI (`sentry-cli`) | Error tracking, issue triage, release management | Evaluate |
 | **Dagster** | Plugin / MCP | Data pipeline orchestration & observability | Evaluate |
 
-MCP config: `claude/mcp.json` (Claude Code + Desktop) and `editors/cursor/mcp.json` (Cursor).
+MCP config: `agents/shared/mcp-servers.json` (shared source), deployed to Claude Code and Cursor by their respective setup scripts.
 
 ### Claude Code
 
 Setup is automated via `dotfiles claude-setup` (also runs during install):
 
-- **Global instructions**: `~/.claude/CLAUDE.md` installed from `claude/global-claude.md` (process guardrails, command style, project file discovery)
+- **Global instructions**: `~/.claude/CLAUDE.md` installed from `agents/claude/global-claude.md` (process guardrails, command style, project file discovery)
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
 - **Skills**: `scaffold-project`, `dotfiles-doctor`
 - **Agents**: `shellcheck-reviewer`
-- **MCP servers**: GitHub, Linear, Granola, Notion (standalone); Context7, Playwright (via plugins)
+- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion (standalone); Context7, Playwright (via plugins)
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
 - **Preferences**: Voice mode, terminal bell, acceptEdits mode
 - **Desktop**: MCP servers + preferences (cowork, sidebar, web search)
@@ -189,7 +189,19 @@ Setup is automated via `dotfiles claude-setup` (also runs during install):
 | `ccr` | `ccr`, `ccr 2277`, `ccr <url>` | AI code review — local uses `/review-pr` (6 agents), PR uses `/code-review` (5 agents + GitHub comments) |
 | `cca` | `cca [-c] [-p] [PR]` | Address PR feedback — `-c` replies to comments, `-p` pushes |
 
-See `claude/` for all configuration files.
+See `agents/claude/` for all configuration files.
+
+### Cursor
+
+Setup is automated via `agents/cursor/setup.sh` (also runs during install):
+
+- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`)
+- **Hooks**: Shared hook definitions deployed from `agents/cursor/hooks/`
+- **Skills**: Deployed from `agents/cursor/skills/`
+- **Agents**: Deployed from `agents/cursor/agents/`
+- **Rules**: Shared rules from `agents/shared/rules.md`
+
+See `agents/cursor/` for all configuration files.
 
 ---
 
@@ -208,7 +220,7 @@ AI=1 PRODUCTIVITY=1 SOCIAL=0 dotfiles brew
 ```bash
 dotfiles help                # Show available commands
 dotfiles install             # Re-run full setup (install.sh)
-dotfiles doctor              # Check all tools are installed correctly
+dotfiles doctor              # Check all tools are installed (--fix to repair config)
 dotfiles update              # Update OS, Homebrew, runtimes, and dev tools
 dotfiles clean               # Clear Homebrew caches
 dotfiles brew                # Re-run Homebrew setup
@@ -216,6 +228,7 @@ dotfiles dock                # Reset Dock layout
 dotfiles scaffold            # Scaffold a project with AI rules
 dotfiles stale               # Find disabled packages still installed
 dotfiles profile-shell       # Profile shell startup time
+dotfiles agents              # Show active agentic setup (Claude Code + Cursor)
 dotfiles claude-setup        # Configure Claude Code + Desktop (global config)
 dotfiles completions         # Output shell completions
 ```
@@ -242,9 +255,12 @@ dotfiles/
 ├── bin/                    # CLI tools (dotfiles command)
 ├── shell/                  # Zsh config + theme
 ├── git/                    # Git config + global ignores
-├── editors/                # Cursor settings + MCP servers + Obsidian vault configs
+├── editors/                # Cursor settings + Obsidian vault configs
 ├── terminal/               # Ghostty config
-├── claude/                 # Claude Code setup (plugins, hooks, MCP servers)
+├── agents/                 # Agentic tool setup
+│   ├── shared/             # Shared config (MCP servers, rules, ignore patterns)
+│   ├── claude/             # Claude Code setup (plugins, hooks, skills, agents)
+│   └── cursor/             # Cursor plugin (hooks, skills, agents)
 ├── macos/                  # Homebrew, Dock, SSH, print utilities
 ├── .ai/rules/              # Cross-vendor AI rules (canonical source)
 │   ├── process/            # Universal: safety, style, workflow
