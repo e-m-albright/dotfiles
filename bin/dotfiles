@@ -20,7 +20,7 @@ sub_help () {
     printf "Commands:\n"
     printf "   install          Run full dotfiles setup (install.sh)\n"
     printf "   help             This help message\n"
-    printf "   doctor           Check that all tools are installed correctly\n"
+    printf "   doctor           Check all tools are installed (--fix to repair config)\n"
     printf "   update           Update OS, Homebrew, runtimes, and dev tools\n"
     printf "   clean            Clean up Homebrew caches\n"
     printf "   brew             Run Homebrew setup script\n"
@@ -34,6 +34,12 @@ sub_help () {
 }
 
 sub_doctor () {
+    local FIX=false
+    if [[ "${1:-}" == "--fix" ]]; then
+        FIX=true
+        shift
+    fi
+
     printf "${BLUE}%b Checking dotfiles installation...${NC}\n\n" "$ARROW"
 
     local all_ok=true
@@ -50,6 +56,19 @@ sub_doctor () {
             printf "  ${GREEN}✓${NC} %-20s %s\n" "$name" "$version"
         else
             printf "  ${RED}✗${NC} %-20s ${YELLOW}%s${NC}\n" "$name" "$install_hint"
+            all_ok=false
+        fi
+    }
+
+    check_symlink() {
+        local name="$1" src="$2" dest="$3"
+        if [[ -L "$dest" ]] && [[ "$(readlink "$dest")" == *"$src"* ]]; then
+            printf "  ${GREEN}✓${NC} %-25s symlinked\n" "$name"
+        elif [[ "$FIX" == true ]]; then
+            ln -sf "$src" "$dest"
+            printf "  ${GREEN}→${NC} %-25s fixed\n" "$name"
+        else
+            printf "  ${RED}✗${NC} %-25s not symlinked\n" "$name"
             all_ok=false
         fi
     }
@@ -99,18 +118,9 @@ sub_doctor () {
     check_tool "golangci-lint" "golangci-lint" "brew install golangci-lint"
 
     printf "\n${BLUE}Configuration${NC}\n"
-    # Check symlinks
-    if [[ -L ~/.zshrc ]] && [[ "$(readlink ~/.zshrc)" == *"dotfiles"* ]]; then
-        printf "  ${GREEN}✓${NC} %-20s symlinked\n" ".zshrc"
-    else
-        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}not symlinked to dotfiles${NC}\n" ".zshrc"
-    fi
-
-    if [[ -L ~/.gitconfig ]] && [[ "$(readlink ~/.gitconfig)" == *"dotfiles"* ]]; then
-        printf "  ${GREEN}✓${NC} %-20s symlinked\n" ".gitconfig"
-    else
-        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}not symlinked to dotfiles${NC}\n" ".gitconfig"
-    fi
+    check_symlink ".zshrc" "$DOTFILES_DIR/shell/.zshrc" ~/.zshrc
+    check_symlink ".gitconfig" "$DOTFILES_DIR/git/.gitconfig" ~/.gitconfig
+    check_symlink ".zprofile" "$DOTFILES_DIR/shell/.zprofile" ~/.zprofile
 
     if [[ -f ~/.gitconfig.local ]]; then
         printf "  ${GREEN}✓${NC} %-20s configured\n" "Git identity"
@@ -156,6 +166,17 @@ sub_doctor () {
         printf "  ${GREEN}✓${NC} %-20s configured\n" "Ghostty"
     elif [[ -d "/Applications/Ghostty.app" ]]; then
         printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run install.sh to configure${NC}\n" "Ghostty"
+    fi
+
+    # Agent config (fixable)
+    if [[ "$FIX" == true ]]; then
+        printf "\n${BLUE}Redeploying agent configs...${NC}\n"
+        if [[ -f "$DOTFILES_DIR/agents/claude/setup.sh" ]]; then
+            . "$DOTFILES_DIR/agents/claude/setup.sh"
+        fi
+        if [[ -f "$DOTFILES_DIR/agents/cursor/setup.sh" ]]; then
+            . "$DOTFILES_DIR/agents/cursor/setup.sh"
+        fi
     fi
 
     printf "\n"
@@ -375,7 +396,7 @@ _dotfiles() {
     commands=(
         'install:Run full dotfiles setup'
         'help:Show help message'
-        'doctor:Check that all tools are installed'
+        'doctor:Check that all tools are installed (--fix to repair)'
         'update:Update OS, Homebrew, runtimes, and dev tools'
         'clean:Clean up caches'
         'brew:Run Homebrew setup'
@@ -416,7 +437,8 @@ case $COMMAND_NAME in
         sub_completions
         ;;
     doctor)
-        sub_doctor
+        shift
+        sub_doctor "$@"
         ;;
     *)
         if declare -f "sub_${COMMAND_NAME}" >/dev/null 2>&1; then
