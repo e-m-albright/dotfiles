@@ -26,6 +26,7 @@ sub_help () {
     printf "   brew             Run Homebrew setup script\n"
     printf "   dock             Reset macOS Dock layout\n"
     printf "   stale            Find disabled packages still installed\n"
+    printf "   agents           Show active agentic setup (Claude Code + Cursor)\n"
     printf "   profile-shell    Profile shell startup time\n"
     printf "   scaffold         Scaffold a new project with AI rules\n"
     printf "   claude-setup         Configure Claude Code + Desktop (global config)\n"
@@ -327,6 +328,10 @@ sub_stale() {
     printf "\n"
 }
 
+sub_agents() {
+    "$DOTFILES_DIR/agents/overview.sh" "$@"
+}
+
 sub_install() {
     . "$DOTFILES_DIR/install.sh"
 }
@@ -377,6 +382,7 @@ _dotfiles() {
         'dock:Reset macOS Dock'
         'scaffold:Scaffold a new project with AI rules'
         'stale:Find disabled packages still installed'
+        'agents:Show active agentic setup'
         'profile-shell:Profile shell startup time'
         'claude-setup:Configure Claude Code + Desktop (global config)'
         'completions:Output shell completions'
