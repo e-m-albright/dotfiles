@@ -148,7 +148,7 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 
 | Service | Method | Claude Code | Cursor | Notes |
 |---------|--------|:-----------:|:------:|-------|
-| **GitHub** | CLI (`gh`) | yes | yes | CLI only — no MCP needed |
+| **GitHub** | CLI (`gh`) + MCP | yes | yes | CLI + MCP server (`gh mcp-server`) |
 | **Linear** | MCP (`mcp-remote`) | yes | yes | Issue tracking |
 | **Context7** | MCP (`@upstash/context7-mcp`) | plugin | yes | Up-to-date library docs |
 | **Granola** | MCP (`granola-mcp` via `uvx`) | yes | — | Meeting notes (reads local cache, no API key) |
@@ -173,8 +173,10 @@ Setup is automated via `dotfiles claude-setup` (also runs during install):
 
 - **Global instructions**: `~/.claude/CLAUDE.md` installed from `claude/global-claude.md` (process guardrails, command style, project file discovery)
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
-- **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt), terminal notifications on completion
-- **MCP servers**: Linear, Granola, Notion (standalone); Context7, Playwright (via plugins)
+- **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
+- **Skills**: `scaffold-project`, `dotfiles-doctor`
+- **Agents**: `shellcheck-reviewer`
+- **MCP servers**: GitHub, Linear, Granola, Notion (standalone); Context7, Playwright (via plugins)
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
 - **Preferences**: Voice mode, terminal bell, acceptEdits mode
 - **Desktop**: MCP servers + preferences (cowork, sidebar, web search)

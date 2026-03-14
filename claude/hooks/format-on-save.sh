@@ -41,4 +41,9 @@ case "$FILE" in
             goimports -w "$FILE" 2>/dev/null || true
         fi
         ;;
+    *.sh)
+        if command -v shellcheck >/dev/null 2>&1; then
+            shellcheck -S warning "$FILE" 2>/dev/null || true
+        fi
+        ;;
 esac

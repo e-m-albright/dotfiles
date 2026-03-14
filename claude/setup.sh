@@ -185,6 +185,44 @@ setup_preferences() {
     print_info "Voice mode + terminal bell + acceptEdits enabled"
 }
 
+# --- Skills & Agents ---
+setup_skills_and_agents() {
+    local skills_dir="$SCRIPT_DIR/skills"
+    local agents_dir="$SCRIPT_DIR/agents"
+    local dest_skills="$HOME/.claude/skills"
+    local dest_agents="$HOME/.claude/agents"
+
+    # Deploy skills
+    if [[ -d "$skills_dir" ]]; then
+        local skill_count=0
+        for skill in "$skills_dir"/*/SKILL.md; do
+            [[ -f "$skill" ]] || continue
+            local skill_name
+            skill_name="$(basename "$(dirname "$skill")")"
+            mkdir -p "$dest_skills/$skill_name"
+            cp "$skill" "$dest_skills/$skill_name/SKILL.md"
+            skill_count=$((skill_count + 1))
+        done
+        if [[ $skill_count -gt 0 ]]; then
+            print_success "Deployed $skill_count skills (~/.claude/skills/)"
+        fi
+    fi
+
+    # Deploy agents
+    if [[ -d "$agents_dir" ]]; then
+        local agent_count=0
+        mkdir -p "$dest_agents"
+        for agent in "$agents_dir"/*.md; do
+            [[ -f "$agent" ]] || continue
+            cp "$agent" "$dest_agents/"
+            agent_count=$((agent_count + 1))
+        done
+        if [[ $agent_count -gt 0 ]]; then
+            print_success "Deployed $agent_count agents (~/.claude/agents/)"
+        fi
+    fi
+}
+
 # --- Main ---
 setup_instructions
 setup_marketplaces
@@ -192,4 +230,5 @@ setup_plugins
 setup_mcp
 setup_desktop
 setup_hooks
+setup_skills_and_agents
 setup_preferences
