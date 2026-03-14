@@ -1,24 +1,34 @@
 {
   "version": 1,
-  "editor": {
-    "vimMode": false
-  },
+  "editor": { "vimMode": false },
   "permissions": {
     "allow": [
-      "read.files",
-      "search.codebase",
-      "run.commands",
-      "lint",
-      "format",
-      "refactor",
-      "test"
+      "Shell(git)",
+      "Shell(npm)",
+      "Shell(bun)",
+      "Shell(go)",
+      "Shell(cargo)",
+      "Shell(just)",
+      "Shell(dotfiles)",
+      "Shell(shellcheck)",
+      "Shell(lefthook)",
+      "Read(**)",
+      "Write(src/**)",
+      "Write(tests/**)",
+      "Write(*.md)"
     ],
     "deny": [
-      "execute.untrusted-scripts"
+      "Shell(rm -rf /)",
+      "Shell(sudo)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Write(**/credentials*)",
+      "Write(**/*id_rsa*)",
+      "Write(**/*id_ed25519*)"
     ]
   },
-  "agent": {
-    "defaultMode": "agent",
-    "contextWindow": "large"
+  "attribution": {
+    "attributeCommitsToAgent": true,
+    "attributePRsToAgent": true
   }
 }
