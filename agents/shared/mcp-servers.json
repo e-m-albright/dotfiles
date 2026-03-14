@@ -1,0 +1,27 @@
+{
+  "github": {
+    "command": "gh",
+    "args": ["mcp-server"],
+    "targets": ["claude", "cursor"]
+  },
+  "linear": {
+    "command": "npx",
+    "args": ["-y", "mcp-remote", "https://mcp.linear.app/mcp"],
+    "targets": ["claude", "cursor"]
+  },
+  "granola": {
+    "command": "uvx",
+    "args": ["granola-mcp"],
+    "targets": ["claude"]
+  },
+  "notion": {
+    "command": "npx",
+    "args": ["-y", "mcp-remote", "https://mcp.notion.com/mcp"],
+    "targets": ["claude", "cursor"]
+  },
+  "context7": {
+    "command": "npx",
+    "args": ["-y", "@upstash/context7-mcp@latest"],
+    "targets": ["cursor"]
+  }
+}
