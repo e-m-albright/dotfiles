@@ -18,12 +18,11 @@
 set -eo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DOTFILES_DIR="$(dirname "$SCRIPT_DIR")"
+DOTFILES_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SETTINGS_FILE="$HOME/.claude/settings.json"
 CLAUDE_JSON="$HOME/.claude.json"
 DESKTOP_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 PLUGINS_YAML="$SCRIPT_DIR/plugins.yaml"
-MCP_JSON="$SCRIPT_DIR/mcp.json"
 HOOKS_JSON="$SCRIPT_DIR/hooks.json"
 GLOBAL_CLAUDE_MD="$SCRIPT_DIR/global-claude.md"
 DESKTOP_PREFS="$SCRIPT_DIR/desktop-preferences.json"
@@ -108,15 +107,22 @@ setup_plugins() {
 
 # --- MCP Servers (Claude Code) ---
 setup_mcp() {
-    [[ -f "$MCP_JSON" ]] || { print_info "No mcp.json found — skipping MCP setup"; return 0; }
+    local shared_mcp="$DOTFILES_DIR/agents/shared/mcp-servers.json"
+    [[ -f "$shared_mcp" ]] || { print_info "No shared mcp-servers.json — skipping MCP setup"; return 0; }
     require_jq || return 0
 
     mkdir -p "$HOME/.claude"
     [[ -f "$CLAUDE_JSON" ]] || echo '{}' > "$CLAUDE_JSON"
     cp "$CLAUDE_JSON" "$CLAUDE_JSON.bak"
 
+    # Filter servers targeting "claude", strip targets field
     local mcp_servers
-    mcp_servers=$(jq '.mcpServers // {}' "$MCP_JSON")
+    mcp_servers=$(jq '
+        to_entries
+        | map(select(.value.targets | index("claude")))
+        | map({key: .key, value: (.value | del(.targets))})
+        | from_entries
+    ' "$shared_mcp")
 
     jq --argjson servers "$mcp_servers" '.mcpServers = ($servers + (.mcpServers // {}))' "$CLAUDE_JSON.bak" > "$CLAUDE_JSON"
 
@@ -135,10 +141,15 @@ setup_desktop() {
     [[ -f "$DESKTOP_CONFIG" ]] || echo '{}' > "$DESKTOP_CONFIG"
     cp "$DESKTOP_CONFIG" "$DESKTOP_CONFIG.bak"
 
-    # Merge MCP servers (existing take precedence for project-local servers)
-    if [[ -f "$MCP_JSON" ]]; then
+    # Merge MCP servers from shared source
+    if [[ -f "$DOTFILES_DIR/agents/shared/mcp-servers.json" ]]; then
         local mcp_servers
-        mcp_servers=$(jq '.mcpServers // {}' "$MCP_JSON")
+        mcp_servers=$(jq '
+            to_entries
+            | map(select(.value.targets | index("claude")))
+            | map({key: .key, value: (.value | del(.targets))})
+            | from_entries
+        ' "$DOTFILES_DIR/agents/shared/mcp-servers.json")
         jq --argjson servers "$mcp_servers" '.mcpServers = ($servers + (.mcpServers // {}))' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
         cp "$DESKTOP_CONFIG" "$DESKTOP_CONFIG.bak"
 
