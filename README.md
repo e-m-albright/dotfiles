@@ -100,6 +100,7 @@ my-project/
 - **Zsh + Oh My Zsh**: Custom two-line prompt with git status, venv indicator, error-aware prompt character
 - **Ghostty**: GPU-accelerated terminal with desktop notifications
 - **Rectangle**: Window management
+- **Shell aliases**: `cc` (Claude Code with profiles), `ccr` (AI code review), `cca` (address PR feedback)
 
 ### Runtimes
 
@@ -177,6 +178,14 @@ Setup is automated via `dotfiles claude-setup` (also runs during install):
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
 - **Preferences**: Voice mode, terminal bell, acceptEdits mode
 - **Desktop**: MCP servers + preferences (cowork, sidebar, web search)
+
+**Shell workflow aliases** (in `.zshrc`):
+
+| Alias | Usage | Description |
+|-------|-------|-------------|
+| `cc` | `cc [--scout\|--dev\|--yolo]` | Launch Claude Code with worktree + permission profile |
+| `ccr` | `ccr`, `ccr 2277`, `ccr <url>` | AI code review — local uses `/review-pr` (6 agents), PR uses `/code-review` (5 agents + GitHub comments) |
+| `cca` | `cca [-c] [-p] [PR]` | Address PR feedback — `-c` replies to comments, `-p` pushes |
 
 See `claude/` for all configuration files.
 

@@ -108,6 +108,85 @@ cc() {
     claude --worktree --settings "$HOME/.claude/profiles/${profile}.json" "${args[@]}"
 }
 
+# ccr: Claude Code Review
+# Usage: ccr              — review current branch changes vs main (uses /review-pr)
+#        ccr 2277         — review PR #2277 (uses /code-review)
+#        ccr <url>        — review PR at URL (uses /code-review)
+ccr() {
+    local target="$1"
+
+    if [[ -z "$target" ]]; then
+        # Local branch review: use pr-review-toolkit's 6 specialized agents
+        # (comments, tests, error handling, types, code quality, simplification)
+        claude --settings "$HOME/.claude/profiles/scout.json" -- \
+            "Fetch and merge origin/main first, then run /review-pr"
+    else
+        # PR review: use code-review plugin (5 parallel agents, confidence
+        # scoring, posts structured GitHub comment)
+        if [[ "$target" =~ ^https?:// ]]; then
+            claude --settings "$HOME/.claude/profiles/scout.json" -- \
+                "Run /code-review on this PR: ${target}"
+        else
+            claude --settings "$HOME/.claude/profiles/scout.json" -- \
+                "Run /code-review on PR #${target}"
+        fi
+    fi
+}
+
+# cca: Claude Code Address feedback
+# Usage: cca              — address feedback on current branch's PR
+#        cca 2277         — address feedback on PR #2277
+#        cca <url>        — address feedback on PR at URL
+#   Flags: -c  reply to review comments after addressing
+#          -p  push changes after addressing
+cca() {
+    local target=""
+    local do_comment=false
+    local do_push=false
+    local args=()
+
+    for arg in "$@"; do
+        case "$arg" in
+            -c) do_comment=true ;;
+            -p) do_push=true ;;
+            -cp|-pc) do_comment=true; do_push=true ;;
+            *)  args+=("$arg") ;;
+        esac
+    done
+
+    target="${args[1]:-}"
+
+    local pr_ref
+    if [[ -z "$target" ]]; then
+        pr_ref="the PR for the current branch (find it with \`gh pr view --json number -q .number\`)"
+    elif [[ "$target" =~ ^[0-9]+$ ]]; then
+        pr_ref="#${target}"
+    else
+        pr_ref="$target"
+    fi
+
+    local extra_instructions=""
+    if [[ "$do_comment" == true ]]; then
+        extra_instructions="${extra_instructions}
+After addressing each piece of feedback, reply to the corresponding review comment on GitHub using \`gh api\` to confirm what was done."
+    fi
+    if [[ "$do_push" == true ]]; then
+        extra_instructions="${extra_instructions}
+After all feedback is addressed, push the changes to the remote branch with \`git push\`."
+    fi
+
+    local prompt="You are an expert developer addressing PR review feedback.
+1. Fetch all review comments for ${pr_ref} using \`gh pr view ${pr_ref} --comments\` and \`gh api repos/{owner}/{repo}/pulls/{number}/reviews\` and \`gh api repos/{owner}/{repo}/pulls/{number}/comments\`.
+2. For each piece of feedback:
+   a. Understand the reviewer's concern fully before acting.
+   b. Make the requested change if it improves the code. If you disagree, explain why clearly.
+   c. Run any relevant tests/lints to verify your change doesn't break anything.
+3. Group related feedback into logical commits with clear messages.
+${extra_instructions}"
+
+    claude --worktree --settings "$HOME/.claude/profiles/dev.json" -- "$prompt"
+}
+
 # System
 alias path='echo $PATH | tr ":" "\n"'
 alias reload='source ~/.zshrc'
