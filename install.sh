@@ -271,7 +271,7 @@ print_info "  Example: dotfiles scaffold typescript svelte my-app"
 # Claude Code (instructions, plugins, voice, permissions)
 print_header "🤖 Claude Code"
 print_section "Setup"
-. "$DOTFILES_DIR/claude/setup.sh"
+. "$DOTFILES_DIR/agents/claude/setup.sh"
 
 # Agent Permissions (tiered profiles: scout, dev, yolo)
 print_section "Agent Permissions"
@@ -298,7 +298,7 @@ print_todo "Verify git identity: ${CYAN}git config user.name && git config user.
 printf "\n"
 printf "  ${BOLD}Optional:${NC}\n"
 print_todo_optional "Edit ${CYAN}~/.cursor/mcp.json${NC} to add MCP server API keys"
-print_todo_optional "Edit ${CYAN}~/dotfiles/claude/plugins.yaml${NC} to customize Claude Code plugins"
+print_todo_optional "Edit ${CYAN}~/dotfiles/agents/claude/plugins.yaml${NC} to customize Claude Code plugins"
 printf "\n"
 printf "  Run ${CYAN}dotfiles doctor${NC} to verify everything is set up correctly.\n"
 printf "\n"

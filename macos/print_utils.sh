@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shared print functions for consistent formatting across all scripts.
-# Used by: install.sh, brew.sh, scaffold.sh, claude/setup.sh, bin/dotfiles
+# Used by: install.sh, brew.sh, scaffold.sh, agents/claude/setup.sh, bin/dotfiles
 
 # Colors
 RED='\033[0;31m'

@@ -272,7 +272,7 @@ sub_dock () {
 }
 
 sub_claude_setup() {
-    . "$DOTFILES_DIR/claude/setup.sh"
+    . "$DOTFILES_DIR/agents/claude/setup.sh"
     printf "${GREEN}%b Claude Code setup complete.${NC}\n" "$ARROW"
 }
 
