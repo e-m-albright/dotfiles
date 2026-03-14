@@ -90,7 +90,23 @@ alias py='python3'
 alias j='just'
 
 # Editors
-alias c='cursor'
+alias cu='cursor'
+# cc: Claude Code with worktree + permission profiles
+# Usage: cc [--scout|--dev|--yolo] [claude args...]
+# Default profile: dev (override with CLAUDE_PROFILE env var)
+cc() {
+    local profile="${CLAUDE_PROFILE:-dev}"
+    local args=()
+    for arg in "$@"; do
+        case "$arg" in
+            --scout) profile="scout" ;;
+            --dev)   profile="dev" ;;
+            --yolo)  profile="yolo" ;;
+            *)       args+=("$arg") ;;
+        esac
+    done
+    claude --worktree --settings "$HOME/.claude/profiles/${profile}.json" "${args[@]}"
+}
 
 # System
 alias path='echo $PATH | tr ":" "\n"'

@@ -1,0 +1,614 @@
+# Safe Commands for Agentic Coding Tools
+# =========================================
+# Canonical source of truth for command permissions across agent frameworks.
+#
+# Setup:
+#   Handled automatically by ~/dotfiles/install.sh (requires yq + jq)
+#   Generates 3 permission profiles: scout, dev, yolo
+#   Select profile:  cc --scout | cc | cc --yolo  (dev is default)
+#
+# Manual regeneration (after editing this file):
+#   ~/dotfiles/.agents/generate-permissions.sh
+#
+# Profiles (each includes all tiers below it):
+#   scout — research & explore. Read files, search, git log, web fetch. No writes.
+#   dev   — productive default. Build, test, lint, git, file ops. No cloud/DB/deploys.
+#   yolo  — just do it. Everything except sudo and force-push to main.
+#
+# Format: Each category has commands as string patterns with * wildcards.
+# Categories prefixed with _ are metadata (tiers, tools, deny rules).
+
+# =============================================================================
+# Tier assignments — which categories belong to which profile
+# scout = scout-tier categories only
+# dev   = scout + dev-tier categories
+# yolo  = scout + dev + yolo-tier categories
+# =============================================================================
+_tiers:
+  scout:
+    - readonly
+    - git_read
+    - github_read
+  dev:
+    - git_write
+    - git_remote
+    - github_write
+    - node
+    - python
+    - golang
+    - rust
+    - taskrunners
+    - docker
+    - utils_files
+    - utils_shell
+    - utils_process
+    - utils_network_read
+    - node_extras
+    - python_extras
+    - runtimes
+    - ai
+  yolo:
+    - database
+    - cloud
+    - kubernetes
+    - infra_extras
+    - utils_destructive
+    - utils_macos_system
+    - utils_network_write
+
+# =============================================================================
+# Non-Bash tool permissions per tier
+# =============================================================================
+_tools:
+  scout:
+    - "Edit"
+    - "Write"
+    - "WebFetch"
+    - "WebSearch"
+    - "mcp__plugin_context7_context7"
+  dev:
+    - "mcp__granola"
+    - "mcp__linear"
+    - "mcp__notion"
+    - "mcp__plugin_Notion_notion"
+    - "mcp__plugin_playwright_playwright"
+  yolo: []
+
+# =============================================================================
+# Deny rules per tier (each tier has fewer restrictions)
+# =============================================================================
+_deny:
+  scout:
+    - "sudo *"
+    - "su *"
+    - "rm *"
+    - "git push *"
+    - "git reset *"
+    - "git clean *"
+    - "git checkout *"
+    - "git rebase *"
+    - "kill *"
+    - "pkill *"
+    - "killall *"
+    - "docker *"
+    - "kubectl *"
+    - "ssh *"
+    - "scp *"
+    - "rsync *"
+    - "eval *"
+    - "defaults *"
+    - "launchctl *"
+    - "osascript *"
+    - "diskutil *"
+    - "networksetup *"
+  dev:
+    - "sudo *"
+    - "su *"
+    - "git push --force *"
+    - "git push -f *"
+    - "git push origin main --force *"
+    - "git push origin master --force *"
+    - "git reset --hard *"
+    - "docker system prune *"
+    - "docker image prune -a *"
+    - "killall *"
+    - "pkill -9 *"
+    - "defaults delete *"
+    - "launchctl unload *"
+    - "diskutil erase *"
+    - "diskutil partitionDisk *"
+    - "networksetup *"
+    - "dscl . -delete *"
+    - "eval *"
+    - "osascript *"
+  yolo:
+    - "sudo *"
+    - "su *"
+    - "git push --force origin main *"
+    - "git push --force origin master *"
+    - "git push -f origin main *"
+    - "git push -f origin master *"
+    - "diskutil erase *"
+    - "diskutil partitionDisk *"
+    - "networksetup *"
+    - "dscl . -delete *"
+
+# =============================================================================
+# SCOUT TIER — read-only, information gathering
+# =============================================================================
+
+readonly:
+  # Directory listing
+  - "ls *"
+  - "pwd"
+  - "tree *"
+  - "exa *"
+  - "eza *"
+
+  # File reading
+  - "cat *"
+  - "head *"
+  - "tail *"
+  - "less *"
+  - "bat *"
+
+  # Search
+  - "grep *"
+  - "rg *"
+  - "ag *"
+  - "fd *"
+  - "find *"
+  - "fzf *"
+
+  # File info
+  - "file *"
+  - "stat *"
+  - "wc *"
+  - "du *"
+  - "df *"
+
+  # Command lookup
+  - "which *"
+  - "type *"
+  - "command -v *"
+  - "man *"
+  - "tldr *"
+
+  # Text processing (read-only)
+  - "sort *"
+  - "uniq *"
+  - "diff *"
+  - "jq *"
+  - "yq *"
+  - "cut *"
+  - "tr *"
+  - "rev *"
+  - "column *"
+  - "paste *"
+  - "comm *"
+
+  # Environment
+  - "echo *"
+  - "env"
+  - "printenv *"
+  - "date *"
+  - "cal *"
+  - "bc *"
+  - "expr *"
+  - "seq *"
+  - "basename *"
+  - "dirname *"
+  - "realpath *"
+  - "readlink *"
+
+  # macOS read-only
+  - "sw_vers *"
+  - "mdfind *"
+  - "pbpaste *"
+  - "plutil *"
+
+git_read:
+  - "git status *"
+  - "git log *"
+  - "git diff *"
+  - "git show *"
+  - "git branch *"
+  - "git tag *"
+  - "git remote *"
+  - "git config --get *"
+  - "git config --list *"
+  - "git blame *"
+  - "git ls-files *"
+  - "git rev-parse *"
+  - "git describe *"
+  - "git shortlog *"
+  - "git stash list *"
+
+github_read:
+  - "gh pr list *"
+  - "gh pr view *"
+  - "gh pr diff *"
+  - "gh pr checks *"
+  - "gh pr status *"
+  - "gh issue list *"
+  - "gh issue view *"
+  - "gh issue status *"
+  - "gh repo view *"
+  - "gh run list *"
+  - "gh run view *"
+  - "gh api *"
+  - "gh auth *"
+  - "gh browse *"
+
+# =============================================================================
+# DEV TIER — productive daily development
+# =============================================================================
+
+git_write:
+  - "git add *"
+  - "git commit *"
+  - "git checkout *"
+  - "git switch *"
+  - "git restore *"
+  - "git stash *"
+  - "git branch *"
+  - "git fetch *"
+  - "git pull *"
+  - "git merge *"
+  - "git rebase *"
+  - "git cherry-pick *"
+  - "git reset *"
+  - "git clean *"
+  - "git worktree *"
+
+git_remote:
+  - "git push *"
+
+github_write:
+  - "gh pr create *"
+  - "gh pr merge *"
+  - "gh pr close *"
+  - "gh pr edit *"
+  - "gh pr comment *"
+  - "gh pr review *"
+  - "gh pr ready *"
+  - "gh issue create *"
+  - "gh issue close *"
+  - "gh issue edit *"
+  - "gh issue comment *"
+  - "gh repo clone *"
+  - "gh repo fork *"
+  - "gh run watch *"
+  - "gh run rerun *"
+  - "gh workflow run *"
+  - "gh release create *"
+  - "gh gist create *"
+  - "gh gist edit *"
+
+# --- JavaScript / TypeScript ---
+node:
+  # Package managers - read
+  - "npm list *"
+  - "npm info *"
+  - "npm outdated *"
+  - "npm audit *"
+  - "npm explain *"
+  - "npm view *"
+  - "yarn info *"
+  - "yarn list *"
+  - "yarn why *"
+  - "pnpm list *"
+  - "pnpm why *"
+  - "bun pm *"
+
+  # Package managers - install/update
+  - "npm install *"
+  - "npm ci *"
+  - "npm update *"
+  - "npm uninstall *"
+  - "npm prune *"
+  - "yarn *"
+  - "yarn install *"
+  - "yarn add *"
+  - "yarn remove *"
+  - "pnpm install *"
+  - "pnpm add *"
+  - "pnpm remove *"
+  - "bun install *"
+  - "bun add *"
+  - "bun remove *"
+
+  # Run scripts
+  - "npm run *"
+  - "npm test *"
+  - "npm start *"
+  - "npx *"
+  - "yarn run *"
+  - "yarn test *"
+  - "yarn start *"
+  - "pnpm run *"
+  - "pnpm test *"
+  - "pnpm exec *"
+  - "bun run *"
+  - "bun test *"
+  - "bunx *"
+
+  # Build tools
+  - "tsc *"
+  - "esbuild *"
+  - "vite *"
+  - "next *"
+  - "astro *"
+  - "svelte-kit *"
+  - "turbo *"
+
+  # Linting/formatting
+  - "eslint *"
+  - "prettier *"
+  - "biome *"
+  - "oxlint *"
+
+node_extras:
+  - "wrangler *"
+  - "drizzle-kit *"
+  - "vitest *"
+  - "playwright *"
+  - "cypress *"
+  - "storybook *"
+  - "tailwindcss *"
+  - "postcss *"
+  - "webpack *"
+  - "rollup *"
+  - "swc *"
+  - "tsup *"
+
+# --- Python ---
+python:
+  # Package managers
+  - "pip list *"
+  - "pip show *"
+  - "pip install *"
+  - "pip uninstall *"
+  - "pip freeze *"
+  - "uv pip *"
+  - "uv run *"
+  - "uv sync *"
+  - "uv lock *"
+  - "uv add *"
+  - "uv remove *"
+  - "uv venv *"
+  - "uv python *"
+  - "uv tool *"
+  - "poetry *"
+  - "pdm *"
+  - "pipx *"
+
+  # Running
+  - "python *"
+  - "python3 *"
+  - "pytest *"
+  - "python -m pytest *"
+  - "python -m *"
+
+  # Type checking / linting
+  - "mypy *"
+  - "pyright *"
+  - "ruff *"
+  - "black *"
+  - "isort *"
+  - "flake8 *"
+  - "pylint *"
+
+python_extras:
+  - "alembic *"
+  - "uvicorn *"
+  - "gunicorn *"
+  - "celery *"
+  - "django-admin *"
+  - "flask *"
+  - "structlog *"
+
+# --- Go ---
+golang:
+  - "go build *"
+  - "go test *"
+  - "go run *"
+  - "go install *"
+  - "go generate *"
+  - "go mod *"
+  - "go get *"
+  - "go work *"
+  - "go list *"
+  - "go doc *"
+  - "go version *"
+  - "go env *"
+  - "go fmt *"
+  - "go vet *"
+  - "gofmt *"
+  - "goimports *"
+  - "golangci-lint *"
+  - "staticcheck *"
+  - "gopls *"
+  - "delve *"
+  - "dlv *"
+  - "air *"
+  - "sqlc *"
+  - "goose *"
+  - "templ *"
+
+# --- Rust ---
+rust:
+  - "cargo *"
+  - "rustc *"
+  - "rustfmt *"
+  - "rustup *"
+
+# --- Task Runners ---
+taskrunners:
+  - "make *"
+  - "just *"
+  - "task *"
+  - "nx *"
+  - "lerna *"
+
+# --- Docker ---
+docker:
+  - "docker ps *"
+  - "docker images *"
+  - "docker logs *"
+  - "docker inspect *"
+  - "docker exec *"
+  - "docker build *"
+  - "docker run *"
+  - "docker compose *"
+  - "docker-compose *"
+  - "docker network *"
+  - "docker volume *"
+
+# --- File operations (safe) ---
+utils_files:
+  - "mkdir *"
+  - "touch *"
+  - "cp *"
+  - "mv *"
+  - "ln *"
+  - "chmod *"
+  - "rmdir *"
+  - "tar *"
+  - "unzip *"
+  - "zip *"
+  - "gzip *"
+  - "gunzip *"
+  - "xz *"
+  - "mktemp *"
+  - "tee *"
+  - "xargs *"
+  - "curl *"
+  - "wget *"
+  - "open *"
+  - "pbcopy *"
+  - "terminal-notifier *"
+  - "brew *"
+
+# --- Shell scripting (safe subset) ---
+utils_shell:
+  - "source *"
+  - "export *"
+  - "set *"
+  - "test *"
+  - "true *"
+  - "false *"
+  - "sleep *"
+  - "wait *"
+  - "read *"
+  - "printf *"
+  - "shellcheck *"
+  - "shfmt *"
+
+# --- Process management ---
+utils_process:
+  - "ps *"
+  - "top *"
+  - "htop *"
+  - "kill *"
+  - "pkill *"
+  - "pgrep *"
+  - "lsof *"
+  - "timeout *"
+  - "gtimeout *"
+  - "time *"
+
+# --- Network (read/diagnostic) ---
+utils_network_read:
+  - "ping *"
+  - "dig *"
+  - "host *"
+  - "netstat *"
+  - "ss *"
+  - "ifconfig *"
+  - "nc *"
+
+# --- Runtimes & version managers ---
+runtimes:
+  - "fnm *"
+  - "nvm *"
+  - "rbenv *"
+  - "pyenv *"
+  - "mise *"
+  - "asdf *"
+  - "deno *"
+  - "node *"
+
+# --- AI tools ---
+ai:
+  - "ollama *"
+  - "huggingface-cli *"
+  - "transformers-cli *"
+  - "claude *"
+
+# =============================================================================
+# YOLO TIER — full access, just do it
+# =============================================================================
+
+# --- Destructive file/system ops ---
+utils_destructive:
+  - "rm *"
+  - "chown *"
+  - "sed *"
+  - "awk *"
+  - "eval *"
+  - "nohup *"
+
+# --- macOS system modification ---
+utils_macos_system:
+  - "defaults *"
+  - "osascript *"
+  - "sysctl *"
+  - "dscl *"
+  - "diskutil *"
+  - "launchctl *"
+
+# --- Network (write/remote) ---
+utils_network_write:
+  - "ssh *"
+  - "scp *"
+  - "rsync *"
+  - "nmap *"
+
+# --- Cloud CLIs ---
+cloud:
+  - "gcloud *"
+  - "aws *"
+  - "az *"
+  - "railway *"
+  - "fly *"
+  - "vercel *"
+  - "netlify *"
+
+# --- Database clients ---
+database:
+  - "psql *"
+  - "mysql *"
+  - "sqlite3 *"
+  - "redis-cli *"
+  - "mongosh *"
+  - "duckdb *"
+
+# --- Kubernetes ---
+kubernetes:
+  - "kubectl *"
+  - "k9s *"
+  - "helm *"
+
+# --- Infrastructure ---
+infra_extras:
+  - "pulumi *"
+  - "terraform *"
+  - "vagrant *"
+  - "orbctl *"
+  - "colima *"
+  - "lima *"
+  - "multipass *"
+  - "supabase *"
+  - "firebase *"
+  - "doppler *"

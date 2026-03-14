@@ -4,5 +4,41 @@
       "source": "github",
       "repo": "anthropics/claude-code"
     }
+  },
+  "antfu-skills": {
+    "source": {
+      "source": "github",
+      "repo": "antfu/skills"
+    }
+  },
+  "claude-skills": {
+    "source": {
+      "source": "github",
+      "repo": "claude-skills/sveltekit-svelte5-tailwind-skill"
+    }
+  },
+  "jezweb-claude-skills": {
+    "source": {
+      "source": "github",
+      "repo": "jezweb/claude-skills"
+    }
+  },
+  "bobmatnyc-claude-mpm-skills": {
+    "source": {
+      "source": "github",
+      "repo": "bobmatnyc/claude-mpm-skills"
+    }
+  },
+  "linehaulai": {
+    "source": {
+      "source": "github",
+      "repo": "linehaul-ai/linehaulai-claude-marketplace"
+    }
+  },
+  "xiyo-zheon": {
+    "source": {
+      "source": "github",
+      "repo": "xiyo/zheon"
+    }
   }
 }

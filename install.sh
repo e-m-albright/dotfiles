@@ -273,17 +273,9 @@ print_header "🤖 Claude Code"
 print_section "Setup"
 . "$DOTFILES_DIR/claude/setup.sh"
 
-# Agent Permissions (safe commands for agentic tools)
+# Agent Permissions (tiered profiles: scout, dev, yolo)
 print_section "Agent Permissions"
-if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-    "$DOTFILES_DIR/.agents/generate-permissions.sh" claude >/dev/null 2>&1 && \
-        print_success "Claude Code permissions merged into ~/.claude/settings.json" || \
-        print_warning "Failed to merge Claude Code permissions"
-else
-    print_warning "Skipping Claude Code permissions (requires yq and jq)"
-    print_info "  Install with: brew install yq jq"
-    print_info "  Then run: ~/dotfiles/.agents/generate-permissions.sh claude"
-fi
+"$DOTFILES_DIR/.agents/generate-permissions.sh" claude || true
 
 # Clear cache
 . "$DOTFILES_DIR/bin/dotfiles" clean

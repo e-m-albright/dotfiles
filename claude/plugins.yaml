@@ -38,5 +38,18 @@
 # Integrations
 - Notion
 
+# Community skills — SvelteKit / Cloudflare stack
+- vitest@antfu-skills                                          # Vitest unit testing
+- sveltekit-svelte5-tailwind-skill@claude-skills               # SvelteKit + Svelte 5 + Tailwind
+- drizzle-orm-d1@jezweb-claude-skills                          # Drizzle ORM + Cloudflare D1
+- hono-cloudflare@bobmatnyc-claude-mpm-skills                  # Hono on Cloudflare Workers
+- playwright-e2e-testing@bobmatnyc-claude-mpm-skills           # Playwright E2E testing
+- tailwind-css@bobmatnyc-claude-mpm-skills                     # Tailwind CSS deep knowledge
+- cloudflare-worker-builder@jezweb-claude-skills               # Cloudflare Worker deployment
+
+# Community skills — UI
+- shadcn-svelte-skill@linehaulai                               # shadcn-svelte components
+- svelte-ui-design@xiyo-zheon                                  # Svelte UI design patterns
+
 # --- Considered (uncomment to enable) ---
 # - Dagster                              # Data pipeline orchestration & observability
