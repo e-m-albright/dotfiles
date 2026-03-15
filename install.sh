@@ -149,6 +149,18 @@ if command -v fnm >/dev/null 2>&1; then
     else
         print_info "Railway CLI already installed"
     fi
+
+    # Stable symlinks for node/npx in /opt/homebrew/bin
+    # GUI apps (Claude Desktop, Cursor) can't find fnm-managed node because they
+    # don't source .zshrc. Symlinks in a PATH they do search solve this.
+    local node_bin npx_bin
+    node_bin="$(command -v node 2>/dev/null)"
+    npx_bin="$(command -v npx 2>/dev/null)"
+    if [[ -n "$node_bin" && -d /opt/homebrew/bin ]]; then
+        ln -sf "$node_bin" /opt/homebrew/bin/node
+        ln -sf "$npx_bin" /opt/homebrew/bin/npx
+        print_success "Node/npx symlinked to /opt/homebrew/bin (GUI app support)"
+    fi
 fi
 
 # -- Bun (Preferred JavaScript package manager / runtime)
@@ -262,6 +274,24 @@ print_info "  Example: dotfiles scaffold typescript svelte my-app"
 
 # Claude Code (instructions, plugins, voice, permissions)
 print_header "🤖 Claude Code"
+
+# gh mcp-server extension (required for GitHub MCP server)
+print_section "GitHub MCP Extension"
+if command -v gh >/dev/null 2>&1; then
+    if gh extension list 2>/dev/null | grep -q "gh-mcp"; then
+        print_info "gh-mcp extension already installed"
+    else
+        print_action "Installing gh-mcp extension (GitHub MCP server)..."
+        if gh extension install shuymn/gh-mcp >/dev/null 2>&1; then
+            print_success "gh-mcp extension installed"
+        else
+            print_warn "gh-mcp install failed — run 'gh auth login' first, then retry"
+        fi
+    fi
+else
+    print_info "gh not found — skipping MCP extension (installed via brew.sh)"
+fi
+
 print_section "Setup"
 . "$DOTFILES_DIR/agents/claude/setup.sh"
 

@@ -124,7 +124,7 @@ setup_mcp() {
         | from_entries
     ' "$shared_mcp")
 
-    jq --argjson servers "$mcp_servers" '.mcpServers = ($servers + (.mcpServers // {}))' "$CLAUDE_JSON.bak" > "$CLAUDE_JSON"
+    jq --argjson servers "$mcp_servers" '.mcpServers = ((.mcpServers // {}) + $servers)' "$CLAUDE_JSON.bak" > "$CLAUDE_JSON"
 
     local count
     count=$(echo "$mcp_servers" | jq 'length')
@@ -141,16 +141,16 @@ setup_desktop() {
     [[ -f "$DESKTOP_CONFIG" ]] || echo '{}' > "$DESKTOP_CONFIG"
     cp "$DESKTOP_CONFIG" "$DESKTOP_CONFIG.bak"
 
-    # Merge MCP servers from shared source
+    # Merge MCP servers from shared source (servers targeting "claude" or "desktop")
     if [[ -f "$DOTFILES_DIR/agents/shared/mcp-servers.json" ]]; then
         local mcp_servers
         mcp_servers=$(jq '
             to_entries
-            | map(select(.value.targets | index("claude")))
+            | map(select(.value.targets | (index("claude") or index("desktop"))))
             | map({key: .key, value: (.value | del(.targets))})
             | from_entries
         ' "$DOTFILES_DIR/agents/shared/mcp-servers.json")
-        jq --argjson servers "$mcp_servers" '.mcpServers = ($servers + (.mcpServers // {}))' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
+        jq --argjson servers "$mcp_servers" '.mcpServers = ((.mcpServers // {}) + $servers)' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
         cp "$DESKTOP_CONFIG" "$DESKTOP_CONFIG.bak"
 
         local count

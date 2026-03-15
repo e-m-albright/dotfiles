@@ -1,7 +1,7 @@
 {
   "github": {
     "command": "gh",
-    "args": ["mcp-server"],
+    "args": ["mcp"],
     "targets": ["claude", "cursor"]
   },
   "linear": {

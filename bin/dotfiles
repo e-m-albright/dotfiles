@@ -109,8 +109,39 @@ sub_doctor () {
         all_ok=false
     fi
 
+    # Check node/npx symlinks for GUI apps (Claude Desktop, Cursor)
+    if command -v fnm >/dev/null 2>&1; then
+        if [[ -L /opt/homebrew/bin/node ]] && [[ -x /opt/homebrew/bin/node ]]; then
+            printf "  ${GREEN}✓${NC} %-20s symlinked for GUI apps\n" "Node symlink"
+        elif [[ "$FIX" == true ]] && command -v node >/dev/null 2>&1; then
+            ln -sf "$(command -v node)" /opt/homebrew/bin/node
+            ln -sf "$(command -v npx)" /opt/homebrew/bin/npx
+            printf "  ${GREEN}→${NC} %-20s fixed\n" "Node symlink"
+        else
+            printf "  ${RED}✗${NC} %-20s ${YELLOW}Run: dotfiles install (or --fix)${NC}\n" "Node symlink"
+            all_ok=false
+        fi
+    fi
+
     printf "\n${BLUE}AI Tools${NC}\n"
     check_tool "Claude Code" "claude" "brew install claude-code"
+
+    # Check gh mcp-server extension
+    if command -v gh >/dev/null 2>&1; then
+        if gh extension list 2>/dev/null | grep -q "gh-mcp"; then
+            printf "  ${GREEN}✓${NC} %-20s installed\n" "gh-mcp"
+        elif [[ "$FIX" == true ]]; then
+            if gh extension install shuymn/gh-mcp >/dev/null 2>&1; then
+                printf "  ${GREEN}→${NC} %-20s fixed\n" "gh-mcp"
+            else
+                printf "  ${RED}✗${NC} %-20s ${YELLOW}gh auth login, then: gh extension install shuymn/gh-mcp${NC}\n" "gh-mcp"
+                all_ok=false
+            fi
+        else
+            printf "  ${RED}✗${NC} %-20s ${YELLOW}Run: gh extension install shuymn/gh-mcp${NC}\n" "gh-mcp"
+            all_ok=false
+        fi
+    fi
 
     printf "\n${BLUE}Dev Tools${NC}\n"
     check_tool "Just" "just" "brew install just"
