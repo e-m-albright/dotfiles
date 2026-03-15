@@ -135,6 +135,7 @@ core_cli=(
     wget                # Web downloader
     openssl             # TLS/crypto toolkit
     "bash-completion@2" # Bash completion
+    micro               # Modern terminal text editor
     # tmux              # Terminal multiplexer (disabled)
 )
 
