@@ -153,7 +153,6 @@ if command -v fnm >/dev/null 2>&1; then
     # Stable symlinks for node/npx in /opt/homebrew/bin
     # GUI apps (Claude Desktop, Cursor) can't find fnm-managed node because they
     # don't source .zshrc. Symlinks in a PATH they do search solve this.
-    local node_bin npx_bin
     node_bin="$(command -v node 2>/dev/null)"
     npx_bin="$(command -v npx 2>/dev/null)"
     if [[ -n "$node_bin" && -d /opt/homebrew/bin ]]; then
