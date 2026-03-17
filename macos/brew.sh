@@ -154,6 +154,7 @@ dev_cli=(
     hyperfine           # Command-line benchmarking tool
     atlas               # Database schema migration tool (requires ariga/tap)
     duckdb              # Fast analytical database (SQL for analytics)
+    railway             # Railway.app CLI (deploy, logs, manage projects)
     # libpq             # PostgreSQL client library (psql, pg_dump — enable if needed)
     # sentry-cli        # Sentry error tracking (releases, source maps, deploys)
     # datadog-ci        # Datadog CI test visibility & synthetics
