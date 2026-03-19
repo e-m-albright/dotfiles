@@ -79,7 +79,7 @@ my-project/
 │       ├── decisions/         # ADRs (versioned)
 │       └── sessions/
 └── .cursor/rules/             # Cursor symlinks → .ai/rules/ (default)
-    # Plus --tools extras: .github/instructions/, .gemini/rules/, GEMINI.md, CODEX.md
+    # Plus --tools extras: .github/instructions/, .gemini/rules/, GEMINI.md→, CODEX.md→ (symlinks to AGENTS.md)
 ```
 
 **How rules are deployed:**
@@ -92,11 +92,11 @@ my-project/
 
 | Tool | Discovery | Directory |
 |------|-----------|-----------|
-| Claude Code | CLAUDE.md + .ai/rules/ | (direct) |
+| Claude Code | CLAUDE.md → AGENTS.md | (direct) |
 | Cursor | Symlinks | .cursor/rules/ |
 | GitHub Copilot | Symlinks | .github/instructions/ |
-| Gemini CLI | GEMINI.md + symlinks | .gemini/rules/ |
-| Codex | CODEX.md | (reads AGENTS.md) |
+| Gemini CLI | GEMINI.md → AGENTS.md + symlinks | .gemini/rules/ |
+| Codex | CODEX.md → AGENTS.md | (direct) |
 
 ### Available Recipes
 

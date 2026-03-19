@@ -1,5 +1,5 @@
 {
-  "$comment": "Tool discovery registry — how each AI tool finds .ai/rules/",
+  "$comment": "Tool discovery registry — how each AI tool finds .ai/rules/. rootFile entries become symlinks to AGENTS.md",
   "tools": {
     "cursor": {
       "rulesDir": ".cursor/rules",
@@ -28,7 +28,7 @@
     "codex": {
       "rulesDir": null,
       "suffix": null,
-      "strategy": "root-shim",
+      "strategy": "symlink",
       "symlinkPrefix": null,
       "rootFile": "CODEX.md",
       "agentsMdAware": true

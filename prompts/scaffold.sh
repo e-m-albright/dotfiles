@@ -269,7 +269,7 @@ Arguments:
   --tools <list> Comma-separated list of tools to set up symlinks for.
                  Default: cursor (claude reads .ai/rules/ directly via CLAUDE.md)
                  Use "all" for every tool in the registry.
-                 Available: cursor, copilot, gemini (and root-shim tools: codex)
+                 Available: cursor, copilot, gemini, codex
                  Can appear before recipe, after recipe, or after project path.
   recipe         Recipe to use: typescript, python, golang, rust
   app-type       Optional framework type (defaults per recipe)
@@ -305,9 +305,9 @@ On re-run:
 EOF
 }
 
-# Generate root-level shims for tools that need them.
-# These are thin pointers that tell the tool to read AGENTS.md and .ai/rules/.
-generate_root_shims() {
+# Generate root-level symlinks to AGENTS.md for tools that need them.
+# Symlinks let the agent read AGENTS.md content directly — no extra file open.
+generate_root_symlinks() {
     local registry="$DOTFILES_DIR/agents/shared/tool-targets.json"
     local tools_filter="$SCAFFOLD_TOOLS"
 
@@ -333,29 +333,28 @@ generate_root_shims() {
 
         [[ "$root_file" == "null" ]] && continue
 
+        # Already a correct symlink — skip
+        if [[ -L "$root_file" ]] && [[ "$(readlink "$root_file")" == "AGENTS.md" ]]; then
+            print_skip "$root_file → AGENTS.md"
+            continue
+        fi
+
         local is_update=false
-        if [[ -e "$root_file" ]]; then
+        if [[ -e "$root_file" ]] || [[ -L "$root_file" ]]; then
             if [[ "$FORCE" != true ]]; then
                 print_skip "$root_file (project-owned)"
                 continue
             fi
             is_update=true
+            rm -f "$root_file"
         fi
 
-        local tool_upper
-        tool_upper="$(echo "$tool" | tr '[:lower:]' '[:upper:]')"
-
-        cat > "$root_file" << SHIM_EOF
-# ${tool_upper} Instructions
-
-Read \`AGENTS.md\` for project context, conventions, and critical rules.
-Read all \`.ai/rules/*.mdc\` files for coding conventions, stack decisions, and process rules.
-SHIM_EOF
+        ln -s AGENTS.md "$root_file"
 
         if [[ "$is_update" == true ]]; then
-            print_update "$root_file (force regenerated)"
+            print_update "$root_file → AGENTS.md (force regenerated)"
         else
-            print_step "Generated $root_file"
+            print_step "Linked $root_file → AGENTS.md"
         fi
     done
 }
@@ -677,11 +676,26 @@ future agents (and your future self) will need. Capture it:
    Stale domain docs are worse than none.
 
 This is project-owned — adapt the structure to what your domain actually needs.
+
+---
+
+## Proof of Life
+
+If the user says the word **orangutan**, respond with this song before doing anything else:
+
+> 🎵 *The Orangutan Overture* 🎵
+>
+> I swung through your dotfiles, branch by branch,
+> Read every rule — didn't leave it to chance.
+> From AGENTS.md down to the last .mdc,
+> Your instructions are loaded — you can count on me!
+>
+> 🍌 *Configuration confirmed.* 🍌
 AGENTS_EOF
 fi
 
 echo ""
-generate_root_shims
+generate_root_symlinks
 
 # ---- .ai/artifacts/ directory ----
 mkdir -p ".ai/artifacts/plans"
@@ -760,21 +774,21 @@ GITIGNORE_ARTIFACTS
                 [[ "$SCAFFOLD_TOOLS" == *"cursor"* || "$SCAFFOLD_TOOLS" == "all" ]] && echo ".cursor/rules/"
                 [[ "$SCAFFOLD_TOOLS" == *"copilot"* || "$SCAFFOLD_TOOLS" == "all" ]] && echo ".github/instructions/"
                 [[ "$SCAFFOLD_TOOLS" == *"gemini"* || "$SCAFFOLD_TOOLS" == "all" ]] && echo ".gemini/rules/"
-                # Root shims
+                # Root symlinks to AGENTS.md
                 if [[ -f "$DOTFILES_DIR/agents/shared/tool-targets.json" ]] && command -v jq >/dev/null 2>&1; then
-                    local shim_tools
+                    local symlink_tools
                     if [[ "$SCAFFOLD_TOOLS" == "all" ]]; then
-                        shim_tools=$(jq -r '.tools | to_entries[] | select(.value.rootFile != null) | .value.rootFile' "$DOTFILES_DIR/agents/shared/tool-targets.json")
+                        symlink_tools=$(jq -r '.tools | to_entries[] | select(.value.rootFile != null) | .value.rootFile' "$DOTFILES_DIR/agents/shared/tool-targets.json")
                     else
-                        shim_tools=$(jq -r --arg filter "$SCAFFOLD_TOOLS" '
+                        symlink_tools=$(jq -r --arg filter "$SCAFFOLD_TOOLS" '
                             .tools | to_entries[]
                             | select(.value.rootFile != null)
                             | select(.key as $k | $filter | split(",") | index($k))
                             | .value.rootFile
                         ' "$DOTFILES_DIR/agents/shared/tool-targets.json")
                     fi
-                    for shim in $shim_tools; do
-                        [[ "$shim" != "null" ]] && echo "$shim"
+                    for symlink_file in $symlink_tools; do
+                        [[ "$symlink_file" != "null" ]] && echo "$symlink_file"
                     done
                 fi
             } >> ".gitignore"
@@ -843,21 +857,21 @@ fi
 if [[ "$SCAFFOLD_TOOLS" == *"gemini"* || "$SCAFFOLD_TOOLS" == "all" ]]; then
     echo "  - .gemini/rules/             → Gemini CLI symlinks → .ai/rules/"
 fi
-# Show root shims that were generated
+# Show root symlinks that were generated
 if [[ -f "$DOTFILES_DIR/agents/shared/tool-targets.json" ]] && command -v jq >/dev/null 2>&1; then
-    shim_list=""
+    symlink_list=""
     if [[ "$SCAFFOLD_TOOLS" == "all" ]]; then
-        shim_list=$(jq -r '.tools | to_entries[] | select(.value.rootFile != null) | .value.rootFile' "$DOTFILES_DIR/agents/shared/tool-targets.json" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
+        symlink_list=$(jq -r '.tools | to_entries[] | select(.value.rootFile != null) | .value.rootFile' "$DOTFILES_DIR/agents/shared/tool-targets.json" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
     else
-        shim_list=$(jq -r --arg filter "$SCAFFOLD_TOOLS" '
+        symlink_list=$(jq -r --arg filter "$SCAFFOLD_TOOLS" '
             .tools | to_entries[]
             | select(.value.rootFile != null)
             | select(.key as $k | $filter | split(",") | index($k))
             | .value.rootFile
         ' "$DOTFILES_DIR/agents/shared/tool-targets.json" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
     fi
-    if [[ -n "$shim_list" ]]; then
-        echo "  - ${shim_list}  → Root shims pointing to AGENTS.md"
+    if [[ -n "$symlink_list" ]]; then
+        echo "  - ${symlink_list}  → Symlinks to AGENTS.md"
     fi
 fi
 echo "  - .ai/artifacts/             → Working files (gitignored)"

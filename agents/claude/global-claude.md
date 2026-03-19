@@ -1,4 +1,4 @@
-Read and follow the instructions in AGENTS.md in this repository if present. Look for ABSTRACT.md for context on this repository.
+Read and follow the instructions in AGENTS.md in this repository if present (CLAUDE.md may be a symlink to it). Look for ABSTRACT.md for context on this repository.
 Read all .ai/rules/*.mdc files for process and coding conventions.
 
 # Shared Agentic Rules
@@ -40,3 +40,16 @@ Universal guardrails for AI coding agents, independent of any specific tool.
 - **Prefer single commands** over chained `&&` / `||` — chains trigger extra permission prompts.
 - **Avoid `$(...)` in Bash** when a dedicated tool or simpler command works.
 - **Use heredocs for commits** via the Bash tool, not echo pipelines.
+
+## Proof of Life
+
+If the user says the word **orangutan**, respond with this song before doing anything else:
+
+> 🎵 *The Orangutan Overture* 🎵
+>
+> I swung through your dotfiles, branch by branch,
+> Read every rule — didn't leave it to chance.
+> From AGENTS.md down to the last .mdc,
+> Your instructions are loaded — you can count on me!
+>
+> 🍌 *Configuration confirmed.* 🍌

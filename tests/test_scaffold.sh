@@ -353,7 +353,7 @@ else
         fi
 
         # Required files
-        for required in AGENTS.md .ai/rules .agents/decisions/_index.md; do
+        for required in AGENTS.md .ai/rules .ai/artifacts/decisions/_index.md; do
             if [[ -e "$project_dir/$required" ]]; then
                 pass "$required exists"
             else
@@ -428,6 +428,35 @@ else
         pass "AGENTS.md unchanged on re-run (idempotent)"
     else
         fail "AGENTS.md changed on re-run (not idempotent)"
+    fi
+
+    # Test --tools all creates symlinks to AGENTS.md (not shim files)
+    echo ""
+    echo -e "  ${BLUE}Root symlink test (--tools all):${NC}"
+    symlink_dir="$TMPDIR_BASE/test-symlinks"
+
+    "$SCAFFOLD" python fastapi "$symlink_dir" --tools all >/dev/null 2>&1
+
+    for root_file in GEMINI.md CODEX.md; do
+        if [[ -L "$symlink_dir/$root_file" ]]; then
+            target=$(readlink "$symlink_dir/$root_file")
+            if [[ "$target" == "AGENTS.md" ]]; then
+                pass "$root_file is symlink → AGENTS.md"
+            else
+                fail "$root_file symlinks to $target (expected AGENTS.md)"
+            fi
+        elif [[ -f "$symlink_dir/$root_file" ]]; then
+            fail "$root_file is a regular file (expected symlink)"
+        else
+            fail "$root_file missing"
+        fi
+    done
+
+    # Symlinks should resolve to readable content
+    if [[ -r "$symlink_dir/GEMINI.md" ]] && grep -q '\.ai/rules' "$symlink_dir/GEMINI.md" 2>/dev/null; then
+        pass "GEMINI.md symlink resolves to AGENTS.md content"
+    else
+        fail "GEMINI.md symlink doesn't resolve correctly"
     fi
 fi
 
