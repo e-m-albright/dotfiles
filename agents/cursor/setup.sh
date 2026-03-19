@@ -15,21 +15,39 @@ require_jq() {
     command -v jq >/dev/null 2>&1 || { print_warning "jq not found — skipping"; return 1; }
 }
 
-# --- Generate .mcp.json from shared source ---
+# --- Merge shared MCP servers into editors/cursor/mcp.json ---
+# Additive: shared servers are merged in, but custom/machine-specific servers are preserved.
 setup_mcp() {
     [[ -f "$SHARED_DIR/mcp-servers.json" ]] || return 0
     require_jq || return 0
 
-    jq '{mcpServers: (
+    local mcp_file="$DOTFILES_DIR/editors/cursor/mcp.json"
+    mkdir -p "$(dirname "$mcp_file")"
+
+    # Read existing config (preserve custom servers)
+    local existing='{}'
+    if [[ -s "$mcp_file" ]]; then
+        existing=$(jq '.' "$mcp_file" 2>/dev/null || echo '{}')
+    fi
+
+    # Build shared servers targeting cursor, strip targets field
+    local shared_servers
+    shared_servers=$(jq '{mcpServers: (
         to_entries
         | map(select(.value.targets | index("cursor")))
         | map({key: .key, value: (.value | del(.targets))})
         | from_entries
-    )}' "$SHARED_DIR/mcp-servers.json" > "$SCRIPT_DIR/.mcp.json"
+    )}' "$SHARED_DIR/mcp-servers.json")
 
-    local count
-    count=$(jq '.mcpServers | length' "$SCRIPT_DIR/.mcp.json")
-    print_success "Generated .mcp.json ($count servers)"
+    # Merge: existing custom servers preserved, shared servers added/updated
+    jq --argjson shared "$shared_servers" '
+        .mcpServers = ((.mcpServers // {}) + $shared.mcpServers)
+    ' <<< "$existing" > "$mcp_file"
+
+    local total shared_count
+    total=$(jq '.mcpServers | length' "$mcp_file")
+    shared_count=$(echo "$shared_servers" | jq '.mcpServers | length')
+    print_success "MCP servers: $shared_count shared + $(( total - shared_count )) custom = $total total"
 }
 
 # --- Generate rules from shared source ---

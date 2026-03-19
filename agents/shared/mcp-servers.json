@@ -23,5 +23,9 @@
     "command": "npx",
     "args": ["-y", "@upstash/context7-mcp@latest"],
     "targets": ["cursor"]
+  },
+  "exa": {
+    "url": "https://mcp.exa.ai/mcp",
+    "targets": ["cursor"]
   }
 }

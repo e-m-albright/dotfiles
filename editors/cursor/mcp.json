@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "gh",
+      "args": [
+        "mcp"
+      ]
+    },
+    "linear": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.linear.app/mcp"
+      ]
+    },
+    "notion": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.notion.com/mcp"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    },
+    "exa": {
+      "url": "https://mcp.exa.ai/mcp"
+    }
+  }
+}
