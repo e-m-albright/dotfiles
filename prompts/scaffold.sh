@@ -36,6 +36,46 @@ FORCE=false
 # Source shared print functions
 source "$DOTFILES_DIR/macos/print_utils.sh"
 
+# Add manifest header to a copied rule file for staleness tracking
+# Usage: add_manifest_header <dest_file> <source_rule_path>
+add_manifest_header() {
+    local dest="$1"
+    local rule_path="$2"
+    local datestamp
+    datestamp="$(date +%Y-%m-%d)"
+    local header="<!-- source: dotfiles/.ai/rules/$rule_path | $datestamp -->"
+
+    # If file already has a manifest header, replace it
+    if head -1 "$dest" | grep -q '^<!-- source:'; then
+        local tmp
+        tmp="$(mktemp)"
+        echo "$header" > "$tmp"
+        tail -n +2 "$dest" >> "$tmp"
+        mv "$tmp" "$dest"
+    else
+        local tmp
+        tmp="$(mktemp)"
+        echo "$header" > "$tmp"
+        cat "$dest" >> "$tmp"
+        mv "$tmp" "$dest"
+    fi
+}
+
+# Compare a source rule file against a dest that may have a manifest header.
+# Returns 0 (true) if content matches (ignoring manifest), 1 otherwise.
+# Usage: diff_ignoring_manifest <source> <dest>
+diff_ignoring_manifest() {
+    local source="$1"
+    local dest="$2"
+
+    if head -1 "$dest" | grep -q '^<!-- source:'; then
+        # Strip manifest header (line 1) before comparing
+        tail -n +2 "$dest" | diff -q "$source" - >/dev/null 2>&1
+    else
+        diff -q "$source" "$dest" >/dev/null 2>&1
+    fi
+}
+
 # =============================================================================
 # Universal rules (copied — re-run with --force to update)
 # =============================================================================
@@ -45,6 +85,9 @@ UNIVERSAL_RULES=(
     "process/github-workflow.mdc"
     "process/tickets-and-prs.mdc"
     "process/agent-artifacts.mdc"
+    "process/code-review.mdc"
+    "process/planning.mdc"
+    "process/design-review.mdc"
 )
 
 # =============================================================================
@@ -150,7 +193,7 @@ copy_universal_rule() {
     fi
 
     # Check if content is already up to date
-    if [[ -f "$dest" ]] && diff -q "$source" "$dest" >/dev/null 2>&1; then
+    if [[ -f "$dest" ]] && diff_ignoring_manifest "$source" "$dest"; then
         print_skip ".ai/rules/$rule_name"
         return
     fi
@@ -161,6 +204,7 @@ copy_universal_rule() {
     fi
 
     cp "$source" "$dest"
+    add_manifest_header "$dest" "$rule_path"
     print_step "Copied .ai/rules/$rule_name"
 }
 
@@ -182,6 +226,7 @@ copy_ai_rule() {
     fi
 
     cp "$source" ".ai/rules/$rule_name"
+    add_manifest_header ".ai/rules/$rule_name" "$rule_path"
     if [[ "$FORCE" == true ]]; then
         print_update ".ai/rules/$rule_name (force copied)"
     else
@@ -189,34 +234,75 @@ copy_ai_rule() {
     fi
 }
 
-# Create relative symlinks in .cursor/rules/ → .ai/rules/ for Cursor discovery
-setup_cursor_symlinks() {
-    mkdir -p ".cursor/rules"
+# Create symlinks from tool-specific rule dirs → .ai/rules/ for tool discovery.
+# Reads agents/shared/tool-targets.json for directory conventions.
+# Falls back to Cursor-only if jq is not available.
+setup_tool_symlinks() {
+    local registry="$DOTFILES_DIR/agents/shared/tool-targets.json"
+
+    if [[ ! -f "$registry" ]] || ! command -v jq >/dev/null 2>&1; then
+        # Fallback: hardcoded Cursor symlinks (no jq)
+        _symlink_rules_for_tool ".cursor/rules" ".mdc" "../../"
+        return
+    fi
+
+    # Read each tool with strategy=symlink from registry
+    local tools
+    tools=$(jq -r '.tools | to_entries[] | select(.value.strategy == "symlink") | .key' "$registry")
+
+    for tool in $tools; do
+        local rules_dir suffix prefix
+        rules_dir=$(jq -r ".tools[\"$tool\"].rulesDir" "$registry")
+        suffix=$(jq -r ".tools[\"$tool\"].suffix" "$registry")
+        prefix=$(jq -r ".tools[\"$tool\"].symlinkPrefix" "$registry")
+
+        _symlink_rules_for_tool "$rules_dir" "$suffix" "$prefix"
+    done
+}
+
+# Create symlinks in a tool's rule dir pointing to .ai/rules/ files
+# Usage: _symlink_rules_for_tool <rules_dir> <suffix> <symlink_prefix>
+_symlink_rules_for_tool() {
+    local rules_dir="$1"
+    local suffix="$2"
+    local prefix="$3"
+    local tool_name
+    tool_name="$(echo "$rules_dir" | cut -d/ -f1 | sed 's/^\.//')"
+
+    mkdir -p "$rules_dir"
 
     for rule_file in .ai/rules/*.mdc; do
         [[ -f "$rule_file" ]] || continue
-        local rule_name
+        local rule_name base_name target_name tool_link
         rule_name="$(basename "$rule_file")"
-        local cursor_link=".cursor/rules/$rule_name"
+        base_name="${rule_name%.mdc}"
 
-        if [[ -L "$cursor_link" ]]; then
-            # Already a symlink — update if target changed
+        # Target filename uses the tool's expected suffix
+        if [[ "$suffix" == ".mdc" ]]; then
+            target_name="$rule_name"
+        else
+            target_name="${base_name}${suffix}"
+        fi
+
+        tool_link="$rules_dir/$target_name"
+
+        if [[ -L "$tool_link" ]]; then
             local current_target
-            current_target="$(readlink "$cursor_link")"
-            if [[ "$current_target" == "../../.ai/rules/$rule_name" ]]; then
+            current_target="$(readlink "$tool_link")"
+            if [[ "$current_target" == "${prefix}.ai/rules/$rule_name" ]]; then
                 continue
             fi
-            rm "$cursor_link"
-        elif [[ -f "$cursor_link" ]]; then
+            rm "$tool_link"
+        elif [[ -f "$tool_link" ]]; then
             if [[ "$FORCE" != true ]]; then
                 continue
             fi
-            rm "$cursor_link"
+            rm "$tool_link"
         fi
 
-        ln -s "../../.ai/rules/$rule_name" "$cursor_link"
+        ln -s "${prefix}.ai/rules/$rule_name" "$tool_link"
     done
-    print_step "Cursor symlinks created (.cursor/rules/ → .ai/rules/)"
+    print_step "Symlinks: $rules_dir/ → .ai/rules/ ($tool_name)"
 }
 
 show_help() {
@@ -262,6 +348,51 @@ On re-run:
   - Recipe rules skip existing files (project may have customized).
   - .cursor/rules/ symlinks are refreshed to match .ai/rules/.
 EOF
+}
+
+# Generate root-level shims for tools that need them.
+# These are thin pointers that tell the tool to read AGENTS.md and .ai/rules/.
+generate_root_shims() {
+    local registry="$DOTFILES_DIR/agents/shared/tool-targets.json"
+
+    if [[ ! -f "$registry" ]] || ! command -v jq >/dev/null 2>&1; then
+        return
+    fi
+
+    local tools
+    tools=$(jq -r '.tools | to_entries[] | select(.value.rootFile != null) | .key' "$registry")
+
+    for tool in $tools; do
+        local root_file
+        root_file=$(jq -r ".tools[\"$tool\"].rootFile" "$registry")
+
+        [[ "$root_file" == "null" ]] && continue
+
+        local is_update=false
+        if [[ -e "$root_file" ]]; then
+            if [[ "$FORCE" != true ]]; then
+                print_skip "$root_file (project-owned)"
+                continue
+            fi
+            is_update=true
+        fi
+
+        local tool_upper
+        tool_upper="$(echo "$tool" | tr '[:lower:]' '[:upper:]')"
+
+        cat > "$root_file" << SHIM_EOF
+# ${tool_upper} Instructions
+
+Read \`AGENTS.md\` for project context, conventions, and critical rules.
+Read all \`.ai/rules/*.mdc\` files for coding conventions, stack decisions, and process rules.
+SHIM_EOF
+
+        if [[ "$is_update" == true ]]; then
+            print_update "$root_file (force regenerated)"
+        else
+            print_step "Generated $root_file"
+        fi
+    done
 }
 
 # -----------------------------------------------------------------------------
@@ -464,9 +595,9 @@ while IFS= read -r rule; do
     copy_ai_rule "$rule"
 done < <(get_recipe_rules "$RECIPE" "$APP_TYPE")
 
-# ---- Cursor Symlinks (.cursor/rules/ → .ai/rules/) ----
+# ---- Tool Symlinks (multi-tool rule discovery) ----
 echo ""
-setup_cursor_symlinks
+setup_tool_symlinks
 
 # ---- AGENTS.md (project-owned) ----
 echo ""
@@ -482,7 +613,10 @@ else
 # AGENTS.md
 
 Read all `.ai/rules/*.mdc` files for coding conventions, stack decisions,
-and process rules. Cursor users: rules are also in `.cursor/rules/`.
+and process rules. These are the shared source of truth for all AI tools.
+
+Tool-specific rule directories (`.cursor/rules/`, `.github/instructions/`,
+`.gemini/rules/`) are symlinks to `.ai/rules/` — do not edit them directly.
 
 ---
 
@@ -558,6 +692,9 @@ This is project-owned — adapt the structure to what your domain actually needs
 AGENTS_EOF
 fi
 
+echo ""
+generate_root_shims
+
 # ---- .agents/ directory ----
 mkdir -p ".agents/plans"
 mkdir -p ".agents/research"
@@ -601,19 +738,19 @@ fi
 update_gitignore() {
     local needs_agents=false
     local needs_ai_rules=false
-    local needs_cursor_rules=false
+    local needs_tool_rules=false
 
     if [[ -f ".gitignore" ]]; then
         grep -q "^\.agents/" ".gitignore" 2>/dev/null || needs_agents=true
         grep -q "^\.ai/rules/global-process" ".gitignore" 2>/dev/null || needs_ai_rules=true
-        grep -q "^\.cursor/rules/" ".gitignore" 2>/dev/null || needs_cursor_rules=true
+        grep -q "# Tool-specific rule symlinks" ".gitignore" 2>/dev/null || needs_tool_rules=true
     else
         needs_agents=true
         needs_ai_rules=true
-        needs_cursor_rules=true
+        needs_tool_rules=true
     fi
 
-    if [[ "$needs_agents" == true ]] || [[ "$needs_ai_rules" == true ]] || [[ "$needs_cursor_rules" == true ]]; then
+    if [[ "$needs_agents" == true ]] || [[ "$needs_ai_rules" == true ]] || [[ "$needs_tool_rules" == true ]]; then
         if [[ ! -f ".gitignore" ]]; then
             touch ".gitignore"
         fi
@@ -641,18 +778,25 @@ GITIGNORE_AGENTS
 .ai/rules/github-workflow.mdc
 .ai/rules/tickets-and-prs.mdc
 .ai/rules/agent-artifacts.mdc
+.ai/rules/code-review.mdc
+.ai/rules/planning.mdc
+.ai/rules/design-review.mdc
 .ai/rules/shell-automation.mdc
 # Recipe-specific rules below this line are committed (project-owned)
 GITIGNORE_AI
         fi
 
-        if [[ "$needs_cursor_rules" == true ]]; then
-            print_step "Adding .cursor/rules/ to .gitignore"
-            cat >> ".gitignore" << 'GITIGNORE_CURSOR'
+        if [[ "$needs_tool_rules" == true ]]; then
+            print_step "Adding tool rule dirs to .gitignore"
+            cat >> ".gitignore" << 'GITIGNORE_TOOLS'
 
-# .cursor/rules/ — auto-generated symlinks to .ai/rules/
+# Tool-specific rule symlinks (auto-generated by scaffold.sh)
 .cursor/rules/
-GITIGNORE_CURSOR
+.github/instructions/
+.gemini/rules/
+GEMINI.md
+CODEX.md
+GITIGNORE_TOOLS
         fi
     fi
 }
@@ -707,11 +851,13 @@ print_success "Project scaffolded successfully!"
 
 echo ""
 echo -e "${BLUE}What's in place:${NC}"
-echo "  - AGENTS.md              → Project instructions + context (you own this)"
-echo "  - .ai/rules/*.mdc        → AI rules (universal=symlinked, recipe=copied)"
-echo "  - .cursor/rules/*.mdc    → Cursor symlinks (auto-generated)"
+echo "  - AGENTS.md              → Project instructions (all tools read this)"
+echo "  - .ai/rules/*.mdc        → Shared AI rules (the canonical source)"
+echo "  - .cursor/rules/         → Cursor symlinks → .ai/rules/"
+echo "  - .github/instructions/  → Copilot symlinks → .ai/rules/"
+echo "  - .gemini/rules/         → Gemini CLI symlinks → .ai/rules/"
+echo "  - GEMINI.md, CODEX.md    → Root shims pointing to AGENTS.md"
 echo "  - .agents/               → Working files (gitignored)"
-echo "  - .agents/decisions/     → Architecture decisions (versioned)"
 
 echo ""
 echo -e "${BLUE}Next steps:${NC}"

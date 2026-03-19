@@ -10,7 +10,7 @@ This is a personal dotfiles and development environment configuration repo. It m
 - `editors/cursor/` -- Cursor editor settings and extensions
 - `editors/obsidian/` -- Obsidian vault settings, community plugins, plugin configs
 - `agents/claude/` -- Claude Code plugins, MCP servers, hooks, setup script
-- `agents/shared/` -- Shared agentic config (MCP servers, rules, ignore patterns)
+- `agents/shared/` -- Shared agentic config (MCP servers, tool registry, rules, ignore patterns)
 - `.ai/rules/` -- Cross-vendor AI rules (process, languages, frameworks, tooling)
 - `prompts/` -- Scaffolding recipes, templates, and reference guides
 

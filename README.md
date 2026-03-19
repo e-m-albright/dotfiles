@@ -66,18 +66,31 @@ This adds cross-vendor AI rules — lightweight scaffolding that guides AI agent
 
 ```
 my-project/
-├── AGENTS.md              # ~30 lines: pointers + project context (project-owned)
-├── .ai/rules/*.mdc        # AI rules (universal + recipe-specific, all copied)
-├── .cursor/rules/*.mdc    # Cursor symlinks → .ai/rules/ (auto-generated)
+├── AGENTS.md              # Universal entry point (project-owned)
+├── GEMINI.md, CODEX.md    # Root shims → AGENTS.md (auto-generated)
+├── .ai/rules/*.mdc        # AI rules — canonical source (copied from dotfiles)
+├── .cursor/rules/         # Cursor symlinks → .ai/rules/
+├── .github/instructions/  # Copilot symlinks → .ai/rules/
+├── .gemini/rules/         # Gemini CLI symlinks → .ai/rules/
 ├── .agents/               # Working files, gitignored (plans, research, sessions)
 └── .agents/decisions/     # Architecture Decision Records (versioned)
 ```
 
 **How rules are deployed:**
-- **Universal rules** (process, style) are copied — re-run with `--force` to update from dotfiles
+- **Universal rules** (process, style) are copied with manifest headers for staleness tracking — re-run with `--force` to update from dotfiles
 - **Recipe rules** (language, framework, stack) are copied — project can customize
-- **Cursor symlinks** are auto-generated relative links to `.ai/rules/`
+- **Tool symlinks** are auto-generated from a registry (`agents/shared/tool-targets.json`)
 - Only rules relevant to the recipe are deployed, not the entire library
+
+**Multi-tool rule discovery** — `.ai/rules/` is the single source of truth. `scaffold.sh` creates tool-specific symlinks so each AI tool discovers the same rules in its native directory:
+
+| Tool | Discovery | Directory |
+|------|-----------|-----------|
+| Claude Code | CLAUDE.md + .ai/rules/ | (direct) |
+| Cursor | Symlinks | .cursor/rules/ |
+| GitHub Copilot | Symlinks | .github/instructions/ |
+| Gemini CLI | GEMINI.md + symlinks | .gemini/rules/ |
+| Codex | CODEX.md | (reads AGENTS.md) |
 
 ### Available Recipes
 
@@ -227,6 +240,7 @@ dotfiles brew                # Re-run Homebrew setup
 dotfiles dock                # Reset Dock layout
 dotfiles scaffold            # Scaffold a project with AI rules
 dotfiles stale               # Find disabled packages still installed
+dotfiles test                # Run scaffold eval framework (--quick for fast)
 dotfiles profile-shell       # Profile shell startup time
 dotfiles agents              # Show active agentic setup (Claude Code + Cursor)
 dotfiles claude-setup        # Configure Claude Code + Desktop (global config)
@@ -258,7 +272,7 @@ dotfiles/
 ├── editors/                # Cursor settings + Obsidian vault configs
 ├── terminal/               # Ghostty config
 ├── agents/                 # Agentic tool setup
-│   ├── shared/             # Shared config (MCP servers, rules, ignore patterns)
+│   ├── shared/             # Shared config (MCP servers, tool registry, rules, ignore patterns)
 │   ├── claude/             # Claude Code setup (plugins, hooks, skills, agents)
 │   └── cursor/             # Cursor plugin (hooks, skills, agents)
 ├── macos/                  # Homebrew, Dock, SSH, print utilities
@@ -270,6 +284,7 @@ dotfiles/
 └── prompts/                # Project scaffolding
     ├── scaffold.sh         # Deploy rules + templates to projects
     ├── guides/             # Reference docs (not deployed to projects)
+    │   └── developer-workflow.md  # How all the tools work together
     └── */templates/        # Starter files per recipe (.gitignore, justfile, etc.)
 ```
 

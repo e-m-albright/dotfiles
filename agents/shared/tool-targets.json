@@ -1,0 +1,37 @@
+{
+  "$comment": "Tool discovery registry — how each AI tool finds .ai/rules/",
+  "tools": {
+    "cursor": {
+      "rulesDir": ".cursor/rules",
+      "suffix": ".mdc",
+      "strategy": "symlink",
+      "symlinkPrefix": "../../",
+      "rootFile": null,
+      "agentsMdAware": false
+    },
+    "copilot": {
+      "rulesDir": ".github/instructions",
+      "suffix": ".instructions.md",
+      "strategy": "symlink",
+      "symlinkPrefix": "../../",
+      "rootFile": null,
+      "agentsMdAware": true
+    },
+    "gemini": {
+      "rulesDir": ".gemini/rules",
+      "suffix": ".md",
+      "strategy": "symlink",
+      "symlinkPrefix": "../../",
+      "rootFile": "GEMINI.md",
+      "agentsMdAware": true
+    },
+    "codex": {
+      "rulesDir": null,
+      "suffix": null,
+      "strategy": "root-shim",
+      "symlinkPrefix": null,
+      "rootFile": "CODEX.md",
+      "agentsMdAware": true
+    }
+  }
+}
