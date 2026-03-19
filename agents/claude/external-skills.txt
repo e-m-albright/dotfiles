@@ -1,0 +1,19 @@
+# External skills installed via `npx skills add -g`
+# Run `dotfiles claude-setup` to install these on a fresh machine.
+# Format: <owner/repo@skill>
+
+# Official / first-party
+fastapi/fastapi@fastapi
+cloudflare/skills@building-mcp-server-on-cloudflare
+
+# Framework skills
+hairyf/skills@tauri
+bobmatnyc/claude-mpm-skills@axum
+cristiano-pacheco/ai-tools@go-chi-handler
+
+# Database & migrations
+manutej/luxor-claude-marketplace@alembic
+kalbasit/ncps@sqlc
+
+# Workflow
+openai/skills@linear

@@ -203,7 +203,7 @@ setup_skills_and_agents() {
     local dest_skills="$HOME/.claude/skills"
     local dest_agents="$HOME/.claude/agents"
 
-    # Deploy skills
+    # Deploy local skills (from dotfiles)
     if [[ -d "$skills_dir" ]]; then
         local skill_count=0
         for skill in "$skills_dir"/*/SKILL.md; do
@@ -215,8 +215,29 @@ setup_skills_and_agents() {
             skill_count=$((skill_count + 1))
         done
         if [[ $skill_count -gt 0 ]]; then
-            print_success "Deployed $skill_count skills (~/.claude/skills/)"
+            print_success "Deployed $skill_count local skills (~/.claude/skills/)"
         fi
+    fi
+
+    # Install external skills (from npx skills ecosystem)
+    local ext_skills="$SCRIPT_DIR/external-skills.txt"
+    if [[ -f "$ext_skills" ]] && command -v npx >/dev/null 2>&1; then
+        local ext_count=0
+        local ext_installed=0
+        while IFS= read -r line; do
+            [[ -z "$line" || "$line" =~ ^# ]] && continue
+            ext_count=$((ext_count + 1))
+            local skill_name
+            skill_name="${line##*@}"
+            if [[ -d "$dest_skills/$skill_name" ]]; then
+                continue
+            fi
+            npx skills add "$line" -g -y >/dev/null 2>&1 && ext_installed=$((ext_installed + 1))
+        done < "$ext_skills"
+        if [[ $ext_installed -gt 0 ]]; then
+            print_success "Installed $ext_installed external skills (npx skills)"
+        fi
+        print_info "$ext_count external skills tracked (external-skills.txt)"
     fi
 
     # Deploy agents
