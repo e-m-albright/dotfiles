@@ -11,6 +11,12 @@
       "repo": "antfu/skills"
     }
   },
+  "hairyf-skills": {
+    "source": {
+      "source": "github",
+      "repo": "hairyf/skills"
+    }
+  },
   "claude-skills": {
     "source": {
       "source": "github",
@@ -21,24 +27,6 @@
     "source": {
       "source": "github",
       "repo": "jezweb/claude-skills"
-    }
-  },
-  "bobmatnyc-claude-mpm-skills": {
-    "source": {
-      "source": "github",
-      "repo": "bobmatnyc/claude-mpm-skills"
-    }
-  },
-  "linehaulai": {
-    "source": {
-      "source": "github",
-      "repo": "linehaul-ai/linehaulai-claude-marketplace"
-    }
-  },
-  "xiyo-zheon": {
-    "source": {
-      "source": "github",
-      "repo": "xiyo/zheon"
     }
   }
 }

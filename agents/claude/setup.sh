@@ -68,7 +68,7 @@ setup_marketplaces() {
     local marketplaces
     marketplaces=$(jq '. // {}' "$MARKETPLACES_JSON")
 
-    jq --argjson mkts "$marketplaces" '.extraKnownMarketplaces = ($mkts + (.extraKnownMarketplaces // {}))' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
+    jq --argjson mkts "$marketplaces" '.extraKnownMarketplaces = $mkts' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
 
     local count
     count=$(echo "$marketplaces" | jq 'length')
