@@ -5,6 +5,9 @@
 # Usage:
 #   ./setup.sh              # Full setup
 #   dotfiles claude-setup   # Via dotfiles CLI alias
+#   MCP_SKIP=granola,datadog ./setup.sh   # Skip specific MCP servers
+#
+# Persistent skip list: ~/.config/dotfiles/mcp-skip (one server name per line)
 #
 # What it does:
 #   1. Ensures ~/.claude/CLAUDE.md has system instructions
@@ -27,6 +30,13 @@ HOOKS_JSON="$SCRIPT_DIR/hooks.json"
 GLOBAL_CLAUDE_MD="$SCRIPT_DIR/global-claude.md"
 DESKTOP_PREFS="$SCRIPT_DIR/desktop-preferences.json"
 MARKETPLACES_JSON="$SCRIPT_DIR/marketplaces.json"
+MCP_SKIP_FILE="$HOME/.config/dotfiles/mcp-skip"
+
+# Load persistent MCP skip list (one server per line), merge with MCP_SKIP env var
+if [[ -f "$MCP_SKIP_FILE" ]]; then
+    file_skips=$(grep -v '^#' "$MCP_SKIP_FILE" | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+    MCP_SKIP="${MCP_SKIP:+$MCP_SKIP,}$file_skips"
+fi
 
 # Source print utils if available
 if [[ -n "${print_section:-}" ]] || source "$DOTFILES_DIR/macos/print_utils.sh" 2>/dev/null; then
@@ -115,11 +125,15 @@ setup_mcp() {
     [[ -f "$CLAUDE_JSON" ]] || echo '{}' > "$CLAUDE_JSON"
     cp "$CLAUDE_JSON" "$CLAUDE_JSON.bak"
 
-    # Filter servers targeting "claude", strip targets field
+    # Filter servers targeting "claude", strip targets field, skip MCP_SKIP entries
+    local skip_json
+    skip_json=$(printf '%s' "${MCP_SKIP:-}" | jq -Rc 'split(",")')
+
     local mcp_servers
-    mcp_servers=$(jq '
+    mcp_servers=$(jq --argjson skip "$skip_json" '
         to_entries
         | map(select(.value.targets | index("claude")))
+        | map(select(.key as $k | $skip | index($k) | not))
         | map({key: .key, value: (.value | del(.targets))})
         | from_entries
     ' "$shared_mcp")
@@ -143,10 +157,14 @@ setup_desktop() {
 
     # Merge MCP servers from shared source (servers targeting "claude" or "desktop")
     if [[ -f "$DOTFILES_DIR/agents/shared/mcp-servers.json" ]]; then
+        local skip_json
+        skip_json=$(printf '%s' "${MCP_SKIP:-}" | jq -Rc 'split(",")')
+
         local mcp_servers
-        mcp_servers=$(jq '
+        mcp_servers=$(jq --argjson skip "$skip_json" '
             to_entries
             | map(select(.value.targets | (index("claude") or index("desktop"))))
+            | map(select(.key as $k | $skip | index($k) | not))
             | map({key: .key, value: (.value | del(.targets))})
             | from_entries
         ' "$DOTFILES_DIR/agents/shared/mcp-servers.json")

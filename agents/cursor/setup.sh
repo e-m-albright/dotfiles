@@ -7,6 +7,13 @@ set -eo pipefail
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DOTFILES_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SHARED_DIR="$DOTFILES_DIR/agents/shared"
+MCP_SKIP_FILE="$HOME/.config/dotfiles/mcp-skip"
+
+# Load persistent MCP skip list (one server per line), merge with MCP_SKIP env var
+if [[ -f "$MCP_SKIP_FILE" ]]; then
+    file_skips=$(grep -v '^#' "$MCP_SKIP_FILE" | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+    MCP_SKIP="${MCP_SKIP:+$MCP_SKIP,}$file_skips"
+fi
 
 # Source print utils
 source "$DOTFILES_DIR/macos/print_utils.sh" 2>/dev/null || true
@@ -30,11 +37,15 @@ setup_mcp() {
         existing=$(jq '.' "$mcp_file" 2>/dev/null || echo '{}')
     fi
 
-    # Build shared servers targeting cursor, strip targets field
+    # Build shared servers targeting cursor, strip targets field, skip MCP_SKIP entries
+    local skip_json
+    skip_json=$(printf '%s' "${MCP_SKIP:-}" | jq -Rc 'split(",")')
+
     local shared_servers
-    shared_servers=$(jq '{mcpServers: (
+    shared_servers=$(jq --argjson skip "$skip_json" '{mcpServers: (
         to_entries
         | map(select(.value.targets | index("cursor")))
+        | map(select(.key as $k | $skip | index($k) | not))
         | map({key: .key, value: (.value | del(.targets))})
         | from_entries
     )}' "$SHARED_DIR/mcp-servers.json")
