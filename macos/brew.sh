@@ -194,6 +194,8 @@ productivity=(
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
     granola                # AI notepad for meetings
+    wispr-flow             # Voice dictation
+    # aqua-voice           # Voice dictation alternative (consider vs Wispr Flow)
     obsidian               # Knowledge base & note-taking (Markdown)
 )
 
@@ -219,6 +221,8 @@ social_apps=(
 ai_cli=(
     claude-code          # Anthropic CLI agent
     claude               # Claude Desktop (macOS app)
+    cmux                 # Terminal multiplexer for AI agents
+    # conductor           # AI agent orchestrator (try later)
     # gemini-cli         # Google Gemini CLI (disabled)
     # ollama             # Local LLM runtime (disabled)
     # huggingface-cli    # Hugging Face CLI (disabled — install per-project if needed)

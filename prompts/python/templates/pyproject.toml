@@ -46,7 +46,7 @@ dev = [
 
     # Linting & Formatting
     "ruff>=0.8.0",
-    "pyright>=1.1.390",
+    "ty>=0.1.0",
 
     # Git Hooks
     "lefthook>=0.1.0",
@@ -80,7 +80,7 @@ dev = [
     "respx>=0.22.0",
     "aiosqlite>=0.20.0",
     "ruff>=0.8.0",
-    "pyright>=1.1.390",
+    "ty>=0.1.0",
 ]
 
 # =============================================================================
@@ -138,24 +138,15 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 # =============================================================================
-# Pyright Configuration
+# ty Configuration (Astral type checker)
 # =============================================================================
 
-[tool.pyright]
-pythonVersion = "3.14"
-typeCheckingMode = "strict"
-reportMissingImports = true
-reportMissingTypeStubs = false
-reportUnusedImport = true
-reportUnusedVariable = true
-reportUnusedClass = true
-reportUnusedFunction = true
-reportDuplicateImport = true
+[tool.ty]
+python-version = "3.14"
 
-# Paths
+[tool.ty.src]
 include = ["src"]
 exclude = [
-    "**/node_modules",
     "**/__pycache__",
     ".venv",
     "alembic",

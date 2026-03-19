@@ -7,7 +7,7 @@
 # To disable a plugin: remove it and re-run setup.sh (or toggle in Claude Code)
 
 # LSP integrations (type checking & diagnostics in-session)
-- pyright-lsp
+- ty-lsp
 - typescript-lsp
 - rust-analyzer-lsp
 

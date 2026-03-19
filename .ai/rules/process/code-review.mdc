@@ -1,0 +1,186 @@
+---
+description: Code review criteria and fix-first classification
+alwaysApply: false
+---
+
+# Code Review
+
+## Fix-First Classification
+
+When reviewing code, classify every finding before reporting it:
+
+| Classification | Action | Criteria |
+|---------------|--------|----------|
+| **AUTO-FIX** | Fix silently | A senior engineer would apply this without discussion. Mechanical, unambiguous, no trade-offs. |
+| **ASK** | Report and recommend | Reasonable engineers could disagree. Involves trade-offs, architecture, or judgment calls. |
+
+### AUTO-FIX Examples (just fix these)
+
+- Unused imports or variables
+- Missing type annotations on obvious signatures
+- Formatting / naming inconsistencies with surrounding code
+- Dead code (unreachable branches, unused functions)
+- Import ordering
+- Missing error context in log statements (add the relevant ID)
+- Obvious null/undefined guards at system boundaries
+- Using deprecated API when the replacement is a drop-in
+
+### ASK Examples (report these)
+
+- Architectural changes (new abstractions, changed data flow)
+- Performance trade-offs (caching strategy, query optimization)
+- Security-sensitive changes (auth, input validation, secrets handling)
+- API surface changes (new endpoints, changed contracts)
+- Dependency additions or removals
+- Test strategy decisions (what to mock, integration vs. unit)
+
+**Default to ASK when uncertain.** The cost of asking is low. The cost of a bad silent fix is high.
+
+When reporting ASK findings, batch them into a single summary with recommendations — don't interrupt the user with one finding at a time.
+
+## Review Criteria
+
+Every review should evaluate these dimensions. Skip dimensions that don't apply to the change.
+
+### Correctness
+
+- Does the code do what the spec/ticket says?
+- Are edge cases handled? (empty inputs, zero, negative, max values, Unicode, concurrent access)
+- Are error paths correct? (not just the happy path)
+- Do types match reality? (no `as any`, no lying type assertions)
+- Are there race conditions? (shared mutable state, check-then-act patterns, TOCTOU)
+- Is ordering guaranteed where it matters? (async operations, event handlers, map iteration)
+- Are off-by-one errors possible? (fencepost, inclusive vs. exclusive ranges, pagination)
+- Is floating-point arithmetic used for money or precision-critical values? (use integers/decimals)
+
+### Security
+
+**Input & injection:**
+- Inputs validated at system boundaries? (type, length, format, range)
+- SQL parameterized? (no string concatenation — includes ORMs with raw queries)
+- User-supplied data escaped before rendering? (XSS in HTML, attributes, JS contexts)
+- File paths validated? (no path traversal via `../`, null bytes, symlink following)
+- Regex safe from ReDoS? (no catastrophic backtracking on user input)
+- Deserialization safe? (no unsafe deserialization on untrusted data)
+
+**Auth & access:**
+- Auth checks present on new endpoints/routes?
+- Authorization checked, not just authentication? (can this user do this action on this resource?)
+- IDOR possible? (can a user access another user's resources by changing an ID?)
+- Privilege escalation paths? (can a regular user reach admin functionality?)
+
+**Data exposure:**
+- Secrets kept out of code, logs, error messages, and URLs?
+- PII/sensitive data excluded from logs and analytics?
+- Error messages safe for end users? (no stack traces, internal paths, or DB schemas leaked)
+- Response bodies filtered? (no extra fields leaked — serializer allowlists, not blocklists)
+
+**Infrastructure:**
+- Rate limiting considered for public endpoints?
+- CORS configured restrictively? (not `*` in production)
+- Dependencies from trusted sources? (no typosquatting, pinned versions for CI)
+- Timing-safe comparison for secrets/tokens? (constant-time equality checks)
+
+### Data Integrity
+
+- Are database migrations backwards-compatible? (can old code run against new schema?)
+- Is data loss possible? (column drops, type narrowing, cascade deletes)
+- Are foreign keys and constraints enforced? (not just in application code)
+- Is there a rollback path for this migration?
+- Are default values sensible for existing rows?
+- Could this create orphaned records?
+
+### API & Interface Quality
+
+- Is the API surface minimal? (no unnecessary public exports)
+- Are function signatures honest? (return types match actual returns)
+- Could a caller misuse this interface? Make misuse harder.
+- Are breaking changes flagged and versioned?
+- Are error responses consistent with existing API conventions?
+- Is pagination implemented for list endpoints? (no unbounded responses)
+- Are idempotency concerns addressed for mutating operations?
+- Is the naming consistent with the rest of the API? (don't mix conventions)
+
+### Operational Readiness
+
+**Production viability:**
+- Will this work in production, not just locally? (env vars, file paths, permissions, TLS)
+- Is there observability? (structured logs at key decision points, not just errors)
+- Can this be debugged from logs alone? (include correlation IDs, request context)
+- Are health checks still valid after this change?
+- Are timeouts and retries configured? (no unbounded waits, backoff on retries)
+
+**Failure & degradation:**
+- What happens when a dependency fails? (database down, API timeout, disk full)
+- Does this degrade gracefully or crash hard? (circuit breakers, fallbacks, queue backpressure)
+- What's the blast radius? (one user, one tenant, all users, all systems?)
+- Are errors recoverable? (can the system self-heal, or does it need manual intervention?)
+- Are partial failures handled? (what if 3 of 5 API calls succeed?)
+
+**Deployment & rollback:**
+- Is there a deployment concern? (feature flag needed? config change required? ordering dependency?)
+- What's the rollback plan? (revert commit, feature flag off, migration rollback, or "hope"?)
+- Is this a one-way door? (public API changes, data migrations, external integrations — flag for extra scrutiny)
+- Does this require coordinated deployment? (database migration before code deploy, config before feature flag)
+- Is this safe to deploy on a Friday? (if not, why not — and does that reveal a gap in rollback confidence?)
+
+### Performance
+
+- Are there N+1 queries? (loops that hit the database, API calls inside iterations)
+- Is pagination used for potentially large result sets?
+- Are expensive operations cached where appropriate? (and is cache invalidation correct?)
+- Are database queries using indexes? (new columns, new WHERE clauses, new JOIN patterns)
+- Could this blow up memory? (loading large files, unbounded collections, no streaming)
+- Is work happening synchronously that could be async/background? (email, webhooks, reports)
+- Are there unnecessary allocations in hot paths? (string concatenation in loops, repeated parsing)
+
+### User-Facing Quality
+
+- Are error messages actionable for the end user? (not "An error occurred" — what should they do?)
+- Are loading and empty states handled? (not just the happy path with data)
+- Is the feature accessible? (keyboard navigation, screen reader labels, color contrast)
+- Are form validations present and clear? (client-side for UX, server-side for security)
+- Are destructive actions confirmed? (delete, overwrite, irreversible operations)
+- Does this handle slow connections? (timeouts, retry UI, optimistic updates)
+- Does generated UI look intentional or generic? (see `design-review.mdc` for the full AI slop checklist)
+
+### Maintainability
+
+- Could someone unfamiliar with this code understand it in 5 minutes?
+- Is the abstraction level consistent? (don't mix high-level orchestration with low-level details)
+- Are there implicit dependencies that should be explicit? (env vars, init order, global state)
+- Will this be easy to delete when requirements change?
+- Are magic numbers/strings named as constants?
+- Is configuration separated from logic? (no hardcoded URLs, thresholds, feature switches)
+- Are there circular dependencies? (modules importing each other)
+
+### Testing
+
+- Are new code paths covered by tests?
+- Do tests verify behavior, not implementation? (no mocking internals)
+- Are failure modes tested? (not just happy path — network errors, invalid input, timeouts)
+- Would a test failure clearly point to what broke? (good assertion messages, isolated tests)
+- Are integration boundaries tested? (DB queries, API calls, file I/O — with real or realistic fakes)
+- Is there regression coverage for the bug being fixed? (test that would have caught it)
+- Are flaky test patterns avoided? (time-dependent, order-dependent, port-dependent)
+- Is test data realistic? (not just `"test"` and `123` — use values that exercise edge cases)
+
+## Review Output Format
+
+Structure review findings as:
+
+```
+## Summary
+[1-2 sentence overview of the change quality]
+
+## Auto-Fixed
+- [list of mechanical fixes already applied, if any]
+
+## Findings
+### [SEVERITY] Finding title
+**Category**: Correctness | Security | Data Integrity | API | Ops | Performance | UX | Maintainability | Testing
+**Recommendation**: [specific action]
+**Why**: [brief rationale]
+```
+
+Severity levels: **Critical** (must fix before merge), **Warning** (should fix), **Note** (consider for future).

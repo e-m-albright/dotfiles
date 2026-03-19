@@ -17,9 +17,9 @@ pre-commit:
       stage_fixed: true
 
     # Type check (runs on staged Python files)
-    pyright:
+    ty:
       glob: "*.py"
-      run: uv run pyright
+      run: uv run ty check
 
 pre-push:
   parallel: true

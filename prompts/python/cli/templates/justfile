@@ -71,9 +71,9 @@ format:
 format-check:
     uv run ruff format --check .
 
-# Type check with Pyright
+# Type check with ty
 typecheck:
-    uv run pyright
+    uv run ty check
 
 # -----------------------------------------------------------------------------
 # Testing
@@ -105,7 +105,7 @@ test-fast:
 
 # Clean build artifacts and caches
 clean:
-    rm -rf .pytest_cache .ruff_cache .mypy_cache .coverage htmlcov dist build *.egg-info
+    rm -rf .pytest_cache .ruff_cache .mypy_cache .ty .coverage htmlcov dist build *.egg-info
     find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
 # Clean everything including venv

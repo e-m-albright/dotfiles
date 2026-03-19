@@ -124,7 +124,7 @@ uv run uvicorn app.main:app --reload  # Start dev server
 uv run pytest              # Run tests
 uv run ruff check .        # Lint
 uv run ruff format .       # Format
-uv run pyright             # Type check
+uv run ty check            # Type check
 ```
 
 ## Common Mistakes to Avoid

@@ -10,6 +10,6 @@ pre-commit:
     ruff-format:
       glob: "*.py"
       run: uv run ruff format --check {staged_files}
-    pyright:
+    ty:
       glob: "*.py"
-      run: uv run pyright {staged_files}
+      run: uv run ty check {staged_files}

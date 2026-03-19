@@ -38,7 +38,7 @@ dev = [
 
     # Linting & Formatting
     "ruff>=0.8.0",
-    "pyright>=1.1.390",
+    "ty>=0.1.0",
 ]
 
 [project.scripts]
@@ -54,7 +54,7 @@ dev = [
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.14.0",
     "ruff>=0.8.0",
-    "pyright>=1.1.390",
+    "ty>=0.1.0",
 ]
 
 # =============================================================================
@@ -104,20 +104,15 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 # =============================================================================
-# Pyright Configuration
+# ty Configuration (Astral type checker)
 # =============================================================================
 
-[tool.pyright]
-pythonVersion = "3.14"
-typeCheckingMode = "strict"
-reportMissingImports = true
-reportMissingTypeStubs = false
-reportUnusedImport = true
-reportUnusedVariable = true
+[tool.ty]
+python-version = "3.14"
 
+[tool.ty.src]
 include = ["src"]
 exclude = [
-    "**/node_modules",
     "**/__pycache__",
     ".venv",
 ]

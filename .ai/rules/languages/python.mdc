@@ -18,7 +18,7 @@ alwaysApply: false
 
 ## Type Patterns
 
-- **Pyright** for type checking — not mypy.
+- **ty** (Astral) for type checking — not mypy or Pyright.
 - Type-annotate all function signatures.
 - Modern union syntax: `str | None` not `Optional[str]`.
 - Lowercase builtins: `list[str]`, `dict[str, int]` not `List`, `Dict`.

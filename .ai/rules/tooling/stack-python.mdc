@@ -12,7 +12,7 @@ alwaysApply: false
 | Package manager | **UV** | pip (slow), Poetry (complex) |
 | Python version | **3.14** | Older versions |
 | Linter/Formatter | **Ruff** | Black + isort + flake8 (three tools) |
-| Type checker | **Pyright** | mypy (slower, less accurate) |
+| Type checker | **ty** (Astral) | mypy (slower), Pyright (Node dep) |
 | Task runner | **Just** | Make (arcane) |
 | Git hooks | **Lefthook** | Husky, pre-commit |
 
@@ -53,7 +53,8 @@ alwaysApply: false
 | Loguru | structlog is the pick — one logger |
 | SQLModel | Maintenance mode |
 | Alembic | Atlas is faster, better DX |
-| mypy | Pyright is faster, better IDE integration |
+| mypy | ty is faster, same Astral ecosystem |
+| Pyright | ty is faster, no Node.js dependency |
 | Black/isort | Ruff does both |
 
 ## Version Requirements

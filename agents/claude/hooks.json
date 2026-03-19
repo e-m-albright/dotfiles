@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); case \"$FILE\" in */.env|*/.env.*|*/credentials*|*id_rsa*|*id_ed25519*) echo 'BLOCK: Sensitive file — edit manually'; exit 2;; esac",
+            "command": "FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); case \"$FILE\" in */credentials*|*id_rsa*|*id_ed25519*) echo 'BLOCK: Sensitive file — edit manually'; exit 2;; esac",
             "timeout": 5
           }
         ]

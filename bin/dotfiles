@@ -29,6 +29,7 @@ sub_help () {
     printf "   agents           Show active agentic setup (Claude Code + Cursor)\n"
     printf "   profile-shell    Profile shell startup time\n"
     printf "   scaffold         Scaffold a new project with AI rules\n"
+    printf "   test             Run scaffold eval framework (--quick for fast mode)\n"
     printf "   claude-setup         Configure Claude Code + Desktop (global config)\n"
     printf "   completions      Output shell completions (source this in your shell)\n"
 }
@@ -392,6 +393,10 @@ sub_scaffold() {
     "$DOTFILES_DIR/prompts/scaffold.sh" "$@"
 }
 
+sub_test() {
+    "$DOTFILES_DIR/tests/test_scaffold.sh" "$@"
+}
+
 sub_profile_shell() {
     printf "${BLUE}%b Profiling shell startup...${NC}\n\n" "$ARROW"
     # Time total startup
@@ -433,6 +438,7 @@ _dotfiles() {
         'brew:Run Homebrew setup'
         'dock:Reset macOS Dock'
         'scaffold:Scaffold a new project with AI rules'
+        'test:Run scaffold eval framework'
         'stale:Find disabled packages still installed'
         'agents:Show active agentic setup'
         'profile-shell:Profile shell startup time'
