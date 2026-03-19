@@ -234,6 +234,35 @@ setup_skills_and_agents() {
     fi
 }
 
+# --- Universal rules (symlinked to dotfiles) ---
+setup_universal_rules() {
+    local rules_source="$DOTFILES_DIR/.ai/rules/process"
+    local rules_dest="$HOME/.claude/rules"
+
+    [[ -d "$rules_source" ]] || { print_warning "No process rules found at $rules_source"; return 0; }
+
+    mkdir -p "$rules_dest"
+
+    local count=0
+    for rule in "$rules_source"/*.mdc; do
+        [[ -f "$rule" ]] || continue
+        local rule_name
+        rule_name="$(basename "$rule")"
+        local dest="$rules_dest/$rule_name"
+
+        if [[ -L "$dest" ]] && [[ "$(readlink "$dest")" == "$rule" ]]; then
+            continue
+        fi
+
+        ln -sf "$rule" "$dest"
+        count=$((count + 1))
+    done
+
+    local total
+    total=$(find "$rules_source" -name '*.mdc' -type f | wc -l | tr -d ' ')
+    print_success "Symlinked $total universal rules (~/.claude/rules/ → dotfiles)"
+}
+
 # --- Main ---
 setup_instructions
 setup_marketplaces
@@ -242,4 +271,5 @@ setup_mcp
 setup_desktop
 setup_hooks
 setup_skills_and_agents
+setup_universal_rules
 setup_preferences

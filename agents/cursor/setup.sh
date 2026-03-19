@@ -100,9 +100,37 @@ CURSOR_SPECIFIC
     print_success "Generated .cursorignore"
 }
 
+# --- Universal rules (symlinked to dotfiles) ---
+setup_universal_rules() {
+    local rules_source="$DOTFILES_DIR/.ai/rules/process"
+    local rules_dest="$SCRIPT_DIR/rules"
+
+    [[ -d "$rules_source" ]] || return 0
+
+    mkdir -p "$rules_dest"
+
+    for rule in "$rules_source"/*.mdc; do
+        [[ -f "$rule" ]] || continue
+        local rule_name
+        rule_name="$(basename "$rule")"
+        local dest="$rules_dest/$rule_name"
+
+        if [[ -L "$dest" ]] && [[ "$(readlink "$dest")" == "$rule" ]]; then
+            continue
+        fi
+
+        ln -sf "$rule" "$dest"
+    done
+
+    local total
+    total=$(find "$rules_source" -name '*.mdc' -type f | wc -l | tr -d ' ')
+    print_success "Symlinked $total universal rules (cursor/rules/ → dotfiles)"
+}
+
 # --- Main ---
 setup_mcp
 setup_rules
+setup_universal_rules
 setup_cli_config
 setup_plugin
 setup_cursorignore

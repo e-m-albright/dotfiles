@@ -7,11 +7,11 @@
 #
 # Philosophy: Dotfiles seeds and influences. Projects own themselves.
 # - All .ai/rules/ are COPIED (project owns them, re-run --force to update)
-# - .cursor/rules/ gets relative symlinks to .ai/rules/ for Cursor
+# - Tool rule dirs get relative symlinks to .ai/rules/ for discovery
 # - AGENTS.md is GENERATED once, then project-owned (never overwritten)
 #
 # Usage:
-#   ./prompts/scaffold.sh <recipe> [app-type] <project-path>
+#   ./prompts/scaffold.sh <recipe> [app-type] <project-path> [--tools list]
 #   ./prompts/scaffold.sh --force <recipe> [app-type] <project-path>
 #
 # Examples:
@@ -21,9 +21,11 @@
 #   ./prompts/scaffold.sh python .                        # Defaults to fastapi
 #   ./prompts/scaffold.sh golang chi ~/projects/my-svc
 #   ./prompts/scaffold.sh --force python .                # Force regenerate all
+#   ./prompts/scaffold.sh python my-api --tools copilot,gemini
+#   ./prompts/scaffold.sh --tools all python my-api
 # =============================================================================
 
-set -euo pipefail
+set -eo pipefail
 
 # Get script directory (where dotfiles/prompts lives)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,6 +34,7 @@ DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 AI_RULES_DIR="$DOTFILES_DIR/.ai/rules"
 
 FORCE=false
+SCAFFOLD_TOOLS="cursor"
 
 # Source shared print functions
 source "$DOTFILES_DIR/macos/print_utils.sh"
@@ -60,35 +63,6 @@ add_manifest_header() {
         mv "$tmp" "$dest"
     fi
 }
-
-# Compare a source rule file against a dest that may have a manifest header.
-# Returns 0 (true) if content matches (ignoring manifest), 1 otherwise.
-# Usage: diff_ignoring_manifest <source> <dest>
-diff_ignoring_manifest() {
-    local source="$1"
-    local dest="$2"
-
-    if head -1 "$dest" | grep -q '^<!-- source:'; then
-        # Strip manifest header (line 1) before comparing
-        tail -n +2 "$dest" | diff -q "$source" - >/dev/null 2>&1
-    else
-        diff -q "$source" "$dest" >/dev/null 2>&1
-    fi
-}
-
-# =============================================================================
-# Universal rules (copied — re-run with --force to update)
-# =============================================================================
-UNIVERSAL_RULES=(
-    "process/global-process.mdc"
-    "process/style-principles.mdc"
-    "process/github-workflow.mdc"
-    "process/tickets-and-prs.mdc"
-    "process/agent-artifacts.mdc"
-    "process/code-review.mdc"
-    "process/planning.mdc"
-    "process/design-review.mdc"
-)
 
 # =============================================================================
 # Recipe → rule mappings (copied — project can customize)
@@ -172,42 +146,6 @@ is_existing_path() {
     [[ "$path" == "." ]] || [[ -d "$path" ]]
 }
 
-# Copy a universal rule file into .ai/rules/ (re-copied on --force or re-scaffold)
-# Previously symlinked; now copied so projects don't depend on dotfiles path.
-# To update rules across projects: re-run scaffold.sh --force in each project.
-copy_universal_rule() {
-    local rule_path="$1"  # e.g., "process/global-process.mdc"
-    local rule_name
-    rule_name="$(basename "$rule_path")"
-    local source="$AI_RULES_DIR/$rule_path"
-    local dest=".ai/rules/$rule_name"
-
-    if [[ ! -f "$source" ]]; then
-        print_warning "Rule not found in dotfiles: $rule_path"
-        return
-    fi
-
-    # If it's a stale symlink from old scaffold, replace it
-    if [[ -L "$dest" ]]; then
-        rm "$dest"
-    fi
-
-    # Check if content is already up to date
-    if [[ -f "$dest" ]] && diff_ignoring_manifest "$source" "$dest"; then
-        print_skip ".ai/rules/$rule_name"
-        return
-    fi
-
-    if [[ -f "$dest" ]] && [[ "$FORCE" != true ]]; then
-        print_skip ".ai/rules/$rule_name (project-owned, differs from dotfiles)"
-        return
-    fi
-
-    cp "$source" "$dest"
-    add_manifest_header "$dest" "$rule_path"
-    print_step "Copied .ai/rules/$rule_name"
-}
-
 # Copy a rule file into .ai/rules/ (recipe-specific — project can customize)
 copy_ai_rule() {
     local rule_path="$1"  # e.g., "languages/python.mdc"
@@ -239,16 +177,27 @@ copy_ai_rule() {
 # Falls back to Cursor-only if jq is not available.
 setup_tool_symlinks() {
     local registry="$DOTFILES_DIR/agents/shared/tool-targets.json"
+    local tools_filter="$SCAFFOLD_TOOLS"
 
     if [[ ! -f "$registry" ]] || ! command -v jq >/dev/null 2>&1; then
-        # Fallback: hardcoded Cursor symlinks (no jq)
-        _symlink_rules_for_tool ".cursor/rules" ".mdc" "../../"
+        if [[ "$tools_filter" == *"cursor"* || "$tools_filter" == "all" ]]; then
+            _symlink_rules_for_tool ".cursor/rules" ".mdc" "../../"
+        fi
         return
     fi
 
-    # Read each tool with strategy=symlink from registry
+    # Read each tool with strategy=symlink from registry, filtered by SCAFFOLD_TOOLS
     local tools
-    tools=$(jq -r '.tools | to_entries[] | select(.value.strategy == "symlink") | .key' "$registry")
+    if [[ "$tools_filter" == "all" ]]; then
+        tools=$(jq -r '.tools | to_entries[] | select(.value.strategy == "symlink") | .key' "$registry")
+    else
+        tools=$(jq -r --arg filter "$tools_filter" '
+            .tools | to_entries[]
+            | select(.value.strategy == "symlink")
+            | select(.key as $k | $filter | split(",") | index($k))
+            | .key
+        ' "$registry")
+    fi
 
     for tool in $tools; do
         local rules_dir suffix prefix
@@ -313,10 +262,15 @@ Creates or updates a project with cross-vendor AI rules.
 Safe to run multiple times — only adds missing pieces.
 
 Usage:
-  $(basename "$0") [--force] <recipe> [app-type] <project-path>
+  $(basename "$0") [--force] [--tools <list>] <recipe> [app-type] <project-path>
 
 Arguments:
   --force        Force regenerate AGENTS.md and overwrite existing rules
+  --tools <list> Comma-separated list of tools to set up symlinks for.
+                 Default: cursor (claude reads .ai/rules/ directly via CLAUDE.md)
+                 Use "all" for every tool in the registry.
+                 Available: cursor, copilot, gemini (and root-shim tools: codex)
+                 Can appear before recipe, after recipe, or after project path.
   recipe         Recipe to use: typescript, python, golang, rust
   app-type       Optional framework type (defaults per recipe)
   project-path   Path to project (creates if doesn't exist)
@@ -334,19 +288,20 @@ Examples:
   $(basename "$0") python .                  # defaults to fastapi
   $(basename "$0") golang ~/projects/my-svc  # defaults to chi
   $(basename "$0") --force python .          # force regenerate all
+  $(basename "$0") python my-api --tools copilot,gemini
+  $(basename "$0") --tools all python my-api
 
 What Gets Created (idempotent — skips existing):
-  AGENTS.md              # Project instructions + context (project-owned)
-  .ai/rules/*.mdc        # AI rules (universal=symlinked, recipe=copied)
-  .cursor/rules/*.mdc    # Cursor symlinks → .ai/rules/ (auto-generated)
-  .agents/               # Working files directory (gitignored)
-  .agents/decisions/     # Architecture Decision Records (versioned)
+  AGENTS.md                  # Project instructions + context (project-owned)
+  .ai/rules/*.mdc            # AI rules (recipe-specific, copied)
+  .cursor/rules/*.mdc        # Cursor symlinks → .ai/rules/ (if --tools includes cursor)
+  .ai/artifacts/             # Working files directory (gitignored)
+  .ai/artifacts/decisions/   # Architecture Decision Records (versioned)
 
 On re-run:
   - AGENTS.md is NOT overwritten (project owns it). Use --force to regenerate.
-  - Universal rules are re-symlinked (always up to date).
   - Recipe rules skip existing files (project may have customized).
-  - .cursor/rules/ symlinks are refreshed to match .ai/rules/.
+  - Tool rule symlinks are refreshed to match .ai/rules/.
 EOF
 }
 
@@ -354,13 +309,23 @@ EOF
 # These are thin pointers that tell the tool to read AGENTS.md and .ai/rules/.
 generate_root_shims() {
     local registry="$DOTFILES_DIR/agents/shared/tool-targets.json"
+    local tools_filter="$SCAFFOLD_TOOLS"
 
     if [[ ! -f "$registry" ]] || ! command -v jq >/dev/null 2>&1; then
         return
     fi
 
     local tools
-    tools=$(jq -r '.tools | to_entries[] | select(.value.rootFile != null) | .key' "$registry")
+    if [[ "$tools_filter" == "all" ]]; then
+        tools=$(jq -r '.tools | to_entries[] | select(.value.rootFile != null) | .key' "$registry")
+    else
+        tools=$(jq -r --arg filter "$tools_filter" '
+            .tools | to_entries[]
+            | select(.value.rootFile != null)
+            | select(.key as $k | $filter | split(",") | index($k))
+            | .key
+        ' "$registry")
+    fi
 
     for tool in $tools; do
         local root_file
@@ -399,12 +364,40 @@ SHIM_EOF
 # Argument Parsing
 # -----------------------------------------------------------------------------
 
-if [[ $# -ge 1 ]] && [[ "$1" == "--force" ]]; then
-    FORCE=true
-    shift
-fi
+# Collect args, extracting --force and --tools from any position
+POSITIONAL_ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --force)
+            FORCE=true
+            shift
+            ;;
+        --tools)
+            if [[ $# -lt 2 ]]; then
+                print_error "--tools requires a value (e.g., --tools cursor,copilot or --tools all)"
+                exit 1
+            fi
+            if [[ "$2" == "all" ]]; then
+                SCAFFOLD_TOOLS="all"
+            else
+                # Append to default cursor (deduplicate later)
+                SCAFFOLD_TOOLS="cursor,$2"
+            fi
+            shift 2
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            POSITIONAL_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+set -- "${POSITIONAL_ARGS[@]}"
 
-if [[ $# -lt 2 ]] || [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+if [[ $# -lt 2 ]]; then
     show_help
     exit 0
 fi
@@ -585,11 +578,6 @@ mkdir -p ".ai/rules"
 echo ""
 echo -e "${BLUE}Setting up AI rules...${NC}"
 
-# Universal rules (copied — re-run scaffold.sh --force to update)
-for rule in "${UNIVERSAL_RULES[@]}"; do
-    copy_universal_rule "$rule"
-done
-
 # Recipe-specific rules (copied — project can customize)
 while IFS= read -r rule; do
     copy_ai_rule "$rule"
@@ -612,8 +600,8 @@ else
     cat > "AGENTS.md" << 'AGENTS_EOF'
 # AGENTS.md
 
-Read all `.ai/rules/*.mdc` files for coding conventions, stack decisions,
-and process rules. These are the shared source of truth for all AI tools.
+Read all `.ai/rules/*.mdc` files for project-specific coding conventions and stack decisions.
+Universal process rules are provided at the user level by your AI tool's global config.
 
 Tool-specific rule directories (`.cursor/rules/`, `.github/instructions/`,
 `.gemini/rules/`) are symlinks to `.ai/rules/` — do not edit them directly.
@@ -695,20 +683,20 @@ fi
 echo ""
 generate_root_shims
 
-# ---- .agents/ directory ----
-mkdir -p ".agents/plans"
-mkdir -p ".agents/research"
-mkdir -p ".agents/decisions"
-mkdir -p ".agents/sessions"
+# ---- .ai/artifacts/ directory ----
+mkdir -p ".ai/artifacts/plans"
+mkdir -p ".ai/artifacts/research"
+mkdir -p ".ai/artifacts/decisions"
+mkdir -p ".ai/artifacts/sessions"
 
-if [[ ! -f ".agents/README.md" ]]; then
-    cat > ".agents/README.md" << 'EOF'
+if [[ ! -f ".ai/artifacts/README.md" ]]; then
+    cat > ".ai/artifacts/README.md" << 'EOF'
 # Working Files
 
 All intermediate agent output goes here — never scatter files in the project root.
 
 ```
-.agents/
+.ai/artifacts/
 ├── plans/        # Implementation plans (gitignored)
 ├── research/     # Investigation notes (gitignored)
 ├── decisions/    # Architecture Decision Records (versioned, committed)
@@ -724,8 +712,8 @@ All intermediate agent output goes here — never scatter files in the project r
 EOF
 fi
 
-if [[ ! -f ".agents/decisions/_index.md" ]]; then
-    cat > ".agents/decisions/_index.md" << 'EOF'
+if [[ ! -f ".ai/artifacts/decisions/_index.md" ]]; then
+    cat > ".ai/artifacts/decisions/_index.md" << 'EOF'
 # Architecture Decision Records
 
 | ADR | Title | Status | Date |
@@ -736,67 +724,60 @@ fi
 
 # ---- .gitignore ----
 update_gitignore() {
-    local needs_agents=false
-    local needs_ai_rules=false
+    local needs_artifacts=false
     local needs_tool_rules=false
 
     if [[ -f ".gitignore" ]]; then
-        grep -q "^\.agents/" ".gitignore" 2>/dev/null || needs_agents=true
-        grep -q "^\.ai/rules/global-process" ".gitignore" 2>/dev/null || needs_ai_rules=true
+        grep -q "^\.ai/artifacts/" ".gitignore" 2>/dev/null || needs_artifacts=true
         grep -q "# Tool-specific rule symlinks" ".gitignore" 2>/dev/null || needs_tool_rules=true
     else
-        needs_agents=true
-        needs_ai_rules=true
+        needs_artifacts=true
         needs_tool_rules=true
     fi
 
-    if [[ "$needs_agents" == true ]] || [[ "$needs_ai_rules" == true ]] || [[ "$needs_tool_rules" == true ]]; then
+    if [[ "$needs_artifacts" == true ]] || [[ "$needs_tool_rules" == true ]]; then
         if [[ ! -f ".gitignore" ]]; then
             touch ".gitignore"
         fi
 
         echo "" >> ".gitignore"
 
-        if [[ "$needs_agents" == true ]]; then
-            print_step "Adding .agents/ to .gitignore"
-            cat >> ".gitignore" << 'GITIGNORE_AGENTS'
+        if [[ "$needs_artifacts" == true ]]; then
+            print_step "Adding .ai/artifacts/ to .gitignore"
+            cat >> ".gitignore" << 'GITIGNORE_ARTIFACTS'
 
 # Working files (ephemeral)
-.agents/
-!.agents/decisions/
-GITIGNORE_AGENTS
-        fi
-
-        if [[ "$needs_ai_rules" == true ]]; then
-            print_step "Adding universal .ai/rules/ to .gitignore"
-            cat >> ".gitignore" << 'GITIGNORE_AI'
-
-# .ai/rules/ — universal process rules (managed by dotfiles scaffold)
-# Re-run `scaffold.sh --force` to update these from dotfiles
-.ai/rules/global-process.mdc
-.ai/rules/style-principles.mdc
-.ai/rules/github-workflow.mdc
-.ai/rules/tickets-and-prs.mdc
-.ai/rules/agent-artifacts.mdc
-.ai/rules/code-review.mdc
-.ai/rules/planning.mdc
-.ai/rules/design-review.mdc
-.ai/rules/shell-automation.mdc
-# Recipe-specific rules below this line are committed (project-owned)
-GITIGNORE_AI
+.ai/artifacts/
+!.ai/artifacts/decisions/
+GITIGNORE_ARTIFACTS
         fi
 
         if [[ "$needs_tool_rules" == true ]]; then
             print_step "Adding tool rule dirs to .gitignore"
-            cat >> ".gitignore" << 'GITIGNORE_TOOLS'
-
-# Tool-specific rule symlinks (auto-generated by scaffold.sh)
-.cursor/rules/
-.github/instructions/
-.gemini/rules/
-GEMINI.md
-CODEX.md
-GITIGNORE_TOOLS
+            {
+                echo ""
+                echo "# Tool-specific rule symlinks (auto-generated by scaffold.sh)"
+                [[ "$SCAFFOLD_TOOLS" == *"cursor"* || "$SCAFFOLD_TOOLS" == "all" ]] && echo ".cursor/rules/"
+                [[ "$SCAFFOLD_TOOLS" == *"copilot"* || "$SCAFFOLD_TOOLS" == "all" ]] && echo ".github/instructions/"
+                [[ "$SCAFFOLD_TOOLS" == *"gemini"* || "$SCAFFOLD_TOOLS" == "all" ]] && echo ".gemini/rules/"
+                # Root shims
+                if [[ -f "$DOTFILES_DIR/agents/shared/tool-targets.json" ]] && command -v jq >/dev/null 2>&1; then
+                    local shim_tools
+                    if [[ "$SCAFFOLD_TOOLS" == "all" ]]; then
+                        shim_tools=$(jq -r '.tools | to_entries[] | select(.value.rootFile != null) | .value.rootFile' "$DOTFILES_DIR/agents/shared/tool-targets.json")
+                    else
+                        shim_tools=$(jq -r --arg filter "$SCAFFOLD_TOOLS" '
+                            .tools | to_entries[]
+                            | select(.value.rootFile != null)
+                            | select(.key as $k | $filter | split(",") | index($k))
+                            | .value.rootFile
+                        ' "$DOTFILES_DIR/agents/shared/tool-targets.json")
+                    fi
+                    for shim in $shim_tools; do
+                        [[ "$shim" != "null" ]] && echo "$shim"
+                    done
+                fi
+            } >> ".gitignore"
         fi
     fi
 }
@@ -851,13 +832,35 @@ print_success "Project scaffolded successfully!"
 
 echo ""
 echo -e "${BLUE}What's in place:${NC}"
-echo "  - AGENTS.md              → Project instructions (all tools read this)"
-echo "  - .ai/rules/*.mdc        → Shared AI rules (the canonical source)"
-echo "  - .cursor/rules/         → Cursor symlinks → .ai/rules/"
-echo "  - .github/instructions/  → Copilot symlinks → .ai/rules/"
-echo "  - .gemini/rules/         → Gemini CLI symlinks → .ai/rules/"
-echo "  - GEMINI.md, CODEX.md    → Root shims pointing to AGENTS.md"
-echo "  - .agents/               → Working files (gitignored)"
+echo "  - AGENTS.md                  → Project instructions (all tools read this)"
+echo "  - .ai/rules/*.mdc            → AI rules (recipe-specific, project-owned)"
+if [[ "$SCAFFOLD_TOOLS" == *"cursor"* || "$SCAFFOLD_TOOLS" == "all" ]]; then
+    echo "  - .cursor/rules/             → Cursor symlinks → .ai/rules/"
+fi
+if [[ "$SCAFFOLD_TOOLS" == *"copilot"* || "$SCAFFOLD_TOOLS" == "all" ]]; then
+    echo "  - .github/instructions/      → Copilot symlinks → .ai/rules/"
+fi
+if [[ "$SCAFFOLD_TOOLS" == *"gemini"* || "$SCAFFOLD_TOOLS" == "all" ]]; then
+    echo "  - .gemini/rules/             → Gemini CLI symlinks → .ai/rules/"
+fi
+# Show root shims that were generated
+if [[ -f "$DOTFILES_DIR/agents/shared/tool-targets.json" ]] && command -v jq >/dev/null 2>&1; then
+    shim_list=""
+    if [[ "$SCAFFOLD_TOOLS" == "all" ]]; then
+        shim_list=$(jq -r '.tools | to_entries[] | select(.value.rootFile != null) | .value.rootFile' "$DOTFILES_DIR/agents/shared/tool-targets.json" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
+    else
+        shim_list=$(jq -r --arg filter "$SCAFFOLD_TOOLS" '
+            .tools | to_entries[]
+            | select(.value.rootFile != null)
+            | select(.key as $k | $filter | split(",") | index($k))
+            | .value.rootFile
+        ' "$DOTFILES_DIR/agents/shared/tool-targets.json" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
+    fi
+    if [[ -n "$shim_list" ]]; then
+        echo "  - ${shim_list}  → Root shims pointing to AGENTS.md"
+    fi
+fi
+echo "  - .ai/artifacts/             → Working files (gitignored)"
 
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
@@ -956,12 +959,12 @@ else
     echo "  2. Audit the codebase against our guidelines:"
     echo ""
     echo '     claude "Read AGENTS.md and .ai/rules/. Audit this codebase.'
-    echo '     Create a report in .agents/research/ listing what conforms,'
+    echo '     Create a report in .ai/artifacts/research/ listing what conforms,'
     echo '     what needs to change, and recommended priority."'
     echo ""
     echo "  3. Create a conformance plan:"
     echo ""
-    echo '     claude "Based on the audit, create a phased plan in .agents/plans/'
+    echo '     claude "Based on the audit, create a phased plan in .ai/artifacts/plans/'
     echo '     to bring this project into conformance."'
 fi
 

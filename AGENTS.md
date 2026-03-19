@@ -9,10 +9,11 @@ This is a personal dotfiles and development environment configuration repo. It m
 - `macos/` -- Homebrew packages, macOS system preferences, bootstrap scripts
 - `editors/cursor/` -- Cursor editor settings and extensions
 - `editors/obsidian/` -- Obsidian vault settings, community plugins, plugin configs
-- `agents/claude/` -- Claude Code plugins, MCP servers, hooks, setup script
+- `agents/claude/` -- Claude Code plugins, MCP servers, hooks, universal rule deployment
+- `agents/cursor/` -- Cursor MCP servers, rules, hooks, universal rule deployment
 - `agents/shared/` -- Shared agentic config (MCP servers, tool registry, rules, ignore patterns)
 - `.ai/rules/` -- Cross-vendor AI rules (process, languages, frameworks, tooling)
-- `prompts/` -- Scaffolding recipes, templates, and reference guides
+- `prompts/` -- Scaffolding recipes, templates, and reference guides (`.ai/artifacts/` in projects)
 
 ## Working in This Repo
 

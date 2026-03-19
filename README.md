@@ -58,6 +58,10 @@ dotfiles scaffold python ~/code/my-api
 
 # Force-update rules in an existing project
 dotfiles scaffold --force python .
+
+# Add extra tool support (default: claude + cursor)
+dotfiles scaffold python my-api --tools copilot,gemini
+dotfiles scaffold --tools all python my-api
 ```
 
 Safe to run multiple times — only adds missing pieces. AGENTS.md is generated once, then project-owned (use `--force` to regenerate).
@@ -66,21 +70,23 @@ This adds cross-vendor AI rules — lightweight scaffolding that guides AI agent
 
 ```
 my-project/
-├── AGENTS.md              # Universal entry point (project-owned)
-├── GEMINI.md, CODEX.md    # Root shims → AGENTS.md (auto-generated)
-├── .ai/rules/*.mdc        # AI rules — canonical source (copied from dotfiles)
-├── .cursor/rules/         # Cursor symlinks → .ai/rules/
-├── .github/instructions/  # Copilot symlinks → .ai/rules/
-├── .gemini/rules/         # Gemini CLI symlinks → .ai/rules/
-├── .agents/               # Working files, gitignored (plans, research, sessions)
-└── .agents/decisions/     # Architecture Decision Records (versioned)
+├── AGENTS.md                  # Universal entry point (project-owned)
+├── .ai/
+│   ├── rules/*.mdc            # Recipe-specific rules (copied from dotfiles)
+│   └── artifacts/             # Working files (gitignored)
+│       ├── plans/
+│       ├── research/
+│       ├── decisions/         # ADRs (versioned)
+│       └── sessions/
+└── .cursor/rules/             # Cursor symlinks → .ai/rules/ (default)
+    # Plus --tools extras: .github/instructions/, .gemini/rules/, GEMINI.md, CODEX.md
 ```
 
 **How rules are deployed:**
-- **Universal rules** (process, style) are copied with manifest headers for staleness tracking — re-run with `--force` to update from dotfiles
-- **Recipe rules** (language, framework, stack) are copied — project can customize
+- **Universal rules** (process, safety, style) are deployed at the **user level** by `dotfiles claude-setup` / `dotfiles install` — symlinked to dotfiles so they're always current
+- **Recipe rules** (language, framework, stack) are **copied into projects** — project can customize
 - **Tool symlinks** are auto-generated from a registry (`agents/shared/tool-targets.json`)
-- Only rules relevant to the recipe are deployed, not the entire library
+- Default tools: claude + cursor. Use `--tools copilot,gemini` or `--tools all` for more.
 
 **Multi-tool rule discovery** — `.ai/rules/` is the single source of truth. `scaffold.sh` creates tool-specific symlinks so each AI tool discovers the same rules in its native directory:
 
@@ -185,6 +191,7 @@ MCP config: `agents/shared/mcp-servers.json` (shared source), deployed to Claude
 Setup is automated via `dotfiles claude-setup` (also runs during install):
 
 - **Global instructions**: `~/.claude/CLAUDE.md` installed from `agents/claude/global-claude.md` (process guardrails, command style, project file discovery)
+- **Universal rules**: `~/.claude/rules/*.mdc` symlinked from `.ai/rules/process/` (always current with dotfiles)
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
 - **Skills**: `scaffold-project`, `dotfiles-doctor`
@@ -209,6 +216,7 @@ See `agents/claude/` for all configuration files.
 Setup is automated via `agents/cursor/setup.sh` (also runs during install):
 
 - **MCP servers**: From shared source (`agents/shared/mcp-servers.json`)
+- **Universal rules**: Symlinked from `.ai/rules/process/` (always current with dotfiles)
 - **Hooks**: Shared hook definitions deployed from `agents/cursor/hooks/`
 - **Skills**: Deployed from `agents/cursor/skills/`
 - **Agents**: Deployed from `agents/cursor/agents/`
@@ -273,8 +281,8 @@ dotfiles/
 ├── terminal/               # Ghostty config
 ├── agents/                 # Agentic tool setup
 │   ├── shared/             # Shared config (MCP servers, tool registry, rules, ignore patterns)
-│   ├── claude/             # Claude Code setup (plugins, hooks, skills, agents)
-│   └── cursor/             # Cursor plugin (hooks, skills, agents)
+│   ├── claude/             # Claude Code setup (plugins, hooks, skills, universal rules)
+│   └── cursor/             # Cursor plugin (hooks, skills, universal rules)
 ├── macos/                  # Homebrew, Dock, SSH, print utilities
 ├── .ai/rules/              # Cross-vendor AI rules (canonical source)
 │   ├── process/            # Universal: safety, style, workflow

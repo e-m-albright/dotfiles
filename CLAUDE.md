@@ -16,8 +16,9 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 
 - `brew.sh` package lists are the source of truth for what's installed. `bin/dotfiles doctor` and `bin/dotfiles stale` must stay in sync with these lists.
 - `README.md` documents user-facing features. When adding/removing/renaming commands, packages, or config, update the README in the same commit.
-- `.ai/rules/` is the canonical rule library. `prompts/scaffold.sh` copies these into projects. Rules are not symlinked.
+- `.ai/rules/` is the canonical rule library. Universal process rules (`process/*.mdc`) deploy to user-level via setup scripts (symlinked). Recipe rules are copied into projects by `scaffold.sh`.
 - `prompts/guides/skills/*.md` are implementation references that complement `.ai/rules/`. They should stay consistent with each other.
+- `agents/shared/tool-targets.json` is the tool discovery registry. Adding a new AI tool means adding a JSON entry, not writing code.
 
 ## Command Style (Reduce Permission Prompts)
 
