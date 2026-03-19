@@ -36,6 +36,8 @@
 
 # Integrations
 - Notion
+- graphite@claude-code-graphite                                # Stacked PRs — skills + hooks
+- graphite-mcp@claude-code-graphite                            # Stacked PRs — MCP server
 
 # Community skills — SvelteKit / Cloudflare stack
 - vitest@antfu-skills                                          # Vitest unit testing

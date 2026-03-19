@@ -1,36 +1,33 @@
 {
   "mcpServers": {
     "github": {
-      "command": "gh",
-      "args": [
-        "mcp"
-      ]
+      "url": "https://api.githubcopilot.com/mcp/"
     },
     "linear": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "https://mcp.linear.app/mcp"
-      ]
+      "url": "https://mcp.linear.app/mcp"
     },
     "notion": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "https://mcp.notion.com/mcp"
-      ]
+      "url": "https://mcp.notion.com/mcp"
     },
     "context7": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp@latest"
-      ]
+      "url": "https://mcp.context7.com/mcp"
     },
     "exa": {
       "url": "https://mcp.exa.ai/mcp"
+    },
+    "datadog": {
+      "url": "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp",
+      "headers": {
+        "DD_API_KEY": "${DD_API_KEY}",
+        "DD_APPLICATION_KEY": "${DD_APPLICATION_KEY}"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
     }
   }
 }
