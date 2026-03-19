@@ -222,7 +222,7 @@ ai_cli=(
     claude-code          # Anthropic CLI agent
     claude               # Claude Desktop (macOS app)
     cmux                 # Terminal multiplexer for AI agents
-    # conductor           # AI agent orchestrator (try later)
+    conductor            # Claude Code parallelisation
     # gemini-cli         # Google Gemini CLI (disabled)
     # ollama             # Local LLM runtime (disabled)
     # huggingface-cli    # Hugging Face CLI (disabled — install per-project if needed)
