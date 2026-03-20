@@ -5,8 +5,8 @@
 # Usage:
 #   ./setup.sh                          # Full setup (personal profile)
 #   ./setup.sh --work                   # Work profile
-#   dotfiles claude-setup               # Via dotfiles CLI alias
-#   dotfiles claude-setup --work        # Work profile via CLI
+#   dotfiles agent-setup                # Via dotfiles CLI alias
+#   dotfiles agent-setup --work         # Work profile via CLI
 #   MCP_SKIP=granola ./setup.sh         # Skip specific MCP servers
 #
 # Profiles control which MCP servers are deployed:

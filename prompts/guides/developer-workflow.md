@@ -49,7 +49,7 @@ dotfiles doctor         # Health check — tools, symlinks, configs (--fix to re
 dotfiles update         # Update everything — brew, runtimes, tools, npm globals
 dotfiles stale          # Find disabled packages still installed + broken symlinks
 dotfiles scaffold       # Create a new project with AI rules and templates
-dotfiles claude-setup   # Re-deploy Claude Code config (plugins, hooks, MCP, skills)
+dotfiles agent-setup   # Re-deploy Claude Code config (plugins, hooks, MCP, skills)
 dotfiles agents         # Show active MCP servers, hooks, skills across Claude + Cursor
 dotfiles brew           # Re-run Homebrew setup
 dotfiles dock           # Reset macOS Dock layout
@@ -384,11 +384,11 @@ Edit `agents/shared/mcp-servers.json` and specify targets:
 }
 ```
 
-Then run `dotfiles claude-setup` to deploy.
+Then run `dotfiles agent-setup` to deploy.
 
 ### Modifying Hooks
 
-Edit `agents/claude/hooks.json` directly, then run `dotfiles claude-setup`.
+Edit `agents/claude/hooks.json` directly, then run `dotfiles agent-setup`.
 
 ---
 
@@ -439,7 +439,7 @@ Run this after changing any rule, template, or scaffold logic.
 
 | Problem | Fix |
 |---------|-----|
-| Claude Code doesn't have my plugins | Run `dotfiles claude-setup` |
+| Claude Code doesn't have my plugins | Run `dotfiles agent-setup` |
 | Hooks aren't running | `just hooks-install` or `lefthook install` |
 | Type checker not found | `uv sync --dev` (Python) or `bun install` (TS) |
 | Format-on-save not working | Check `dotfiles doctor` — formatter must be installed |

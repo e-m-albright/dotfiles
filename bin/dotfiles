@@ -30,7 +30,7 @@ sub_help () {
     printf "   profile-shell    Profile shell startup time\n"
     printf "   scaffold         Scaffold a new project with AI rules\n"
     printf "   test             Run scaffold eval framework (--quick for fast mode)\n"
-    printf "   claude-setup         Configure Claude + Cursor (--work for work profile)\n"
+    printf "   agent-setup          Configure Claude + Cursor (--work for work profile)\n"
     printf "   completions      Output shell completions (source this in your shell)\n"
 }
 
@@ -163,7 +163,7 @@ sub_doctor () {
     if [[ -f ~/.claude/CLAUDE.md ]]; then
         printf "  ${GREEN}✓${NC} %-20s exists\n" "Claude instructions"
     else
-        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-setup${NC}\n" "Claude instructions"
+        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Claude instructions"
     fi
 
     if [[ -f ~/.claude/settings.json ]] && command -v jq >/dev/null 2>&1; then
@@ -172,7 +172,7 @@ sub_doctor () {
         if [[ "$plugin_count" -gt 0 ]]; then
             printf "  ${GREEN}✓${NC} %-20s %s plugins enabled\n" "Claude plugins" "$plugin_count"
         else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-setup${NC}\n" "Claude plugins"
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Claude plugins"
         fi
 
         local hook_count
@@ -180,7 +180,7 @@ sub_doctor () {
         if [[ "$hook_count" -gt 0 ]]; then
             printf "  ${GREEN}✓${NC} %-20s %s events configured\n" "Claude hooks" "$hook_count"
         else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-setup${NC}\n" "Claude hooks"
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Claude hooks"
         fi
     fi
 
@@ -190,7 +190,7 @@ sub_doctor () {
         if [[ "$mcp_count" -gt 0 ]]; then
             printf "  ${GREEN}✓${NC} %-20s %s servers\n" "Claude MCP" "$mcp_count"
         else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles claude-setup${NC}\n" "Claude MCP"
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Claude MCP"
         fi
     fi
 
@@ -325,7 +325,7 @@ sub_dock () {
     printf "${GREEN}%b Success! MacOS dock command finished.${NC}\n" "$ARROW"
 }
 
-sub_claude_setup() {
+sub_agent_setup() {
     . "$DOTFILES_DIR/agents/claude/setup.sh" "$@"
     . "$DOTFILES_DIR/agents/cursor/setup.sh" "$@"
     printf "${GREEN}%b Agent setup complete (%s profile).${NC}\n" "$ARROW" "$DOTFILES_PROFILE"
@@ -443,7 +443,7 @@ _dotfiles() {
         'stale:Find disabled packages still installed'
         'agents:Show active agentic setup'
         'profile-shell:Profile shell startup time'
-        'claude-setup:Configure Claude + Cursor (--work for work profile)'
+        'agent-setup:Configure Claude + Cursor (--work for work profile)'
         'completions:Output shell completions'
     )
     _describe 'command' commands
@@ -467,9 +467,9 @@ case $COMMAND_NAME in
         shift
         sub_scaffold "$@"
         ;;
-    claude-setup)
+    agent-setup)
         shift
-        sub_claude_setup "$@"
+        sub_agent_setup "$@"
         ;;
     completions)
         sub_completions

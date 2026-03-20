@@ -83,7 +83,7 @@ my-project/
 ```
 
 **How rules are deployed:**
-- **Universal rules** (process, safety, style) are deployed at the **user level** by `dotfiles claude-setup` / `dotfiles install` — symlinked to dotfiles so they're always current
+- **Universal rules** (process, safety, style) are deployed at the **user level** by `dotfiles agent-setup` / `dotfiles install` — symlinked to dotfiles so they're always current
 - **Recipe rules** (language, framework, stack) are **copied into projects** — project can customize
 - **Tool symlinks** are auto-generated from a registry (`agents/shared/tool-targets.json`)
 - Default tools: claude + cursor. Use `--tools copilot,gemini` or `--tools all` for more.
@@ -188,7 +188,7 @@ MCP config: `agents/shared/mcp-servers.json` (shared source), deployed to Claude
 
 ### Claude Code
 
-Setup is automated via `dotfiles claude-setup` (also runs during install):
+Setup is automated via `dotfiles agent-setup` (also runs during install):
 
 - **Global instructions**: `~/.claude/CLAUDE.md` installed from `agents/claude/global-claude.md` (process guardrails, command style, project file discovery)
 - **Universal rules**: `~/.claude/rules/*.mdc` symlinked from `.ai/rules/process/` (always current with dotfiles)
@@ -251,7 +251,7 @@ dotfiles stale               # Find disabled packages still installed
 dotfiles test                # Run scaffold eval framework (--quick for fast)
 dotfiles profile-shell       # Profile shell startup time
 dotfiles agents              # Show active agentic setup (Claude Code + Cursor)
-dotfiles claude-setup        # Configure Claude Code + Desktop (global config)
+dotfiles agent-setup        # Configure Claude Code + Desktop (global config)
 dotfiles completions         # Output shell completions
 ```
 
