@@ -1,28 +1,24 @@
 {
-  "github": {
-    "url": "https://api.githubcopilot.com/mcp/",
-    "targets": ["claude", "cursor"]
-  },
   "linear": {
     "url": "https://mcp.linear.app/mcp",
-    "targets": ["claude", "cursor"]
+    "targets": ["claude", "cursor"],
+    "profiles": ["work"]
   },
   "granola": {
     "command": "uvx",
     "args": ["granola-mcp"],
-    "targets": ["claude"]
+    "targets": ["claude"],
+    "profiles": ["personal"]
   },
   "notion": {
     "url": "https://mcp.notion.com/mcp",
-    "targets": ["claude", "cursor"]
+    "targets": ["claude", "cursor"],
+    "profiles": ["work"]
   },
   "context7": {
     "url": "https://mcp.context7.com/mcp",
-    "targets": ["cursor"]
-  },
-  "exa": {
-    "url": "https://mcp.exa.ai/mcp",
-    "targets": ["cursor"]
+    "targets": ["cursor"],
+    "profiles": ["personal", "work"]
   },
   "datadog": {
     "url": "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp",
@@ -30,11 +26,13 @@
       "DD_API_KEY": "${DD_API_KEY}",
       "DD_APPLICATION_KEY": "${DD_APPLICATION_KEY}"
     },
-    "targets": ["cursor"]
+    "targets": ["cursor"],
+    "profiles": ["work"]
   },
   "playwright": {
     "command": "npx",
     "args": ["-y", "@playwright/mcp@latest"],
-    "targets": ["cursor"]
+    "targets": ["cursor"],
+    "profiles": ["personal", "work"]
   }
 }

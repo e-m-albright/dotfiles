@@ -1,26 +1,7 @@
 {
   "mcpServers": {
-    "github": {
-      "url": "https://api.githubcopilot.com/mcp/"
-    },
-    "linear": {
-      "url": "https://mcp.linear.app/mcp"
-    },
-    "notion": {
-      "url": "https://mcp.notion.com/mcp"
-    },
     "context7": {
       "url": "https://mcp.context7.com/mcp"
-    },
-    "exa": {
-      "url": "https://mcp.exa.ai/mcp"
-    },
-    "datadog": {
-      "url": "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp",
-      "headers": {
-        "DD_API_KEY": "${DD_API_KEY}",
-        "DD_APPLICATION_KEY": "${DD_APPLICATION_KEY}"
-      }
     },
     "playwright": {
       "command": "npx",

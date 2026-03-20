@@ -30,7 +30,7 @@ sub_help () {
     printf "   profile-shell    Profile shell startup time\n"
     printf "   scaffold         Scaffold a new project with AI rules\n"
     printf "   test             Run scaffold eval framework (--quick for fast mode)\n"
-    printf "   claude-setup         Configure Claude Code + Desktop (global config)\n"
+    printf "   claude-setup         Configure Claude + Cursor (--work for work profile)\n"
     printf "   completions      Output shell completions (source this in your shell)\n"
 }
 
@@ -326,8 +326,9 @@ sub_dock () {
 }
 
 sub_claude_setup() {
-    . "$DOTFILES_DIR/agents/claude/setup.sh"
-    printf "${GREEN}%b Claude Code setup complete.${NC}\n" "$ARROW"
+    . "$DOTFILES_DIR/agents/claude/setup.sh" "$@"
+    . "$DOTFILES_DIR/agents/cursor/setup.sh" "$@"
+    printf "${GREEN}%b Agent setup complete (%s profile).${NC}\n" "$ARROW" "$DOTFILES_PROFILE"
 }
 
 sub_stale() {
@@ -442,7 +443,7 @@ _dotfiles() {
         'stale:Find disabled packages still installed'
         'agents:Show active agentic setup'
         'profile-shell:Profile shell startup time'
-        'claude-setup:Configure Claude Code + Desktop (global config)'
+        'claude-setup:Configure Claude + Cursor (--work for work profile)'
         'completions:Output shell completions'
     )
     _describe 'command' commands

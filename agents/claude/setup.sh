@@ -3,11 +3,18 @@
 # Idempotent — safe to run multiple times.
 #
 # Usage:
-#   ./setup.sh              # Full setup
-#   dotfiles claude-setup   # Via dotfiles CLI alias
-#   MCP_SKIP=granola,datadog ./setup.sh   # Skip specific MCP servers
+#   ./setup.sh                          # Full setup (personal profile)
+#   ./setup.sh --work                   # Work profile
+#   dotfiles claude-setup               # Via dotfiles CLI alias
+#   dotfiles claude-setup --work        # Work profile via CLI
+#   MCP_SKIP=granola ./setup.sh         # Skip specific MCP servers
 #
-# Persistent skip list: ~/.config/dotfiles/mcp-skip (one server name per line)
+# Profiles control which MCP servers are deployed:
+#   personal (default): context7, playwright, granola
+#   work:               context7, playwright, datadog, notion, linear
+#
+# Persistent config: ~/.config/dotfiles/profile   (contains "personal" or "work")
+#                     ~/.config/dotfiles/mcp-skip  (one server name per line)
 #
 # What it does:
 #   1. Ensures ~/.claude/CLAUDE.md has system instructions
@@ -31,6 +38,23 @@ GLOBAL_CLAUDE_MD="$SCRIPT_DIR/global-claude.md"
 DESKTOP_PREFS="$SCRIPT_DIR/desktop-preferences.json"
 MARKETPLACES_JSON="$SCRIPT_DIR/marketplaces.json"
 MCP_SKIP_FILE="$HOME/.config/dotfiles/mcp-skip"
+PROFILE_FILE="$HOME/.config/dotfiles/profile"
+
+# Parse --work / --personal flag
+DOTFILES_PROFILE="${DOTFILES_PROFILE:-}"
+for arg in "$@"; do
+    case "$arg" in
+        --work) DOTFILES_PROFILE="work" ;;
+        --personal) DOTFILES_PROFILE="personal" ;;
+    esac
+done
+
+# Fall back to persistent profile file, then default to "personal"
+if [[ -z "$DOTFILES_PROFILE" ]] && [[ -f "$PROFILE_FILE" ]]; then
+    DOTFILES_PROFILE=$(head -1 "$PROFILE_FILE" | tr -d '[:space:]')
+fi
+DOTFILES_PROFILE="${DOTFILES_PROFILE:-personal}"
+export DOTFILES_PROFILE
 
 # Load persistent MCP skip list (one server per line), merge with MCP_SKIP env var
 if [[ -f "$MCP_SKIP_FILE" ]]; then
@@ -125,16 +149,17 @@ setup_mcp() {
     [[ -f "$CLAUDE_JSON" ]] || echo '{}' > "$CLAUDE_JSON"
     cp "$CLAUDE_JSON" "$CLAUDE_JSON.bak"
 
-    # Filter servers targeting "claude", strip targets field, skip MCP_SKIP entries
+    # Filter by target, profile, and skip list; strip metadata fields
     local skip_json
-    skip_json=$(printf '%s' "${MCP_SKIP:-}" | jq -Rc 'split(",")')
+    skip_json=$(if [[ -n "${MCP_SKIP:-}" ]]; then printf '%s' "$MCP_SKIP" | jq -Rc 'split(",")'; else echo '[]'; fi)
 
     local mcp_servers
-    mcp_servers=$(jq --argjson skip "$skip_json" '
+    mcp_servers=$(jq --argjson skip "$skip_json" --arg profile "$DOTFILES_PROFILE" '
         to_entries
         | map(select(.value.targets | index("claude")))
+        | map(select(.value.profiles | index($profile)))
         | map(select(.key as $k | $skip | index($k) | not))
-        | map({key: .key, value: (.value | del(.targets))})
+        | map({key: .key, value: (.value | del(.targets, .profiles))})
         | from_entries
     ' "$shared_mcp")
 
@@ -142,7 +167,7 @@ setup_mcp() {
 
     local count
     count=$(echo "$mcp_servers" | jq 'length')
-    print_success "Configured $count MCP servers (Claude Code)"
+    print_success "Configured $count MCP servers (Claude Code) [profile: $DOTFILES_PROFILE]"
 }
 
 # --- Claude Desktop (MCP servers + preferences) ---
@@ -158,14 +183,15 @@ setup_desktop() {
     # Merge MCP servers from shared source (servers targeting "claude" or "desktop")
     if [[ -f "$DOTFILES_DIR/agents/shared/mcp-servers.json" ]]; then
         local skip_json
-        skip_json=$(printf '%s' "${MCP_SKIP:-}" | jq -Rc 'split(",")')
+        skip_json=$(if [[ -n "${MCP_SKIP:-}" ]]; then printf '%s' "$MCP_SKIP" | jq -Rc 'split(",")'; else echo '[]'; fi)
 
         local mcp_servers
-        mcp_servers=$(jq --argjson skip "$skip_json" '
+        mcp_servers=$(jq --argjson skip "$skip_json" --arg profile "$DOTFILES_PROFILE" '
             to_entries
             | map(select(.value.targets | (index("claude") or index("desktop"))))
+            | map(select(.value.profiles | index($profile)))
             | map(select(.key as $k | $skip | index($k) | not))
-            | map({key: .key, value: (.value | del(.targets))})
+            | map({key: .key, value: (.value | del(.targets, .profiles))})
             | from_entries
         ' "$DOTFILES_DIR/agents/shared/mcp-servers.json")
         jq --argjson servers "$mcp_servers" '.mcpServers = ((.mcpServers // {}) + $servers)' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
