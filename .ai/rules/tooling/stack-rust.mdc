@@ -31,6 +31,18 @@ alwaysApply: false
 | HTTP client | **reqwest** | hyper (low-level) |
 | CLI tools | **clap** | structopt (merged into clap) |
 
+## Phase 2b — Domain-Specific (Data-Heavy Projects)
+
+| Need | Pick | Avoid | Notes |
+|------|------|-------|-------|
+| Full-text search | **tantivy** | Elasticsearch, Meilisearch | Embeds as library, no separate service |
+| CSV parsing | **csv** | — | Fastest CSV parser, streaming support |
+| XML parsing | **quick-xml** | xml-rs (slow) | Streaming, handles large files without loading into memory |
+| HTML scraping | **scraper** | — | CSS-selector based, like Python's BeautifulSoup |
+| SSE streaming | **async-stream** | — | Ergonomic `stream!` macro for Axum SSE responses |
+| Vector embeddings | **pgvector** (via sqlx) | Qdrant, Pinecone | Keeps embeddings in PostgreSQL, no extra service |
+| Validation | **validator** | — | Derive-based struct validation |
+
 ## Phase 3 — At Scale
 
 | Need | Pick | Notes |
@@ -48,3 +60,5 @@ alwaysApply: false
 | Actix | Macro-heavy, less ergonomic than Axum |
 | async-std | Smaller ecosystem than Tokio |
 | structopt | Merged into clap v4 |
+| Elasticsearch / Meilisearch | External services; use tantivy for embedded search |
+| xml-rs | Slow; use quick-xml for streaming XML |

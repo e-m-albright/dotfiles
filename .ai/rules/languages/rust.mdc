@@ -29,7 +29,15 @@ alwaysApply: false
 - Prefer `impl Trait` over `dyn Trait` when possible (zero-cost).
 - Use `Arc<T>` for shared ownership across async tasks.
 
-## Structure
+## Async Patterns
+
+- Use `tokio::task::spawn_blocking` for CPU-heavy work (parsing, compression) — never block the async runtime.
+- Use `tokio::sync::Semaphore` for rate-limited concurrent operations (e.g., API calls with rate limits).
+- Prefer streaming iterators for large file processing — don't load entire files into memory.
+- Use `tokio::sync::mpsc` channels for producer/consumer pipelines (e.g., ingest → normalize → store).
+- `tokio::sync::Mutex` over `std::sync::Mutex` when holding a lock across `.await` points.
+
+## Structure (Single Crate)
 
 ```
 src/
@@ -42,6 +50,25 @@ src/
   db/                      — database access
 migrations/                — SQL migration files
 ```
+
+## Structure (Workspace / Multi-Crate)
+
+For larger projects, use a Cargo workspace with focused crates:
+
+```
+Cargo.toml                 — [workspace] with members
+crates/
+  project-core/            — shared types, error types, entity model
+  project-api/             — Axum routes, middleware, SSE streaming
+  project-ingest/          — data pipeline, parsers, source connectors
+  project-search/          — search indexing and query
+  project-cli/             — CLI entry point (clap)
+```
+
+- Use `[workspace.dependencies]` to pin shared dependency versions once.
+- Share types via the `-core` crate — other crates depend on it.
+- Use `pub(crate)` for internal helpers; only `pub` what other crates need.
+- Each crate should have a single clear responsibility — if a crate does two unrelated things, split it.
 
 ## Always
 

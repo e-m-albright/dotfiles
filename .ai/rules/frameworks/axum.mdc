@@ -52,6 +52,43 @@ migrations/                — SQLx migration files
 - Implement `IntoResponse` to return the standard error envelope: `{"error": {"code": "NOT_FOUND", "message": "..."}}`.
 - Use `?` operator in handlers — Axum calls `IntoResponse` on `Err`.
 
+## SSE Streaming
+
+For server-sent events (chat interfaces, long-running operations):
+
+```rust
+use axum::response::sse::{Event, Sse};
+use futures::stream::Stream;
+
+pub async fn chat(
+    State(state): State<AppState>,
+    Json(req): Json<ChatRequest>,
+) -> Sse<impl Stream<Item = Result<Event, anyhow::Error>>> {
+    let stream = async_stream::stream! {
+        // yield Event::default().data("chunk") for each piece
+        // yield Event::default().event("done").data("") to signal completion
+    };
+    Sse::new(stream).keep_alive(
+        axum::response::sse::KeepAlive::new()
+            .interval(Duration::from_secs(15))
+            .text("keep-alive"),
+    )
+}
+```
+
+- Use `async_stream::stream!` macro for ergonomic stream construction.
+- Always set `keep_alive` to prevent proxy/LB timeouts.
+- Send structured JSON in `data` fields — parse on the client.
+- Use named events (`.event("citation")`, `.event("chunk")`, `.event("done")`) to distinguish message types.
+
+## Bulk Data Processing
+
+For handlers that trigger heavy computation:
+
+- Offload CPU work: `tokio::task::spawn_blocking(move || parse_csv(&path))`.
+- Rate-limit outbound API calls: `Arc<Semaphore>` in `AppState`, `permit = semaphore.acquire().await`.
+- Stream large responses instead of buffering — use `axum::body::Body::from_stream()`.
+
 ## Commands
 
 ```bash
