@@ -28,11 +28,5 @@
     },
     "targets": ["cursor"],
     "profiles": ["work"]
-  },
-  "playwright": {
-    "command": "npx",
-    "args": ["-y", "@playwright/mcp@latest"],
-    "targets": ["cursor"],
-    "profiles": ["personal", "work"]
   }
 }

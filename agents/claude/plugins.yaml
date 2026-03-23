@@ -25,7 +25,7 @@
 
 # Tooling
 - context7
-- playwright
+# - playwright                                                      # Hasn't worked great so far
 - frontend-design
 - playground
 
@@ -36,15 +36,15 @@
 
 # Integrations
 - Notion
-- graphite@claude-code-graphite                                # Stacked PRs — skills + hooks
-- graphite-mcp@claude-code-graphite                            # Stacked PRs — MCP server
+# - graphite@claude-code-graphite                                # Needs more investigation on proper usage
+# - graphite-mcp@claude-code-graphite                            # Needs more investigation on proper usage
 
 # Community skills — SvelteKit / Cloudflare stack
 - vitest@antfu-skills                                          # Vitest unit testing
 - sveltekit-svelte5-tailwind-skill@claude-skills               # SvelteKit + Svelte 5 + Tailwind
 - cloudflare@jezweb-claude-skills                              # Workers, Hono, D1/Drizzle, Vite
 - tailwindcss@antfu-skills                                     # Tailwind CSS deep knowledge
-- e2e-testing@hairyf-skills                                    # Playwright E2E testing
+# - e2e-testing@hairyf-skills                                    # Playwright E2E — hasn't worked great so far
 
 # --- Considered (uncomment to enable) ---
 # - Dagster                              # Data pipeline orchestration & observability

@@ -28,11 +28,5 @@
       "source": "github",
       "repo": "jezweb/claude-skills"
     }
-  },
-  "claude-code-graphite": {
-    "source": {
-      "source": "github",
-      "repo": "georgeguimaraes/claude-code-graphite"
-    }
   }
 }
