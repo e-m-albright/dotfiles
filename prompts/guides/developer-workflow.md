@@ -12,8 +12,8 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                        You                                  │
 ├──────────────┬──────────────┬───────────────────────────────┤
-│  Claude Code │    Cursor    │         cmux                  │
-│  (agentic)   │  (IDE)       │  (multi-agent terminal)       │
+│  Claude Code │    Cursor    │       Ghostty                  │
+│  (agentic)   │  (IDE)       │  (terminal)                    │
 ├──────────────┴──────────────┴───────────────────────────────┤
 │  Superpowers Skills · Plugins · MCP Servers · Hooks         │
 ├─────────────────────────────────────────────────────────────┤
@@ -35,9 +35,9 @@
 |------|-------------|-------------|
 | **Claude Code** | Agentic CLI — reads/writes files, runs commands, uses MCP servers | Complex multi-file tasks, architecture, refactoring, long-running autonomous work |
 | **Cursor** | AI-native IDE (VS Code fork) with inline completions and chat | Rapid iteration, debugging, single-file edits, visual diffs |
-| **cmux** | Native macOS terminal multiplexer for AI agents | Running multiple Claude Code sessions in parallel with split panes and an embedded browser. Socket API lets one agent orchestrate others. |
+| **Ghostty** | Fast native terminal emulator | Running Claude Code sessions with tabs/splits. |
 
-**General rule**: Claude Code for depth, Cursor for speed, cmux when you need parallelism.
+**General rule**: Claude Code for depth, Cursor for speed.
 
 ### The `dotfiles` CLI
 
@@ -311,7 +311,7 @@ dotfiles doctor        # Catch drift early
 
 ### Starting a Feature
 
-1. Open cmux or a terminal
+1. Open a terminal
 2. `/brainstorm` with Claude Code to explore the problem
 3. `/write-plan` to break it into tasks
 4. `/worktree` to isolate the work (or just branch if small)
@@ -445,4 +445,3 @@ Run this after changing any rule, template, or scaffold logic.
 | Format-on-save not working | Check `dotfiles doctor` — formatter must be installed |
 | MCP server not connecting | Check `dotfiles agents` for status |
 | Stale packages installed | Run `dotfiles stale` to find them |
-| cmux not seeing Claude Code | Ensure Claude Code is running inside a cmux pane |

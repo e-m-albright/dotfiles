@@ -222,7 +222,7 @@ social_apps=(
 ai_cli=(
     claude-code          # Anthropic CLI agent
     claude               # Claude Desktop (macOS app)
-    cmux                 # Terminal multiplexer for AI agents
+    # cmux               # Terminal multiplexer for AI agents (nice but not helpful over Ghostty)
     conductor            # Claude Code parallelisation
     # gemini-cli         # Google Gemini CLI (disabled)
     # ollama             # Local LLM runtime (disabled)
