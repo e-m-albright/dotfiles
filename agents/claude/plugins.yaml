@@ -25,7 +25,6 @@
 
 # Tooling
 - context7
-# - playwright                                                      # Hasn't worked great so far
 - frontend-design
 - playground
 
@@ -34,17 +33,8 @@
 - superpowers
 - explanatory-output-style
 
-# Integrations
-- Notion
-# - graphite@claude-code-graphite                                # Needs more investigation on proper usage
-# - graphite-mcp@claude-code-graphite                            # Needs more investigation on proper usage
-
-# Community skills — SvelteKit / Cloudflare stack
-- vitest@antfu-skills                                          # Vitest unit testing
-- sveltekit-svelte5-tailwind-skill@claude-skills               # SvelteKit + Svelte 5 + Tailwind
-- cloudflare@jezweb-claude-skills                              # Workers, Hono, D1/Drizzle, Vite
-- tailwindcss@antfu-skills                                     # Tailwind CSS deep knowledge
-# - e2e-testing@hairyf-skills                                    # Playwright E2E — hasn't worked great so far
+# Data
+- data-engineering
 
 # --- Considered (uncomment to enable) ---
 # - Dagster                              # Data pipeline orchestration & observability
