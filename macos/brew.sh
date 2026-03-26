@@ -152,7 +152,7 @@ dev_cli=(
     lefthook            # Git hooks (language-agnostic, parallel execution)
     shellcheck          # Static analysis for shell scripts
     hyperfine           # Command-line benchmarking tool
-    graphite            # Stacked PRs for GitHub (requires withgraphite/tap)
+    # graphite          # Stacked PRs — removed, not useful enough (requires withgraphite/tap)
     atlas               # Database schema migration tool (requires ariga/tap)
     duckdb              # Fast analytical database (SQL for analytics)
     railway             # Railway.app CLI (deploy, logs, manage projects)
@@ -254,7 +254,7 @@ print_header "📦 Installing CLI Tools"
 # Add required taps before installing packages
 print_action "Adding Homebrew taps..."
 brew tap ariga/tap >/dev/null 2>&1 || true
-brew tap withgraphite/tap >/dev/null 2>&1 || true
+# brew tap withgraphite/tap >/dev/null 2>&1 || true  # graphite removed
 print_success "Taps configured"
 
 print_section "Core CLI"

@@ -340,7 +340,7 @@ sub_stale() {
     local disabled_pkgs=(
         "visual-studio-code" "iterm2" "warp" "docker-desktop"
         "terraform" "signal" "discord" "super-productivity"
-        "ollama" "gemini-cli" "cmux"
+        "ollama" "gemini-cli" "cmux" "graphite"
     )
     for pkg in "${disabled_pkgs[@]}"; do
         if brew list "$pkg" &>/dev/null 2>&1 || brew list --cask "$pkg" &>/dev/null 2>&1; then

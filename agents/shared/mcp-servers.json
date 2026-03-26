@@ -5,8 +5,7 @@
     "profiles": ["work"]
   },
   "granola": {
-    "command": "uvx",
-    "args": ["granola-mcp"],
+    "url": "https://mcp.granola.ai/mcp",
     "targets": ["claude"],
     "profiles": ["personal"]
   },

@@ -5,13 +5,15 @@
 # Usage:
 #   ./setup.sh                          # Full setup (personal profile)
 #   ./setup.sh --work                   # Work profile
+#   ./setup.sh --clean                  # Remove nonconforming plugins/MCPs/projects
 #   dotfiles agent-setup                # Via dotfiles CLI alias
 #   dotfiles agent-setup --work         # Work profile via CLI
 #   MCP_SKIP=granola ./setup.sh         # Skip specific MCP servers
 #
 # Profiles control which MCP servers are deployed:
-#   personal (default): context7, playwright, granola
-#   work:               context7, playwright, datadog, notion, linear
+#   personal (default): granola
+#   work:               datadog, notion, linear
+#   both:               context7 (cursor only)
 #
 # Persistent config: ~/.config/dotfiles/profile   (contains "personal" or "work")
 #                     ~/.config/dotfiles/mcp-skip  (one server name per line)
@@ -40,12 +42,14 @@ MARKETPLACES_JSON="$SCRIPT_DIR/marketplaces.json"
 MCP_SKIP_FILE="$HOME/.config/dotfiles/mcp-skip"
 PROFILE_FILE="$HOME/.config/dotfiles/profile"
 
-# Parse --work / --personal flag
+# Parse flags
 DOTFILES_PROFILE="${DOTFILES_PROFILE:-}"
+CLEAN_MODE=false
 for arg in "$@"; do
     case "$arg" in
         --work) DOTFILES_PROFILE="work" ;;
         --personal) DOTFILES_PROFILE="personal" ;;
+        --clean) CLEAN_MODE=true ;;
     esac
 done
 
@@ -328,7 +332,160 @@ setup_universal_rules() {
     print_success "Symlinked $total universal rules (~/.claude/rules/ → dotfiles)"
 }
 
+# --- Clean: remove nonconforming plugins, MCPs, and stale projects ---
+setup_clean() {
+    $CLEAN_MODE || return 0
+    require_jq || return 0
+
+    print_section "Cleaning nonconforming config"
+
+    # Build list of expected plugins from plugins.yaml
+    local expected_plugins
+    expected_plugins=$(yq eval '.[]' "$PLUGINS_YAML" 2>/dev/null | while IFS= read -r plugin; do
+        [[ -z "$plugin" || "$plugin" =~ ^# ]] && continue
+        if [[ "$plugin" == *@* ]]; then
+            printf '%s\n' "$plugin"
+        else
+            printf '%s@claude-plugins-official\n' "$plugin"
+        fi
+    done)
+
+    # Remove plugins not in plugins.yaml
+    if [[ -f "$SETTINGS_FILE" ]]; then
+        cp "$SETTINGS_FILE" "$SETTINGS_FILE.bak"
+        local current_plugins removed_plugins=0
+        current_plugins=$(jq -r '.enabledPlugins // {} | keys[]' "$SETTINGS_FILE")
+        for plugin in $current_plugins; do
+            if ! echo "$expected_plugins" | grep -qxF "$plugin"; then
+                print_step "Removing plugin: $plugin"
+                removed_plugins=$((removed_plugins + 1))
+            fi
+        done
+        # Rebuild enabledPlugins with only expected plugins
+        local keep_json
+        keep_json=$(echo "$expected_plugins" | jq -Rn '[inputs | select(length > 0)] | map({(.): true}) | add // {}')
+        jq --argjson keep "$keep_json" '.enabledPlugins = $keep' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
+        print_success "Removed $removed_plugins nonconforming plugins"
+
+        # Remove nonconforming marketplaces
+        cp "$SETTINGS_FILE" "$SETTINGS_FILE.bak"
+        local expected_mkts
+        expected_mkts=$(jq -r 'keys[]' "$MARKETPLACES_JSON" 2>/dev/null)
+        local current_mkts removed_mkts=0
+        current_mkts=$(jq -r '.extraKnownMarketplaces // {} | keys[]' "$SETTINGS_FILE")
+        for mkt in $current_mkts; do
+            if ! echo "$expected_mkts" | grep -qxF "$mkt"; then
+                print_step "Removing marketplace: $mkt"
+                removed_mkts=$((removed_mkts + 1))
+            fi
+        done
+        local keep_mkts
+        keep_mkts=$(jq '. // {}' "$MARKETPLACES_JSON")
+        jq --argjson mkts "$keep_mkts" '.extraKnownMarketplaces = $mkts' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
+        print_success "Removed $removed_mkts nonconforming marketplaces"
+
+        # Remove nonconforming MCP permission grants
+        cp "$SETTINGS_FILE" "$SETTINGS_FILE.bak"
+        local shared_mcp="$DOTFILES_DIR/agents/shared/mcp-servers.json"
+        local expected_mcp_names
+        expected_mcp_names=$(jq -r 'keys[]' "$shared_mcp" 2>/dev/null)
+        # Also include plugin MCP prefixes (mcp__plugin_*)
+        local removed_perms=0
+        local allow_json
+        allow_json=$(jq -r '.permissions.allow // [] | .[]' "$SETTINGS_FILE")
+        local cleaned_allow="[]"
+        while IFS= read -r perm; do
+            [[ -z "$perm" ]] && continue
+            if [[ "$perm" =~ ^mcp__plugin_ ]]; then
+                # Plugin MCP permission — extract plugin name and check against expected plugins
+                # Format: mcp__plugin_<PluginName>_<toolname> → check <PluginName> (case-insensitive)
+                local plugin_part="${perm#mcp__plugin_}"
+                local plugin_name="${plugin_part%%_*}"
+                local plugin_lower
+                plugin_lower=$(echo "$plugin_name" | tr '[:upper:]' '[:lower:]')
+                local found=false
+                while IFS= read -r ep; do
+                    local ep_name="${ep%%@*}"
+                    local ep_lower
+                    ep_lower=$(echo "$ep_name" | tr '[:upper:]' '[:lower:]')
+                    if [[ "$ep_lower" == "$plugin_lower" ]]; then
+                        found=true
+                        break
+                    fi
+                done <<< "$expected_plugins"
+                if ! $found; then
+                    print_step "Removing plugin MCP permission: $perm"
+                    removed_perms=$((removed_perms + 1))
+                    continue
+                fi
+            elif [[ "$perm" =~ ^mcp__ ]]; then
+                # Direct MCP permission — check if server name is expected
+                local server_name="${perm#mcp__}"
+                if ! echo "$expected_mcp_names" | grep -qxF "$server_name"; then
+                    print_step "Removing MCP permission: $perm"
+                    removed_perms=$((removed_perms + 1))
+                    continue
+                fi
+            fi
+            cleaned_allow=$(echo "$cleaned_allow" | jq --arg p "$perm" '. + [$p]')
+        done <<< "$allow_json"
+        jq --argjson perms "$cleaned_allow" '.permissions.allow = $perms' "$SETTINGS_FILE.bak" > "$SETTINGS_FILE"
+        if [[ $removed_perms -gt 0 ]]; then
+            print_success "Removed $removed_perms stale MCP permissions"
+        fi
+    fi
+
+    # Remove stale project entries from ~/.claude.json
+    if [[ -f "$CLAUDE_JSON" ]]; then
+        cp "$CLAUDE_JSON" "$CLAUDE_JSON.bak"
+        local removed_projects=0
+        local project_paths
+        project_paths=$(jq -r '.projects // {} | keys[]' "$CLAUDE_JSON")
+        while IFS= read -r proj_path; do
+            [[ -z "$proj_path" ]] && continue
+            if [[ ! -d "$proj_path" ]]; then
+                print_step "Removing stale project: $proj_path"
+                jq --arg p "$proj_path" 'del(.projects[$p])' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp"
+                mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
+                removed_projects=$((removed_projects + 1))
+            fi
+        done <<< "$project_paths"
+        print_success "Removed $removed_projects stale project entries"
+
+        # Remove stale MCP server references in project disabledMcpServers
+        local patched=0
+        project_paths=$(jq -r '.projects // {} | keys[]' "$CLAUDE_JSON")
+        while IFS= read -r proj_path; do
+            [[ -z "$proj_path" ]] && continue
+            local disabled
+            disabled=$(jq -r --arg p "$proj_path" '.projects[$p].disabledMcpServers // [] | .[]' "$CLAUDE_JSON" 2>/dev/null)
+            [[ -z "$disabled" ]] && continue
+            while IFS= read -r mcp_ref; do
+                # Remove references to MCPs that don't exist in our config
+                local mcp_name="${mcp_ref##* }"  # "claude.ai Rx Access" -> "Access"
+                if [[ "$mcp_ref" == "claude.ai"* ]]; then
+                    # Third-party claude.ai MCPs — check if still connected
+                    local connected
+                    connected=$(jq -r '.claudeAiMcpEverConnected // [] | .[]' "$CLAUDE_JSON")
+                    if ! echo "$connected" | grep -qxF "$mcp_ref"; then
+                        jq --arg p "$proj_path" --arg m "$mcp_ref" \
+                            '.projects[$p].disabledMcpServers = [.projects[$p].disabledMcpServers[] | select(. != $m)]' \
+                            "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp"
+                        mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
+                        print_step "Removed disabled MCP ref: $mcp_ref (from $proj_path)"
+                        patched=$((patched + 1))
+                    fi
+                fi
+            done <<< "$disabled"
+        done <<< "$project_paths"
+        if [[ $patched -gt 0 ]]; then
+            print_success "Cleaned $patched stale MCP references from projects"
+        fi
+    fi
+}
+
 # --- Main ---
+setup_clean
 setup_instructions
 setup_marketplaces
 setup_plugins
