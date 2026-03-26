@@ -462,7 +462,6 @@ setup_clean() {
             [[ -z "$disabled" ]] && continue
             while IFS= read -r mcp_ref; do
                 # Remove references to MCPs that don't exist in our config
-                local mcp_name="${mcp_ref##* }"  # "claude.ai Rx Access" -> "Access"
                 if [[ "$mcp_ref" == "claude.ai"* ]]; then
                     # Third-party claude.ai MCPs — check if still connected
                     local connected
