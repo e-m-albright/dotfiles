@@ -91,21 +91,38 @@ alias j='just'
 
 # Editors
 alias cu='cursor'
-# cc: Claude Code with worktree + permission profiles
-# Usage: cc [--scout|--dev|--yolo] [claude args...]
+# cc: Claude Code with permission profiles/modes
+# Usage: cc [-w] [-a|-p|-e] [--scout|--dev|--yolo] [claude args...]
+#   -w  worktree    -a  auto mode    -p  plan mode    -e  accept edits
 # Default profile: dev (override with CLAUDE_PROFILE env var)
 cc() {
     local profile="${CLAUDE_PROFILE:-dev}"
+    local permission_mode=""
+    local use_worktree=false
     local args=()
     for arg in "$@"; do
         case "$arg" in
-            --scout) profile="scout" ;;
-            --dev)   profile="dev" ;;
-            --yolo)  profile="yolo" ;;
-            *)       args+=("$arg") ;;
+            -w|--worktree) use_worktree=true ;;
+            -a|--auto)     permission_mode="auto" ;;
+            -p|--plan)     permission_mode="plan" ;;
+            -e|--edit)     permission_mode="acceptEdits" ;;
+            --scout)       profile="scout" ;;
+            --dev)         profile="dev" ;;
+            --yolo)        profile="yolo" ;;
+            -wa|-aw)       use_worktree=true; permission_mode="auto" ;;
+            -wp|-pw)       use_worktree=true; permission_mode="plan" ;;
+            -we|-ew)       use_worktree=true; permission_mode="acceptEdits" ;;
+            *)             args+=("$arg") ;;
         esac
     done
-    claude --worktree --settings "$HOME/.claude/profiles/${profile}.json" "${args[@]}"
+    local cmd=(claude --settings "$HOME/.claude/profiles/${profile}.json")
+    if [[ "$use_worktree" == true ]]; then
+        cmd+=(--worktree)
+    fi
+    if [[ -n "$permission_mode" ]]; then
+        cmd+=(--permission-mode "$permission_mode")
+    fi
+    "${cmd[@]}" "${args[@]}"
 }
 
 # ccr: Claude Code Review
