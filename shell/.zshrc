@@ -92,13 +92,15 @@ alias j='just'
 # Editors
 alias cu='cursor'
 # cc: Claude Code with permission profiles/modes
-# Usage: cc [-w] [-a|-p|-e] [--scout|--dev|--yolo] [claude args...]
+# Usage: cc [-w] [-a|-p|-e] [--chrome] [--scout|--dev|--yolo] [claude args...]
 #   -w  worktree    -a  auto mode    -p  plan mode    -e  accept edits
+#   --chrome  open in Chrome (web app mode)
 # Default profile: dev (override with CLAUDE_PROFILE env var)
 cc() {
     local profile="${CLAUDE_PROFILE:-dev}"
     local permission_mode=""
     local use_worktree=false
+    local use_chrome=false
     local args=()
     for arg in "$@"; do
         case "$arg" in
@@ -106,6 +108,7 @@ cc() {
             -a|--auto)     permission_mode="auto" ;;
             -p|--plan)     permission_mode="plan" ;;
             -e|--edit)     permission_mode="acceptEdits" ;;
+            --chrome)      use_chrome=true ;;
             --scout)       profile="scout" ;;
             --dev)         profile="dev" ;;
             --yolo)        profile="yolo" ;;
@@ -116,6 +119,9 @@ cc() {
         esac
     done
     local cmd=(claude --settings "$HOME/.claude/profiles/${profile}.json")
+    if [[ "$use_chrome" == true ]]; then
+        cmd+=(--chrome)
+    fi
     if [[ "$use_worktree" == true ]]; then
         cmd+=(--worktree)
     fi
@@ -124,6 +130,9 @@ cc() {
     fi
     "${cmd[@]}" "${args[@]}"
 }
+# ccc: Claude Code in Chrome — shorthand for cc --chrome
+# All cc flags work: ccc -wa, ccc -p, ccc --yolo, etc.
+ccc() { cc --chrome "$@"; }
 
 # ccr: Claude Code Review
 # Usage: ccr              — review current branch changes vs main (uses /review-pr)

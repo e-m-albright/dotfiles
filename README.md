@@ -205,7 +205,8 @@ Setup is automated via `dotfiles agent-setup` (also runs during install):
 
 | Alias | Usage | Description |
 |-------|-------|-------------|
-| `cc` | `cc [--scout\|--dev\|--yolo]` | Launch Claude Code with worktree + permission profile |
+| `cc` | `cc [-w] [-a\|-p\|-e] [--chrome]` | Launch Claude Code with worktree + permission profile |
+| `ccc` | `ccc -wa`, `ccc --yolo` | Claude Code in Chrome — shorthand for `cc --chrome` |
 | `ccr` | `ccr`, `ccr 2277`, `ccr <url>` | AI code review — local uses `/review-pr` (6 agents), PR uses `/code-review` (5 agents + GitHub comments) |
 | `cca` | `cca [-c] [-p] [PR]` | Address PR feedback — `-c` replies to comments, `-p` pushes |
 
