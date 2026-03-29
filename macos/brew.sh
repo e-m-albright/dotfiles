@@ -156,6 +156,8 @@ dev_cli=(
     atlas               # Database schema migration tool (requires ariga/tap)
     duckdb              # Fast analytical database (SQL for analytics)
     railway             # Railway.app CLI (deploy, logs, manage projects)
+    opentofu            # Open-source Terraform alternative
+    flyctl              # Fly.io CLI (deploy, manage apps)
     # libpq             # PostgreSQL client library (psql, pg_dump — enable if needed)
     # sentry-cli        # Sentry error tracking (releases, source maps, deploys)
     # datadog-ci        # Datadog CI test visibility & synthetics
