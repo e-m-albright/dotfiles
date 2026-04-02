@@ -7,7 +7,6 @@
 # To disable a plugin: remove it and re-run setup.sh (or toggle in Claude Code)
 
 # LSP integrations (type checking & diagnostics in-session)
-- ty-lsp
 - typescript-lsp
 - rust-analyzer-lsp
 
@@ -37,7 +36,9 @@
 - data-engineering
 
 # Cross-agent (OpenAI Codex integration)
-- codex@openai-codex
+# Requires: /plugin marketplace add openai/codex-plugin-cc
+# Then:     /plugin install codex@openai-codex
+# - codex@openai-codex
 
 # --- Considered (uncomment to enable) ---
 # - Dagster                              # Data pipeline orchestration & observability

@@ -1,25 +1,30 @@
 {
   "linear": {
+    "type": "http",
     "url": "https://mcp.linear.app/mcp",
     "targets": ["claude", "cursor"],
     "profiles": ["work"]
   },
   "granola": {
+    "type": "http",
     "url": "https://mcp.granola.ai/mcp",
     "targets": ["claude"],
     "profiles": ["personal"]
   },
   "notion": {
+    "type": "http",
     "url": "https://mcp.notion.com/mcp",
     "targets": ["claude", "cursor"],
     "profiles": ["work"]
   },
   "context7": {
+    "type": "http",
     "url": "https://mcp.context7.com/mcp",
     "targets": ["cursor"],
     "profiles": ["personal", "work"]
   },
   "datadog": {
+    "type": "http",
     "url": "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp",
     "headers": {
       "DD_API_KEY": "${DD_API_KEY}",
