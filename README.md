@@ -151,7 +151,7 @@ my-project/
 |----------|-------|
 | **Core** | git, git-lfs, delta (diffs), gh (GitHub CLI), jq, yq, wget |
 | **System** | htop, iftop, nmap, dockutil, terminal-notifier |
-| **Dev** | just (task runner), lefthook (git hooks), shellcheck (shell linting), hyperfine (benchmarks), atlas (migrations), duckdb |
+| **Dev** | just (task runner), lefthook (git hooks), shellcheck (shell linting), hyperfine (benchmarks), atlas (migrations), duckdb, infisical (secrets) |
 
 ### AI Tools
 

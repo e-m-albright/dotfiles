@@ -159,6 +159,7 @@ dev_cli=(
     opentofu            # Open-source Terraform alternative
     flyctl              # Fly.io CLI (deploy, manage apps)
     neonctl             # Neon Postgres CLI (projects, DBs, roles)
+    infisical           # Secrets management CLI (requires infisical/get-cli tap)
     # git-filter-repo   # Git history rewriting (secrets scrub)
     # libpq             # PostgreSQL client library (psql, pg_dump — enable if needed)
     # sentry-cli        # Sentry error tracking (releases, source maps, deploys)
@@ -258,6 +259,7 @@ print_header "📦 Installing CLI Tools"
 # Add required taps before installing packages
 print_action "Adding Homebrew taps..."
 brew tap ariga/tap >/dev/null 2>&1 || true
+brew tap infisical/get-cli >/dev/null 2>&1 || true
 # brew tap withgraphite/tap >/dev/null 2>&1 || true  # graphite removed
 print_success "Taps configured"
 
