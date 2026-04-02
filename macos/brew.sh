@@ -158,6 +158,8 @@ dev_cli=(
     railway             # Railway.app CLI (deploy, logs, manage projects)
     opentofu            # Open-source Terraform alternative
     flyctl              # Fly.io CLI (deploy, manage apps)
+    neonctl             # Neon Postgres CLI (projects, DBs, roles)
+    # git-filter-repo   # Git history rewriting (secrets scrub)
     # libpq             # PostgreSQL client library (psql, pg_dump — enable if needed)
     # sentry-cli        # Sentry error tracking (releases, source maps, deploys)
     # datadog-ci        # Datadog CI test visibility & synthetics
