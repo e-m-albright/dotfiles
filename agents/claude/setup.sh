@@ -483,6 +483,22 @@ setup_clean() {
     fi
 }
 
+# --- Manual steps (plugins requiring interactive install) ---
+print_manual_steps() {
+    local has_manual=false
+
+    # Codex plugin requires interactive marketplace fetch
+    if ! jq -e '.enabledPlugins["codex@openai-codex"]' "$SETTINGS_FILE" >/dev/null 2>&1; then
+        if grep -q '# - codex@openai-codex' "$PLUGINS_YAML" 2>/dev/null; then
+            has_manual=true
+            print_todo "Codex plugin (run inside Claude Code):"
+            print_step "/plugin marketplace add openai/codex-plugin-cc"
+            print_step "/plugin install codex@openai-codex"
+            print_step "/codex:setup"
+        fi
+    fi
+}
+
 # --- Main ---
 setup_clean
 setup_instructions
@@ -494,3 +510,4 @@ setup_hooks
 setup_skills_and_agents
 setup_universal_rules
 setup_preferences
+print_manual_steps
