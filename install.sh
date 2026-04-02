@@ -150,6 +150,15 @@ if command -v fnm >/dev/null 2>&1; then
         print_info "Railway CLI already installed"
     fi
 
+    # Install OpenAI Codex CLI (code review & task delegation from Claude Code)
+    if ! command -v codex >/dev/null 2>&1; then
+        print_action "Installing OpenAI Codex CLI..."
+        npm install -g @openai/codex >/dev/null 2>&1 || true
+        print_success "OpenAI Codex CLI installed"
+    else
+        print_info "OpenAI Codex CLI already installed"
+    fi
+
     # Stable symlinks for node/npx in /opt/homebrew/bin
     # GUI apps (Claude Desktop, Cursor) can't find fnm-managed node because they
     # don't source .zshrc. Symlinks in a PATH they do search solve this.

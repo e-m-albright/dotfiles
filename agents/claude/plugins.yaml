@@ -36,5 +36,8 @@
 # Data
 - data-engineering
 
+# Cross-agent (OpenAI Codex integration)
+- codex@openai-codex
+
 # --- Considered (uncomment to enable) ---
 # - Dagster                              # Data pipeline orchestration & observability
