@@ -209,6 +209,7 @@ dev_apps=(
     # docker-desktop    # Consider OrbStack instead (faster, lower resource usage on macOS)
     orbstack            # Docker Desktop alternative (faster, better macOS integration)
     linear-linear       # Project management & issue tracking
+    axiom               # Axiom observability CLI (requires axiomhq/tap)
     # google-cloud-sdk  # Google Cloud SDK (disabled — install per-project if needed)
 )
 
@@ -260,6 +261,7 @@ print_header "📦 Installing CLI Tools"
 print_action "Adding Homebrew taps..."
 brew tap ariga/tap >/dev/null 2>&1 || true
 brew tap infisical/get-cli >/dev/null 2>&1 || true
+brew tap axiomhq/tap >/dev/null 2>&1 || true
 # brew tap withgraphite/tap >/dev/null 2>&1 || true  # graphite removed
 print_success "Taps configured"
 
