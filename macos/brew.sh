@@ -161,7 +161,7 @@ dev_cli=(
     neonctl             # Neon Postgres CLI (projects, DBs, roles)
     infisical           # Secrets management CLI (requires infisical/get-cli tap)
     # git-filter-repo   # Git history rewriting (secrets scrub)
-    # libpq             # PostgreSQL client library (psql, pg_dump — enable if needed)
+    libpq               # PostgreSQL client library (psql, pg_dump)
     # sentry-cli        # Sentry error tracking (releases, source maps, deploys)
     # datadog-ci        # Datadog CI test visibility & synthetics
 )
