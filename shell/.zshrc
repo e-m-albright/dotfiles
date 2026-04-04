@@ -34,6 +34,7 @@ setopt COMPLETE_IN_WORD
 # Path (Homebrew first)
 # =============================================================================
 export PATH="/opt/homebrew/bin:$PATH"
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 
 # =============================================================================
 # Oh My Zsh
