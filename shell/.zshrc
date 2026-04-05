@@ -87,6 +87,8 @@ alias gps='git push'
 alias gcm='git commit -m'
 
 # Development
+alias python='python3'
+alias pip='pip3'
 alias py='python3'
 alias j='just'
 
