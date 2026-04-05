@@ -202,7 +202,6 @@ print_manual_steps() {
     print_step "/add-plugin superpowers"
     print_step "/add-plugin context7-plugin"
     print_step "/add-plugin neon-postgres"
-    print_step "/add-plugin svelte"
     print_step "After Neon install, run: Get started with Neon (completes authentication)"
     print_step "See $SCRIPT_DIR/PLUGINS.md for personal/work plugin sets"
 }

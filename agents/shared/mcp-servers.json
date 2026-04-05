@@ -29,12 +29,6 @@
     "targets": ["claude", "cursor"],
     "profiles": ["personal", "work"]
   },
-  "svelte": {
-    "type": "http",
-    "url": "https://mcp.svelte.dev/mcp",
-    "targets": ["cursor"],
-    "profiles": ["personal", "work"]
-  },
   "datadog": {
     "type": "http",
     "url": "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp",

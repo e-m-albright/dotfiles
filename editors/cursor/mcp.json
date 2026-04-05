@@ -7,10 +7,6 @@
     "neon": {
       "type": "http",
       "url": "https://mcp.neon.tech/mcp"
-    },
-    "svelte": {
-      "type": "http",
-      "url": "https://mcp.svelte.dev/mcp"
     }
   }
 }

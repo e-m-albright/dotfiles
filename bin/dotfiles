@@ -431,7 +431,6 @@ sub_cursor_plugins() {
     printf "  /add-plugin superpowers\n"
     printf "  /add-plugin context7-plugin\n"
     printf "  /add-plugin neon-postgres\n"
-    printf "  /add-plugin svelte\n"
     printf "\nAfter Neon install, run in Cursor chat:\n"
     printf "  Get started with Neon\n"
     printf "\nOptional for Ophira research:\n"

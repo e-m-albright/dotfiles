@@ -5,7 +5,6 @@ This file tracks recommended Cursor Marketplace plugins by profile. Install from
 ## Ophira Focus (recommended now)
 
 - `superpowers` — guardrails for feature planning/debugging/review loops.
-- `svelte` — critical for Svelte 5 component editing quality.
 - `neon-postgres` — direct Neon DB workflows and branching/SQL operations.
 - `context7-plugin` — latest docs for SvelteKit, Rust, and dependency APIs.
 - `parallel` (optional) — stronger web research for architecture/library decisions.
@@ -15,7 +14,6 @@ This file tracks recommended Cursor Marketplace plugins by profile. Install from
 - `superpowers` — process discipline for planning, debugging, and review.
 - `context7-plugin` — up-to-date library docs in-agent.
 - `neon-postgres` — Neon workflows + Neon MCP.
-- `svelte` — Svelte MCP + Svelte-focused skills/subagent.
 
 ## Personal (default)
 
@@ -39,7 +37,11 @@ This file tracks recommended Cursor Marketplace plugins by profile. Install from
 - `langfuse`
 - `tldraw`
 - `browserstack`
-- `continual-learning`
+
+## Revisit / Previously Tried
+
+- `svelte` — removed from default marketplace install checklist and dotfiles-managed MCP defaults; revisit if Svelte-specific editing quality regresses.
+- `continual-learning` — removed from recommended install list for now; revisit if long-term workflow memory/learning features become valuable.
 
 ## Install Notes
 
@@ -54,8 +56,6 @@ This file tracks recommended Cursor Marketplace plugins by profile. Install from
 - `/add-plugin superpowers`
 - `/add-plugin context7-plugin`
 - `/add-plugin neon-postgres`
-- `/add-plugin svelte`
 - `/add-plugin parallel` (optional)
 - `/add-plugin cursor-team-kit` (optional)
-- `/add-plugin continual-learning` (optional)
 - `/add-plugin tldraw` (optional)
