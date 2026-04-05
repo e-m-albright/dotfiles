@@ -141,5 +141,8 @@
   ],
   "workbench.colorTheme": "Cursor Dark Midnight",
   "cursor.cpp.enablePartialAccepts": true,
-  "editor.accessibilitySupport": "off"
+  "editor.accessibilitySupport": "off",
+  "cursor.composer.shouldChimeAfterChatFinishes": true,
+  "cursor.general.glassShowWarningNotifications": true,
+  "cursor.general.reduceTransparency": true
 }
