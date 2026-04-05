@@ -223,7 +223,24 @@ setup_desktop() {
             | map(select(.value.targets | (index("claude") or index("desktop"))))
             | map(select(.value.profiles | index($profile)))
             | map(select(.key as $k | $skip | index($k) | not))
-            | map({key: .key, value: (.value | del(.targets, .profiles))})
+            | map({
+                key: .key,
+                value: (
+                    .value
+                    | del(.targets, .profiles)
+                    | if .type == "http" and (.url? != null) then
+                        {
+                            command: "npx",
+                            args: (
+                                ["-y", "mcp-remote", .url]
+                                + ((.headers // {}) | to_entries | map("--header=\(.key):\(.value)"))
+                            )
+                        }
+                      else
+                        .
+                      end
+                )
+            })
             | from_entries
         ' "$shared_mcp")
         if [[ "$RESET_MCP" == "true" ]]; then
