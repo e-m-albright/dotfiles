@@ -62,6 +62,7 @@ install_extension "christian-kohler.path-intellisense"  # Autocomplete file path
 
 # Version Control
 install_extension "eamodio.gitlens"
+install_extension "anthropic.claude-code"      # Claude Code companion inside Cursor
 
 # Files
 install_extension "tamasfe.even-better-toml"

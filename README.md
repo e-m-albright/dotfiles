@@ -170,6 +170,8 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **GitHub** | CLI (`gh`) + MCP | yes | yes | CLI + MCP server (`gh mcp-server`) |
 | **Linear** | MCP (`mcp-remote`) | yes | yes | Issue tracking |
 | **Context7** | MCP (`@upstash/context7-mcp`) | plugin | yes | Up-to-date library docs |
+| **Neon** | MCP (`https://mcp.neon.tech/mcp`) | yes | yes | Neon Postgres projects, branches, SQL workflows |
+| **Svelte** | MCP (`https://mcp.svelte.dev/mcp`) | — | yes | Svelte-specific docs, analysis, and editing workflows |
 | **Granola** | MCP (`granola-mcp` via `uvx`) | yes | — | Meeting notes (reads local cache, no API key) |
 | **Notion** | Plugin | yes | — | Claude Code / Claude Desktop only |
 | **Gmail** | claude.ai cloud MCP | yes | — | Claude Code only (not reproducible in config) |
@@ -222,6 +224,9 @@ Setup is automated via `agents/cursor/setup.sh` (also runs during install):
 - **Skills**: Deployed from `agents/cursor/skills/`
 - **Agents**: Deployed from `agents/cursor/agents/`
 - **Rules**: Shared rules from `agents/shared/rules.md`
+- **Marketplace stack**: See `agents/cursor/PLUGINS.md` for core/work plugin recommendations and install commands (`/add-plugin ...`)
+
+Note: Cursor Marketplace plugin installs and OAuth flows are manual by design (run in Cursor chat/UI). The setup scripts print an explicit checklist so these steps are hard to miss.
 
 See `agents/cursor/` for all configuration files.
 
@@ -251,8 +256,9 @@ dotfiles scaffold            # Scaffold a project with AI rules
 dotfiles stale               # Find disabled packages still installed
 dotfiles test                # Run scaffold eval framework (--quick for fast)
 dotfiles profile-shell       # Profile shell startup time
+dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
 dotfiles agents              # Show active agentic setup (Claude Code + Cursor)
-dotfiles agent-setup        # Configure Claude Code + Desktop (global config)
+dotfiles agent-setup        # Configure Claude + Cursor (--work/--personal, optional --reset-mcp)
 dotfiles completions         # Output shell completions
 ```
 

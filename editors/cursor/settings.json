@@ -140,5 +140,6 @@
     "tailwindcss"
   ],
   "workbench.colorTheme": "Cursor Dark Midnight",
-  "cursor.cpp.enablePartialAccepts": true
+  "cursor.cpp.enablePartialAccepts": true,
+  "editor.accessibilitySupport": "off"
 }

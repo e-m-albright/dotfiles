@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Deploy Cursor agentic config: MCP servers, rules, cli-config, plugin registration.
 # Idempotent — safe to run multiple times.
+#
+# Usage:
+#   ./setup.sh                 # Additive merge for shared MCPs (preserve local machine differences)
+#   ./setup.sh --reset-mcp     # Reset managed MCP entries to dotfiles defaults
 
 set -eo pipefail
 
@@ -9,6 +13,7 @@ DOTFILES_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SHARED_DIR="$DOTFILES_DIR/agents/shared"
 MCP_SKIP_FILE="$HOME/.config/dotfiles/mcp-skip"
 PROFILE_FILE="$HOME/.config/dotfiles/profile"
+RESET_MCP=false
 
 # Parse --work / --personal flag (may be passed from parent dotfiles CLI)
 DOTFILES_PROFILE="${DOTFILES_PROFILE:-}"
@@ -16,6 +21,7 @@ for arg in "$@"; do
     case "$arg" in
         --work) DOTFILES_PROFILE="work" ;;
         --personal) DOTFILES_PROFILE="personal" ;;
+        --reset-mcp) RESET_MCP=true ;;
     esac
 done
 
@@ -39,7 +45,8 @@ require_jq() {
 }
 
 # --- Merge shared MCP servers into editors/cursor/mcp.json ---
-# Additive: shared servers are merged in, but custom/machine-specific servers are preserved.
+# Default: additive merge (preserve custom/machine-specific differences).
+# Optional: --reset-mcp removes managed shared keys first, then re-adds current profile.
 setup_mcp() {
     [[ -f "$SHARED_DIR/mcp-servers.json" ]] || return 0
     require_jq || return 0
@@ -57,6 +64,13 @@ setup_mcp() {
     local skip_json
     skip_json=$(if [[ -n "${MCP_SKIP:-}" ]]; then printf '%s' "$MCP_SKIP" | jq -Rc 'split(",")'; else echo '[]'; fi)
 
+    local managed_keys
+    managed_keys=$(jq '[
+        to_entries
+        | map(select(.value.targets | index("cursor")))
+        | .[].key
+    ]' "$SHARED_DIR/mcp-servers.json")
+
     local shared_servers
     shared_servers=$(jq --argjson skip "$skip_json" --arg profile "$DOTFILES_PROFILE" '{mcpServers: (
         to_entries
@@ -67,10 +81,19 @@ setup_mcp() {
         | from_entries
     )}' "$SHARED_DIR/mcp-servers.json")
 
-    # Merge: existing custom servers preserved, shared servers added/updated
-    jq --argjson shared "$shared_servers" '
-        .mcpServers = ((.mcpServers // {}) + $shared.mcpServers)
-    ' <<< "$existing" > "$mcp_file"
+    if [[ "$RESET_MCP" == "true" ]]; then
+        jq --argjson managed "$managed_keys" --argjson shared "$shared_servers" '
+            .mcpServers = (
+                ((.mcpServers // {}) | with_entries(select(.key as $k | ($managed | index($k) | not))))
+                + $shared.mcpServers
+            )
+        ' <<< "$existing" > "$mcp_file"
+        print_info "MCP reset mode enabled (--reset-mcp): managed shared entries refreshed"
+    else
+        jq --argjson shared "$shared_servers" '
+            .mcpServers = ((.mcpServers // {}) + $shared.mcpServers)
+        ' <<< "$existing" > "$mcp_file"
+    fi
 
     local total shared_count
     total=$(jq '.mcpServers | length' "$mcp_file")
@@ -173,6 +196,17 @@ setup_universal_rules() {
     print_success "Symlinked $total universal rules (cursor/rules/ → dotfiles)"
 }
 
+print_manual_steps() {
+    print_info "Manual Cursor Marketplace steps (not automatable from setup scripts):"
+    print_step "Install core plugins in Cursor chat:"
+    print_step "/add-plugin superpowers"
+    print_step "/add-plugin context7-plugin"
+    print_step "/add-plugin neon-postgres"
+    print_step "/add-plugin svelte"
+    print_step "After Neon install, run: Get started with Neon (completes authentication)"
+    print_step "See $SCRIPT_DIR/PLUGINS.md for personal/work plugin sets"
+}
+
 # --- Main ---
 setup_mcp
 setup_rules
@@ -180,3 +214,4 @@ setup_universal_rules
 setup_cli_config
 setup_plugin
 setup_cursorignore
+print_manual_steps

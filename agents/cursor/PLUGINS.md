@@ -1,0 +1,61 @@
+# Cursor 3 Plugin Stack
+
+This file tracks recommended Cursor Marketplace plugins by profile. Install from Cursor chat with `/add-plugin <name>`.
+
+## Ophira Focus (recommended now)
+
+- `superpowers` — guardrails for feature planning/debugging/review loops.
+- `svelte` — critical for Svelte 5 component editing quality.
+- `neon-postgres` — direct Neon DB workflows and branching/SQL operations.
+- `context7-plugin` — latest docs for SvelteKit, Rust, and dependency APIs.
+- `parallel` (optional) — stronger web research for architecture/library decisions.
+
+## Core (personal + work)
+
+- `superpowers` — process discipline for planning, debugging, and review.
+- `context7-plugin` — up-to-date library docs in-agent.
+- `neon-postgres` — Neon workflows + Neon MCP.
+- `svelte` — Svelte MCP + Svelte-focused skills/subagent.
+
+## Personal (default)
+
+- Keep install list lean for daily coding speed.
+- Add `cursor-team-kit` only if you want CI/PR automation helpers in personal repos.
+
+## Work profile (install when needed)
+
+- `linear`
+- `datadog`
+- `slack`
+- `cloudflare`
+- `notion`
+
+## Consider Later
+
+- `cursor-team-kit` (strong for PR-heavy workflows)
+- `posthog`
+- `grafana` (not currently found in Cursor Marketplace)
+- `clickhouse`
+- `langfuse`
+- `tldraw`
+- `browserstack`
+- `continual-learning`
+
+## Install Notes
+
+- Marketplace plugins can bundle skills, agents, hooks, rules, commands, and MCP servers.
+- MCP servers from plugins are toggled under Cursor Settings > Features > Model Context Protocol.
+- For Neon setup, run `Get started with Neon` after plugin install to complete auth.
+- For Parallel setup, run `/parallel-setup` after install (requires `parallel-cli` auth).
+- For profile-specific behavior, use dotfiles-managed MCPs and keep marketplace plugin installs per machine/account.
+
+## Install Commands
+
+- `/add-plugin superpowers`
+- `/add-plugin context7-plugin`
+- `/add-plugin neon-postgres`
+- `/add-plugin svelte`
+- `/add-plugin parallel` (optional)
+- `/add-plugin cursor-team-kit` (optional)
+- `/add-plugin continual-learning` (optional)
+- `/add-plugin tldraw` (optional)

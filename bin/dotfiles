@@ -28,9 +28,10 @@ sub_help () {
     printf "   stale            Find disabled packages still installed\n"
     printf "   agents           Show active agentic setup (Claude Code + Cursor)\n"
     printf "   profile-shell    Profile shell startup time\n"
+    printf "   cursor-plugins   Show Cursor plugin install checklist\n"
     printf "   scaffold         Scaffold a new project with AI rules\n"
     printf "   test             Run scaffold eval framework (--quick for fast mode)\n"
-    printf "   agent-setup          Configure Claude + Cursor (--work for work profile)\n"
+    printf "   agent-setup          Configure Claude + Cursor (--work/--personal, optional --reset-mcp)\n"
     printf "   completions      Output shell completions (source this in your shell)\n"
 }
 
@@ -340,7 +341,7 @@ sub_stale() {
     local disabled_pkgs=(
         "visual-studio-code" "iterm2" "warp" "docker-desktop"
         "terraform" "signal" "discord" "super-productivity"
-        "ollama" "gemini-cli" "cmux" "graphite"
+        "ollama" "gemini-cli" "cmux" "graphite" "composer"
     )
     for pkg in "${disabled_pkgs[@]}"; do
         if brew list "$pkg" &>/dev/null 2>&1 || brew list --cask "$pkg" &>/dev/null 2>&1; then
@@ -423,6 +424,29 @@ sub_profile_shell() {
     printf "  ${YELLOW}Tip:${NC} If startup is slow, check for heavy evals (fnm env, brew shellenv).\n"
 }
 
+sub_cursor_plugins() {
+    local plugins_file="$DOTFILES_DIR/agents/cursor/PLUGINS.md"
+    printf "${BLUE}%b Cursor plugin checklist${NC}\n\n" "$ARROW"
+    printf "Run these in Cursor chat (manual install):\n"
+    printf "  /add-plugin superpowers\n"
+    printf "  /add-plugin context7-plugin\n"
+    printf "  /add-plugin neon-postgres\n"
+    printf "  /add-plugin svelte\n"
+    printf "\nAfter Neon install, run in Cursor chat:\n"
+    printf "  Get started with Neon\n"
+    printf "\nOptional for Ophira research:\n"
+    printf "  /add-plugin parallel\n"
+    printf "\nWork profile add-ons (when needed):\n"
+    printf "  /add-plugin linear\n"
+    printf "  /add-plugin datadog\n"
+    printf "  /add-plugin slack\n"
+    printf "  /add-plugin cloudflare\n"
+    printf "  /add-plugin notion-workspace\n"
+    if [[ -f "$plugins_file" ]]; then
+        printf "\nFull matrix: %s\n" "$plugins_file"
+    fi
+}
+
 sub_completions() {
     cat << 'EOF'
 # Zsh completions for dotfiles command
@@ -443,7 +467,8 @@ _dotfiles() {
         'stale:Find disabled packages still installed'
         'agents:Show active agentic setup'
         'profile-shell:Profile shell startup time'
-        'agent-setup:Configure Claude + Cursor (--work for work profile)'
+        'cursor-plugins:Show Cursor plugin install checklist'
+        'agent-setup:Configure Claude + Cursor (--work/--personal, optional --reset-mcp)'
         'completions:Output shell completions'
     )
     _describe 'command' commands
@@ -462,6 +487,9 @@ case $COMMAND_NAME in
         ;;
     profile-shell)
         sub_profile_shell
+        ;;
+    cursor-plugins)
+        sub_cursor_plugins
         ;;
     scaffold)
         shift

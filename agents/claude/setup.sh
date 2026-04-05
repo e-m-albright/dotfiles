@@ -6,6 +6,7 @@
 #   ./setup.sh                          # Full setup (personal profile)
 #   ./setup.sh --work                   # Work profile
 #   ./setup.sh --clean                  # Remove nonconforming plugins/MCPs/projects
+#   ./setup.sh --reset-mcp              # Reset managed MCP entries to dotfiles defaults
 #   dotfiles agent-setup                # Via dotfiles CLI alias
 #   dotfiles agent-setup --work         # Work profile via CLI
 #   MCP_SKIP=granola ./setup.sh         # Skip specific MCP servers
@@ -41,6 +42,7 @@ DESKTOP_PREFS="$SCRIPT_DIR/desktop-preferences.json"
 MARKETPLACES_JSON="$SCRIPT_DIR/marketplaces.json"
 MCP_SKIP_FILE="$HOME/.config/dotfiles/mcp-skip"
 PROFILE_FILE="$HOME/.config/dotfiles/profile"
+RESET_MCP=false
 
 # Parse flags
 DOTFILES_PROFILE="${DOTFILES_PROFILE:-}"
@@ -50,6 +52,7 @@ for arg in "$@"; do
         --work) DOTFILES_PROFILE="work" ;;
         --personal) DOTFILES_PROFILE="personal" ;;
         --clean) CLEAN_MODE=true ;;
+        --reset-mcp) RESET_MCP=true ;;
     esac
 done
 
@@ -157,6 +160,13 @@ setup_mcp() {
     local skip_json
     skip_json=$(if [[ -n "${MCP_SKIP:-}" ]]; then printf '%s' "$MCP_SKIP" | jq -Rc 'split(",")'; else echo '[]'; fi)
 
+    local managed_keys
+    managed_keys=$(jq '[
+        to_entries
+        | map(select(.value.targets | index("claude")))
+        | .[].key
+    ]' "$shared_mcp")
+
     local mcp_servers
     mcp_servers=$(jq --argjson skip "$skip_json" --arg profile "$DOTFILES_PROFILE" '
         to_entries
@@ -167,7 +177,17 @@ setup_mcp() {
         | from_entries
     ' "$shared_mcp")
 
-    jq --argjson servers "$mcp_servers" '.mcpServers = ((.mcpServers // {}) + $servers)' "$CLAUDE_JSON.bak" > "$CLAUDE_JSON"
+    if [[ "$RESET_MCP" == "true" ]]; then
+        jq --argjson managed "$managed_keys" --argjson servers "$mcp_servers" '
+            .mcpServers = (
+                ((.mcpServers // {}) | with_entries(select(.key as $k | ($managed | index($k) | not))))
+                + $servers
+            )
+        ' "$CLAUDE_JSON.bak" > "$CLAUDE_JSON"
+        print_info "MCP reset mode enabled (--reset-mcp): managed shared entries refreshed"
+    else
+        jq --argjson servers "$mcp_servers" '.mcpServers = ((.mcpServers // {}) + $servers)' "$CLAUDE_JSON.bak" > "$CLAUDE_JSON"
+    fi
 
     local count
     count=$(echo "$mcp_servers" | jq 'length')
@@ -186,8 +206,16 @@ setup_desktop() {
 
     # Merge MCP servers from shared source (servers targeting "claude" or "desktop")
     if [[ -f "$DOTFILES_DIR/agents/shared/mcp-servers.json" ]]; then
+        local shared_mcp="$DOTFILES_DIR/agents/shared/mcp-servers.json"
         local skip_json
         skip_json=$(if [[ -n "${MCP_SKIP:-}" ]]; then printf '%s' "$MCP_SKIP" | jq -Rc 'split(",")'; else echo '[]'; fi)
+
+        local managed_keys
+        managed_keys=$(jq '[
+            to_entries
+            | map(select(.value.targets | (index("claude") or index("desktop"))))
+            | .[].key
+        ]' "$shared_mcp")
 
         local mcp_servers
         mcp_servers=$(jq --argjson skip "$skip_json" --arg profile "$DOTFILES_PROFILE" '
@@ -197,8 +225,17 @@ setup_desktop() {
             | map(select(.key as $k | $skip | index($k) | not))
             | map({key: .key, value: (.value | del(.targets, .profiles))})
             | from_entries
-        ' "$DOTFILES_DIR/agents/shared/mcp-servers.json")
-        jq --argjson servers "$mcp_servers" '.mcpServers = ((.mcpServers // {}) + $servers)' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
+        ' "$shared_mcp")
+        if [[ "$RESET_MCP" == "true" ]]; then
+            jq --argjson managed "$managed_keys" --argjson servers "$mcp_servers" '
+                .mcpServers = (
+                    ((.mcpServers // {}) | with_entries(select(.key as $k | ($managed | index($k) | not))))
+                    + $servers
+                )
+            ' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
+        else
+            jq --argjson servers "$mcp_servers" '.mcpServers = ((.mcpServers // {}) + $servers)' "$DESKTOP_CONFIG.bak" > "$DESKTOP_CONFIG"
+        fi
         cp "$DESKTOP_CONFIG" "$DESKTOP_CONFIG.bak"
 
         local count
