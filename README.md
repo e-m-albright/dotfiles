@@ -218,6 +218,7 @@ See `agents/claude/` for all configuration files.
 Setup is automated via `agents/cursor/setup.sh` (also runs during install):
 
 - **MCP servers**: From shared source (`agents/shared/mcp-servers.json`)
+- **Editor config**: `editors/cursor/settings.json` + `editors/cursor/keybindings.json` symlinked into Cursor User config
 - **Universal rules**: Symlinked from `.ai/rules/process/` (always current with dotfiles)
 - **Hooks**: Shared hook definitions deployed from `agents/cursor/hooks/`
 - **Skills**: Deployed from `agents/cursor/skills/`

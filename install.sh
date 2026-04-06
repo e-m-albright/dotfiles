@@ -230,6 +230,7 @@ if command -v cursor >/dev/null 2>&1; then
     . "$DOTFILES_DIR/editors/cursor/extensions.sh"
     mkdir -p ~/Library/Application\ Support/Cursor/User
     ln -sf "$DOTFILES_DIR/editors/cursor/settings.json" ~/Library/Application\ Support/Cursor/User/settings.json 2>/dev/null || true
+    ln -sf "$DOTFILES_DIR/editors/cursor/keybindings.json" ~/Library/Application\ Support/Cursor/User/keybindings.json 2>/dev/null || true
     # Install Cursor CLI agent (command-line tool)
     if ! command -v agent >/dev/null 2>&1; then
         print_action "Installing Cursor CLI agent..."
