@@ -7,5 +7,6 @@
   "newFileLocation": "current",
   "attachmentFolderPath": ".attachments",
   "promptDelete": false,
-  "strictLineBreaks": false
+  "strictLineBreaks": false,
+  "alwaysUpdateLinks": true
 }

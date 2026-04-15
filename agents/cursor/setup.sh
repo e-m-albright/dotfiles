@@ -201,8 +201,7 @@ print_manual_steps() {
     print_step "Install core plugins in Cursor chat:"
     print_step "/add-plugin superpowers"
     print_step "/add-plugin context7-plugin"
-    print_step "/add-plugin neon-postgres"
-    print_step "After Neon install, run: Get started with Neon (completes authentication)"
+    # Neon plugin disabled 2026-04-09 — revisit when actively using Neon projects
     print_step "See $SCRIPT_DIR/PLUGINS.md for personal/work plugin sets"
 }
 

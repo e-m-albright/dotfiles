@@ -4,5 +4,6 @@
   "templater-obsidian",
   "calendar",
   "nldates-obsidian",
-  "obsidian-linter"
+  "obsidian-linter",
+  "hide-folders"
 ]

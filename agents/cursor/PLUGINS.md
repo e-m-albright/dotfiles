@@ -5,7 +5,6 @@ This file tracks recommended Cursor Marketplace plugins by profile. Install from
 ## Ophira Focus (recommended now)
 
 - `superpowers` — guardrails for feature planning/debugging/review loops.
-- `neon-postgres` — direct Neon DB workflows and branching/SQL operations.
 - `context7-plugin` — latest docs for SvelteKit, Rust, and dependency APIs.
 - `parallel` (optional) — stronger web research for architecture/library decisions.
 
@@ -13,7 +12,6 @@ This file tracks recommended Cursor Marketplace plugins by profile. Install from
 
 - `superpowers` — process discipline for planning, debugging, and review.
 - `context7-plugin` — up-to-date library docs in-agent.
-- `neon-postgres` — Neon workflows + Neon MCP.
 
 ## Personal (default)
 
@@ -42,12 +40,12 @@ This file tracks recommended Cursor Marketplace plugins by profile. Install from
 
 - `svelte` — removed from default marketplace install checklist and dotfiles-managed MCP defaults; revisit if Svelte-specific editing quality regresses.
 - `continual-learning` — removed from recommended install list for now; revisit if long-term workflow memory/learning features become valuable.
+- `neon-postgres` — disabled 2026-04-09; revisit when actively using Neon projects.
 
 ## Install Notes
 
 - Marketplace plugins can bundle skills, agents, hooks, rules, commands, and MCP servers.
 - MCP servers from plugins are toggled under Cursor Settings > Features > Model Context Protocol.
-- For Neon setup, run `Get started with Neon` after plugin install to complete auth.
 - For Parallel setup, run `/parallel-setup` after install (requires `parallel-cli` auth).
 - For profile-specific behavior, use dotfiles-managed MCPs and keep marketplace plugin installs per machine/account.
 
@@ -55,7 +53,6 @@ This file tracks recommended Cursor Marketplace plugins by profile. Install from
 
 - `/add-plugin superpowers`
 - `/add-plugin context7-plugin`
-- `/add-plugin neon-postgres`
 - `/add-plugin parallel` (optional)
 - `/add-plugin cursor-team-kit` (optional)
 - `/add-plugin tldraw` (optional)

@@ -430,9 +430,7 @@ sub_cursor_plugins() {
     printf "Run these in Cursor chat (manual install):\n"
     printf "  /add-plugin superpowers\n"
     printf "  /add-plugin context7-plugin\n"
-    printf "  /add-plugin neon-postgres\n"
-    printf "\nAfter Neon install, run in Cursor chat:\n"
-    printf "  Get started with Neon\n"
+    # Neon plugin disabled 2026-04-09 — revisit when actively using Neon projects
     printf "\nOptional for Ophira research:\n"
     printf "  /add-plugin parallel\n"
     printf "\nWork profile add-ons (when needed):\n"

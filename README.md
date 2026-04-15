@@ -170,7 +170,7 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **GitHub** | CLI (`gh`) + MCP | yes | yes | CLI + MCP server (`gh mcp-server`) |
 | **Linear** | MCP (`mcp-remote`) | yes | yes | Issue tracking |
 | **Context7** | MCP (`@upstash/context7-mcp`) | plugin | yes | Up-to-date library docs |
-| **Neon** | MCP (`https://mcp.neon.tech/mcp`) | yes | yes | Neon Postgres projects, branches, SQL workflows |
+| **Neon** | ~~MCP~~ (disabled) | — | — | Neon Postgres; revisit when actively using Neon projects |
 | **Granola** | MCP (`granola-mcp` via `uvx`) | yes | — | Meeting notes (reads local cache, no API key) |
 | **Notion** | Plugin | yes | — | Claude Code / Claude Desktop only |
 | **Gmail** | claude.ai cloud MCP | yes | — | Claude Code only (not reproducible in config) |
