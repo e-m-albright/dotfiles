@@ -24,6 +24,9 @@ PLUGIN_LIST=(
     "calendar|liamcain/obsidian-calendar-plugin"
     "nldates-obsidian|argenos/nldates-obsidian"
     "obsidian-linter|platers/obsidian-linter"
+
+    # ── UI Cleanup ───────────────────────────────────────────────────────────
+    "hide-folders|JonasDoesThings/obsidian-hide-folders"
 )
 
 install_plugin() {
