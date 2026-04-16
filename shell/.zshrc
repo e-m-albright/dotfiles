@@ -77,6 +77,7 @@ alias co='cd ~/code'
 alias ll='ls -lh'
 alias la='ls -lAh'
 alias l='ls -CF'
+alias yz='yazi'  # Terminal file manager
 
 # Git (supplements oh-my-zsh git plugin)
 alias gs='git status -sb'

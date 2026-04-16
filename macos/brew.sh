@@ -136,6 +136,7 @@ core_cli=(
     openssl             # TLS/crypto toolkit
     "bash-completion@2" # Bash completion
     micro               # Modern terminal text editor
+    yazi                # Blazing-fast terminal file manager (Rust)
     # tmux              # Terminal multiplexer (disabled)
 )
 

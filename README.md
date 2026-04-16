@@ -149,7 +149,7 @@ my-project/
 
 | Category | Tools |
 |----------|-------|
-| **Core** | git, git-lfs, delta (diffs), gh (GitHub CLI), jq, yq, wget |
+| **Core** | git, git-lfs, delta (diffs), gh (GitHub CLI), jq, yq, wget, micro (editor), yazi (file manager) |
 | **System** | htop, iftop, nmap, dockutil, terminal-notifier |
 | **Dev** | just (task runner), lefthook (git hooks), shellcheck (shell linting), hyperfine (benchmarks), atlas (migrations), duckdb, infisical (secrets) |
 
