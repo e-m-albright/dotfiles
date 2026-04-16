@@ -136,7 +136,18 @@ core_cli=(
     openssl             # TLS/crypto toolkit
     "bash-completion@2" # Bash completion
     micro               # Modern terminal text editor
+    # General-purpose CLI upgrades (also power yazi's search/jump keybindings)
+    fd                  # Fast file finder (yazi: find-by-name / `f`)
+    ripgrep             # Fast content search (yazi: find-in-files / `F`)
+    fzf                 # Fuzzy finder (yazi: interactive fuzzy jump)
+    zoxide              # Smart `cd` with frecency (yazi: `z` jump)
+    # Yazi + preview renderers (install together; each unlocks a preview type)
     yazi                # Blazing-fast terminal file manager (Rust)
+    poppler             # PDF preview (pdftoppm)
+    resvg               # SVG-to-PNG rasterizer
+    imagemagick         # Image conversion for long-tail formats (.heic, .psd, .tiff)
+    sevenzip            # Peek inside archives (.zip, .7z, .rar)
+    # ffmpeg            # Video/audio thumbnails — disabled: ~300MB+ with deps, rarely needed
     # tmux              # Terminal multiplexer (disabled)
 )
 
