@@ -51,7 +51,7 @@ zstyle ':omz:update' frequency 14
 # shellcheck disable=SC2034 # used by oh-my-zsh
 plugins=(
     git         # Git aliases and completions
-    z           # Jump to frequent directories
+    # z         # Replaced by zoxide — see Tool Integrations below
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -254,6 +254,18 @@ extract() {
 # FNM (Fast Node Manager)
 if command -v fnm &>/dev/null; then
     eval "$(fnm env --use-on-cd --shell zsh)"
+fi
+
+# fzf — fuzzy finder keybindings (Ctrl-T files, Ctrl-R history, Alt-C cd)
+# Sourced before zoxide so `zi` (interactive jump) can use fzf as its picker.
+if command -v fzf &>/dev/null; then
+    source <(fzf --zsh)
+fi
+
+# zoxide — smart `cd` with frecency. Replaces oh-my-zsh `z` plugin.
+# Defines `z <pattern>` (jump) and `zi` (interactive picker via fzf).
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init zsh)"
 fi
 
 # Bun completions
