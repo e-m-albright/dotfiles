@@ -12,6 +12,7 @@ Bookmarked tools and services worth investigating.
 - **[TanStack](https://tanstack.com)** -- Type-safe data fetching, routing, forms. Evaluate for replacing ad-hoc React data layer.
 - **[Vite+](https://voidzero.dev/posts/announcing-vite-plus)** -- Next-gen build tool from VoidZero. Watch for stability and ecosystem uptake.
 - **[Leptos](https://leptos.dev)** -- Rust full-stack web framework. Evaluate for Rust-heavy teams.
+- **[Dioxus](https://dioxuslabs.com/)** -- Rust full-stack crossplatform app framework (web, desktop, mobile). Alternative to Leptos; evaluate when a single Rust codebase needs to ship to multiple platforms.
 - **Enhance** -- Backend-first web framework. Read: [How To Build an App With Enhance](https://thenewstack.io/how-to-build-an-app-with-enhance-a-backend-first-framework/).
 
 ## CMS / Content
