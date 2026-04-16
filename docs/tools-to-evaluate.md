@@ -5,7 +5,6 @@ Bookmarked tools and services worth investigating.
 ## CI / CD
 
 - **Blacksmith vs Deploy** -- CI provider comparison. Evaluate for cost, speed, and GitHub Actions compatibility.
-- **ArgoCD** -- GitOps continuous delivery for Kubernetes. Declarative, git-driven deployments.
 
 ## Web / Frontend
 
@@ -23,7 +22,7 @@ Bookmarked tools and services worth investigating.
 
 ## Editors / Terminals
 
-- **[Zed editor](https://zed.dev)** -- Modern editor. Python support, Markdown. [Making Python in Zed Fun](https://zed.dev/blog/making-python-in-zed-fun), [Settings UI rebuild](https://zed.dev/blog/settings-ui).
+- **[Zed editor](https://zed.dev)** -- Modern editor written in Rust, GPU-accelerated rendering. Open-sourced Jan 2024. Positions as a native-performance alternative to Cursor/VS Code — the tradeoff is a smaller extension ecosystem (no VS Code Marketplace). Built-in real-time collaborative editing ("channels") and an agentic AI edit mode. Worth a side-by-side with Cursor specifically for Python work given recent LSP investment; less compelling if our Cursor extension setup is load-bearing. Python, Markdown, LSP-first. Reading: [Making Python in Zed Fun](https://zed.dev/blog/making-python-in-zed-fun), [Settings UI rebuild](https://zed.dev/blog/settings-ui).
 - **[Ghostty 1.3.0](https://www.xda-developers.com/ghostty-13-terminal-makes-finding-your-previous-commands-a-ton-easier/)** -- Modern terminal. Improved previous-command search.
 
 ## Runtimes / Languages
@@ -31,6 +30,7 @@ Bookmarked tools and services worth investigating.
 - **[Bun v3.1](https://www.infoq.com/news/2026/01/bun-v3-1-release/)** -- JS runtime / bundler. Evaluate for build-step consolidation.
 - **[Pyodide](https://thenewstack.io/run-real-python-in-browsers-with-pyodide-and-webassembly/)** -- Real Python in the browser via WebAssembly.
 - **[Python 3.14 Lazy Annotations](https://realpython.com/python-annotations/)** -- New deferred-evaluation annotations behavior. Check impact on our typing patterns.
+- **[Zig](https://ziglang.org)** -- Systems language positioned between Rust (safety-first, borrow checker) and C (minimal, unsafe): no hidden control flow, no hidden allocations, explicit memory management without a borrow checker. Excellent cross-compilation — `zig cc` works as a drop-in C cross-compiler even if you never write Zig (Bun uses it this way for its native parts). Smaller ecosystem than Rust; language still pre-1.0 and evolving. Worth exploring for performance-critical tooling where Rust's safety discipline feels like overhead, or as a gentler C-replacement for embedded/systems work.
 
 ## Data
 
@@ -40,8 +40,17 @@ Bookmarked tools and services worth investigating.
 
 ## Infra / DevOps
 
-- **[Fly Kubernetes](https://fly.io/docs/kubernetes/)** -- Kubernetes on Fly's platform.
 - **[OpenTelemetry "Demystifying OpenTelemetry" guide](https://www.infoq.com/news/2026/02/opentelemetry-observability/)** -- New OTel intro guide worth skimming before our next observability rollout.
+
+## Kubernetes / GitOps
+
+> Not currently using Kubernetes. Evaluate as a group when a project outgrows Fly/Railway/Cloudflare Workers or needs multi-region orchestration beyond what PaaS offers. These tools travel together — adopt as a set if at all.
+
+- **ArgoCD** -- GitOps continuous delivery for Kubernetes. Declarative, git-driven deployments reconciled from a repo. Evaluate against **Flux** (lighter, CNCF-graduated) and **Rancher Fleet** (multi-cluster focus).
+- **Helm** -- De facto package manager for Kubernetes ("apt for k8s"). Charts templatize manifests. Widely used but criticized for Go-template complexity; watch **Kustomize** (overlays, no templating) and **Kluctl** as alternatives depending on preference for templating vs. patching.
+- **[Fly Kubernetes](https://fly.io/docs/kubernetes/)** -- Managed k8s on Fly's edge network. Lower ops burden than EKS/GKE. Compelling if we outgrow Fly Machines but want to stay on Fly.
+- **kubectl / k9s** -- Canonical CLIs. `kubectl` is the control-plane client; `k9s` is a TUI dashboard. Install via Homebrew when k8s becomes real — not before.
+- **Consider also**: **Tilt** / **Skaffold** (inner dev loop), **cert-manager** (TLS automation), **external-secrets** (pulls secrets from Vault/AWS/etc. into k8s).
 
 ## AI / Dev Workflow
 
