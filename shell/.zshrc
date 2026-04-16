@@ -77,7 +77,17 @@ alias co='cd ~/code'
 alias ll='ls -lh'
 alias la='ls -lAh'
 alias l='ls -CF'
-alias yz='yazi'  # Terminal file manager
+# yz: yazi wrapper that inherits yazi's final cwd into the shell on exit.
+# Without this, quitting yazi leaves you in the dir you launched from.
+yz() {
+    local tmp
+    tmp=$(mktemp -t yazi-cwd.XXXXXX) || return
+    yazi "$@" --cwd-file="$tmp"
+    local cwd
+    IFS= read -r cwd <"$tmp"
+    [[ -n "$cwd" && "$cwd" != "$PWD" ]] && builtin cd -- "$cwd"
+    rm -f -- "$tmp"
+}
 
 # Git (supplements oh-my-zsh git plugin)
 alias gs='git status -sb'

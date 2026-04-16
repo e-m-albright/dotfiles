@@ -153,6 +153,94 @@ my-project/
 | **System** | htop, iftop, nmap, dockutil, terminal-notifier |
 | **Dev** | just (task runner), lefthook (git hooks), shellcheck (shell linting), hyperfine (benchmarks), atlas (migrations), duckdb, infisical (secrets) |
 
+### Daily Drivers — Power User Tips
+
+Most of the CLI tools above have a steep-ish learning curve that pays for itself in days. This is the minimum set of shortcuts worth memorising.
+
+#### fzf keybindings (shell-wide)
+
+Loaded by `.zshrc` via `source <(fzf --zsh)` — active everywhere.
+
+| Key | Action |
+|-----|--------|
+| `Ctrl-T` | Fuzzy-pick file(s), paste path(s) at cursor. E.g. `git add <Ctrl-T>`, `cursor <Ctrl-T>` |
+| `Ctrl-R` | Fuzzy-search shell history. Replaces the default reverse-i-search. |
+| `Alt-C`  | Fuzzy-cd into any subdirectory of cwd |
+| `**<Tab>` | Trigger fzf anywhere. `ssh **<Tab>` (hosts), `kill -9 **<Tab>` (PIDs), `git co **<Tab>` (branches) |
+| `Tab` on a path | Path completion via fzf |
+
+Inside any fzf prompt: `'foo` = exact match, `!bar` = exclude, `^prefix` / `suffix$` = anchor.
+
+#### zoxide — smart `cd`
+
+Defines `z` and `zi` (replaces the oh-my-zsh `z` plugin). Learns from your `cd` history; a path has to be visited once before `z` will jump to it.
+
+| Command | Action |
+|---------|--------|
+| `z <word>` | Jump to best-ranked dir matching `word` |
+| `z foo bar` | Multi-keyword — dir must match both. `z dot shell` → `~/dotfiles/shell` |
+| `zi` | Interactive picker over all tracked dirs (uses fzf) |
+| `z -` | Previous directory |
+
+#### fd — fast file finder (replaces `find`)
+
+Respects `.gitignore` by default.
+
+| Command | Purpose |
+|---------|---------|
+| `fd pattern` | Find files matching regex on name |
+| `fd -e md` | Filter by extension |
+| `fd -H pattern` | Include hidden files |
+| `fd -t d pattern` | Directories only (`-t f` = files) |
+| `fd pattern -x cmd {}` | Run `cmd` on each match (replaces `find -exec`) |
+
+#### ripgrep (`rg`) — fast content search
+
+Respects `.gitignore` by default. **`grep` will feel broken after you learn this.**
+
+| Command | Purpose |
+|---------|---------|
+| `rg pattern` | Search file contents recursively from cwd |
+| `rg -l pattern` | Just filenames that match |
+| `rg -C 3 pattern` | 3 lines of context before + after |
+| `rg -t py pattern` | Type-filtered (common: `py`, `go`, `rust`, `md`, `ts`) |
+| `rg -g '*.toml' pattern` | Glob-filtered |
+| `rg --files` | List all non-ignored files (faster than `fd` for "everything") |
+
+#### yazi — terminal file manager
+
+Launch with `yz` (wrapper function — see below). Navigation is vim-keyed.
+
+| Key | Action |
+|-----|--------|
+| `h` `j` `k` `l` | Navigate (←↓↑→) |
+| `space` | Toggle-select (multi-select by holding + repeating) |
+| `enter` / `o` | Open with default app |
+| `y` / `x` / `p` | Copy / cut / paste |
+| `d` / `D` | Trash / permanent-delete |
+| `a` / `r` | Create file or dir / rename |
+| `/` | Search in current dir |
+| `f` / `F` | Find-by-name (fd) / find-in-files (rg) |
+| `z` | Jump to directory via zoxide |
+| `i` / `I` | Scroll preview pane up/down |
+| `t` / `1`–`9` | New tab / switch tab |
+| `g` / `G` | Top / bottom of list |
+| `q` | Quit (shell follows via the `yz` wrapper) |
+
+Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs), `imagemagick` (HEIC/PSD/TIFF), `sevenzip` (peek inside archives).
+
+**Key yazi tip:** `yz` is defined as a shell function (in `.zshrc`), not a plain alias — so when you quit yazi, your shell `cd`s to wherever you ended up. This turns yazi from a viewer into a navigator.
+
+#### High-value combos
+
+| Combo | Effect |
+|-------|--------|
+| `cursor $(fd -t f \| fzf)` | Fuzzy-pick a file and open in Cursor |
+| `cd $(zoxide query -l \| fzf)` | Equivalent to `zi`, useful when scripting |
+| `rg -l pattern \| xargs cursor` | Open every matching file in Cursor |
+| `fd -e py -x wc -l {}` | Run a command on every matched file |
+| `gh pr list \| fzf` | Fuzzy-pick a PR (any gh-listed thing, really) |
+
 ### AI Tools
 
 | Tool | Purpose |
