@@ -494,6 +494,108 @@ Top-tier is a three-way race. Route different tasks to different models rather t
 
 ---
 
+## Autonomous & Scheduled Coding
+
+> **Freshness**: 2026-04-17 — This space is moving fast. Claude Code Routines are still in preview.
+
+### Platform Comparison
+
+| Platform | Scheduled | Event Triggers | API Trigger | Runs in Cloud | Status | Min Price |
+|----------|-----------|----------------|-------------|---------------|--------|-----------|
+| **Claude Code Routines** | Hourly+ cron | GitHub PR/release | HTTP POST | Yes | Preview | $20/mo |
+| **Cursor Automations** | Cron-style | Slack, Linear, GitHub, PagerDuty, webhooks | No | Yes | GA | $20/mo |
+| **Codex Cloud** | Minute/daily/weekly/cron | GitHub `@codex` mentions | Yes (API) | Yes | GA | $20/mo |
+| **Jules** | Daily/weekly (web UI) | No | Alpha (no scheduling) | Yes | GA | Free |
+| **Copilot Coding Agent** | No | Manual issue-assign only | No | Yes | GA | $10/mo |
+| **Devin** | Yes (configurable) | Slack, Jira, Linear, API | Yes | Yes | GA | $500/mo |
+
+### What Each Actually Offers
+
+**Claude Code Routines** — Three tiers of automation:
+- `/loop 5m <prompt>` — session-scoped polling (7-day expiry, max 50 tasks)
+- Desktop scheduled tasks — runs on your machine, no open session needed
+- Cloud Routines — Anthropic's infra, fresh repo clone each run, pushes to `claude/`-prefixed branches
+- Triggers: cron (hourly minimum), GitHub events (PR/release with author/label/branch filters), HTTP POST API
+- Limits: ~5 runs/day on Pro, ~15 on Max. Each run draws from subscription usage.
+- Create via: claude.ai/code/routines, Desktop app, or `/schedule` in CLI
+
+**Cursor Automations** — Best event trigger ecosystem:
+- Cron schedules + event triggers: Slack messages, Linear issues, GitHub PR merges, PagerDuty incidents, custom webhooks
+- Agents run in isolated cloud sandboxes with memory across runs
+- Create at cursor.com/automations or from marketplace templates
+- No programmatic API for creating automations
+
+**Codex Cloud** — Most flexible scheduling:
+- Thread automations (preserves conversation context) or standalone
+- Minute-granularity scheduling, daily, weekly, or custom cron
+- API available: `gpt-5.2-codex` model, $1.75/$14 per 1M input/output tokens + container fees
+- `codex cloud` CLI command for managing cloud tasks
+
+**Jules** — Simplest, cheapest:
+- Schedule daily/weekly from web UI. Edit/pause/resume.
+- API is alpha — no scheduling support, sessions execute immediately
+- Templates: performance optimization, security hardening, design/UX improvements
+- Free. No config needed — reads AGENTS.md from your GitHub repo.
+
+**Copilot Coding Agent** — No scheduling, but useful for issue-driven work:
+- Assign an issue to "Copilot" in GitHub, it makes a PR
+- Can trigger via `@copilot` in PR comments
+- Third-party: Azure Boards, Jira (preview), Linear, Slack
+
+### Appraisal: What's Worth Setting Up
+
+**Safe to automate (verifiable, low blast radius):**
+
+| Task | Schedule | Tool | Why |
+|------|----------|------|-----|
+| Dependency audit | Weekly | Claude Routine | `cargo audit` / `npm audit` / `uv pip check` — output is a report, not code changes |
+| Stale branch cleanup | Weekly | Claude Routine | Delete merged branches, list orphaned ones — reversible |
+| License compliance | Monthly | Claude Routine | Scan deps for license violations — report only |
+| README/docs drift | Weekly | Cursor Automation | Diff code vs docs, flag discrepancies — report or draft PR |
+| Test suite health | Daily | Codex Cloud | Run full test suite, report failures — no code changes |
+| Backlog triage | Weekly | Jules | Simple, well-scoped GitHub issues → PRs for review |
+
+**Automate with supervision (create PRs, don't merge):**
+
+| Task | Schedule | Tool | Why Supervised |
+|------|----------|------|---------------|
+| Dependency upgrades | Weekly | Claude Routine | Breaking changes need manual testing |
+| Dead code removal | Monthly | Claude Routine | False positives possible |
+| API docs generation | On PR merge | Cursor Automation | Generated docs need accuracy review |
+| Performance profiling | Weekly | Codex Cloud | Optimization suggestions need architectural judgment |
+
+**Don't automate (needs human judgment):**
+
+| Task | Why Not |
+|------|---------|
+| Feature development | Spec interpretation needs context |
+| Architecture refactoring | Design decisions compound — bad ones are expensive |
+| Security fixes | Must verify the fix doesn't introduce new vulnerabilities |
+| Database migrations | Data loss risk, needs human sign-off |
+
+### Setup Checklist
+
+To start using Claude Code Routines:
+1. Ensure GitHub is connected at claude.ai/code
+2. Go to claude.ai/code/routines (or use `/schedule` in CLI)
+3. Pick a repo + branch
+4. Write a prompt (see `prompts/guides/prompt-tactics.md` for templates)
+5. Set schedule (start with weekly, promote to daily once you trust the output)
+6. Review the `claude/`-prefixed branch it creates — merge manually
+
+To start using Cursor Automations:
+1. Go to cursor.com/automations
+2. Create from template or custom
+3. Configure trigger (start with cron, add events later)
+4. Set instructions and model
+5. Review output in the automation history
+
+### Key Insight
+
+> **Autonomous ≠ unsupervised.** The best use of scheduled agents is "supervised autonomy" — they do the work, you review the output. Think of them as a junior engineer who runs nightly scripts and leaves you a report every morning. The report is the PR diff.
+
+---
+
 ## Cost Considerations
 
 | Tool | Pricing Model | Typical Cost |

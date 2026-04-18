@@ -231,6 +231,164 @@ One Redditor with ~100 scoped patterns found Claude started following rules lite
 
 ---
 
+## Routine Prompts (Scheduled Automation)
+
+Ready-to-use prompts for Claude Code Routines, Cursor Automations, or Codex Cloud.
+These are designed for **supervised autonomy** — the agent does the work, you review the PR.
+
+### Dependency Audit (Weekly)
+
+```
+Audit all dependencies for security vulnerabilities and outdated packages.
+
+Steps:
+1. Run the project's native audit command (cargo audit, npm audit, pip audit, etc.)
+2. For each finding, assess severity (critical/high/medium/low)
+3. For critical and high findings, check if an upgrade is available and whether it has breaking changes
+4. Create a markdown report at .ai/artifacts/reports/dep-audit-YYYY-MM-DD.md with:
+   - Summary table (package, current version, vulnerability, severity, fix available)
+   - Recommended actions ranked by severity
+   - Any findings that need manual investigation
+
+Do NOT upgrade anything. Report only. If there are zero findings, still create the report confirming a clean audit.
+```
+
+### Stale Branch Cleanup (Weekly)
+
+```
+Clean up stale git branches in this repository.
+
+Steps:
+1. List all remote branches merged into main/master
+2. List all remote branches with no commits in the last 30 days
+3. For merged branches: delete them (except main, master, develop, staging, production)
+4. For stale unmerged branches: list them in a report but do NOT delete
+5. Create a summary: how many deleted, how many stale-but-kept, any anomalies
+
+Never delete branches that are:
+- Protected (main, master, develop, staging, production)
+- Currently checked out by anyone
+- Part of an open pull request
+```
+
+### Test Suite Health (Daily)
+
+```
+Run the full test suite and report on health.
+
+Steps:
+1. Detect the test runner (cargo test, pytest, vitest, jest, etc.)
+2. Run the full suite, capturing output
+3. Create a report at .ai/artifacts/reports/test-health-YYYY-MM-DD.md with:
+   - Pass/fail/skip counts
+   - List of failing tests with error messages
+   - Any tests that are flaky (passed on retry but failed initially)
+   - Test execution time (flag any test over 10 seconds)
+   - Comparison to previous report if one exists (new failures, fixed tests)
+
+Do NOT fix any tests. Report only. If all tests pass, confirm with the counts.
+```
+
+### Dead Code Detection (Monthly)
+
+```
+Scan for likely dead code in the codebase.
+
+Steps:
+1. Find exported functions/types that have zero import references outside their own file
+2. Find files with no imports from anywhere in the project
+3. Check for commented-out code blocks longer than 5 lines
+4. Look for TODO/FIXME/HACK comments older than 6 months (check git blame dates)
+5. Create a report at .ai/artifacts/reports/dead-code-YYYY-MM-DD.md with:
+   - Likely dead exports (with file:line references)
+   - Orphan files
+   - Stale commented-out blocks
+   - Aged TODOs
+
+Confidence-rate each finding (high/medium/low). Do NOT delete anything.
+Flag false-positive risks (e.g., exports used by external consumers, dynamic imports).
+```
+
+### README/Docs Drift Check (Weekly)
+
+```
+Check whether documentation matches the current codebase.
+
+Steps:
+1. Read README.md and any docs/ directory
+2. For each documented command, API endpoint, or feature:
+   - Verify the code it describes still exists
+   - Check if function signatures or CLI flags have changed
+   - Flag any documented behavior that no longer matches implementation
+3. Scan for new public exports or commands that are NOT documented
+4. Create a report at .ai/artifacts/reports/docs-drift-YYYY-MM-DD.md with:
+   - Stale docs (references something that changed or was removed)
+   - Missing docs (new features with no documentation)
+   - Suggested fixes (brief, actionable)
+
+If you are confident in a fix (e.g., a renamed flag), open a PR with the correction.
+For ambiguous cases, report only — don't guess at intent.
+```
+
+### Cross-Model Code Review (On PR)
+
+```
+You are reviewing code that was written by a different AI model (Codex/GPT).
+Review it as a staff engineer who assumes nothing about the author's competence.
+
+For each file changed in this PR:
+1. Check: Does the change match the PR description? Any scope creep?
+2. Check: Are there tests for the new behavior? Do they test the right thing?
+3. Check: Any security concerns (injection, auth bypass, data exposure)?
+4. Check: Any performance concerns (O(n²), unbounded queries, missing indexes)?
+5. Check: Does it follow existing project conventions (naming, error handling, file structure)?
+6. Check: Any god classes, helper sprawl, or premature abstractions?
+
+Rate each finding: Critical (must fix) / Important (should fix) / Suggestion (nice to have).
+Only report Critical and Important findings. Skip nitpicks.
+If the code is clean, say so — don't invent problems.
+```
+
+### Architecture Drift Check (Monthly)
+
+```
+Review the codebase for architectural drift and anti-patterns.
+
+Steps:
+1. Map the module/crate/package dependency graph
+2. Flag circular dependencies
+3. Find files over 500 lines — these are candidates for splitting
+4. Find functions over 50 lines — these are candidates for refactoring
+5. Check for SOLID violations:
+   - Single Responsibility: files/modules doing too many things
+   - Dependency Inversion: concrete types where interfaces should be
+   - Open-Closed: switch statements that grow with every new variant
+6. Check for layering violations (e.g., HTTP handler calling database directly)
+7. Create a report at .ai/artifacts/reports/arch-review-YYYY-MM-DD.md with:
+   - Dependency graph (text format)
+   - Top 10 largest files with line counts
+   - SOLID violations with file:line references
+   - Recommended refactoring priorities (ranked by impact)
+
+Do NOT refactor anything. Report only.
+```
+
+### Suggested Routine Schedule
+
+| Routine | Schedule | Priority | Start With |
+|---------|----------|----------|------------|
+| Test suite health | Daily | High | Yes — lowest risk, highest signal |
+| Dependency audit | Weekly (Monday) | High | Yes — security-critical |
+| Docs drift check | Weekly (Wednesday) | Medium | After first two are stable |
+| Stale branch cleanup | Weekly (Friday) | Medium | After first two are stable |
+| Dead code detection | Monthly (1st) | Low | Once you trust the output format |
+| Architecture drift | Monthly (15th) | Low | Once you trust the output format |
+| Cross-model review | On PR | Medium | Set up as GitHub trigger |
+
+> **Start with just two**: Test suite health (daily) and Dependency audit (weekly). Run them for two weeks. If the reports are useful and the noise is low, add more.
+
+---
+
 ## References
 
 - Reddit: r/ClaudeCode "Claude Code (~100 hours) vs Codex (~20 hours)" — community techniques
