@@ -2,7 +2,7 @@
   "linear": {
     "type": "http",
     "url": "https://mcp.linear.app/mcp",
-    "targets": ["claude", "cursor"],
+    "targets": ["claude", "cursor", "codex"],
     "profiles": ["work"]
   },
   "granola": {
@@ -14,7 +14,7 @@
   "notion": {
     "type": "http",
     "url": "https://mcp.notion.com/mcp",
-    "targets": ["claude", "cursor"],
+    "targets": ["claude", "cursor", "codex"],
     "profiles": ["work"]
   },
   "context7": {

@@ -1,5 +1,7 @@
 # AI Development Tools
 
+> **Last reviewed**: 2026-04-17 — Refresh quarterly or when a major tool ships.
+
 **Philosophy**: AI tools are collaborators, not replacements. Use them to multiply output, not to automate judgment.
 
 > **Reality Check**: Developers use AI for ~60% of their work but can "fully delegate" 0% of tasks.
@@ -29,6 +31,51 @@
 
 ---
 
+## My Active Stack
+
+What I actually pay for and use daily, organized by vendor.
+
+### Local (Interactive)
+
+Tools that run on my machine. I drive the session, review in real-time.
+
+| Vendor | Tool | Surface | Best For |
+|--------|------|---------|----------|
+| **Anthropic** | Claude Code | CLI, desktop app, IDE extensions | Complex multi-file work, architecture, long-running tasks |
+| **Anthropic** | Claude Desktop | Desktop app | Chat + MCP tool use, research, exploration |
+| **Cursor** | Cursor | Desktop IDE | Fast iteration, inline edits, Tab completions, debugging |
+| **OpenAI** | Codex CLI | CLI | Second-opinion reviews, fire-and-forget tasks |
+
+### Cloud (Autonomous)
+
+Agents that check out my repo from GitHub, run on the vendor's servers, and produce PRs or results asynchronously. Fire-and-forget — review the output, not the process.
+
+| Vendor | Tool | Surface | Best For |
+|--------|------|---------|----------|
+| **Anthropic** | Claude Code | claude.ai/code | Autonomous tasks when away from terminal |
+| **Cursor** | Background Agents | Cursor cloud | Offloading work while iterating locally |
+| **OpenAI** | Codex Cloud | ChatGPT | Parallel sandboxed tasks, drafting PRs |
+| **Google** | Jules | Web (jules.google.com) | Async issue-to-PR against GitHub repos |
+
+### How I Use Them Together
+
+```
+Interactive session (primary workflow):
+├── Claude Code CLI — architecture, multi-file features, complex work
+├── Cursor — refinement, debugging, quick edits in IDE
+└── Codex CLI — cross-model review, second opinion
+
+Fire-and-forget (async delegation):
+├── Claude Code Cloud — tasks I'd run locally but I'm away
+├── Cursor Background Agents — offload while doing other IDE work
+├── Codex Cloud — parallel tasks, draft PRs for review later
+└── Jules — backlog issues, straightforward GitHub PRs
+```
+
+> **Rule of thumb**: Start interactive. Delegate to cloud agents only for well-scoped, verifiable tasks — the kind where you can review the PR diff and know if it's right.
+
+---
+
 ## AI Coding Assistants
 
 ### Tier 1: Primary Tools
@@ -46,7 +93,7 @@
 |------|-------------|
 | **OpenCode** | Model flexibility, mix providers, open-source CLI. TUI-first, plan/build modes. SST team. $10/mo (Zen) or BYO keys. |
 | **GitHub Copilot** | Enterprise teams with GitHub integration |
-| **Windsurf (Codeium)** | Budget-conscious, free tier available. Acquired by OpenAI (2025) — roadmap uncertain. |
+| **Windsurf 2.0 (Cognition/Devin)** | Now owned by Cognition. Native Devin integration + Agent Command Center. $15-50/mo. |
 | **Aider** | Lightweight CLI agent with auto git commits. Python-native, many models. Good for scripted workflows. |
 | **Gemini CLI** | Google Cloud-heavy projects |
 
@@ -368,18 +415,99 @@ Prototyping:
 
 ---
 
+## AI Coding Tools Landscape
+
+> **Freshness**: 2026-04-17 — benchmarks and market positions change fast. Verify before making purchase decisions.
+
+### Model Quality for Coding (SWE-bench Verified, March 2026)
+
+| Model | Score | Notes |
+|-------|-------|-------|
+| Claude Opus 4.6 | 80.8% | Best for deep reasoning, multi-file refactoring, vague specs |
+| Gemini 3.1 Pro | 80.6% | Best price-to-performance, 1M context |
+| GPT-5.2 | 80.0% | Best speed and terminal execution |
+| Claude Sonnet 4.6 | 79.6% | Near-flagship at 1/5 cost — the workhorse |
+| Copilot (internal) | 56.0% | Lower than flagships, but free tier strong |
+
+Top-tier is a three-way race. Route different tasks to different models rather than picking one.
+
+### Terminal Agents (Claude Code competitors)
+
+| Tool | Model | Differentiator | Cost | Status |
+|------|-------|---------------|------|--------|
+| **Claude Code** | Opus 4.6 / Sonnet 4.6 | Hooks, skills, plugins, MCP, desktop app, routines | $20-200/mo | **Active** |
+| **Codex CLI** | o4-mini (default) | Open-source (MIT), fire-and-forget, cheaper tokens | $20-100/mo | **Active** |
+| **Gemini CLI** | Gemini 2.5 Pro | Free tier, 1M context, low overhead | Free-$20/mo | Disabled |
+| **Copilot CLI** | Multi-model | Fleet mode, cloud delegation (`&` prefix), MCP support | $10-19/mo | Disabled |
+| **Junie CLI** | Multi-model (BYOK) | JetBrains ecosystem, LLM-agnostic | Beta (free) | Watch |
+| **Aider** | Any | Open-source, auto git commits, model-agnostic | BYO keys | Watch |
+
+### AI-Native IDEs
+
+| Tool | Differentiator | Cost | Status |
+|------|---------------|------|--------|
+| **Cursor** | Supermaven autocomplete (72% acceptance), Composer 2, background agents | $20-200/mo | **Active** |
+| **Windsurf 2.0** (Cognition/Devin) | Native Devin integration, Agent Command Center | $15-50/mo | Watch |
+| **Antigravity** (Google) | Dual Editor/Manager view, multi-agent orchestration | Free-paid | Disabled |
+| **Zed** | ACP (Agent Client Protocol — "LSP for AI agents"), GPU-accelerated | Free | Watch |
+
+### IDE Extensions
+
+| Tool | Best For | Cost | Status |
+|------|----------|------|--------|
+| **GitHub Copilot** | Teams with GitHub integration, 37% market share | $10-19/mo | Disabled |
+| **Gemini Code Assist** | Google Cloud / Android Studio workflows | Free-paid | Disabled |
+| **Amazon Q Developer** | AWS-heavy workflows, security scans | $19/user/mo | Watch |
+| **Augment Code** | Enterprise, 500K+ file context engine | $20-200/mo | Watch |
+| **Sourcegraph Cody** | Large polyglot orgs, cross-repo code graph | $59/user/mo | Watch |
+| **Codex IDE Extension** | Codex Cloud from inside Cursor/VS Code | Included w/ ChatGPT | Disabled |
+
+### Autonomous Cloud Agents
+
+| Tool | How It Works | Status |
+|------|-------------|--------|
+| **Codex Cloud** (OpenAI) | Sandboxed env per task in ChatGPT, writes PRs, parallel tasks | Watch |
+| **Jules** (Google) | Async against GitHub repos, plans/codes/submits PRs | Watch |
+| **Devin** (Cognition) | Full autonomous env with terminal, browser, tests | Watch |
+| **Copilot Coding Agent** | Runs in GitHub Actions, converts issues to PRs | Watch |
+| **Codex Security** (OpenAI) | AppSec agent: threat model → fuzzing → fix PRs. Web-only, research preview | Watch |
+| **Claude Code Routines** | Server-side scheduled automations (cron, webhooks, API) | Active (preview) |
+
+### Protocols & Standards
+
+| Protocol | What It Does | Adoption |
+|----------|-------------|----------|
+| **MCP** (Model Context Protocol) | "USB-C for AI" — standardized tool/resource integration | 10K+ servers, all major players |
+| **ACP** (Agent Client Protocol) | "LSP for AI agents" — decouples agents from editors | Zed, JetBrains |
+| **AG-UI** | Agent-User Interaction Protocol — standardizes agent UIs | Early |
+
+### Market Perception (Developer Sentiment, Q1 2026)
+
+| Question | Answer |
+|----------|--------|
+| Best coding models? | Three-way race: Claude, GPT, Gemini (all ~80% SWE-bench) |
+| Best IDE wrapper? | Cursor (19% most-loved, #2). Power users pair it with Claude Code |
+| Google getting love? | Respect, not love. Great benchmarks + price. Tendency to over-rewrite |
+| GitHub Copilot? | "Toyota Camry" — largest install, cheapest, not exciting. 9% most-loved |
+| Claude Code vs Codex? | Claude = faster, interactive, more loved. Codex = cheaper, more autonomous, stricter rules |
+| Average tools per dev? | 2.3 — no single tool wins everything |
+
+---
+
 ## Cost Considerations
 
 | Tool | Pricing Model | Typical Cost |
 |------|---------------|--------------|
 | Claude Code | API usage (Claude Pro/Max) | $20-200/month (Pro $20, Max from $100) |
+| Codex CLI | ChatGPT Pro/Team/Enterprise | $20-100/month |
 | OpenCode | BYO keys or Zen gateway | $10/mo (Zen open models) or BYO API keys |
 | Cursor | Subscription | $20/month (Pro), $60/month (Pro+), $200/month (Ultra) |
+| GitHub Copilot | Subscription | $10-19/month |
 | bolt.new | Credits | Free tier + $20/month |
 | v0.dev | Credits | Free tier + usage |
-| GitHub Copilot | Subscription | $10-19/month |
+| Gemini CLI | Free tier + Google AI Pro | Free-$20/month |
 
-**Budget recommendation**: Claude Pro ($20) + Cursor Pro ($20) = $40/month for full AI-assisted development. Upgrade to Max/Pro+ when you need higher limits.
+**Budget recommendation**: Claude Pro ($20) + Cursor Pro ($20) = $40/month for full AI-assisted development. Add Codex Pro ($20) for cross-model review workflows. Upgrade to Max/Pro+ when you need higher limits.
 
 ---
 
@@ -396,7 +524,9 @@ Prototyping:
 | **claude-subconscious** | Letta agent that observes Claude Code sessions | Accumulates patterns across sessions, provides async guidance via CLAUDE.md |
 | **OpenCode** | Open-source local-first AI coding agent | **Promoted to Tier 2** — see AI Coding Assistants section above. |
 | **Open WebUI** | Self-hosted AI platform interface | Unified UI for any AI model (Ollama/OpenAI/Anthropic); Python extensions; RAG/voice/vision; Docker install; 328k+ community members |
-| **oh-my-claudecode** | Multi-agent orchestration plugin for Claude Code | "Oh-My-Zsh for Claude Code"; autopilot/ultrapilot/swarm modes; 32+ agents, 40+ skills; zero config, natural language commands |
+| **oh-my-claudecode (OMC)** | Multi-agent orchestration plugin for Claude Code | "Oh-My-Zsh for Claude Code"; autopilot/ultrapilot/swarm modes; 32+ agents, 40+ skills; zero config, natural language commands |
+| **GSD (Get Shit Done)** | Spec-driven execution framework for Claude Code | v2 is a standalone TS CLI on Pi SDK; context management, autonomous task sequencing, crash recovery; 35k+ GitHub stars |
+| **Codex Security** | OpenAI AppSec agent | Threat model → fuzzing → fix PRs; web-only (codex.openai.com); research preview for Pro/Enterprise |
 
 **Links**:
 - OpenClaw: https://github.com/openclaw/openclaw
@@ -406,6 +536,8 @@ Prototyping:
 - OpenCode: https://github.com/opencode-ai/opencode | https://opencode.ai/
 - Open WebUI: https://github.com/open-webui | https://www.openwebui.com/
 - oh-my-claudecode: https://github.com/Yeachan-Heo/oh-my-claudecode
+- GSD: https://github.com/gsd-build/get-shit-done | https://github.com/gsd-build/gsd-2
+- Codex Security: https://developers.openai.com/codex/security
 
 ### Agent Protocols
 

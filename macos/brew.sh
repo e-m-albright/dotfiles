@@ -238,11 +238,21 @@ social_apps=(
 
 # AI Tools
 ai_cli=(
-    claude-code          # Anthropic CLI agent
+    # -- Anthropic --
+    claude-code          # Anthropic CLI agent (terminal)
     claude               # Claude Desktop (macOS app)
+    # conductor          # Claude Code parallelisation (disabled — prefer native subagents)
+    # -- OpenAI --
+    codex                # OpenAI Codex CLI (terminal agent) — or: npm i -g @openai/codex
+    codex-app            # OpenAI Codex Desktop (macOS app for parallel agents)
+    # -- Google --
+    # jules              # Google Jules CLI — npm only, installed below
+    # gemini-cli         # Google Gemini CLI (terminal agent, disabled)
+    # antigravity        # Google Antigravity IDE (AI-native editor, disabled) — manual install
+    # -- GitHub --
+    # copilot            # GitHub Copilot CLI (terminal agent) — or: npm i -g @github/copilot
+    # -- Other --
     # cmux               # Terminal multiplexer for AI agents (nice but not helpful over Ghostty)
-    conductor            # Claude Code parallelisation
-    # gemini-cli         # Google Gemini CLI (disabled)
     # ollama             # Local LLM runtime (disabled)
     # huggingface-cli    # Hugging Face CLI (disabled — install per-project if needed)
 )
@@ -353,5 +363,22 @@ if [[ "$AI" == "1" ]]; then
             [[ -z "$tool" ]] || [[ "$tool" =~ ^[[:space:]]*# ]] && continue
             install_any "$tool"
         done
+    fi
+
+    # npm-only AI tools (no brew formula available)
+    print_section "AI CLI Tools (npm)"
+    if command -v npm >/dev/null 2>&1; then
+        if command -v jules >/dev/null 2>&1; then
+            print_pkg_installed "jules (@google/jules)"
+        else
+            print_pkg_installing "jules (@google/jules)"
+            if npm install -g @google/jules 2>&1; then
+                print_pkg_done "jules"
+            else
+                print_pkg_fail "jules (@google/jules)"
+            fi
+        fi
+    else
+        print_warn "npm not found — skipping npm-based AI tools (install Node.js first)"
     fi
 fi

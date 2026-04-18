@@ -31,7 +31,7 @@ sub_help () {
     printf "   cursor-plugins   Show Cursor plugin install checklist\n"
     printf "   scaffold         Scaffold a new project with AI rules\n"
     printf "   test             Run scaffold eval framework (--quick for fast mode)\n"
-    printf "   agent-setup          Configure Claude + Cursor (--work/--personal, optional --reset-mcp)\n"
+    printf "   agent-setup          Configure Claude + Cursor + Codex (--work/--personal, optional --reset-mcp)\n"
     printf "   completions      Output shell completions (source this in your shell)\n"
 }
 
@@ -195,6 +195,24 @@ sub_doctor () {
         fi
     fi
 
+    if command -v codex >/dev/null 2>&1; then
+        if [[ -f ~/.codex/AGENTS.md ]]; then
+            printf "  ${GREEN}✓${NC} %-20s exists\n" "Codex instructions"
+        else
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Codex instructions"
+        fi
+        if [[ -f ~/.codex/hooks.json ]]; then
+            printf "  ${GREEN}✓${NC} %-20s configured\n" "Codex hooks"
+        else
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Codex hooks"
+        fi
+        if [[ -f ~/.codex/config.toml ]] && grep -q 'mcp_servers' ~/.codex/config.toml 2>/dev/null; then
+            printf "  ${GREEN}✓${NC} %-20s configured\n" "Codex MCP"
+        else
+            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Codex MCP"
+        fi
+    fi
+
     if [[ -f ~/.config/ghostty/config ]]; then
         printf "  ${GREEN}✓${NC} %-20s configured\n" "Ghostty"
     elif [[ -d "/Applications/Ghostty.app" ]]; then
@@ -209,6 +227,9 @@ sub_doctor () {
         fi
         if [[ -f "$DOTFILES_DIR/agents/cursor/setup.sh" ]]; then
             . "$DOTFILES_DIR/agents/cursor/setup.sh"
+        fi
+        if [[ -f "$DOTFILES_DIR/agents/codex/setup.sh" ]]; then
+            . "$DOTFILES_DIR/agents/codex/setup.sh"
         fi
     fi
 
@@ -329,6 +350,7 @@ sub_dock () {
 sub_agent_setup() {
     . "$DOTFILES_DIR/agents/claude/setup.sh" "$@"
     . "$DOTFILES_DIR/agents/cursor/setup.sh" "$@"
+    . "$DOTFILES_DIR/agents/codex/setup.sh" "$@"
     printf "${GREEN}%b Agent setup complete (%s profile).${NC}\n" "$ARROW" "$DOTFILES_PROFILE"
 }
 
@@ -465,7 +487,7 @@ _dotfiles() {
         'agents:Show active agentic setup'
         'profile-shell:Profile shell startup time'
         'cursor-plugins:Show Cursor plugin install checklist'
-        'agent-setup:Configure Claude + Cursor (--work/--personal, optional --reset-mcp)'
+        'agent-setup:Configure Claude + Cursor + Codex (--work/--personal, optional --reset-mcp)'
         'completions:Output shell completions'
     )
     _describe 'command' commands

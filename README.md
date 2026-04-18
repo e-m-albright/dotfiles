@@ -94,9 +94,9 @@ my-project/
 |------|-----------|-----------|
 | Claude Code | CLAUDE.md → AGENTS.md | (direct) |
 | Cursor | Symlinks | .cursor/rules/ |
+| Codex CLI | CODEX.md → AGENTS.md | (direct, also reads AGENTS.md natively) |
 | GitHub Copilot | Symlinks | .github/instructions/ |
 | Gemini CLI | GEMINI.md → AGENTS.md + symlinks | .gemini/rules/ |
-| Codex | CODEX.md → AGENTS.md | (direct) |
 
 ### Available Recipes
 
@@ -243,26 +243,55 @@ Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs
 
 ### AI Tools
 
-| Tool | Purpose |
-|------|---------|
-| **Claude Code** | Agentic coding assistant (CLI) with plugins, hooks, MCP servers |
-| **Claude Desktop** | Claude macOS app |
-| **Cursor** | AI-native editor with shared MCP servers, hooks, skills, agents |
+| Tool | Provider | Status | Purpose |
+|------|----------|--------|---------|
+| **Claude Code** | Anthropic | active | Agentic coding assistant (CLI) with plugins, hooks, MCP servers |
+| **Claude Desktop** | Anthropic | active | Claude macOS app |
+| **Cursor** | Cursor | active | AI-native editor with shared MCP servers, hooks, skills, agents |
+| **Codex CLI** | OpenAI | active | Terminal coding agent (open-source, o4-mini default) |
+| **Copilot CLI** | GitHub | disabled | Terminal coding agent (fleet mode, cloud delegation) |
+| **Codex Desktop** | OpenAI | disabled | macOS app for parallel coding agents |
+| **Gemini CLI** | Google | disabled | Terminal coding agent (Gemini 2.5 Pro, free tier) |
+| **Antigravity** | Google | disabled | AI-native IDE (dual Editor/Manager view) |
+
+**Cursor extensions** (managed in `editors/extensions.sh`):
+
+| Extension | Status | Notes |
+|-----------|--------|-------|
+| `anthropic.claude-code` | active | Claude Code companion inside Cursor |
+| `github.copilot` | disabled | Conflicts with Cursor built-in AI |
+| `google.gemini-code-assist` | disabled | Gemini Code Assist for IDE |
+| `openai.codex` | disabled | Codex IDE extension |
+
+See `prompts/guides/ai-tools.md` for the full landscape and investigation notes.
+
+### Codex CLI
+
+Setup is automated via `dotfiles agent-setup` (also runs during install):
+
+- **Global instructions**: `~/.codex/AGENTS.md` deployed from shared rules
+- **Config**: `~/.codex/config.toml` with MCP servers and `project_doc_fallback_filenames = ["CODEX.md"]`
+- **Hooks**: Format-on-save (reuses Claude's hook), sensitive file guard, terminal notifications
+- **Skills**: `dotfiles-doctor`, `pr-summary`, `git-worktree-manager`, `dep-audit`, `brew-reconcile`, `migration-writer`
+- **Agents**: `shellcheck-reviewer`
+- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — targets "codex" or "claude"
+
+See `agents/codex/` for all configuration files.
 
 ### External Connections
 
 Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) > plugins (tool-specific).
 
-| Service | Method | Claude Code | Cursor | Notes |
-|---------|--------|:-----------:|:------:|-------|
-| **GitHub** | CLI (`gh`) + MCP | yes | yes | CLI + MCP server (`gh mcp-server`) |
-| **Linear** | MCP (`mcp-remote`) | yes | yes | Issue tracking |
-| **Context7** | MCP (`@upstash/context7-mcp`) | plugin | yes | Up-to-date library docs |
-| **Neon** | ~~MCP~~ (disabled) | — | — | Neon Postgres; revisit when actively using Neon projects |
-| **Granola** | MCP (`granola-mcp` via `uvx`) | yes | — | Meeting notes (reads local cache, no API key) |
-| **Notion** | Plugin | yes | — | Claude Code / Claude Desktop only |
-| **Gmail** | claude.ai cloud MCP | yes | — | Claude Code only (not reproducible in config) |
-| **Google Calendar** | claude.ai cloud MCP | yes | — | Claude Code only (not reproducible in config) |
+| Service | Method | Claude Code | Cursor | Codex | Notes |
+|---------|--------|:-----------:|:------:|:-----:|-------|
+| **GitHub** | CLI (`gh`) + MCP | yes | yes | yes | CLI + MCP server (`gh mcp-server`) |
+| **Linear** | MCP (`mcp-remote`) | yes | yes | yes | Issue tracking |
+| **Context7** | MCP (`@upstash/context7-mcp`) | plugin | yes | — | Up-to-date library docs |
+| **Neon** | ~~MCP~~ (disabled) | — | — | — | Neon Postgres; revisit when actively using Neon projects |
+| **Granola** | MCP (`granola-mcp` via `uvx`) | yes | — | — | Meeting notes (reads local cache, no API key) |
+| **Notion** | MCP | yes | yes | yes | Via shared MCP servers |
+| **Gmail** | claude.ai cloud MCP | yes | — | — | Claude Code only (not reproducible in config) |
+| **Google Calendar** | claude.ai cloud MCP | yes | — | — | Claude Code only (not reproducible in config) |
 
 **Considered** (not yet enabled — add to `agents/shared/mcp-servers.json` when needed):
 
@@ -377,6 +406,7 @@ dotfiles/
 ├── agents/                 # Agentic tool setup
 │   ├── shared/             # Shared config (MCP servers, tool registry, rules, ignore patterns)
 │   ├── claude/             # Claude Code setup (plugins, hooks, skills, universal rules)
+│   ├── codex/              # Codex CLI setup (config.toml, hooks, skills)
 │   └── cursor/             # Cursor plugin (hooks, skills, universal rules)
 ├── macos/                  # Homebrew, Dock, SSH, print utilities
 ├── .ai/rules/              # Cross-vendor AI rules (canonical source)

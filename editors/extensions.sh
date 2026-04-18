@@ -62,7 +62,13 @@ install_extension "christian-kohler.path-intellisense"  # Autocomplete file path
 
 # Version Control
 install_extension "eamodio.gitlens"
-install_extension "anthropic.claude-code"      # Claude Code companion inside Cursor
+
+# AI Coding Extensions
+# install_extension "anthropic.claude-code"    # Claude Code companion (disabled — use Claude Code CLI directly)
+# install_extension "github.copilot"           # GitHub Copilot (disabled — conflicts with Cursor built-in AI)
+# install_extension "github.copilot-chat"      # GitHub Copilot Chat (disabled)
+# install_extension "google.gemini-code-assist" # Gemini Code Assist (disabled)
+# install_extension "openai.codex"             # Codex IDE extension (disabled)
 
 # Files
 install_extension "tamasfe.even-better-toml"
