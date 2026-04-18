@@ -95,6 +95,7 @@ my-project/
 | Claude Code | CLAUDE.md → AGENTS.md | (direct) |
 | Cursor | Symlinks | .cursor/rules/ |
 | Codex CLI | CODEX.md → AGENTS.md | (direct, also reads AGENTS.md natively) |
+| Jules | AGENTS.md | (cloud-only, reads from GitHub repo directly) |
 | GitHub Copilot | Symlinks | .github/instructions/ |
 | Gemini CLI | GEMINI.md → AGENTS.md + symlinks | .gemini/rules/ |
 

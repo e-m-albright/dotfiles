@@ -32,6 +32,15 @@
       "symlinkPrefix": null,
       "rootFile": "CODEX.md",
       "agentsMdAware": true
+    },
+    "jules": {
+      "$comment": "Cloud-only (jules.google.com) — no local config. Reads AGENTS.md from GitHub repos directly.",
+      "rulesDir": null,
+      "suffix": null,
+      "strategy": null,
+      "symlinkPrefix": null,
+      "rootFile": null,
+      "agentsMdAware": true
     }
   }
 }
