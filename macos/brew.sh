@@ -246,6 +246,7 @@ ai_cli=(
     codex                # OpenAI Codex CLI (terminal agent) — or: npm i -g @openai/codex
     codex-app            # OpenAI Codex Desktop (macOS app for parallel agents)
     # -- Google --
+    googleworkspace-cli  # Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin)
     # jules              # Google Jules CLI — npm only, installed below
     # gemini-cli         # Google Gemini CLI (terminal agent, disabled)
     # antigravity        # Google Antigravity IDE (AI-native editor, disabled) — manual install

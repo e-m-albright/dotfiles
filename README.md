@@ -252,6 +252,7 @@ Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs
 | **Codex CLI** | OpenAI | active | Terminal coding agent (open-source, o4-mini default) |
 | **Copilot CLI** | GitHub | disabled | Terminal coding agent (fleet mode, cloud delegation) |
 | **Codex Desktop** | OpenAI | disabled | macOS app for parallel coding agents |
+| **GWS CLI** | Google | active | Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin) |
 | **Gemini CLI** | Google | disabled | Terminal coding agent (Gemini 2.5 Pro, free tier) |
 | **Antigravity** | Google | disabled | AI-native IDE (dual Editor/Manager view) |
 
