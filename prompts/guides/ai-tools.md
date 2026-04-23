@@ -629,6 +629,7 @@ To start using Cursor Automations:
 | **oh-my-claudecode (OMC)** | Multi-agent orchestration plugin for Claude Code | "Oh-My-Zsh for Claude Code"; autopilot/ultrapilot/swarm modes; 32+ agents, 40+ skills; zero config, natural language commands |
 | **GSD (Get Shit Done)** | Spec-driven execution framework for Claude Code | v2 is a standalone TS CLI on Pi SDK; context management, autonomous task sequencing, crash recovery; 35k+ GitHub stars |
 | **Codex Security** | OpenAI AppSec agent | Threat model → fuzzing → fix PRs; web-only (codex.openai.com); research preview for Pro/Enterprise |
+| **Pi** | Minimal terminal coding harness | Multi-provider (15+ providers); extensibility-first (no built-in MCP/sub-agents — build as extensions); tree-structured sessions; SDK embedding; npm/git package ecosystem; GSD v2 built on it |
 
 **Links**:
 - OpenClaw: https://github.com/openclaw/openclaw
@@ -640,6 +641,7 @@ To start using Cursor Automations:
 - oh-my-claudecode: https://github.com/Yeachan-Heo/oh-my-claudecode
 - GSD: https://github.com/gsd-build/get-shit-done | https://github.com/gsd-build/gsd-2
 - Codex Security: https://developers.openai.com/codex/security
+- Pi: https://pi.dev/
 
 ### Agent Protocols
 
