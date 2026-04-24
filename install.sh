@@ -221,6 +221,16 @@ else
     print_info "Ghostty not installed — skipping config"
 fi
 
+# Micro
+print_section "Micro"
+if command -v micro >/dev/null 2>&1; then
+    mkdir -p ~/.config/micro
+    ln -sf "$DOTFILES_DIR/terminal/micro/settings.json" ~/.config/micro/settings.json 2>/dev/null || true
+    print_success "Micro configured (atom-dark theme)"
+else
+    print_info "Micro not installed — skipping config"
+fi
+
 # Yazi
 print_section "Yazi"
 if command -v yazi >/dev/null 2>&1; then

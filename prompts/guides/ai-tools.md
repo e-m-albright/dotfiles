@@ -631,6 +631,21 @@ To start using Cursor Automations:
 | **Codex Security** | OpenAI AppSec agent | Threat model → fuzzing → fix PRs; web-only (codex.openai.com); research preview for Pro/Enterprise |
 | **Pi** | Minimal terminal coding harness | Multi-provider (15+ providers); extensibility-first (no built-in MCP/sub-agents — build as extensions); tree-structured sessions; SDK embedding; npm/git package ecosystem; GSD v2 built on it |
 
+### Token Efficiency & Compression
+
+| Tool | What It Does | Why Watch |
+|------|--------------|-----------|
+| **Caveman** | Claude Code skill forcing compressed "caveman-speak" output | 45k+ stars; 65% avg output token reduction (22-87% range); three intensity levels; `/caveman-commit`, `/caveman-compress` commands |
+| **caveman-compression** | Semantic compression library for LLM input context | 800+ stars; strips predictable grammar from context; 40-58% token reduction; 100% factual preservation; LLM/MLM/NLP methods |
+| **oogaboogalm** | Fine-tunes caveman-speak directly into model weights | Bakes terseness into the model instead of system prompt overhead |
+| **laconic** | Variant using short common words and contextual brevity | Lighter-touch approach to output compression |
+
+**Links**:
+- Caveman: https://github.com/JuliusBrussee/caveman
+- caveman-compression: https://github.com/wilpel/caveman-compression
+- oogaboogalm: https://github.com/Mintzs/oogaboogalm
+- laconic: https://github.com/GabrielBarberini/laconic
+
 **Links**:
 - OpenClaw: https://github.com/openclaw/openclaw
 - OpenClaw + Cloudflare: https://blog.cloudflare.com/moltworker-self-hosted-ai-agent/

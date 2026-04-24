@@ -62,6 +62,7 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 - `prompts/guides/customer-discovery.md` -- Customer interview methodology
 - `prompts/guides/project-memory.md` -- Decision organization system
 - `prompts/guides/ml-python.md` -- Python ML/data science patterns
+- `prompts/guides/token-efficiency.md` -- LLM token efficiency, task decomposition, model routing
 
 ## Proof of Life
 
