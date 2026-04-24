@@ -221,6 +221,16 @@ else
     print_info "Ghostty not installed — skipping config"
 fi
 
+# Yazi
+print_section "Yazi"
+if command -v yazi >/dev/null 2>&1; then
+    mkdir -p ~/.config/yazi
+    ln -sf "$DOTFILES_DIR/terminal/yazi/yazi.toml" ~/.config/yazi/yazi.toml 2>/dev/null || true
+    print_success "Yazi configured (show_hidden enabled)"
+else
+    print_info "Yazi not installed — skipping config"
+fi
+
 # Editor configurations
 print_header "📝 Editor Configuration"
 
