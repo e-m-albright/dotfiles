@@ -5,40 +5,54 @@
 #
 # To add a plugin: add it here and re-run setup.sh
 # To disable a plugin: remove it and re-run setup.sh (or toggle in Claude Code)
+#
+# EFFICIENCY NOTE: Each plugin injects skill manifests into every session.
+# Keep this list lean — enable on-demand with `/plugin enable X` when needed.
+
+# --- Core (always loaded) ---
 
 # LSP integrations (type checking & diagnostics in-session)
 - typescript-lsp
 - rust-analyzer-lsp
 
-# Development workflows
-- feature-dev
-- code-review
-- code-simplifier
+# Workflow essentials
 - commit-commands
-- pr-review-toolkit
-- claude-md-management
-- claude-code-setup
-
-# Agent SDK
-- agent-sdk-dev
-
-# Tooling
-- context7
-- frontend-design
-- playground
-
-# Quality & security
-- security-guidance
 - superpowers
-- explanatory-output-style
+- context7
 
-# Data
-- data-engineering
+# --- On-demand (uncomment when needed) ---
+
+# Development workflows — enable per-session when doing feature/PR work
+# - feature-dev                            # Guided feature development
+# - code-review                            # PR code review
+# - code-simplifier                        # Post-implementation cleanup
+# - pr-review-toolkit                      # Comprehensive PR review agents
+# - claude-md-management                   # CLAUDE.md audit and improvement
+# - claude-code-setup                      # Automation recommender
+
+# Agent SDK — enable when building SDK apps
+# - agent-sdk-dev
+
+# Frontend — enable for UI work
+# - frontend-design                        # Production-grade frontend interfaces
+# - playground                             # Interactive HTML playgrounds
+
+# Quality & security — enable for review sessions
+# - security-guidance                      # Security review
+
+# Style — adds instructions to every response
+# - explanatory-output-style               # Educational insights in output
+
+# Data engineering — enable for Airflow/pipeline work (20+ skills!)
+# - data-engineering
+
+# Notion — enable when using Notion MCP
+# - notion
 
 # Cross-agent (OpenAI Codex integration)
 # Requires: /plugin marketplace add openai/codex-plugin-cc
 # Then:     /plugin install codex@openai-codex
 # - codex@openai-codex
 
-# --- Considered (uncomment to enable) ---
-# - Dagster                              # Data pipeline orchestration & observability
+# --- Considered ---
+# - Dagster                                # Data pipeline orchestration & observability

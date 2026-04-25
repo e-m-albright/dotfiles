@@ -1,8 +1,3 @@
----
-description: TypeScript stack decisions — tool choices, rationale, installation phases
-alwaysApply: false
----
-
 # TypeScript Stack Decisions
 
 ## Phase 1 — Every Project

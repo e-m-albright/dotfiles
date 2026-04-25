@@ -1,8 +1,3 @@
----
-description: Rust stack decisions — tool choices, rationale, installation phases
-alwaysApply: false
----
-
 # Rust Stack Decisions
 
 ## Phase 1 — Every Project

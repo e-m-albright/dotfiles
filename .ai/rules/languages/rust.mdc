@@ -1,5 +1,5 @@
 ---
-description: Rust conventions — clippy, thiserror/anyhow, Tokio async, tracing
+description: Rust conventions — idioms, ownership, error handling, async, testing, organization
 globs: "**/*.rs"
 alwaysApply: false
 ---
@@ -11,80 +11,94 @@ alwaysApply: false
 - **clippy** for linting — treat warnings as errors in CI.
 - **rustfmt** for formatting — never override.
 - **cargo-watch** for hot reload during development.
+- Run `cargo clippy` and `cargo test` before committing.
+
+## Tier 1 — Hard Rules
+
+- No `.unwrap()` in production code — use `?`, `.expect("reason")`, or handle the case.
+- No `unsafe` without a `// SAFETY:` comment explaining the invariant.
+- No sentinel values (`-1`, `null` equivalents) — use `Option<T>` or `Result<T, E>`.
+- No `.clone()` to satisfy the borrow checker — restructure ownership instead.
+- All public types derive `Debug`. All fallible functions return `Result<T, E>`.
+- Exhaustive pattern matching — no wildcard `_` on enums you control.
+- `#[must_use]` on functions where ignoring the return value is likely a bug.
+- Use `#[expect]` over `#[allow]` for suppressing warnings.
+
+## Ownership & Borrowing
+
+- Borrow by default, own by necessity. Accept `&str` not `&String`, `&[T]` not `&Vec<T>`.
+- Use `impl AsRef<str>` or `impl Into<String>` for APIs accepting both owned and borrowed.
+- When you need owned data, take `T` by value — makes cost visible at call site.
+- `Arc<T>` for shared ownership across async tasks; `Rc<T>` only in single-threaded contexts.
+- If fighting the borrow checker, redesign data flow before reaching for `Clone` or `Rc`.
 
 ## Error Handling
 
-- **thiserror** for domain/library errors (typed, specific).
-- **anyhow** for application-level errors (context chaining, quick prototyping).
-- Use `?` operator for propagation. Add context: `context("failed to parse config")?`.
-- Return `Result<T, E>` from all fallible functions — never panic for expected failures.
-
-## Code Patterns
-
-- **Tokio** for async runtime. Use `#[tokio::main]` for entry point.
-- **tracing** + **tracing-subscriber** for structured logging.
-- **SQLx** for database queries — compile-time checked SQL.
-- **envy** for config — deserialize env vars to struct via serde.
-- **serde** + **serde_json** for serialization.
-- Prefer `impl Trait` over `dyn Trait` when possible (zero-cost).
-- Use `Arc<T>` for shared ownership across async tasks.
+- **thiserror** for domain/library errors (typed, matchable variants).
+- **anyhow** for application-level errors (context chaining).
+- Always add `.context("what was happening")?` when propagating errors.
+- Error messages describe what failed, not what to do.
+- Panics mean "the program has a bug" — never for user errors or network failures.
 
 ## Async Patterns
 
-- Use `tokio::task::spawn_blocking` for CPU-heavy work (parsing, compression) — never block the async runtime.
-- Use `tokio::sync::Semaphore` for rate-limited concurrent operations (e.g., API calls with rate limits).
-- Prefer streaming iterators for large file processing — don't load entire files into memory.
-- Use `tokio::sync::mpsc` channels for producer/consumer pipelines (e.g., ingest → normalize → store).
-- `tokio::sync::Mutex` over `std::sync::Mutex` when holding a lock across `.await` points.
+- **Tokio** runtime. `#[tokio::main]` for entry, `#[tokio::test]` for tests.
+- **tracing** + **tracing-subscriber** for structured logging.
+- Use `.instrument(span)` for async functions — never `.entered()` in async (it's `!Send`).
+- `tokio::task::spawn_blocking` for CPU-heavy work — never block the async runtime.
+- `tokio::sync::Semaphore` for rate-limited concurrent operations.
+- `tokio::sync::Mutex` over `std::sync::Mutex` when holding lock across `.await`.
+- `tokio::sync::mpsc` channels for producer/consumer pipelines.
+
+## Type Design
+
+- Newtypes for domain concepts: `struct UserId(Uuid)` not bare `Uuid`.
+- Enums over booleans: `Status::Active` not `is_active: bool`.
+- Builders for types with >3 construction parameters.
+- `From`/`Into` for natural conversions, `TryFrom` for fallible ones.
+- Private fields with public constructors enforce invariants at creation.
+
+## Code Organization
+
+- **SQLx** for database queries (compile-time checked SQL).
+- **envy** for config (env vars to struct via serde). **serde** + **serde_json** for serialization.
+- One module, one responsibility. Keep files under ~400 lines.
+- `pub(crate)` for internal helpers; only `pub` what other crates need.
+- Flat module trees. `routes/drugs.rs` not `routes/api/v1/drugs/handler.rs`.
+- Use `[workspace.dependencies]` to pin shared dependency versions.
 
 ## Structure (Single Crate)
 
 ```
 src/
-  main.rs                  — entry point, server setup
-  lib.rs                   — re-exports, shared types
-  config.rs                — settings via envy
-  error.rs                 — thiserror error types
-  routes/                  — HTTP handlers
-  services/                — business logic
-  db/                      — database access
-migrations/                — SQL migration files
+  main.rs          — entry point, server setup
+  lib.rs           — re-exports, shared types
+  config.rs        — settings via envy
+  error.rs         — thiserror error types
+  routes/          — HTTP handlers
+  services/        — business logic
+  db/              — database access
+migrations/        — SQL migration files
 ```
 
-## Structure (Workspace / Multi-Crate)
+## Naming
 
-For larger projects, use a Cargo workspace with focused crates:
+- `as_` (cheap ref-to-ref), `to_` (expensive new value), `into_` (ownership-consuming).
+- Getters are the field name: `fn name(&self)` not `fn get_name()`.
+- No Hungarian notation. Feature names without placeholders: `json` not `enable-json`.
 
-```
-Cargo.toml                 — [workspace] with members
-crates/
-  project-core/            — shared types, error types, entity model
-  project-api/             — Axum routes, middleware, SSE streaming
-  project-ingest/          — data pipeline, parsers, source connectors
-  project-search/          — search indexing and query
-  project-cli/             — CLI entry point (clap)
-```
+## Common Pitfalls
 
-- Use `[workspace.dependencies]` to pin shared dependency versions once.
-- Share types via the `-core` crate — other crates depend on it.
-- Use `pub(crate)` for internal helpers; only `pub` what other crates need.
-- Each crate should have a single clear responsibility — if a crate does two unrelated things, split it.
-
-## Always
-
-- Run `cargo clippy` and `cargo test` before committing.
-- Use `#[must_use]` on functions where ignoring the return value is likely a bug.
-- Derive `Debug` on all public types.
-
-## Never
-
-- Use `.unwrap()` in production code — use `?` or `.expect("reason")`.
-- Use `unsafe` without a `// SAFETY:` comment explaining the invariant.
-- Suppress clippy warnings without documented reason.
+- Don't use `String` when `&str` suffices — pass borrowed, return owned.
+- Don't default to `i32` for indexing — `usize` is the indexing type.
+- Don't use `std::sync::Mutex` in async code — blocks the thread.
+- Don't overchain iterators past 3-4 transformations — a `for` loop is clearer.
+- Don't initialize-after-construct — objects should be usable when created.
+- Don't use `Box<dyn Error>` — use `anyhow::Error` or typed `thiserror` enum.
+- `Vec::with_capacity(n)` / `String::with_capacity(n)` when size is known.
 
 ## Ask First
 
 - Adding new dependencies.
 - Changing database schema.
 - Using `unsafe` code.
-- Deleting files.

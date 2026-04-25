@@ -34,6 +34,27 @@ alwaysApply: false
 - **structlog** for logging — never stdlib `logging` or `loguru`.
 - `dataclass` for internal data structures, Pydantic for external/API data.
 
+## Cross-Cutting Concerns
+
+Use decorators for orthogonal behavior — keep business logic clean:
+
+```python
+@timed("operation_name")                # OTEL span with duration
+@retry(on=httpx.TransportError)         # stamina retry with structlog
+@cached(TTLCache(maxsize=256, ttl=300)) # cachetools TTL cache
+```
+
+## Async Patterns
+
+- Prefer `asyncio.TaskGroup()` over `asyncio.gather()` — structured concurrency, proper cancellation.
+- `asyncio.Semaphore` for bounding concurrent external calls.
+- Correlate requests via `X-Request-ID` header + `contextvars.ContextVar`.
+
+## Settings
+
+- Pydantic Settings (`BaseSettings`) as single config source. Access via `@lru_cache` singleton.
+- No inline `os.getenv()` in business logic — all config through the settings object.
+
 ## Always
 
 - Run `just check` before committing.

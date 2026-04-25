@@ -1,0 +1,73 @@
+---
+description: Universal testing taxonomy — cost-aware tiers, pytest markers, affectedness-based selection
+alwaysApply: false
+---
+
+# Testing Process
+
+## Cost-Aware Test Taxonomy
+
+| Tier | Placement | Cost | Examples |
+|------|-----------|------|----------|
+| Free | Hooks + CI | $0 | Unit, contract, schema validation |
+| Cheap | CI-blocking on push | ~$0.10 | Compliance, snapshot, cached API calls |
+| Expensive | Release-gate / manual | ~$7+ | LLM-as-judge evals, quality/taste |
+| Very Expensive | Manual only, never CI | $1+ per run | Full model-backed agent tests |
+
+Free tests must be deterministic, fast, and make no external calls.
+Cheap tests may call external APIs with mocked or cached responses.
+Expensive and very expensive tests require explicit invocation.
+
+## Pytest Marker Convention
+
+| Marker | Meaning |
+|--------|---------|
+| `@pytest.mark.unit` | Deterministic, no external calls, <100ms |
+| `@pytest.mark.integration` | Real dependencies (DB, API, filesystem) |
+| `@pytest.mark.slow` | Exclude from default and hook runs |
+| `@pytest.mark.model` | LLM-backed, manual only, costs money |
+| `@pytest.mark.compliance` | Regulatory or contract tests |
+
+Default test runs should exclude `slow` and `model`:
+
+```ini
+# pyproject.toml
+[tool.pytest.ini_options]
+addopts = "-m 'not slow and not model'"
+```
+
+## Test Placement
+
+```
+tests/
+  unit/          # Colocated or mirror of src structure
+  integration/   # Real dependencies, network, DB
+  quality/       # LLM-as-judge evals, taste tests
+  model/         # Full model-backed tests (gitignore results)
+```
+
+Add `tests/model/results/` to `.gitignore` — results contain LLM output and are non-deterministic.
+
+## Affectedness-Based Selection
+
+For monorepos, map changed paths to test scopes instead of running everything:
+
+1. Detect changed files from the diff.
+2. Map each path to its owning scope (package, service, module).
+3. Run only tests for affected scopes.
+4. If core/shared code changed, run the full suite.
+
+```
+# Conceptual mapping
+src/auth/**     → tests/unit/auth/ + tests/integration/auth/
+src/core/**     → tests/  (core change = run all)
+src/billing/**  → tests/unit/billing/ + tests/integration/billing/
+```
+
+## Principles
+
+- **Test behavior, not implementation.** Tests should survive refactors.
+- **Prefer real dependencies over mocks.** A mock that passes while prod breaks is worse than no test.
+- **Every bug fix gets a regression test.** No fix without proof it failed before.
+- **Don't test framework code.** Trust your dependencies; test your logic.
+- **Fast tests run often; slow tests run deliberately.** Hooks run free tests. CI runs cheap tests. Humans trigger the rest.

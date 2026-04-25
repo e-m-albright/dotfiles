@@ -1,8 +1,3 @@
----
-description: Python stack decisions — tool choices, rationale, installation phases
-alwaysApply: false
----
-
 # Python Stack Decisions
 
 ## Phase 1 — Every Project
