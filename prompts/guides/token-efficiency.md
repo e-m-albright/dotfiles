@@ -183,6 +183,32 @@ Claude Code's design validates these findings:
 
 ---
 
+## Deferred Plugins (Revisit List)
+
+Disabled 2026-04-25 to reduce per-session token overhead. All still installed. Re-enable per-session with `/plugin enable <name>` or move back to always-on if the friction isn't worth the savings.
+
+| Plugin | What It Does | Re-enable When |
+|--------|-------------|----------------|
+| **feature-dev** | Guided feature development with codebase understanding | Starting a new feature |
+| **code-review** | PR code review | Reviewing PRs |
+| **code-simplifier** | Post-implementation cleanup | After finishing implementation |
+| **pr-review-toolkit** | Comprehensive PR review (5+ sub-agents) | PR creation or review |
+| **claude-md-management** | CLAUDE.md audit and improvement | Maintaining CLAUDE.md files |
+| **claude-code-setup** | Automation recommender for Claude Code | Setting up new projects |
+| **agent-sdk-dev** | Agent SDK app development | Building SDK apps |
+| **frontend-design** | Production-grade frontend interfaces | UI/frontend work |
+| **playground** | Interactive HTML playgrounds | Creating explorers/tools |
+| **security-guidance** | Security review guidance | Security review sessions |
+| **explanatory-output-style** | Educational insights in every response | Learning/onboarding sessions |
+| **data-engineering** | Airflow/pipeline management (20+ skills) | Data pipeline work |
+| **notion** | Notion MCP integration | Using Notion |
+
+**Gap**: Claude Code has no automatic plugin routing (detect task type, load relevant plugins). This is manual. If a plugin is needed >30% of sessions, it should be always-on. Revisit after 2-4 weeks of use to see which ones you keep re-enabling.
+
+**Ideal future**: A lightweight hook or router that detects task type from the first user message and enables relevant plugins automatically. Similar to how Claude Code already defers tool schemas.
+
+---
+
 ## Actionable Audit Prompt
 
 Use this prompt to audit and prune a project's AI configuration for efficiency. Adapt the repo name as needed.
