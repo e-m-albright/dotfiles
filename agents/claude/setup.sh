@@ -163,6 +163,7 @@ setup_mcp() {
     local managed_keys
     managed_keys=$(jq '[
         to_entries
+        | map(select(.value | type == "object"))
         | map(select(.value.targets | index("claude")))
         | .[].key
     ]' "$shared_mcp")
@@ -170,6 +171,7 @@ setup_mcp() {
     local mcp_servers
     mcp_servers=$(jq --argjson skip "$skip_json" --arg profile "$DOTFILES_PROFILE" '
         to_entries
+        | map(select(.value | type == "object"))
         | map(select(.value.targets | index("claude")))
         | map(select(.value.profiles | index($profile)))
         | map(select(.key as $k | $skip | index($k) | not))
@@ -213,6 +215,7 @@ setup_desktop() {
         local managed_keys
         managed_keys=$(jq '[
             to_entries
+            | map(select(.value | type == "object"))
             | map(select(.value.targets | (index("claude") or index("desktop"))))
             | .[].key
         ]' "$shared_mcp")
@@ -220,6 +223,7 @@ setup_desktop() {
         local mcp_servers
         mcp_servers=$(jq --argjson skip "$skip_json" --arg profile "$DOTFILES_PROFILE" '
             to_entries
+            | map(select(.value | type == "object"))
             | map(select(.value.targets | (index("claude") or index("desktop"))))
             | map(select(.value.profiles | index($profile)))
             | map(select(.key as $k | $skip | index($k) | not))

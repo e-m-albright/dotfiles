@@ -292,6 +292,11 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Neon** | ~~MCP~~ (disabled) | — | — | — | Neon Postgres; revisit when actively using Neon projects |
 | **Granola** | MCP (`granola-mcp` via `uvx`) | yes | — | — | Meeting notes (reads local cache, no API key) |
 | **Notion** | MCP | yes | yes | yes | Via shared MCP servers |
+| **Playwright** | MCP (`@playwright/mcp`) | yes | yes | yes | Tier 3a — drive a real page, screenshot, click, network. WebRTC-capable. |
+| **Chrome DevTools** | MCP (`chrome-devtools-mcp`) | yes | yes | yes | Tier 4 — Chrome-only forensics: network, console, perf traces |
+| **agent-browser** | CLI (`agent-browser`) | yes | yes | yes | Tier 2 — token-cheap (~200-400/page) "look at this page" CLI. No MCP overhead. |
+| **pinchtab** | CLI (`pinchtab`) | yes | yes | yes | Tier 2 — accessibility-tree extraction (~800 tokens/page). HTTP API. |
+| **Stagehand** | per-project SDK (`@browserbasehq/stagehand`) | yes | yes | yes | Tier 5 — natural-language test framework for long agentic flows. Install per-project. |
 | **Gmail** | claude.ai cloud MCP | yes | — | — | Claude Code only (not reproducible in config) |
 | **Google Calendar** | claude.ai cloud MCP | yes | — | — | Claude Code only (not reproducible in config) |
 
@@ -316,7 +321,8 @@ Setup is automated via `dotfiles agent-setup` (also runs during install):
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
 - **Skills**: `scaffold-project`, `dotfiles-doctor`
 - **Agents**: `shellcheck-reviewer`
-- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion (standalone); Context7, Playwright (via plugins)
+- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion, Playwright, Chrome DevTools (standalone); Context7 (via plugin)
+- **Browser-tool tiers**: See `prompts/guides/browser-tooling.md` — when to reach for Playwright tests (Tier 1), agent-browser/pinchtab CLIs (Tier 2), Playwright/Chrome DevTools MCPs (Tier 3-4), or Stagehand (Tier 5)
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
 - **Preferences**: Voice mode, terminal bell, acceptEdits mode
 - **Desktop**: MCP servers + preferences (cowork, sidebar, web search)

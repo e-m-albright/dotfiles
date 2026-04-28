@@ -33,5 +33,17 @@
     },
     "targets": ["cursor"],
     "profiles": ["work"]
+  },
+  "playwright": {
+    "command": "npx",
+    "args": ["-y", "@playwright/mcp@latest"],
+    "targets": ["claude", "cursor", "codex"],
+    "profiles": ["personal", "work"]
+  },
+  "chrome-devtools": {
+    "command": "npx",
+    "args": ["-y", "chrome-devtools-mcp@latest"],
+    "targets": ["claude", "cursor", "codex"],
+    "profiles": ["personal", "work"]
   }
 }

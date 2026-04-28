@@ -379,6 +379,29 @@ if [[ "$AI" == "1" ]]; then
                 print_pkg_fail "jules (@google/jules)"
             fi
         fi
+
+        # Browser-automation CLIs for AI agents (Tier 2 — shell out, no MCP overhead)
+        if command -v agent-browser >/dev/null 2>&1; then
+            print_pkg_installed "agent-browser"
+        else
+            print_pkg_installing "agent-browser"
+            if npm install -g agent-browser 2>&1; then
+                print_pkg_done "agent-browser"
+            else
+                print_pkg_fail "agent-browser"
+            fi
+        fi
+
+        if command -v pinchtab >/dev/null 2>&1; then
+            print_pkg_installed "pinchtab"
+        else
+            print_pkg_installing "pinchtab"
+            if npm install -g pinchtab 2>&1; then
+                print_pkg_done "pinchtab"
+            else
+                print_pkg_fail "pinchtab"
+            fi
+        fi
     else
         print_warn "npm not found — skipping npm-based AI tools (install Node.js first)"
     fi

@@ -67,6 +67,7 @@ setup_mcp() {
     local managed_keys
     managed_keys=$(jq '[
         to_entries
+        | map(select(.value | type == "object"))
         | map(select(.value.targets | index("cursor")))
         | .[].key
     ]' "$SHARED_DIR/mcp-servers.json")
@@ -74,6 +75,7 @@ setup_mcp() {
     local shared_servers
     shared_servers=$(jq --argjson skip "$skip_json" --arg profile "$DOTFILES_PROFILE" '{mcpServers: (
         to_entries
+        | map(select(.value | type == "object"))
         | map(select(.value.targets | index("cursor")))
         | map(select(.value.profiles | index($profile)))
         | map(select(.key as $k | $skip | index($k) | not))

@@ -63,3 +63,4 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 - `prompts/guides/project-memory.md` -- Decision organization system
 - `prompts/guides/ml-python.md` -- Python ML/data science patterns
 - `prompts/guides/token-efficiency.md` -- LLM token efficiency, task decomposition, model routing
+- `prompts/guides/browser-tooling.md` -- Tiered browser/UI tools (Playwright tests, agent-browser, pinchtab, Playwright MCP, Chrome DevTools MCP, Stagehand)
