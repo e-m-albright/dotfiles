@@ -1,28 +1,41 @@
 ---
-description: Where agents store working files, plans, and decisions
+description: Where agents store working files, plans, and decisions — three zones
 alwaysApply: true
 ---
 
-# Agent Artifacts
+# Artifact Placement
 
-## Golden Rule
+Three zones. Pick the right one.
 
-All intermediate agent output goes in `.agents/` — never scatter files in the project root or `src/`.
+| Zone | Path | When |
+|------|------|------|
+| **Durable docs (tracked)** | `docs/{architecture,engineering,strategy,roadmap,runbooks,...}/` | Decisions, rationale, principles, roadmaps that must outlive any one session |
+| **In-flight specs/plans (tracked)** | `docs/specs/`, `docs/plans/` | Design specs and implementation plans for active work. Pruned when the work ships — load-bearing rationale graduates into a durable doc, the rest is deleted |
+| **Ephemeral working files (gitignored)** | `.ai/artifacts/{prompts,research,sessions}/` | Session-specific notes, ad-hoc prompts, conversation logs, audit outputs |
 
-## File Placement
+Date-prefix everything: `YYYY-MM-DD-description.md`.
 
-| What | Where | Versioned? |
-|------|-------|-----------|
-| Implementation plans | `.agents/plans/` | No (gitignored) |
-| Research & investigation | `.agents/research/` | No (gitignored) |
-| Architecture decisions (ADRs) | `.agents/decisions/` | **Yes** (committed) |
-| Conversation logs | `.agents/sessions/` | No (gitignored) |
-| Scratch/temp files | `.agents/` root | No (gitignored) |
+## Where decisions live (in priority order)
 
-## Conventions
+1. **In code, self-evident** — preferred. Names, types, structure, comments at the WHY-is-non-obvious level.
+2. **In `docs/`** when code can't carry the load (philosophy, cross-cutting rationale, architectural commitments, roadmap).
+3. **In `docs/specs/` or `docs/plans/`** while the work is in flight. Once shipped, fold the load-bearing rationale into a `docs/` doc and delete the spec/plan, OR just delete it because code+commits+memory are sufficient.
 
-- Date-prefix files: `YYYY-MM-DD-description.md`.
-- Write an ADR in `.agents/decisions/` for significant architectural choices.
-- Clean up working files when they're incorporated or abandoned.
-- Never create top-level files like `debug.md`, `notes.txt`, `TODO.md` — use `.agents/`.
-- Domain documentation belongs in `docs/` (versioned), not `.agents/` (ephemeral).
+## What does NOT go in `.ai/artifacts/`
+
+- Reusable prompts → `.ai/prompts/`
+- Coding conventions / project rules → `.ai/rules/`
+- Skill definitions → `.ai/skills/`
+- Anything tracked-and-durable → `docs/`
+- Active specs/plans → `docs/specs/` or `docs/plans/`
+
+## Litmus test
+
+"Will an agent six months from now benefit from reading this?"
+- **Yes, and code/commits don't carry the rationale** → `docs/`
+- **Yes, but only because the work is in flight right now** → `docs/specs/` or `docs/plans/`
+- **No** → `.ai/artifacts/` (or just don't write the file)
+
+## No long-term archive
+
+There is no `.ai/artifacts/archive/`. Past attempts to keep a "decisions archive" or "historical narrative" directory rotted into drift. The git log + memory entries + current docs are the historical record.

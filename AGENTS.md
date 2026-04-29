@@ -13,7 +13,10 @@ This is a personal dotfiles and development environment configuration repo. It m
 - `agents/cursor/` -- Cursor MCP servers, rules, hooks, universal rule deployment
 - `agents/shared/` -- Shared agentic config (MCP servers, tool registry, rules, ignore patterns)
 - `.ai/rules/` -- Cross-vendor AI rules (process, languages, frameworks, tooling)
-- `prompts/` -- Scaffolding recipes, templates, and reference guides (`.ai/artifacts/` in projects)
+- `.ai/prompts/` -- Reusable, versioned audit/review prompts (universal, language-agnostic templates)
+- `.ai/skills/` -- Universal skill definitions (graded `code-quality-audit`, others)
+- `.ai/artifacts/` -- **gitignored** ephemeral working files (research notes, audit raw outputs, session logs)
+- `prompts/` -- Scaffolding recipes, templates, and reference guides
 
 ## This Repo
 
@@ -64,3 +67,5 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 - `prompts/guides/ml-python.md` -- Python ML/data science patterns
 - `prompts/guides/token-efficiency.md` -- LLM token efficiency, task decomposition, model routing
 - `prompts/guides/browser-tooling.md` -- Tiered browser/UI tools (Playwright tests, agent-browser, pinchtab, Playwright MCP, Chrome DevTools MCP, Stagehand)
+- `docs/engineering-philosophy.md` -- 12 universal principles for code health (compiler-first, type the domain, single source of truth, etc.)
+- `docs/specs/2026-04-28-ophira-backport.md` -- Active backport plan: which Ophira patterns are landing here, in what order

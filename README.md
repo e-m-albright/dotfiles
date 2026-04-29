@@ -417,11 +417,19 @@ dotfiles/
 │   ├── codex/              # Codex CLI setup (config.toml, hooks, skills)
 │   └── cursor/             # Cursor plugin (hooks, skills, universal rules)
 ├── macos/                  # Homebrew, Dock, SSH, print utilities
-├── .ai/rules/              # Cross-vendor AI rules (canonical source)
-│   ├── process/            # Universal: safety, style, workflow
-│   ├── languages/          # Language ergonomics: TS, Python, Go, Rust
-│   ├── frameworks/         # Framework patterns: SvelteKit, Astro, FastAPI, etc.
-│   └── tooling/            # Stack decisions: Pick/Avoid tables, services
+├── .ai/                    # Cross-vendor AI authoring
+│   ├── rules/              #   canonical rule library
+│   │   ├── process/        #     Universal: safety, style, workflow, artifact placement
+│   │   ├── languages/      #     Language ergonomics: TS, Python, Go, Rust
+│   │   ├── frameworks/     #     Framework patterns: SvelteKit, Astro, FastAPI, etc.
+│   │   └── tooling/        #     Stack decisions: Pick/Avoid tables, services
+│   ├── prompts/            #   Reusable audit/review prompts (versioned)
+│   │   └── audits/         #     Universal: god-functions, abstractions, coupling, duplication
+│   ├── skills/             #   Universal skill definitions (code-quality-audit)
+│   └── artifacts/          #   Ephemeral working files (gitignored)
+├── docs/
+│   ├── engineering-philosophy.md  # 12 universal principles
+│   └── specs/              #   In-flight design specs and plans
 └── prompts/                # Project scaffolding
     ├── scaffold.sh         # Deploy rules + templates to projects
     ├── guides/             # Reference docs (not deployed to projects)

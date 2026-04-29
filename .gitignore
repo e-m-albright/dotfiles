@@ -59,3 +59,9 @@ ehthumbs.db
 # -----------------------------------------------------------------------------
 agents/cursor/rules/
 editors/cursor/.cursorignore
+
+# -----------------------------------------------------------------------------
+# Ephemeral agent working files (durable artifacts go in docs/)
+# See: .ai/rules/process/artifact-placement.mdc
+# -----------------------------------------------------------------------------
+.ai/artifacts/
