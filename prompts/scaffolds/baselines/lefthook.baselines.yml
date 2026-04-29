@@ -1,0 +1,17 @@
+# Lefthook fragment for the baselines ratchet. Merge this into your project's
+# lefthook.yml (do not commit this file as-is unless your project has no
+# existing lefthook config).
+#
+# Install: brew install lefthook && lefthook install
+# Test:    lefthook run pre-commit baselines
+
+pre-commit:
+  parallel: true
+  commands:
+    baselines:
+      glob:
+        - "src/**/*"
+        - "lib/**/*"
+        - "app/**/*"
+        - "baselines.json"
+      run: python3 scripts/check_baselines.py

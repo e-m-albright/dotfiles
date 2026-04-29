@@ -35,6 +35,8 @@ AI_RULES_DIR="$DOTFILES_DIR/.ai/rules"
 
 FORCE=false
 SCAFFOLD_TOOLS="cursor"
+WITH_AUDIT_PIPELINE=false
+WITH_BASELINES=false
 
 # Source shared print functions
 source "$DOTFILES_DIR/macos/print_utils.sh"
@@ -271,6 +273,11 @@ Arguments:
                  Use "all" for every tool in the registry.
                  Available: cursor, copilot, gemini, codex
                  Can appear before recipe, after recipe, or after project path.
+  --with-audit-pipeline   Deploy scripts/audit/, just/audit/, and .ai/prompts/audits/
+                          (security + ai-usage tooling, two-phase audit pattern)
+  --with-baselines        Deploy baselines.json + scripts/check_baselines.py
+                          (code-health ratchet, monotonic decrease only)
+  --with-code-health      Shorthand for --with-audit-pipeline + --with-baselines
   recipe         Recipe to use: typescript, python, golang, rust
   app-type       Optional framework type (defaults per recipe)
   project-path   Path to project (creates if doesn't exist)
@@ -290,6 +297,8 @@ Examples:
   $(basename "$0") --force python .          # force regenerate all
   $(basename "$0") python my-api --tools copilot,gemini
   $(basename "$0") --tools all python my-api
+  $(basename "$0") --with-code-health typescript my-app
+  $(basename "$0") python my-api --with-audit-pipeline
 
 What Gets Created (idempotent — skips existing):
   AGENTS.md                  # Project instructions + context (project-owned)
@@ -383,6 +392,19 @@ while [[ $# -gt 0 ]]; do
                 SCAFFOLD_TOOLS="cursor,$2"
             fi
             shift 2
+            ;;
+        --with-audit-pipeline)
+            WITH_AUDIT_PIPELINE=true
+            shift
+            ;;
+        --with-baselines)
+            WITH_BASELINES=true
+            shift
+            ;;
+        --with-code-health)
+            WITH_AUDIT_PIPELINE=true
+            WITH_BASELINES=true
+            shift
             ;;
         -h|--help)
             show_help
@@ -797,6 +819,51 @@ GITIGNORE_ARTIFACTS
 }
 
 update_gitignore
+
+# ---- Optional: audit pipeline scaffold ----
+if [[ "$WITH_AUDIT_PIPELINE" == true ]]; then
+    echo ""
+    echo -e "${BLUE}Deploying audit pipeline scaffold...${NC}"
+    audit_src="$PROMPTS_DIR/scaffolds/audit-pipeline"
+    mkdir -p scripts/audit just/audit .ai/prompts/audits
+    for f in scripts/audit/security.sh scripts/audit/ai_usage.py just/audit/mod.just \
+             .ai/prompts/audits/security.md .ai/prompts/audits/ai-usage.md; do
+        if [[ -f "$f" ]] && [[ "$FORCE" != true ]]; then
+            print_skip "$f"
+        else
+            cp "$audit_src/$f" "$f"
+            case "$f" in
+                *.sh|*.py) chmod +x "$f" ;;
+            esac
+            print_step "Deployed $f"
+        fi
+    done
+fi
+
+# ---- Optional: baselines (code-health ratchet) ----
+if [[ "$WITH_BASELINES" == true ]]; then
+    echo ""
+    echo -e "${BLUE}Deploying baselines (code-health ratchet)...${NC}"
+    baselines_src="$PROMPTS_DIR/scaffolds/baselines"
+    mkdir -p scripts
+    if [[ -f "baselines.json" ]] && [[ "$FORCE" != true ]]; then
+        print_skip "baselines.json"
+    else
+        cp "$baselines_src/baselines.json" baselines.json
+        print_step "Deployed baselines.json"
+    fi
+    if [[ -f "scripts/check_baselines.py" ]] && [[ "$FORCE" != true ]]; then
+        print_skip "scripts/check_baselines.py"
+    else
+        cp "$baselines_src/scripts/check_baselines.py" scripts/check_baselines.py
+        chmod +x scripts/check_baselines.py
+        print_step "Deployed scripts/check_baselines.py"
+    fi
+    if [[ ! -f "lefthook.baselines.yml" ]]; then
+        cp "$baselines_src/lefthook.baselines.yml" lefthook.baselines.yml
+        print_step "Deployed lefthook.baselines.yml (fragment — merge into lefthook.yml)"
+    fi
+fi
 
 # Update package.json or pyproject.toml with project name (only for new projects)
 if [[ "$IS_NEW_PROJECT" == true ]]; then

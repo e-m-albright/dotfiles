@@ -32,15 +32,15 @@ Additive, low-risk changes that ingest the most-portable parts of the Ophira sys
 - [x] `docs/engineering-philosophy.md` — 12 universal principles distilled from Ophira's manifesto
 - [x] AGENTS.md / README.md updates pointing at new structure
 
-### Phase 2 — scaffold integration (next session)
+### Phase 2 — scaffold integration (DONE)
 
-Make `prompts/scaffold.sh` produce projects with this structure baked in.
+Made `prompts/scaffold.sh` opt-in deploy the audit pipeline + baselines.
 
-- [ ] `prompts/scaffolds/ai-folder/` template (artifacts/, prompts/, skills/, rules/)
-- [ ] `prompts/scaffolds/audit-pipeline/` — `scripts/audit/security.sh`, `scripts/audit/ai_usage.py`, `just/audit/mod.just` stubs
-- [ ] `prompts/scaffolds/baselines/` — `baselines.json` template + checker stub + lefthook integration
-- [ ] `scaffold.sh` flag: `--with-audit-pipeline` to opt into the heavier setup
-- [ ] Frontmatter validator: `scripts/audit/ai_usage.py` adapted to be project-portable
+- [x] `prompts/scaffolds/audit-pipeline/` — portable `security.sh`, `ai_usage.py`, `just/audit/mod.just`, plus `.ai/prompts/audits/` (security, ai-usage, plus the 4 universal structural prompts mirrored from Phase 1)
+- [x] `prompts/scaffolds/baselines/` — `baselines.json` template, project-portable `check_baselines.py` (rg-first, grep fallback, METRICS table), `lefthook.baselines.yml` fragment
+- [x] `scaffold.sh` flags: `--with-audit-pipeline`, `--with-baselines`, `--with-code-health` (both)
+- [x] Frontmatter validator (`ai_usage.py`) — runs on dotfiles itself; caught my Phase 1 audit prompts missing frontmatter (now fixed)
+- [ ] Deferred: `prompts/scaffolds/ai-folder/` template — current `scaffold.sh` already creates the right `.ai/` shape; left as TODO if/when we add the universal audit prompts to every new project automatically
 
 ### Phase 3 — dotfiles' own enforcement (deferred)
 
