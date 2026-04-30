@@ -427,9 +427,6 @@ dotfiles/
 │   │   └── audits/         #     Universal: god-functions, abstractions, coupling, duplication
 │   ├── skills/             #   Canonical skill source — agents/<vendor>/skills/<name> are symlinks here
 │   └── artifacts/          #   Ephemeral working files (gitignored)
-├── baselines.json          # Code-health ratchet (counts + file ceilings)
-├── scripts/
-│   └── check_baselines.py  #   Pre-commit ratchet validator (--auto-ratchet to lock improvements)
 ├── docs/
 │   ├── engineering-philosophy.md  # 12 universal principles
 │   └── specs/              #   In-flight design specs and plans

@@ -33,7 +33,6 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 - `README.md` documents user-facing features. When adding/removing/renaming commands, packages, or config, update the README in the same commit.
 - `.ai/rules/` is the canonical rule library. Universal process rules (`process/*.mdc`) deploy to user-level via setup scripts (symlinked). Recipe rules are copied into projects by `scaffold.sh`.
 - `.ai/skills/` is the canonical skill library. Each `agents/<vendor>/skills/<name>` is a symlink — edit the canonical version. Vendor-only skills (rare) stay as real dirs in `agents/<vendor>/skills/`.
-- `baselines.json` + `scripts/check_baselines.py` are the code-health ratchet. The pre-commit hook fails if any count or file ceiling regresses. Run `python3 scripts/check_baselines.py --auto-ratchet` after a cleanup to lock in improvements.
 - `prompts/guides/skills/*.md` are implementation references that complement `.ai/rules/`. They should stay consistent with each other.
 - `agents/shared/tool-targets.json` is the tool discovery registry. Adding a new AI tool means adding a JSON entry, not writing code.
 

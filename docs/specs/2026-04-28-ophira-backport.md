@@ -42,15 +42,10 @@ Made `prompts/scaffold.sh` opt-in deploy the audit pipeline + baselines.
 - [x] Frontmatter validator (`ai_usage.py`) — runs on dotfiles itself; caught my Phase 1 audit prompts missing frontmatter (now fixed)
 - [ ] Deferred: `prompts/scaffolds/ai-folder/` template — current `scaffold.sh` already creates the right `.ai/` shape; left as TODO if/when we add the universal audit prompts to every new project automatically
 
-### Phase 3 — dotfiles' own enforcement (DONE)
+### Phase 3 — dotfiles' own enforcement
 
-Applied the patterns to dotfiles itself.
-
-- [x] `baselines.json` at repo root — `todo_total: 0`, `hardcoded_user_path: 0`, file ceilings on the 7 largest scripts (auto-ratcheted to current values: scaffold.sh=1056, claude/setup.sh=568, test_scaffold.sh=480, brew.sh=408, install.sh=360, codex/setup.sh=223, cursor/setup.sh=217)
-- [x] `scripts/check_baselines.py` — dotfiles-specific METRICS (bash-flavoured, excludes scaffold templates and worktree mirrors so generated TODO strings don't trip the ratchet)
-- [x] `lefthook.yml` — added `baselines` pre-commit step alongside existing shellcheck/yaml-lint/json-lint
 - [x] Cross-tool skill refactor — `.ai/skills/` is now canonical; the 9 universal skills moved there once. Each `agents/{claude,cursor,codex}/skills/<universal>` is a symlink to `../../../.ai/skills/<universal>`. Vendor-only skills (claude's `agents-overview`) stay as real dirs. Setup scripts unchanged — they walk `agents/<vendor>/skills/*/SKILL.md` and the symlinks resolve transparently. Eliminated ~24 duplicate SKILL.md copies.
-- [ ] Deferred: periodic code-health audit on dotfiles via the `agents-overview` skill — needs the extension hook design first.
+- [x] Skipped: `baselines.json` + ratchet hooks. The pattern lives in `prompts/scaffolds/baselines/` for projects that adopt it, but dotfiles itself has nothing to ratchet on (current anti-pattern counts are zero, file ceilings would be arbitrary snapshots). Scaffolds ship the pattern; dotfiles isn't the kind of repo it's designed for.
 
 ## What we're not bringing over
 
