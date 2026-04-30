@@ -28,3 +28,8 @@ pre-commit:
         for f in {staged_files}; do
           jq '.' "$f" >/dev/null 2>&1 || echo "Invalid JSON: $f"
         done
+    baselines:
+      # Code-health ratchet. Counts can only decrease; file ceilings can only
+      # decrease. Run `python3 scripts/check_baselines.py --auto-ratchet` to
+      # lock in improvements after a cleanup. See docs/engineering-philosophy.md.
+      run: python3 scripts/check_baselines.py

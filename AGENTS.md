@@ -14,7 +14,7 @@ This is a personal dotfiles and development environment configuration repo. It m
 - `agents/shared/` -- Shared agentic config (MCP servers, tool registry, rules, ignore patterns)
 - `.ai/rules/` -- Cross-vendor AI rules (process, languages, frameworks, tooling)
 - `.ai/prompts/` -- Reusable, versioned audit/review prompts (universal, language-agnostic templates)
-- `.ai/skills/` -- Universal skill definitions (graded `code-quality-audit`, others)
+- `.ai/skills/` -- Canonical skill source (universal). `agents/<vendor>/skills/<name>/` is a symlink to `.ai/skills/<name>/`. Vendor-specific skills (e.g. `agents/claude/skills/agents-overview/`) live as real dirs under their vendor.
 - `.ai/artifacts/` -- **gitignored** ephemeral working files (research notes, audit raw outputs, session logs)
 - `prompts/` -- Scaffolding recipes, templates, and reference guides
 
@@ -32,6 +32,8 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 - `brew.sh` package lists are the source of truth for what's installed. `bin/dotfiles doctor` and `bin/dotfiles stale` must stay in sync with these lists.
 - `README.md` documents user-facing features. When adding/removing/renaming commands, packages, or config, update the README in the same commit.
 - `.ai/rules/` is the canonical rule library. Universal process rules (`process/*.mdc`) deploy to user-level via setup scripts (symlinked). Recipe rules are copied into projects by `scaffold.sh`.
+- `.ai/skills/` is the canonical skill library. Each `agents/<vendor>/skills/<name>` is a symlink — edit the canonical version. Vendor-only skills (rare) stay as real dirs in `agents/<vendor>/skills/`.
+- `baselines.json` + `scripts/check_baselines.py` are the code-health ratchet. The pre-commit hook fails if any count or file ceiling regresses. Run `python3 scripts/check_baselines.py --auto-ratchet` after a cleanup to lock in improvements.
 - `prompts/guides/skills/*.md` are implementation references that complement `.ai/rules/`. They should stay consistent with each other.
 - `agents/shared/tool-targets.json` is the tool discovery registry. Adding a new AI tool means adding a JSON entry, not writing code.
 

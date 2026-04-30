@@ -1,7 +1,7 @@
 # Ophira → Dotfiles Backport
 
 **Date**: 2026-04-28
-**Status**: Phase 1 in progress; Phases 2–3 deferred for review.
+**Status**: Phases 1, 2, and 3 shipped.
 
 Ophira (`~/code/private/ophira`) has matured an agentic-programming foundation that's measurably better than dotfiles' current scaffolding. This spec captures what to bring back, in what order, and what to leave behind.
 
@@ -42,14 +42,15 @@ Made `prompts/scaffold.sh` opt-in deploy the audit pipeline + baselines.
 - [x] Frontmatter validator (`ai_usage.py`) — runs on dotfiles itself; caught my Phase 1 audit prompts missing frontmatter (now fixed)
 - [ ] Deferred: `prompts/scaffolds/ai-folder/` template — current `scaffold.sh` already creates the right `.ai/` shape; left as TODO if/when we add the universal audit prompts to every new project automatically
 
-### Phase 3 — dotfiles' own enforcement (deferred)
+### Phase 3 — dotfiles' own enforcement (DONE)
 
-Apply the patterns to dotfiles itself.
+Applied the patterns to dotfiles itself.
 
-- [ ] `dotfiles/baselines.json` — initial counts (small repo, mostly bash)
-- [ ] `lefthook.yml` ratchet hooks
-- [ ] Periodic code-health audit on dotfiles via `dotfiles agents-overview` extension
-- [ ] Cross-tool symlink refactor — `.ai/skills/` → `~/.claude/skills/`, `~/.cursor/skills/` (Phase 2 prerequisite)
+- [x] `baselines.json` at repo root — `todo_total: 0`, `hardcoded_user_path: 0`, file ceilings on the 7 largest scripts (auto-ratcheted to current values: scaffold.sh=1056, claude/setup.sh=568, test_scaffold.sh=480, brew.sh=408, install.sh=360, codex/setup.sh=223, cursor/setup.sh=217)
+- [x] `scripts/check_baselines.py` — dotfiles-specific METRICS (bash-flavoured, excludes scaffold templates and worktree mirrors so generated TODO strings don't trip the ratchet)
+- [x] `lefthook.yml` — added `baselines` pre-commit step alongside existing shellcheck/yaml-lint/json-lint
+- [x] Cross-tool skill refactor — `.ai/skills/` is now canonical; the 9 universal skills moved there once. Each `agents/{claude,cursor,codex}/skills/<universal>` is a symlink to `../../../.ai/skills/<universal>`. Vendor-only skills (claude's `agents-overview`) stay as real dirs. Setup scripts unchanged — they walk `agents/<vendor>/skills/*/SKILL.md` and the symlinks resolve transparently. Eliminated ~24 duplicate SKILL.md copies.
+- [ ] Deferred: periodic code-health audit on dotfiles via the `agents-overview` skill — needs the extension hook design first.
 
 ## What we're not bringing over
 
@@ -59,8 +60,8 @@ Apply the patterns to dotfiles itself.
 - Ophira's specific tech-stack rules (Axum, PydanticAI, SvelteKit-specific patterns) — those already exist in dotfiles' `.ai/rules/frameworks/`
 - Ophira's recurring trigger schedule — needs per-project tuning, not a universal default
 
-## Open questions
+## Resolved questions
 
-- **Symlink vs. copy for `.ai/skills/`**: Ophira symlinks. Dotfiles currently mirrors files between `agents/claude/skills/` and `agents/cursor/skills/` (manually duplicated). Symlinks would deduplicate at the cost of harder-to-edit state. Defer to Phase 2.
-- **Should `code-quality-audit` skill ship with dotfiles or only be scaffolded into projects?** Phase 1 puts it in `.ai/skills/` so any Claude Code session in any directory can invoke it. Phase 2 may also stamp it into new projects.
-- **Frontmatter validator**: Worth porting now or wait for the audit pipeline scaffold? Deferred to Phase 2 since dotfiles has only a handful of `.mdc` files.
+- **Symlink vs. copy for `.ai/skills/`**: Resolved — symlinks. Phase 3 promoted 9 universal skills into `.ai/skills/` and replaced the per-vendor copies with directory symlinks. Setup scripts didn't need to change (the glob `agents/<vendor>/skills/*/SKILL.md` resolves transparently through dir symlinks).
+- **Should `code-quality-audit` skill ship with dotfiles or only be scaffolded into projects?** Resolved — both. It lives in `.ai/skills/` (deployed to every Claude Code/Cursor/Codex session via setup scripts) and the audit-pipeline scaffold ships its own copy of the audit prompts so projects get a self-contained version.
+- **Frontmatter validator**: Resolved in Phase 2 — `prompts/scaffolds/audit-pipeline/scripts/audit/ai_usage.py` runs cleanly on dotfiles itself; caught and fixed missing frontmatter on the 4 universal audit prompts.
