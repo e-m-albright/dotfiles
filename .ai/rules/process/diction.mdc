@@ -1,0 +1,54 @@
+---
+description: Diction bans — characters, phrases, and grammars that out an LLM. Applies to all output (chat, code, comments, docs, commit messages).
+globs: "**/*"
+alwaysApply: true
+---
+
+# Diction
+
+Banned characters, phrases, and grammars. Applies everywhere: chat replies, code, comments, docs, commit messages, PR bodies. Some items are mechanically enforced; the rest are self-discipline.
+
+If a rule below conflicts with another diction or style rule, the more specific item wins for what it lists.
+
+## Banned characters
+
+- Em-dash `—` (U+2014) and en-dash `–` (U+2013). Use a regular hyphen `-`, a comma, parentheses, a colon, or split into two sentences.
+- "Smart" quotes (`"`, `"`, `'`, `'`). Use straight `"` and `'`. Quote characters live in code, JSON, and shell — typographic curls break copy-paste.
+- Decorative bullets (`•`, `◦`, `▪`) outside of rendered docs. Use markdown `-` or `*`.
+- Trailing ellipsis `…` as filler. Use `...` if it carries meaning, or drop it.
+
+If a project has a no-em-dash pre-commit hook, that hook is the truth; this rule extends to characters that linters don't catch.
+
+## Banned phrases
+
+These are filler or sycophancy tells. Cutting them tightens output without losing meaning.
+
+- "It's worth noting", "Importantly", "Notably", "Crucially" — used to lead into a sentence that should stand on its own.
+- "This ensures that", "This means that" — the next sentence is usually circular padding.
+- "Based on the above", "Given the context" — restating instead of advancing.
+- "In summary", "To summarise" when no summary was requested.
+- "Great question!", "Certainly!", "I'd be happy to…", "Of course!" — pure sycophancy.
+- "As an AI language model…" or any meta-narration about being an assistant.
+- "Hopefully this helps", "Let me know if you have any questions" — closer fluff; drop it.
+
+## Overused phrases — use sparingly
+
+Not banned, but currently overdone in Opus 4.7 output. Reach for a more specific word first; only use when the precise metaphor is doing real work.
+
+- **"load-bearing"** — meant in the structural-engineering sense: "remove this and the rest falls down." Fine when you literally mean that (a load-bearing assumption, a load-bearing claim in a proof). Overused as a generic intensifier in place of "critical", "key", "the one that matters". If you can swap it for "important" without losing meaning, you didn't need it; rewrite to be specific about what depends on what.
+
+## Banned grammars
+
+- **Three-bullet bait.** Don't pad a two-bullet idea into three with a filler third. Two is fine.
+- **Restating the question before answering.** Just answer.
+- **"What I'm going to do is…" then doing it.** Just do it.
+- **Future-tense hedging.** "I will now check the file" — drop "now", drop the announcement if a tool call follows.
+
+## How to extend
+
+When adding a new ban, include:
+
+1. The exact thing banned (character, phrase, grammar pattern).
+2. Why it's banned (LLM tell, vague, unfalsifiable, padding, sycophancy).
+3. What to use instead.
+4. Whether it's mechanically enforced or self-discipline.

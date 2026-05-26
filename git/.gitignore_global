@@ -1,0 +1,108 @@
+# Global gitignore
+# Ignored everywhere, not project-specific
+
+# =============================================================================
+# OS
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =============================================================================
+# Editors & IDEs
+# =============================================================================
+# VS Code / Cursor (project-specific settings should be committed)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+*.iml
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# =============================================================================
+# Languages & Runtimes
+# =============================================================================
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+.env/
+env/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+*.egg-info/
+
+# Node.js
+node_modules/
+.npm/
+.pnpm-store/
+
+# Rust
+target/
+# Note: Cargo.lock should be committed for binaries, ignored for libraries
+
+# Go
+vendor/
+
+# =============================================================================
+# Environment & Secrets
+# =============================================================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.secrets/
+
+# =============================================================================
+# Build & Output
+# =============================================================================
+dist/
+build/
+out/
+*.o
+*.a
+
+# =============================================================================
+# Logs & Debug
+# =============================================================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =============================================================================
+# Temporary & Cache
+# =============================================================================
+*.tmp
+*.temp
+.cache/
+.turbo/
+
+# =============================================================================
+# AI Agent Artifacts
+# =============================================================================
+.agents/

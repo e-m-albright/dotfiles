@@ -1,0 +1,13 @@
+{
+  "areFoldersHidden": false,
+  "matchCaseInsensitive": true,
+  "addHiddenFoldersToObsidianIgnoreList": false,
+  "hideBottomStatusBarIndicatorText": false,
+  "enableCompatQuickExplorer": false,
+  "attachmentFolderNames": [
+    "startsWith::Life/finance/budget",
+    "startsWith::Life/finance/assets",
+    "startsWith::Life/finance/criteria",
+    "startsWith::Life/finance/what-is-needed"
+  ]
+}

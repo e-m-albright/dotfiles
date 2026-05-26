@@ -1,0 +1,9 @@
+{
+  "$comment": "Gemini CLI global settings. Managed by dotfiles (agents/gemini/setup.sh). MCP servers are merged in from agents/shared/mcp-servers.json at install time; do not hand-edit `mcpServers` here.",
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    }
+  },
+  "mcpServers": {}
+}

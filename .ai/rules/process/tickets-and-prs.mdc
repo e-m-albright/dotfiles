@@ -1,0 +1,29 @@
+---
+description: Writing good tickets, PRs, and commits
+alwaysApply: false
+---
+
+# Tickets & PRs
+
+## Issues / Tickets
+
+- **Title**: What's wrong or what's needed — not how to fix it.
+- **Acceptance criteria**: Define "done" in observable terms, not implementation details.
+- **Reproduction steps** (bugs): Exact steps, expected vs. actual behavior, environment info.
+- **Context**: Link related issues, PRs, or incidents. Include screenshots for UI issues.
+- **Size signal**: If it's more than a day of work, suggest breaking it down.
+
+## Pull Requests
+
+- **Title**: Imperative mood, concise (`Add user auth flow`, not `Changes` or `Update files`).
+- **Summary**: Why this change exists (1-3 bullets). What problem it solves, not a file list.
+- **Risk & scope**: What could break. What was explicitly left out and why.
+- **Test plan**: How to verify — manual steps, automated tests, or both.
+- **Links**: Related ticket IDs, ADRs, or incidents.
+- Keep descriptions audit-friendly — Drata compliance may depend on PR history.
+
+## Commits
+
+- Imperative mood, explain *why* not *what*.
+- Conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`.
+- One logical change per commit. Don't mix refactors with features.

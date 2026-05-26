@@ -1,0 +1,17 @@
+# Lefthook fragment — pre-commit drift guard for agent rules.
+# Merge into your project's lefthook.yml.
+#
+# Refuses commits that change .ai/rules/, AGENTS.md, .cursor/rules/, or the
+# sync script without re-running the sync. Prevents the "I edited a rule but
+# forgot to re-bake AGENTS.md" drift that causes Claude/Codex/Gemini to load
+# stale rules.
+
+pre-commit:
+  commands:
+    agent-rules-synced:
+      glob:
+        - ".ai/rules/*.mdc"
+        - "AGENTS.md"
+        - ".cursor/rules/*.mdc"
+        - "scripts/sync-agent-rules.sh"
+      run: ./scripts/sync-agent-rules.sh --check

@@ -1,0 +1,84 @@
+// Zed settings — managed in dotfiles (symlinked to ~/.config/zed/settings.json)
+//
+// External agents (ACP) run each vendor's own CLI and use its SUBSCRIPTION
+// login — NOT a pay-per-use API key. Start a thread from the agent panel
+// (cmd-?) and authenticate in-thread:
+//   claude-acp → /login → "Log in with Claude Code"  (Max subscription)
+//   codex-acp  → "Login with ChatGPT"                 (ChatGPT subscription)
+//   gemini     → "Login" (Google account)            (free tier)
+// The "agent.default_model" / "inline_assistant_model" below are the SEPARATE
+// built-in providers — those DO use API keys (billed per token).
+{
+  "agent_servers": {
+    "pi-acp": {
+      "type": "registry"
+    },
+    "cursor": {
+      "type": "registry"
+    },
+    "claude-acp": {
+      "type": "registry"
+    },
+    "codex-acp": {
+      "type": "registry"
+    },
+    "gemini": {
+      "type": "registry"
+    }
+  },
+  "project_panel": {
+    "dock": "right"
+  },
+  "outline_panel": {
+    "dock": "right"
+  },
+  "collaboration_panel": {
+    "dock": "right"
+  },
+  "git_panel": {
+    "dock": "right"
+  },
+  "agent": {
+    "tool_permissions": {
+      "tools": {
+        "terminal": {
+          "default": "allow",
+          "always_allow": [
+            {
+              "pattern": "^find\\s+notes/Knowledge(\\s|$)"
+            },
+            {
+              "pattern": "^head\\b"
+            },
+            {
+              "pattern": "^find\\s+Knowledge(\\s|$)"
+            },
+            {
+              "pattern": "^wc\\b"
+            }
+          ]
+        }
+      }
+    },
+    "dock": "left",
+    "play_sound_when_agent_done": true,
+    "default_model": {
+      "effort": "medium",
+      "enable_thinking": true,
+      "provider": "zed.dev",
+      "model": "gpt-5.4"
+    },
+    "inline_assistant_model": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6-latest"
+    }
+  },
+  "icon_theme": "Material Icon Theme",
+  "ui_font_size": 16,
+  "buffer_font_size": 16,
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "Tokyo Night Storm"
+  }
+}

@@ -1,0 +1,11 @@
+theme = "Sublime Snazzy"
+status_line = [
+  "app-name",
+  "project-name",
+  "git-branch",
+  "model-with-reasoning",
+  "context-used",
+  "five-hour-limit",
+  "weekly-limit",
+  "fast-mode",
+]

@@ -1,0 +1,55 @@
+---
+description: Cloud services decisions — hosting, database, auth, payments, observability
+alwaysApply: false
+---
+
+# Cloud Services
+
+**Philosophy**: Self-hosted first when practical. Managed when self-hosting becomes a burden.
+Most projects need only 2-3 services. Don't install everything — add as needed.
+
+## Primary Picks
+
+| Category | Pick | Alternative | Notes |
+|----------|------|-------------|-------|
+| **Hosting** | Railway | Cloudflare (edge), Fly.io (VMs) | Railway: best DX, nixpacks |
+| **Database** | Supabase | Neon (branching), Turso (edge SQLite) | Supabase: Postgres + auth + storage |
+| **Cache** | Valkey (self-hosted) | Upstash (serverless) | Valkey: Redis fork (post-license) |
+| **Search** | Meilisearch (self-hosted) | Orama (in-browser) | Meilisearch Cloud when burden grows |
+| **Auth** | Better Auth | Clerk (managed) | Better Auth: TS-first, self-hosted |
+| **Email** | Resend | Postmark (deliverability) | Resend: modern DX, React Email |
+| **Analytics** | Umami (self-hosted) | Plausible, PostHog (product) | Privacy-first, GDPR-friendly |
+| **Payments** | Stripe | LemonSqueezy (MoR) | LemonSqueezy handles taxes |
+| **Error tracking** | Sentry | — | Industry standard |
+| **Logging** | Grafana Cloud | Axiom (simpler) | Axiom: generous free tier |
+| **GPU compute** | Modal | Replicate (pre-built models) | Modal: Python-native, auto-scaling |
+| **Vector DB** | pgvector | Qdrant (>1M vectors) | Start with pgvector in existing Postgres |
+
+## Observability Tiers
+
+```
+Tier 1 (All): structlog/pino + Sentry
+Tier 2 (2+ services): + OpenTelemetry + trace IDs in logs
+Tier 3 (At scale): + Jaeger/Tempo + Grafana + Prometheus
+```
+
+## Avoid
+
+| Service | Why |
+|---------|-----|
+| Firebase | Vendor lock-in, proprietary queries |
+| Heroku | Expensive, stagnant |
+| Auth0 | Complex, expensive, enterprise-focused |
+| Datadog/New Relic | Overkill + expensive for small teams |
+| AWS/GCP/Azure directly | Complexity overhead — use Railway/Fly.io |
+| Vercel | Pricing traps, Next.js-centric |
+
+## Quick Builds
+
+| Project Type | Services |
+|-------------|----------|
+| Simple API | Railway + Supabase + Sentry |
+| + Auth | add Better Auth |
+| + Email | add Resend |
+| SaaS | above + Stripe + Umami |
+| + AI | add Modal or pgvector |

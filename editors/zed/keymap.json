@@ -1,0 +1,13 @@
+// Zed keymap — managed in dotfiles (symlinked to ~/.config/zed/keymap.json)
+//
+// One-keystroke launch of each external (ACP) agent into a new thread.
+// These run the vendor CLI on its subscription login (not API keys).
+[
+  {
+    "bindings": {
+      "cmd-alt-a": ["agent::NewExternalAgentThread", { "agent": "claude-acp" }],
+      "cmd-alt-o": ["agent::NewExternalAgentThread", { "agent": "codex-acp" }],
+      "cmd-alt-g": ["agent::NewExternalAgentThread", { "agent": "gemini" }]
+    }
+  }
+]

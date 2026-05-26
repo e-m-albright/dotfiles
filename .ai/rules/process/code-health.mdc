@@ -1,0 +1,84 @@
+---
+description: Code health philosophy and suppression discipline. The tiebreaker for "should I paper over this or fix it." Bedrock, not quicksand.
+globs: "**/*"
+alwaysApply: true
+---
+
+# Code Health
+
+How to decide when something deserves a real fix vs. a workaround, and the rule about reaching for static-checker suppressions.
+
+This rule is the *philosophy*. Specific project ratchets (e.g. a `baselines.json` with monotonic ceilings, or a similar lint-budget gate elsewhere) are project-level mechanisms that implement this rule. The rule applies whether or not such mechanism exists.
+
+## The umbrella principle: bedrock, not quicksand
+
+When facing any decision (architectural, algorithmic, scope, sequencing, or "should we just paper over this"), default heavily toward the answer that is correct, clean, and best for long-term architecture and health. Never ignore issues, warnings, complexities, or smells that could be resolved. If you notice a foundational crack while doing other work, surface it and address it (or formally defer it with a written reason); do not paste over it.
+
+This is the tiebreaker for everything below.
+
+- When weighing two design options, the tiebreaker is "which one is more correct in the long run," not "which one is faster to ship."
+- When in doubt between a clean rewrite and a patch, lean toward the rewrite, but propose it explicitly first; do not surprise the user with scope.
+- Do not suppress warnings, lints, or test failures to make CI green. Investigate and fix.
+- Prefer fewer, deeper, more correct sub-specs over many shallow patches.
+- This does NOT mean gold-plate everything. It means: when complexity should be addressed, address it; do not pretend it is not there.
+
+## No metric or threshold gaming
+
+Two specific anti-patterns that come up whenever a project has any kind of code-health ratchet (line counts, lint budgets, type-safety scores, coverage floors, etc.):
+
+1. **Compressing files to meet a line-count threshold** (removing comments, collapsing blank lines, aliasing imports) makes code worse for a number. A 500-line well-organised file is not the same problem as a 2,500-line route handler. If a file is at its ceiling and the gate says "you cannot grow," the answer is to genuinely refactor (extract a module, split mixed concerns, delete dead code), or to leave the file alone — not to mechanically trim under the threshold.
+
+2. **`dict[str, Any]` → `dict[str, object]`** (or any equivalent type-system laundering: `any` → `unknown`, `Box<dyn Any>` → `Box<dyn Debug>`) is not real type safety. Real type safety means declaring Pydantic models, TypedDicts, Rust enums, or TypeScript discriminated unions with actual field shapes. Bulk-replacing a permissive type with a less-permissive-but-still-opaque type moves a number without improving contracts.
+
+When a metric is at its ceiling:
+
+- First ask: is the metric measuring actual risk in the files involved?
+- If yes — do the real work (decompose, type properly, extract modules).
+- If no — propose changing the scoring formula or threshold. Do not game the metric.
+
+LOC is a proxy for quality, not a target.
+
+## Stop-the-Line: never reach for a suppression as your first move
+
+If you are about to add **any** of these:
+
+- Python: `# noqa`, `# type: ignore`, `# pyright: ignore`, `# pragma: no cover`
+- Rust: `#[allow(...)]` (any lint family — `clippy::*`, `dead_code`, `unreachable_pub`, etc.)
+- TypeScript / Svelte: `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`, `eslint-disable`, `biome-ignore`, `svelte-ignore`
+- Tests: `@pytest.mark.skip`, `it.skip`, `#[ignore]`
+- Casts to escape type errors: unchecked `as` in TS, `cast(...)` in Python, `transmute` in Rust
+
+**Stop.** Present these alternatives first:
+
+1. Fix the underlying issue.
+2. Refactor the call site so the warning no longer applies.
+3. Change the boundary forcing the type confusion (e.g. parse into a typed model at the edge instead of casting downstream).
+4. Surface the conflict for review.
+
+Adding a suppression as your first move is a code-health regression. Always present the alternatives first.
+
+**Symmetry across stacks.** Switching from one suppression family to another to dodge a project's gate does not work — projects that have a ratchet typically cover every variant. Don't try.
+
+## If you genuinely must add a suppression
+
+The default answer is **don't**. Suppression markers are not a workspace tool — they are debt with a shelf life.
+
+If after honest investigation a suppression is the right call:
+
+1. **Document the why.** Add a same-line `# reason: <specific tracking ref>` (or Rust `// reason: ...` above the attribute). "Pylance bug X", "library has no types", "vendor SDK private API — see <doc>" — specific, attributable, dated.
+2. **Earn the headroom if the project has a ratchet.** Reduce a different suppression in the same family by at least one elsewhere in the same change. Net change ≤ 0.
+3. **Or surface it explicitly.** If neither (1) nor (2) is possible, stop and ask the human. Don't silently relax the ceiling.
+
+## Test-related cousins
+
+The suppression rule extends to tests. The default-pattern for getting CI green is "make the test pass," not "make the test skip":
+
+- Don't add `@pytest.mark.skip` / `it.skip` / `#[ignore]` without a `reason:` referring to a real ticket, plus an offsetting reduction or a PR note explaining the bypass.
+- Don't delete tests to make a failing build pass. Many projects ship a `test-deletion-guard` pre-push hook that refuses net deletion of test lines; the rule applies even where the hook doesn't.
+- Don't use `# pragma: no cover` (or its peers) to dodge a coverage floor. Decompose the untested branch instead.
+
+## Cross-references
+
+- `code-audit.mdc` — structural anti-pattern checklist (god functions, data clumps, leaky boundaries). This rule is the *philosophy*; code-audit is the *checklist*.
+- `no-competing-versions.mdc` — the rule about not carrying two implementations is a code-health corollary.
+- `planning.mdc` "Execution Discipline" — standing license to refactor when crossed, don't overengineer before core works.

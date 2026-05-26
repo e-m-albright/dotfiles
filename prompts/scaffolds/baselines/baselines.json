@@ -1,0 +1,14 @@
+{
+	"_comment": "Code health ratchet. Values can only decrease. Pre-commit hook fails if any metric exceeds its ceiling. See docs/engineering-philosophy.md.",
+	"counts": {
+		"_comment": "Anti-pattern counts. Add metrics relevant to your stacks; remove ones that don't apply. Run `just audit auto-ratchet` to lock improvements after a cleanup PR.",
+		"todo_total": 0,
+		"type_ignore_total": 0,
+		"as_any_total": 0
+	},
+	"file_ceilings": {
+		"_comment": "Per-file line ceilings. Add a file here when refactoring to keep the gain locked in. Defaults are language-specific (see code-quality-audit skill for thresholds)."
+	},
+	"_max_file_ceilings": 0,
+	"_max_file_ceilings_doc": "Cap the number of files conceded to be too large. Increment only when you've split a file's concerns into a module dir; never when greasing CI."
+}

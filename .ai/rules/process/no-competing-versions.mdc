@@ -1,0 +1,46 @@
+---
+description: No competing versions of any implementation in active code. Once a version wins, it gets the unversioned name.
+globs: "**/*"
+alwaysApply: true
+---
+
+# No Competing Versions
+
+The codebase does not carry two implementations of the same thing. When a new version of a module, type, table, endpoint, or component replaces an older one, the older one is deleted in the same change and the new one takes the unversioned name.
+
+## What this rules out
+
+- `FooV2` next to `Foo`. Once V2 ships, V1 is deleted and V2 is renamed to `Foo`. No `*V2`, `*V3`, `*Legacy`, `*Old`, `*New`, `*Deprecated` suffixes on symbol names in active code.
+- `transcript_v2` JSONB column next to `transcript`. Either v1 or v2 exists, never both. The winner is called `transcript`.
+- `/api/users/list` (legacy) next to `/api/users/index` (new). Pick one, delete the other.
+- Two render components / two helpers / two prompts / two pipelines doing the same job. If they branch on a flag, the dead branch goes.
+- "Backward-compatibility re-export shim" modules that exist purely to keep an old import path alive after a rename. Update the importers in the same change.
+- Migration columns marked `COMMENT ON COLUMN ... 'DEPRECATED: use X. Scheduled for drop in a future migration.'` — write the drop migration in the same change, not "later".
+
+## What this allows
+
+- External-protocol or third-party-SDK version names (`http_version`, `api_version`, `schema_version`, `pydantic_v1`, `protocol_v2`, etc.) refer to other people's versioning, not ours.
+- Migrations and frozen schema baselines document past state; they're not active code competing with anything.
+- URL paths under `/api/v1/...` — URL routing version is a public contract surface. If you genuinely have two API generations live at once, this rule says delete the older one, but the URL fragment itself isn't the problem.
+- A symbol named `New` because it means "new thing being added" (e.g., `NewFolderButton`, `NewStudySession`) — these are descriptive modifiers, not version suffixes. The pattern this rule catches is `*New` paired with `*Old` (or `*V1`) in the same area. Lone `New` is fine.
+
+## Enforcement
+
+Some projects ship a pre-commit gate (e.g. `scripts/policy/check_no_versioned_symbols.py`) that scans staged additions for versioned identifier patterns (`*V[1-9]`, `*Legacy`, `*Deprecated`, `*_v[1-9]`, `*_legacy`, `*_deprecated`) and fails the commit on a new match. Pre-existing offenders sit in a baseline; only new ones block.
+
+If a project doesn't have such a check yet, the rule is still in force — adding it to a new agent-authored file is a code review reject, full stop.
+
+## What to do when you want a parallel version
+
+Ask the user. The answer is almost always "no, refactor the old one in place." If the user explicitly authorizes a parallel implementation (e.g., for a multi-week migration with a feature flag), document it in a roadmap entry with a named end date for the collapse, and treat the policy exception as scoped to the named symbol.
+
+## Why this rule exists
+
+Competing versions look like progress (two implementations, ship the new one alongside the old) but cost more than they save:
+
+- Every reader of the codebase has to ask "which one do I use?" — even when there's clearly a winner.
+- Bug fixes get applied to one and not the other. Feature parity drifts.
+- The "delete the old one later" step rarely happens; the next agent inherits both.
+- Test coverage doubles. CI gets slower. Refactors get harder.
+
+The act of deletion is the act of finishing the migration. Defer it and the migration isn't done.

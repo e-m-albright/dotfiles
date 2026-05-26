@@ -1,0 +1,22 @@
+// Pi custom providers — managed in dotfiles (symlinked to ~/.pi/agent/models.json).
+// Hot-reloads when you open /model. Add cloud providers here too; resolve secrets
+// with a shell command, e.g.  "apiKey": "!op read 'op://Private/anthropic/key'"
+// (NOTE: Anthropic in Pi is pay-per-token API — it does NOT use the Max sub.)
+{
+  "providers": {
+    "lm-studio": {
+      "baseUrl": "http://localhost:1234/v1",
+      "api": "openai-completions",
+      "apiKey": "lm-studio",
+      "models": [
+        {
+          "id": "google/gemma-4-e4b",
+          "name": "Gemma 4 e4b (local)",
+          "contextWindow": 131072,
+          "maxTokens": 32000,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        }
+      ]
+    }
+  }
+}

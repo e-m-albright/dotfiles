@@ -1,0 +1,25 @@
+{
+  "$comment": "MCP server registry. Targets supported: claude, cursor, codex, gemini. Disabled servers kept as `_<name>_disabled` string entries to preserve history. Note: Pi intentionally NOT included (ADR-0005 — narrow local-first usage, no global MCP wiring).",
+
+  "granola": {
+    "type": "http",
+    "url": "https://mcp.granola.ai/mcp",
+    "targets": ["claude"]
+  },
+  "context7": {
+    "type": "http",
+    "url": "https://mcp.context7.com/mcp",
+    "targets": ["cursor"]
+  },
+  "playwright": {
+    "command": "npx",
+    "args": ["-y", "@playwright/mcp@latest"],
+    "targets": ["claude", "cursor", "codex", "gemini"]
+  },
+
+  "_linear_disabled": "Linear MCP disabled 2026-05-07 — re-enable if needed (was: https://mcp.linear.app/mcp, targets: claude/cursor/codex)",
+  "_notion_disabled": "Notion MCP disabled 2026-05-07 — re-enable if needed (was: https://mcp.notion.com/mcp, targets: claude/cursor/codex)",
+  "_datadog_disabled": "Datadog MCP disabled 2026-05-07 — re-enable if needed (was: https://mcp.datadoghq.com/api/unstable/mcp-server/mcp, headers DD_API_KEY/DD_APPLICATION_KEY, targets: cursor)",
+  "_chrome_devtools_disabled": "chrome-devtools MCP disabled 2026-05-07 — overlap with playwright + pinchtab CLI (was: npx chrome-devtools-mcp@latest, targets: claude/cursor/codex)",
+  "_neon_disabled": "Neon MCP disabled 2026-04-09 — revisit when actively using Neon projects"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "dotfiles",
+  "description": "Personal agentic config — rules, skills, agents, hooks",
+  "version": "1.0.0",
+  "author": { "name": "evan" }
+}

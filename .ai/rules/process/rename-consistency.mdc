@@ -1,0 +1,34 @@
+---
+description: Rename-consistency — finish past renames; don't reintroduce dead spellings in new code
+globs: "**/*"
+alwaysApply: true
+---
+
+# Rename Consistency
+
+Past refactors renamed concepts in this codebase. The dead spelling keeps re-appearing in new agent-authored code because the model's training data still remembers the old name. This is *consistency hygiene*, not a banned-words list — every entry has a concrete migration behind it.
+
+## Active renames
+
+| Old | New | Why |
+|---|---|---|
+| _(none tracked yet)_ | | |
+
+When you complete a rename, add the row here and a check below. Otherwise the dead form will reappear in the next agent's output.
+
+## Rules
+
+- When introducing a new symbol, route, doc heading, or comment, search the codebase for the data-model name first; do not fall back to the dead UX metaphor or historical brand.
+- If a lint/policy check fails on a file you did not author for one of these renames, follow `multi-agent.mdc` rule 5 — flag it but do not "fix" the sibling agent's work.
+- When landing a new rename, add a check to the project's policy script (or pre-commit hook) modelled on existing ones before declaring the rename done. Allowlists for legitimate references (vendor names, marketing copy, third-party APIs that still use the old term) live in that script — extend the allowlist there if you have a justified reference, do not edit around the check.
+
+## Why this rule exists
+
+LLMs reach for the most common spelling in their training data, which is usually the *first* name a project used — even if the codebase has since renamed it. Without a mechanical gate, every new agent-authored file slowly reintroduces dead terminology and the rename never finishes.
+
+The rule pairs with `no-competing-versions.mdc`: deletion-of-old + grep-for-old together finish the migration. Either alone is insufficient.
+
+## Cross-references
+
+- `no-competing-versions.mdc` — delete the old version when the new one ships
+- `multi-agent.mdc` rule 5 — don't "fix" another agent's files in response to a lint failure

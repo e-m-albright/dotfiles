@@ -1,0 +1,155 @@
+# Git Configuration
+# Modern, opinionated settings for fast workflows
+
+# ============================================================================
+# Identity (set in ~/.gitconfig.local - not committed to repo)
+# ============================================================================
+[include]
+    path = ~/.gitconfig.local
+
+# ============================================================================
+# Core Settings
+# ============================================================================
+[init]
+    defaultBranch = main
+
+[core]
+    excludesfile = ~/.gitignore_global
+    editor = zed --wait
+    autocrlf = input
+    pager = delta
+    # Better performance on large repos
+    fsmonitor = true
+    untrackedcache = true
+
+[column]
+    ui = auto
+
+[branch]
+    sort = -committerdate
+
+[tag]
+    sort = -version:refname
+
+# ============================================================================
+# Safety & Workflow
+# ============================================================================
+[push]
+    default = current
+    autoSetupRemote = true
+    followTags = true
+
+[pull]
+    rebase = true
+
+[fetch]
+    prune = true
+    pruneTags = true
+    all = true
+
+[rebase]
+    autoStash = true
+    autoSquash = true
+    updateRefs = true
+
+[rerere]
+    enabled = true
+    autoUpdate = true
+
+[help]
+    autocorrect = prompt
+
+# ============================================================================
+# Diff & Merge (using delta for beautiful diffs)
+# ============================================================================
+[diff]
+    algorithm = histogram
+    colorMoved = default
+    mnemonicPrefix = true
+    renames = true
+
+[merge]
+    conflictstyle = zdiff3
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    side-by-side = true
+    line-numbers = true
+    syntax-theme = Dracula
+
+# ============================================================================
+# SSH over HTTPS (for corporate firewalls)
+# ============================================================================
+[url "ssh://git@github.com/"]
+    insteadOf = https://github.com/
+
+[url "ssh://git@gitlab.com/"]
+    insteadOf = https://gitlab.com/
+
+# ============================================================================
+# Large File Storage
+# ============================================================================
+[filter "lfs"]
+    clean = git-lfs clean -- %f
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true
+
+# ============================================================================
+# Aliases (minimal, most work is done by shell aliases)
+# ============================================================================
+[alias]
+    # Status
+    s = status -sb
+
+    # Logging
+    l = log --oneline -20
+    lg = log --graph --oneline --decorate -20
+    ll = log --pretty=format:'%C(yellow)%h%Creset %s %C(dim)%an %ar%Creset%C(auto)%d' -20
+
+    # Branch
+    b = branch --sort=-committerdate --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:dim)%(committerdate:relative)%(color:reset)'
+
+    # Diff
+    d = diff
+    ds = diff --staged
+
+    # Commit
+    c = commit
+    cm = commit -m
+    ca = commit --amend
+    can = commit --amend --no-edit
+
+    # Stash
+    st = stash
+    stp = stash pop
+    stl = stash list
+
+    # Working with remotes
+    f = fetch --all --prune
+    pl = pull
+    pu = push
+    puf = push --force-with-lease
+
+    # Undo
+    undo = reset --soft HEAD~1
+    unstage = reset HEAD --
+    discard = checkout --
+
+    # Clean
+    clean-branches = "!git branch --merged | grep -v '\\*\\|main\\|master' | xargs -n 1 git branch -d"
+
+    # Who
+    who = shortlog -sn --no-merges
+
+    # Recent work
+    recent = for-each-ref --sort=-committerdate --count=10 --format='%(refname:short)' refs/heads/
+
+    # Fix up last commit with staged changes
+    fixup = commit --amend --no-edit
+
+    # Interactive rebase on last n commits
+    ri = "!f() { git rebase -i HEAD~${1:-5}; }; f"

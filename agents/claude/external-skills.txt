@@ -1,0 +1,22 @@
+# External skills installed via `npx skills add -g`
+# Run `dotfiles claude-setup` to install these on a fresh machine.
+# Format: <owner/repo@skill>
+
+# Official / first-party
+fastapi/fastapi@fastapi                                        # .agents/skills/fastapi/SKILL.md
+cloudflare/skills@building-mcp-server-on-cloudflare
+
+# Framework skills
+hairyf/skills@tauri
+bobmatnyc/claude-mpm-skills@axum                               # toolchains/rust/frameworks/axum
+cristiano-pacheco/ai-tools@go-chi-handler
+
+# Database & migrations
+manutej/luxor-claude-marketplace@alembic                       # plugins/luxor-database-pro/skills/alembic
+kalbasit/ncps@sqlc                                             # .agent/skills/sqlc (Nix cache project w/ embedded skill)
+
+# Workflow
+openai/skills@linear                                           # skills/.curated/linear (Codex skills catalog)
+
+# Frontend design
+pbakaus/impeccable@impeccable                                  # design vocabulary + anti-pattern audits (claude, cursor, codex)

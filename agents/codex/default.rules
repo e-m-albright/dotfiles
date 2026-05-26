@@ -1,0 +1,48 @@
+# Codex command auto-approve rules (deployed to ~/.codex/rules/default.rules)
+# Codex appends interactively-approved one-off rules to this file. Periodically
+# fold genuinely universal ones back into the dotfiles copy below and prune
+# project- or path-specific noise from your live ~/.codex/rules/default.rules.
+#
+# Format: prefix_rule(pattern=[argv...], decision="allow")
+# Matches a command iff the patterns prefix the argv exactly.
+
+# --- Package managers ---
+prefix_rule(pattern=["uv", "run"], decision="allow")
+prefix_rule(pattern=["bun", "add"], decision="allow")
+
+# --- Git read/write (non-destructive) ---
+prefix_rule(pattern=["git", "add"], decision="allow")
+prefix_rule(pattern=["git", "commit", "-m"], decision="allow")
+prefix_rule(pattern=["git", "commit", "--amend"], decision="allow")
+prefix_rule(pattern=["git", "push", "origin"], decision="allow")
+prefix_rule(pattern=["git", "push", "--no-verify", "origin"], decision="allow")
+prefix_rule(pattern=["git", "fetch", "origin"], decision="allow")
+prefix_rule(pattern=["git", "switch"], decision="allow")
+prefix_rule(pattern=["git", "branch", "-m"], decision="allow")
+prefix_rule(pattern=["git", "merge"], decision="allow")
+prefix_rule(pattern=["git", "worktree", "add"], decision="allow")
+
+# --- GitHub CLI (read + standard PR/issue ops) ---
+prefix_rule(pattern=["gh", "issue", "list"], decision="allow")
+prefix_rule(pattern=["gh", "issue", "view"], decision="allow")
+prefix_rule(pattern=["gh", "issue", "comment"], decision="allow")
+prefix_rule(pattern=["gh", "pr", "list"], decision="allow")
+prefix_rule(pattern=["gh", "pr", "view"], decision="allow")
+prefix_rule(pattern=["gh", "pr", "diff"], decision="allow")
+prefix_rule(pattern=["gh", "pr", "create"], decision="allow")
+prefix_rule(pattern=["gh", "pr", "edit"], decision="allow")
+prefix_rule(pattern=["gh", "pr", "close"], decision="allow")
+prefix_rule(pattern=["gh", "pr", "checks"], decision="allow")
+
+# --- Just (project task runner) ---
+prefix_rule(pattern=["just", "check"], decision="allow")
+prefix_rule(pattern=["just", "ci"], decision="allow")
+prefix_rule(pattern=["just", "security"], decision="allow")
+prefix_rule(pattern=["just", "test"], decision="allow")
+prefix_rule(pattern=["just", "test", "verify"], decision="allow")
+prefix_rule(pattern=["just", "--working-directory"], decision="allow")
+prefix_rule(pattern=["just", "--justfile"], decision="allow")
+
+# --- Cargo (Rust dep mgmt — read-only) ---
+prefix_rule(pattern=["cargo", "deny", "check"], decision="allow")
+prefix_rule(pattern=["cargo", "update", "-p"], decision="allow")

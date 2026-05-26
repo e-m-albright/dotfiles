@@ -1,0 +1,68 @@
+[package]
+name = "my-rust-app"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "server"
+path = "src/main.rs"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP framework
+axum = { version = "0.7", features = ["macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = [
+    "cors",
+    "trace",
+    "request-id",
+    "compression-full",
+] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Database
+sqlx = { version = "0.8", features = [
+    "runtime-tokio",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate",
+] }
+
+# Error handling
+thiserror = "1"
+anyhow = "1"
+
+# Configuration (env vars -> struct via serde)
+envy = "0.4"
+
+# Logging / Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Utilities
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+validator = { version = "0.18", features = ["derive"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+testcontainers = "0.15"
+testcontainers-modules = { version = "0.3", features = ["postgres"] }
+
+# Optimized release builds
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+# Faster debug builds (improves compile time during development)
+[profile.dev]
+opt-level = 0
+debug = true

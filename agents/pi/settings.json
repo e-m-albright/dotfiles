@@ -1,0 +1,14 @@
+{
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.5",
+  "defaultThinkingLevel": "medium",
+  "shellCommandPrefix": "shopt -s expand_aliases\neval \"$(grep '^alias ' $HOME/dotfiles/shell/.zshrc)\"",
+  "safeGit": {
+    "promptLevel": "medium",
+    "enabledByDefault": true
+  },
+  "packages": [
+    "npm:pi-superpowers-plus",
+    "npm:mitsupi"
+  ]
+}

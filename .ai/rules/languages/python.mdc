@@ -1,0 +1,95 @@
+---
+description: Python conventions — uv, Ruff, Pydantic v2, async-first, structlog
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python
+
+## Tooling
+
+- **UV** when `uv.lock` is present. Never fall back to `pip install`.
+- `uv add`, `uv run`, `uv sync` — `pyproject.toml` is single source of truth.
+
+## Formatting & Linting
+
+- **Ruff** for both linting and formatting. Don't introduce Black, isort, or flake8 alongside it.
+- Run `ruff check --fix` and `ruff format` scoped to changed files.
+
+## Type Patterns
+
+- **ty** (Astral) for type checking — not mypy or Pyright.
+- Type-annotate all function signatures.
+- Modern union syntax: `str | None` not `Optional[str]`.
+- Lowercase builtins: `list[str]`, `dict[str, int]` not `List`, `Dict`.
+- `from collections.abc` for `Callable`, `Sequence`, `Mapping`.
+
+## Code Patterns
+
+- **Pydantic v2**: `model_config = ConfigDict(...)` not `class Config:`.
+- **SQLAlchemy 2.0**: `select()` not `session.query()`.
+- `async def` for I/O operations, `def` for pure functions.
+- Guard clauses and early returns over deep nesting.
+- `pathlib.Path` over `os.path` for file operations.
+- **structlog** for logging — never stdlib `logging` or `loguru`.
+- `dataclass` for internal data structures, Pydantic for external/API data.
+
+## Cross-Cutting Concerns
+
+Use decorators for orthogonal behavior — keep business logic clean:
+
+```python
+@timed("operation_name")                # OTEL span with duration
+@retry(on=httpx.TransportError)         # stamina retry with structlog
+@cached(TTLCache(maxsize=256, ttl=300)) # cachetools TTL cache
+```
+
+## Async Patterns
+
+- Prefer `asyncio.TaskGroup()` over `asyncio.gather()` — structured concurrency, proper cancellation.
+- `asyncio.Semaphore` for bounding concurrent external calls.
+- Correlate requests via `X-Request-ID` header + `contextvars.ContextVar`.
+
+## Performance Swaps
+
+Drop-in replacements for hot paths. Reach for these when profiling shows the stdlib version is a bottleneck — they're API-compatible, so the cost of swapping in is small.
+
+- **uvloop** — libuv-based asyncio event loop (~2–4× faster I/O). Install at app entry:
+  ```python
+  import uvloop
+  uvloop.install()
+  ```
+  Auto-detected by Uvicorn when installed; native in Granian. Not Windows-compatible.
+- **orjson** — Rust JSON encoder/decoder (2–5× faster than stdlib `json`, fewer footguns on dates/UUIDs). Returns `bytes`, not `str`. Use directly for serialization hot paths, and via `ORJSONResponse` for FastAPI responses.
+- **Granian** — Rust ASGI/WSGI/RSGI server. Lower per-request overhead and faster startup than Uvicorn/Gunicorn. Drop-in:
+  ```bash
+  granian --interface asgi app.main:app --workers 4
+  ```
+  Pick Granian for production where p99 latency matters; Uvicorn is fine for dev.
+
+## Settings
+
+- Pydantic Settings (`BaseSettings`) as single config source. Access via `@lru_cache` singleton.
+- No inline `os.getenv()` in business logic — all config through the settings object.
+
+## Always
+
+- Run `just check` before committing.
+- Pydantic models for all external data validation.
+
+## Never
+
+- `Any` type — use specific types or `Unknown`.
+- Mutable default arguments (`def f(items: list = [])` — use `None` and default in body).
+- Import with `*` — always explicit imports.
+- Bare `except` or `except Exception` without re-raise — be specific about what you catch.
+- `print()` in production — use structlog.
+- Catch and ignore errors — at minimum log them with `structlog.get_logger().warning()`.
+- `isinstance` chains — use match/case or polymorphism.
+
+## Ask First
+
+- Adding new dependencies.
+- Changing database schema.
+- Modifying auth flow.
+- Deleting files.

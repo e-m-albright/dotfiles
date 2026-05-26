@@ -1,0 +1,15 @@
+{
+  "readableLineLength": false,
+  "spellcheck": true,
+  "foldHeading": true,
+  "foldIndent": true,
+  "showFrontmatter": false,
+  "newFileLocation": "current",
+  "attachmentFolderPath": ".attachments",
+  "promptDelete": false,
+  "strictLineBreaks": false,
+  "alwaysUpdateLinks": true,
+  "showUnsupportedFiles": true,
+  "livePreview": false,
+  "showLineNumber": true
+}

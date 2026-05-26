@@ -1,0 +1,32 @@
+---
+description: GitHub & PR workflow conventions — gh CLI, compliance-aware
+alwaysApply: false
+---
+
+# GitHub & Workflow
+
+## Pull Requests
+
+- Use `gh pr create` for PRs. Keep titles concise and descriptions audit-friendly (intent, risk, verification).
+- Don't skip required CI checks or approval gates — Drata compliance may depend on them.
+- Never force-push to `main`/`master` without explicit instruction.
+
+## Issues & Incidents
+
+- Reference Linear or GitHub Issues by ID when closing or linking work.
+- Be aware of Rootly incident tracking — don't auto-close issues that may be tied to an active incident without confirming.
+
+## Code Review
+
+- Use `gh pr checkout <number>` to review PRs locally.
+- When suggesting changes in review, prefer concrete diffs over vague descriptions.
+
+## CI & Actions
+
+- Use `gh run list` / `gh run watch` to monitor workflow status from the terminal.
+- Don't modify GitHub Actions workflows without understanding the full trigger matrix.
+
+## Secrets & Config
+
+- Use Doppler or GitHub Actions secrets for sensitive values — never hardcode in workflow files.
+- For org-level secrets, check existing patterns before proposing new secret names.

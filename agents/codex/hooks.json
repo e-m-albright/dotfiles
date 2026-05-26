@@ -1,0 +1,39 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); case \"$FILE\" in */credentials*|*id_rsa*|*id_ed25519*) echo 'BLOCK: Sensitive file — edit manually'; exit 2;; esac",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/dotfiles/agents/codex/hooks/format-on-save.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "terminal-notifier -title \"Codex · $(basename \"$(pwd)\")\" -message 'Done — ready for input' -sound Glass 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

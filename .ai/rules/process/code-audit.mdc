@@ -1,0 +1,44 @@
+---
+description: Code structure audit — anti-patterns, AI-generated code warnings, domain hygiene
+alwaysApply: false
+---
+
+# Code Structure Audit
+
+Apply when reviewing code for structural quality. Not every item applies to every change — focus on what the diff touches.
+
+## Quick Scan
+
+- [ ] **God Function** — >40 lines or >3 responsibilities → extract into focused functions
+- [ ] **Data Clump** — same 3+ params passed together → extract into a struct/model
+- [ ] **Arrow Code** — >3 levels of nesting → use early returns or extract helper
+- [ ] **Lying Signature** — return type doesn't match behavior (returns null when type says non-null) → fix type or fix behavior
+- [ ] **Leaky Boundary** — internal types exposed in public API → wrap in public-facing type
+- [ ] **Impossible State** — type allows states that shouldn't exist → use discriminated unions/enums
+
+## Deep Scan
+
+- [ ] **Temporal Coupling** — must-call-A-before-B with no compile-time enforcement → combine into single operation or use typestate
+- [ ] **Feature Envy** — function uses another module's data more than its own → move it to that module
+- [ ] **Strategy Smell** — switch/match on type that will grow → extract strategy pattern
+- [ ] **Magic Values** — unnamed constants or strings in logic → extract to named constants
+- [ ] **Rule of Three** — third copy of similar code → extract shared abstraction
+- [ ] **Parse Don't Validate** — validate once at boundary, use typed result downstream → push validation to edges
+- [ ] **Humble Object** — complex logic near I/O boundary → extract pure logic, keep I/O wrapper thin
+
+## Domain Check
+
+- [ ] **Ubiquitous Language** — do code names match domain terms? Mismatched naming hides bugs.
+- [ ] **Anti-Corruption Layer** — does external API vocabulary leak into domain types? Translate at the boundary.
+- [ ] **Bounded Context** — does this module reach into another module's internals? Depend on its public API instead.
+
+## AI-Generated Code Warnings
+
+Patterns that appear frequently in LLM output — flag on sight:
+
+- [ ] **Primitive Obsession** — bare strings/ints where enums or newtypes belong → introduce domain types
+- [ ] **Logic Duplication** — same pattern across generated files (LLMs don't track prior output) → extract shared function
+- [ ] **Speculative Flexibility** — abstractions for hypothetical future requirements → delete until needed
+- [ ] **Leaked External Shapes** — API response field names copied into domain types → map at boundary
+- [ ] **Missing Error Paths** — only happy path handled (LLMs skip edge cases) → add error handling
+- [ ] **Overly Defensive** — null checks on types that can't be null → trust the type system, remove dead guards
