@@ -4,10 +4,10 @@
 #
 # Sourced by install.sh after brew.sh (which installs duti).
 #
-# Why this exists: macOS double-clicking a .md or .txt file used to open
-# Cursor, which is slow to cold-start. Routing to Zed (Rust, GPU-rendered)
-# gives a noticeably faster read-and-close experience. QLMarkdown handles
-# the spacebar-Quick-Look case for .md previews without opening anything.
+# Why this exists: macOS double-clicking a text, markdown, or source/config
+# file used to open Cursor, which is slow to cold-start. Routing to Zed (Rust,
+# GPU-rendered) gives a noticeably faster read-and-close experience. QLMarkdown
+# handles the spacebar-Quick-Look case for .md previews without opening anything.
 
 set -eo pipefail
 
@@ -45,13 +45,34 @@ set_default() {
     fi
 }
 
-# --- Zed for text + markdown ---
+# --- Zed for text, markdown, and source/config files ---
+# Anything a person edits in a code editor routes to Zed, not Cursor. Browser
+# (.html/.js/.svg), Quick-Look-only, and document types (.csv/.log) are left
+# to their own defaults — only editor-owned types are claimed here.
+ZED_UTIS=(
+    public.plain-text
+    net.daringfireball.markdown
+    public.yaml
+    org.yaml
+    com.apple.yaml
+    public.json
+    org.vuejs.vue  # .vue has a real exported UTI; Cursor claims the bare
+                   # extension as Owner, so set the UTI to win the handoff.
+)
+ZED_EXTENSIONS=(
+    md txt
+    yaml yml json toml ini cfg
+    scss less cjs jsx ts tsx
+    py rb rs go c h cpp hpp cc java swift php lua sql bash dockerfile
+)
 ZED_ID="$(read_bundle_id /Applications/Zed.app)"
 if [[ -n "$ZED_ID" ]]; then
-    set_default "$ZED_ID" public.plain-text          "Zed"
-    set_default "$ZED_ID" net.daringfireball.markdown "Zed"
-    set_default "$ZED_ID" .md  "Zed"
-    set_default "$ZED_ID" .txt "Zed"
+    for uti in "${ZED_UTIS[@]}"; do
+        set_default "$ZED_ID" "$uti" "Zed"
+    done
+    for ext in "${ZED_EXTENSIONS[@]}"; do
+        set_default "$ZED_ID" ".$ext" "Zed"
+    done
 else
     print_warning "Zed not found at /Applications/Zed.app, skipping text-file associations"
 fi
