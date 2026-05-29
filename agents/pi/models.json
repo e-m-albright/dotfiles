@@ -10,12 +10,19 @@
       "apiKey": "lm-studio",
       "models": [
         {
-          "id": "qwen/qwen3.6-35b-a3b",
-          "name": "Qwen 3.6 35B-A3B (local, MoE)",
+          "id": "mlx-community/qwen3.6-35b-a3b",
+          "name": "Qwen 3.6 35B-A3B MLX (daily driver, ~77 tok/s)",
           "contextWindow": 262144,
           "maxTokens": 32000,
           "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
           "_launch": true
+        },
+        {
+          "id": "qwen3.6-27b",
+          "name": "Qwen 3.6 27B Dense MLX (quality-first, ~14 tok/s)",
+          "contextWindow": 65536,
+          "maxTokens": 32000,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
         },
         {
           "id": "google/gemma-4-e4b",
