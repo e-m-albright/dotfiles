@@ -1,6 +1,6 @@
 {
   "defaultProvider": "lm-studio",
-  "defaultModel": "mlx-community/qwen3.6-35b-a3b",
+  "defaultModel": "qwen3.6-35b-a3b",
   "defaultThinkingLevel": "medium",
   "shellCommandPrefix": "shopt -s expand_aliases\neval \"$(grep '^alias ' $HOME/dotfiles/shell/.zshrc)\"",
   "safeGit": {
@@ -10,5 +10,6 @@
   "packages": [
     "npm:pi-superpowers-plus",
     "npm:mitsupi"
-  ]
+  ],
+  "lastChangelogVersion": "0.73.1"
 }
