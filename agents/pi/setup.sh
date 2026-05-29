@@ -22,9 +22,25 @@ PI_HOME="$HOME/.pi/agent"
 source "$SHARED_DIR/lib.sh"
 agentlib_init "$@"
 
+# --- Ensure the `pi` binary exists. Global npm installs are per-node-version,
+#     so an fnm/nvm node bump silently orphans it (config survives, binary
+#     vanishes). Self-heal instead of skipping quietly. ---
+PI_NPM_PKG="@earendil-works/pi-coding-agent"  # renamed from @mariozechner/* (that scope is frozen)
 if ! command -v pi >/dev/null 2>&1; then
-    print_skip "Pi not installed — skipping setup"
-    return 0 2>/dev/null || exit 0
+    if command -v npm >/dev/null 2>&1; then
+        print_action "Pi binary not found — installing $PI_NPM_PKG globally…" 2>/dev/null || \
+            print_info "Pi binary not found — installing $PI_NPM_PKG globally…"
+        if npm install -g "$PI_NPM_PKG" >/dev/null 2>&1; then
+            hash -r 2>/dev/null || true
+            print_success "Installed pi ($PI_NPM_PKG)"
+        else
+            print_warning "Pi install failed — run manually: npm install -g $PI_NPM_PKG"
+            return 0 2>/dev/null || exit 0
+        fi
+    else
+        print_warning "Pi not installed and npm unavailable — skipping (install: npm install -g $PI_NPM_PKG)"
+        return 0 2>/dev/null || exit 0
+    fi
 fi
 
 mkdir -p "$PI_HOME"

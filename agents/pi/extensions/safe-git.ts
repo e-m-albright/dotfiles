@@ -25,7 +25,7 @@
  * Source: https://github.com/qualisero/rhubarb-pi/tree/main/extensions/safe-git
  */
 
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 type PromptLevel = "high" | "medium" | "none";
 type Severity = "high" | "medium";
