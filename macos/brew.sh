@@ -288,8 +288,10 @@ ai_cli=(
 formulae=(
     docker-compose
     # -- Local models (48GB M4 Pro) --
-    # ollama             # Disabled 2026-05-28: ~30% slower than llama.cpp, LM Studio (MLX) is daily driver, llama.cpp covers OpenAI-compat serving + benching
-    llama.cpp            # GGUF inference engine (llama-cli, llama-server, llama-bench) — Metal-accelerated
+    # Disabled 2026-05-28: LM Studio (MLX) is the daily driver and covers current needs.
+    # See docs/local-llm-stack.md for benchmark + rationale.
+    # ollama             # ~30% slower than llama.cpp; redundant
+    # llama.cpp          # Useful for raw `llama-bench` / `llama-server`; reinstall when needed
 )
 
 # =============================================================================
@@ -394,8 +396,9 @@ if [[ "$AI" == "1" ]]; then
 
         # Claude Code via the official native installer (self-updating, decoupled from
         # node/fnm). Migrated off the npm global 2026-05-28 — the npm install lived under
-        # the active fnm node version and broke on node switches. Tracks `latest` for
-        # same-day fixes; the homebrew cask still lags on the `stable` dist-tag.
+        # the active fnm node version and broke on node switches. Tracks `latest` —
+        # this is a daily-driver coding tool and `stable` runs ~10+ patch releases
+        # behind, so prefer same-day fixes over the extra vetting lag.
         # (curl-based, so it no longer actually needs npm — kept here for section locality.)
         if command -v claude >/dev/null 2>&1 && [[ "$(claude --version 2>/dev/null)" == *"Claude Code"* ]]; then
             print_pkg_installed "claude-code"
