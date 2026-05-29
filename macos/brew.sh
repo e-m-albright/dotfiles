@@ -253,7 +253,7 @@ fonts=(
 ai_cli=(
     # -- Anthropic --
     # claude-code        # Disabled 2026-05-17: cask tracks `stable` dist-tag (lags by days/weeks);
-                         # installed via npm below to follow `latest`. See npm section.
+                         # installed via the native installer (curl | bash) in post-install to follow `latest`.
     claude               # Claude Desktop (macOS app)
     # conductor          # Claude Code parallelisation (disabled — prefer native subagents)
     # -- OpenAI --
@@ -392,12 +392,17 @@ if [[ "$AI" == "1" ]]; then
     if command -v npm >/dev/null 2>&1; then
         # jules removed 2026-05-07 — cloud-only product, local CLI is just a launcher
 
-        # Claude Code via npm (homebrew cask tracks `stable` dist-tag and lags `latest`)
+        # Claude Code via the official native installer (self-updating, decoupled from
+        # node/fnm). Migrated off the npm global 2026-05-28 — the npm install lived under
+        # the active fnm node version and broke on node switches. Tracks `latest` for
+        # same-day fixes; the homebrew cask still lags on the `stable` dist-tag.
+        # (curl-based, so it no longer actually needs npm — kept here for section locality.)
         if command -v claude >/dev/null 2>&1 && [[ "$(claude --version 2>/dev/null)" == *"Claude Code"* ]]; then
             print_pkg_installed "claude-code"
         else
             print_pkg_installing "claude-code"
-            if npm install -g @anthropic-ai/claude-code 2>&1; then
+            if curl -fsSL https://claude.ai/install.sh | bash; then
+                claude install latest >/dev/null 2>&1 || true   # pin auto-updater to `latest`
                 print_pkg_done "claude-code"
             else
                 print_pkg_fail "claude-code"
