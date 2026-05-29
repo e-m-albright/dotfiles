@@ -27,6 +27,7 @@ sub_help () {
     printf "   scaffold <args>      Scaffold a new project with AI rules\n"
     printf "   test [--quick]       Run scaffold eval framework\n"
     printf "   completions          Output shell completions (eval to install)\n"
+    printf "   llm-bench <runtime>  Benchmark local LLM (lmstudio | llamacpp | list)\n"
     printf "\n"
     printf "${BLUE}Namespaces:${NC}\n"
     printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
@@ -139,7 +140,7 @@ sub_doctor () {
     fi
 
     printf "\n${BLUE}AI Tools${NC}\n"
-    check_tool "Claude Code" "claude" "npm install -g @anthropic-ai/claude-code"
+    check_tool "Claude Code" "claude" "curl -fsSL https://claude.ai/install.sh | bash"
 
     # Check gh mcp-server extension
     if command -v gh >/dev/null 2>&1; then
@@ -501,6 +502,10 @@ sub_verify_vendors() {
     "$DOTFILES_DIR/agents/shared/verify-vendors.sh" "$@"
 }
 
+sub_llm_bench() {
+    "$DOTFILES_DIR/macos/llm-bench.sh" "$@"
+}
+
 sub_completions() {
     cat << 'EOF'
 # Zsh completions for dotfiles command
@@ -518,6 +523,7 @@ _dotfiles() {
         'scaffold:Scaffold a new project with AI rules'
         'test:Run scaffold eval framework'
         'completions:Output shell completions'
+        'llm-bench:Benchmark LM Studio or llama.cpp'
         'agent:Agent vendor namespace (setup, overview)'
         'verify:Verification namespace (vendors, skills)'
         'brew:Brew namespace (install, stale)'
@@ -589,6 +595,7 @@ case $COMMAND_NAME in
     scaffold)    shift; sub_scaffold "$@" ;;
     test)        shift; sub_test "$@" ;;
     completions) sub_completions ;;
+    llm-bench)   shift; sub_llm_bench "$@" ;;
 
     # Namespaces
     agent)  shift; ns_agent "$@" ;;
