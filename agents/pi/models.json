@@ -11,11 +11,18 @@
       "models": [
         {
           "id": "qwen3.6-35b-a3b",
-          "name": "Qwen 3.6 35B-A3B MLX (daily driver, ~77 tok/s)",
+          "name": "Qwen 3.6 35B-A3B MLX (daily driver, ~77 tok/s, thinking)",
           "contextWindow": 262144,
           "maxTokens": 32000,
           "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
           "_launch": true
+        },
+        {
+          "id": "gemma-4-e4b-it-mlx",
+          "name": "Gemma 4 E4B MLX (vision, ~49 tok/s, no thinking)",
+          "contextWindow": 131072,
+          "maxTokens": 16000,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
         }
       ]
     }
