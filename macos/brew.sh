@@ -269,8 +269,7 @@ ai_cli=(
     # -- Other --
     # cmux               # Terminal multiplexer for AI agents (nice but not helpful over Ghostty)
     # -- Local models (48GB M4 Pro) --
-    lm-studio            # Local LLM runner: MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server
-    # ollama             # Local LLM runtime (disabled — LM Studio covers this; re-enable for CLI runners)
+    lm-studio            # Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server
     # huggingface-cli    # Hugging Face CLI (disabled — install per-project if needed)
 )
 
@@ -288,6 +287,9 @@ ai_cli=(
 # Formulae (formula-only installs, not casks)
 formulae=(
     docker-compose
+    # -- Local models (48GB M4 Pro) --
+    ollama               # Local LLM runtime (CLI + OpenAI-compatible server, model registry)
+    llama.cpp            # GGUF inference engine (llama-cli, llama-server, llama-bench) — Metal-accelerated
 )
 
 # =============================================================================
