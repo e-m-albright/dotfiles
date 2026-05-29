@@ -63,10 +63,9 @@
     "dock": "left",
     "play_sound_when_agent_done": true,
     "default_model": {
-      "effort": "medium",
-      "enable_thinking": true,
-      "provider": "zed.dev",
-      "model": "gpt-5.4"
+      "enable_thinking": false,
+      "provider": "lmstudio",
+      "model": "qwen3.6-35b-a3b"
     },
     "inline_assistant_model": {
       "provider": "anthropic",
