@@ -10,8 +10,16 @@
       "apiKey": "lm-studio",
       "models": [
         {
+          "id": "qwen/qwen3.6-35b-a3b",
+          "name": "Qwen 3.6 35B-A3B (local, MoE)",
+          "contextWindow": 262144,
+          "maxTokens": 32000,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+          "_launch": true
+        },
+        {
           "id": "google/gemma-4-e4b",
-          "name": "Gemma 4 e4b (local)",
+          "name": "Gemma 4 e4b (local, vision)",
           "contextWindow": 131072,
           "maxTokens": 32000,
           "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
