@@ -288,7 +288,7 @@ ai_cli=(
 formulae=(
     docker-compose
     # -- Local models (48GB M4 Pro) --
-    ollama               # Local LLM runtime (CLI + OpenAI-compatible server, model registry)
+    # ollama             # Disabled 2026-05-28: ~30% slower than llama.cpp, LM Studio (MLX) is daily driver, llama.cpp covers OpenAI-compat serving + benching
     llama.cpp            # GGUF inference engine (llama-cli, llama-server, llama-bench) — Metal-accelerated
 )
 
