@@ -382,7 +382,7 @@ See `agents/cursor/` for all configuration files.
 
 ### Homebrew
 
-Edit `macos/brew.sh` to customize packages. Organized by category with opt-in toggles:
+Edit `macos/brew.sh` to customize packages. Organized by category with opt-in toggles. Essentials include Chrome and Tailscale.
 
 ```bash
 AI=1 PRODUCTIVITY=1 SOCIAL=0 dotfiles brew

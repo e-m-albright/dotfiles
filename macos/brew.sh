@@ -195,6 +195,7 @@ python_cli=(
 # Applications (casks)
 essentials=(
     google-chrome       # Web browser
+    tailscale-app       # Mesh VPN for secure laptop access
     # iterm2            # Terminal emulator (disabled)
 )
 

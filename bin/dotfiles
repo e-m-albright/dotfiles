@@ -94,6 +94,14 @@ sub_doctor () {
     check_tool "jq" "jq" "brew install jq"
     check_tool "yq" "yq" "brew install yq"
 
+    printf "\n${BLUE}Essentials${NC}\n"
+    if command -v tailscale >/dev/null 2>&1 || [[ -d "/Applications/Tailscale.app" ]]; then
+        printf "  ${GREEN}✓${NC} %-20s installed\n" "Tailscale"
+    else
+        printf "  ${RED}✗${NC} %-20s ${YELLOW}brew install --cask tailscale-app${NC}\n" "Tailscale"
+        all_ok=false
+    fi
+
     printf "\n${BLUE}Editors${NC}\n"
     check_tool "Cursor" "cursor" "brew install --cask cursor"
     check_tool "Zed" "zed" "brew install --cask zed"
