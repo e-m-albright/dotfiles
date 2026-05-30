@@ -384,6 +384,7 @@ sub_brew_stale() {
         "terraform" "signal" "discord" "super-productivity"
         "ollama" "gemini-cli" "cmux" "graphite" "composer"
         "codex-app" "linear-linear" "micro"  # removed 2026-05-07 (micro→helix)
+        "wispr-flow"  # disabled 2026-05-29 (→ TypeWhisper, on-device dictation)
     )
     for pkg in "${disabled_pkgs[@]}"; do
         if brew list "$pkg" &>/dev/null 2>&1 || brew list --cask "$pkg" &>/dev/null 2>&1; then

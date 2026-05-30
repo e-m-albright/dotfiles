@@ -214,7 +214,7 @@ productivity=(
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
     granola                # AI notepad for meetings
-    wispr-flow             # Voice dictation
+    # wispr-flow           # Disabled 2026-05-29: switched to TypeWhisper (on-device Parakeet ASR + local Gemma / Apple Intelligence cleanup). Installed via the post-install block below — no Homebrew cask exists.
     # aqua-voice           # Voice dictation alternative (consider vs Wispr Flow)
     obsidian               # Knowledge base & note-taking (Markdown)
     qlmarkdown             # Quick Look: rendered .md previews (sbarex)
@@ -358,6 +358,43 @@ install_casks "${ide[@]}"
 if [[ "$PRODUCTIVITY" == "1" ]]; then
     print_section "Productivity Apps"
     install_casks "${productivity[@]}"
+fi
+
+# TypeWhisper — on-device voice-to-text (Parakeet ASR + local Gemma cleanup via
+# the LM Studio endpoint, or Apple Intelligence). Replaced Wispr Flow 2026-05-29.
+# No Homebrew cask exists, so pull the latest *stable* DMG from GitHub releases
+# (skip -daily / -rc / plugin builds). Idempotent: skips if already installed.
+if [[ "$PRODUCTIVITY" == "1" ]]; then
+    print_section "Voice-to-Text (TypeWhisper)"
+    if [[ -d "/Applications/TypeWhisper.app" ]]; then
+        print_pkg_installed "typewhisper"
+    else
+        print_pkg_installing "typewhisper"
+        tw_url=$(curl -fsSL "https://api.github.com/repos/TypeWhisper/typewhisper-mac/releases?per_page=100" 2>/dev/null \
+            | grep -oE 'https://[^"]+\.dmg' \
+            | grep -viE 'daily|-rc|plugin' \
+            | head -1)
+        if [[ -z "$tw_url" ]]; then
+            print_pkg_fail "typewhisper (no stable DMG found)"
+        else
+            tw_tmp=$(mktemp -d)
+            tw_dmg="$tw_tmp/TypeWhisper.dmg"
+            if curl -fsSL -o "$tw_dmg" "$tw_url"; then
+                tw_mount=$(hdiutil attach "$tw_dmg" -nobrowse -noautoopen 2>/dev/null \
+                    | grep -oE '/Volumes/.*' | tail -1)
+                if [[ -n "$tw_mount" ]] && [[ -d "$tw_mount/TypeWhisper.app" ]] \
+                    && cp -R "$tw_mount/TypeWhisper.app" /Applications/; then
+                    print_pkg_done "typewhisper"
+                else
+                    print_pkg_fail "typewhisper (mount/copy failed)"
+                fi
+                [[ -n "$tw_mount" ]] && hdiutil detach "$tw_mount" -quiet 2>/dev/null || true
+            else
+                print_pkg_fail "typewhisper (download failed)"
+            fi
+            rm -rf "$tw_tmp"
+        fi
+    fi
 fi
 
 print_section "Development Apps"
