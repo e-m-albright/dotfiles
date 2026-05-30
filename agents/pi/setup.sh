@@ -48,7 +48,9 @@ mkdir -p "$PI_HOME"
 # --- Config: defaults + providers (symlinked) ---
 ln -sf "$SCRIPT_DIR/settings.json" "$PI_HOME/settings.json"
 ln -sf "$SCRIPT_DIR/models.json" "$PI_HOME/models.json"
-print_success "Linked Pi settings + models.json (LM Studio provider)"
+[[ -f "$SCRIPT_DIR/presets.json" ]] && ln -sf "$SCRIPT_DIR/presets.json" "$PI_HOME/presets.json"
+[[ -f "$SCRIPT_DIR/permission-policy.json" ]] && ln -sf "$SCRIPT_DIR/permission-policy.json" "$PI_HOME/permission-policy.json"
+print_success "Linked Pi settings, models, presets, and permission policy"
 
 # --- Global instructions (AGENTS.md) — baked rules, same source as Codex ---
 if [[ -f "$SHARED_DIR/rules.md" ]]; then

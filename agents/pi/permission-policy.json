@@ -1,0 +1,64 @@
+{
+  "defaultAction": "allow",
+  "denyCommands": [
+    {
+      "name": "privileged shell",
+      "patterns": ["\\bsudo\\b", "\\bsu\\b"]
+    },
+    {
+      "name": "destructive filesystem command",
+      "patterns": ["(?:^|[;&|()\\s])rm(?:\\s|$)", "\\bchmod\\b", "\\bchown\\b", "\\bdd\\b", "\\bmkfs(?:\\.|\\s|$)"]
+    },
+    {
+      "name": "filesystem mutation command",
+      "patterns": ["(?:^|[;&|()\\s])cp(?:\\s|$)", "(?:^|[;&|()\\s])mv(?:\\s|$)", "(?:^|[;&|()\\s])ln(?:\\s|$)", "(?:^|[;&|()\\s])mkdir(?:\\s|$)", "(?:^|[;&|()\\s])rmdir(?:\\s|$)", "(?:^|[;&|()\\s])touch(?:\\s|$)", "(?:^|[;&|()\\s])tee(?:\\s|$)"]
+    },
+    {
+      "name": "untrusted network shell or download",
+      "patterns": ["\\bcurl\\b", "\\bwget\\b"]
+    },
+    {
+      "name": "inline interpreter escape hatch",
+      "patterns": ["\\b(python|python3|node|ruby|perl|bash|sh)\\s+-(c|e)\\b", "\\beval\\b"]
+    },
+    {
+      "name": "process control",
+      "patterns": ["\\bkill\\b", "\\bkillall\\b", "\\bpkill\\b", "\\blaunchctl\\b"]
+    },
+    {
+      "name": "destructive git or state-changing git",
+      "patterns": ["\\bgit\\s+add\\b", "\\bgit\\s+branch\\s+-[dD]\\b", "\\bgit\\s+checkout\\b", "\\bgit\\s+cherry-pick\\b", "\\bgit\\s+clean\\b", "\\bgit\\s+commit\\b", "\\bgit\\s+merge\\b", "\\bgit\\s+pull\\b", "\\bgit\\s+push\\b", "\\bgit\\s+rebase\\b", "\\bgit\\s+reset\\b", "\\bgit\\s+restore\\b", "\\bgit\\s+stash\\s+(drop|clear)\\b", "\\bgit\\s+switch\\b", "\\bgit\\s+tag\\b", "\\bgit\\s+worktree\\b"]
+    },
+    {
+      "name": "mutating GitHub CLI command",
+      "patterns": ["\\bgh\\s+api\\b", "\\bgh\\s+auth\\b", "\\bgh\\s+gist\\s+(create|edit)\\b", "\\bgh\\s+issue\\s+(close|comment|create|edit)\\b", "\\bgh\\s+pr\\s+(close|comment|create|edit|merge|ready|review)\\b", "\\bgh\\s+release\\s+create\\b", "\\bgh\\s+repo\\s+(clone|fork)\\b", "\\bgh\\s+run\\s+rerun\\b", "\\bgh\\s+workflow\\s+run\\b"]
+    },
+    {
+      "name": "dependency installation or removal",
+      "patterns": ["\\bbrew\\s+(install|uninstall|upgrade)\\b", "\\bnpm\\s+(ci|install|uninstall|update)\\b", "\\bnpx\\b", "\\bpnpm\\s+(add|install|remove)\\b", "\\bbun\\s+(add|install|remove)\\b", "\\byarn\\s+(add|install|remove)\\b", "\\bpip\\s+(install|uninstall)\\b", "\\bpipx\\b", "\\buv\\s+(add|pip|python|remove|sync|tool|venv)\\b", "\\bgo\\s+(get|install)\\b", "\\bcargo\\s+(install|publish)\\b"]
+    },
+    {
+      "name": "database migration",
+      "patterns": ["\\balembic\\s+(upgrade|downgrade)\\b", "\\bdrizzle-kit\\s+(push|migrate)\\b", "\\bgoose\\s+(up|down)\\b", "\\batlas\\s+migrate\\b"]
+    },
+    {
+      "name": "container or deploy mutation",
+      "patterns": ["\\bdocker\\s+compose\\s+(down|up)\\b", "\\bdocker-compose\\s+(down|up)\\b", "\\bdocker\\s+run\\b", "\\bdocker\\s+volume\\b", "\\bdocker\\s+system\\s+prune\\b", "\\bdocker\\s+image\\s+prune\\b", "\\bwrangler\\s+(deploy|delete)\\b"]
+    }
+  ],
+  "protectedPaths": [
+    ".env",
+    ".env.*",
+    "**/.env",
+    "**/.env.*",
+    "**/secrets/**",
+    "**/*key*",
+    "**/*token*",
+    "**/*credential*",
+    "~/.ssh/**",
+    "~/.aws/**",
+    "~/.config/gh/**",
+    ".git/**",
+    "node_modules/**"
+  ]
+}

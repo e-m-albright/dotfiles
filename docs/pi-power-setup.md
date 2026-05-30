@@ -29,17 +29,26 @@ Keep using `~/.agents/skills` + `AGENTS.md` as the canonical sources — that's 
 |------|------|--------|------------------|
 | `pi-superpowers-plus` | npm package | ADR-0005 | Superpowers port: TDD/verification gating + subagents (parity with Claude superpowers) |
 | `mitsupi` | npm package | ADR-0006 | Armin Ronacher's kit: `/review`, `/answer`, `/todos`, `/handoff`, `loop`, `notify`, ~19 skills |
-| `safe-git` | vendored extension | `agents/pi/extensions/safe-git.ts` | Approval gate for destructive git/gh — Pi's missing permission model |
+| `permission-policy` | vendored extension | `agents/pi/extensions/permission-policy.ts` + `agents/pi/permission-policy.json` | Deterministic blocklist for dangerous bash commands and protected paths |
+| `presets` | vendored extension | `agents/pi/extensions/presets.ts` + `agents/pi/presets.json` | `/preset read`, `/preset safe-auto`, and `/preset dev` tool/instruction profiles |
+| `safe-git` | vendored extension | `agents/pi/extensions/safe-git.ts` | Legacy approval gate for destructive git/gh. Mostly superseded by `permission-policy` while the policy is strict |
 | `git-status.ts` | vendored extension | `agents/pi/extensions/git-status.ts` | Git-aware footer status |
 
-### safe-git — usage & the headless caveat
+### Permission policy and presets
 
-Pi has no built-in permission system; `safe-git` intercepts bash calls and gates git/gh.
+Pi does not have Claude Code-style native permissions. We emulate the safe part with a deterministic extension, not model judgment:
 
-- **Levels** (`settings.json` → `safeGit.promptLevel`): `high` (force push, hard reset, clean, branch delete, stash drop, reflog expire), `medium` (the above + push, commit, rebase, merge, tag, cherry-pick, revert, all `gh`), `none` (off). Default: **medium**.
-- **Per-session controls**: `/safegit` (toggle), `/safegit-level <high|medium|none>`, `/safegit-status`. Each prompt offers approve-once / decline / auto-approve-this-type / auto-block-this-type for the session.
-- **⚠️ Headless behavior**: in non-interactive mode (`pi -p`, RPC, SDK) matched commands are **blocked entirely** — the deliberate fail-safe. **If an automation repo needs git in headless Pi, set `"safeGit": { "enabledByDefault": false }` in that repo's `.pi/settings.json`.**
-- Vendored & adapted (notification deps stripped) from [qualisero/rhubarb-pi](https://github.com/qualisero/rhubarb-pi) (MIT). Needs a live `/reload` smoke test before fully trusting it.
+- **Policy source**: `agents/pi/permission-policy.json`, symlinked to `~/.pi/agent/permission-policy.json` by `dotfiles agent-setup`. A project can add `.pi/permission-policy.json`; project rules are merged on top.
+- **Default behavior**: allow commands unless a deny rule or protected path matches. The deny list is intentionally conservative: privileged shell, filesystem mutation, curl/wget, process control, state-changing git/GitHub, dependency installs, migrations, Docker/deploy mutation, and inline interpreter escape hatches.
+- **Protected paths**: `.env*`, secrets folders, key/token/credential paths, `~/.ssh`, `~/.aws`, `~/.config/gh`, `.git`, and `node_modules` are blocked for `read`, `write`, `edit`, and bash mentions.
+- **Status**: `/permissions-status` shows the active merged policy summary.
+- **Presets**: `agents/pi/presets.json`, symlinked to `~/.pi/agent/presets.json`. `settings.json` sets `defaultPreset` to `dev`. Use `/preset read`, `/preset safe-auto`, or `/preset dev` to switch tools and append matching behavior instructions.
+
+Reviewer-model approval is not native in Pi. It can be built as another extension using provider APIs or Pi's SDK, but keep it as a second opinion after deterministic allow/deny. A malformed or uncertain reviewer response should block or ask a human, never override the policy.
+
+### safe-git legacy note
+
+`safe-git` still exists as a session-level prompt gate, but the stricter `permission-policy` extension now blocks the same state-changing git/gh classes before `safe-git` can prompt. Keep `safe-git` around as a fallback while tuning the deterministic policy.
 
 ### Worth evaluating later
 
