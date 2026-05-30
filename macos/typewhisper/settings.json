@@ -1,0 +1,47 @@
+{
+  "preferences": {
+    "dictationRecoveryLanguage": "auto",
+    "fileTranscriptionLanguage": "auto",
+    "hybridHotkey": {
+      "isFn": false,
+      "keyCode": 50,
+      "modifierFlags": 0,
+      "modifierKeyCodes": [],
+      "isDoubleTap": false
+    },
+    "hybridHotkeys": [
+      {
+        "isFn": false,
+        "keyCode": 50,
+        "modifierFlags": 0,
+        "modifierKeyCodes": [],
+        "isDoubleTap": false
+      }
+    ],
+    "indicatorStyle": "overlay",
+    "indicatorTranscriptPreviewFontSizeOffset": 0,
+    "notchIndicatorRightContent": "waveform",
+    "overlayPosition": "bottom",
+    "plugin.com.typewhisper.filler-words.enabled": true,
+    "plugin.com.typewhisper.filler-words.words": "ah\nahh\neh\nehm\nhm\nhmm\nuh\nuhh\num\numm\näh\nähm",
+    "plugin.com.typewhisper.filler-words.wordsDefaultsVersion": 2,
+    "plugin.com.typewhisper.parakeet.enabled": true,
+    "plugin.com.typewhisper.parakeet.selectedModel": "parakeet-tdt-0.6b-v3",
+    "plugin.com.typewhisper.parakeet.selectedVersion": "v3",
+    "selectedEngine": "parakeet",
+    "selectedIndustryPreset": "general",
+    "setupWizardCompleted": true,
+    "showMenuBarIcon": true,
+    "soundError": "system:Submarine",
+    "soundRecordingStarted": "system:Pop",
+    "soundTranscriptionSuccess": "system:Purr",
+    "usageIntent": "personalOSS",
+    "userType": "private",
+    "watchFolderAutoStart": false,
+    "watchFolderDeleteSource": false,
+    "watchFolderLanguage": "auto",
+    "watchFolderOutputFormat": "md",
+    "welcomeSheetShown": true,
+    "workUsagePromptDismissed": true
+  }
+}

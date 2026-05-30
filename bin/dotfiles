@@ -28,6 +28,7 @@ sub_help () {
     printf "   test [--quick]       Run scaffold eval framework\n"
     printf "   completions          Output shell completions (eval to install)\n"
     printf "   llm-bench <cmd>      Evaluate local LM Studio models (list|bench|estimate|compare)\n"
+    printf "   typewhisper <cmd>    Manage TypeWhisper config (status|apply)\n"
     printf "\n"
     printf "${BLUE}Namespaces:${NC}\n"
     printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
@@ -515,6 +516,10 @@ sub_llm_bench() {
     "$DOTFILES_DIR/macos/llm-bench.sh" "$@"
 }
 
+sub_typewhisper() {
+    "$DOTFILES_DIR/macos/typewhisper.sh" "$@"
+}
+
 sub_completions() {
     cat << 'EOF'
 # Zsh completions for dotfiles command
@@ -533,6 +538,7 @@ _dotfiles() {
         'test:Run scaffold eval framework'
         'completions:Output shell completions'
         'llm-bench:Evaluate local LM Studio models'
+        'typewhisper:Manage TypeWhisper config'
         'agent:Agent vendor namespace (setup, overview)'
         'verify:Verification namespace (vendors, skills)'
         'brew:Brew namespace (install, stale)'
@@ -605,6 +611,7 @@ case $COMMAND_NAME in
     test)        shift; sub_test "$@" ;;
     completions) sub_completions ;;
     llm-bench)   shift; sub_llm_bench "$@" ;;
+    typewhisper) shift; sub_typewhisper "$@" ;;
 
     # Namespaces
     agent)  shift; ns_agent "$@" ;;
