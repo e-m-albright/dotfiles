@@ -75,3 +75,26 @@ class FakeClock:
 
     def now(self) -> datetime:
         return self._fixed
+
+
+def make_fake_context(
+    *,
+    runner: "FakeProcessRunner | None" = None,
+    fs: "FakeFileSystem | None" = None,
+    interactive: bool = False,
+    home: Path | None = None,
+):
+    """Build an AppContext backed by fakes for CLI tests."""
+    from datetime import UTC, datetime
+
+    from dotfiles_cli.cli.context import AppContext
+    from dotfiles_cli.core.settings import Settings
+
+    return AppContext(
+        runner=runner or FakeProcessRunner(),
+        fs=fs or FakeFileSystem(),
+        clock=FakeClock(datetime(2026, 5, 31, tzinfo=UTC)),
+        settings=Settings(),
+        interactive=interactive,
+        home=home or Path("/home/evan"),
+    )
