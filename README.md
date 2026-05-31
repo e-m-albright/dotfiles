@@ -35,6 +35,12 @@ dotfiles install
 
 The installer is idempotent — safe to re-run anytime.
 
+### CLI development
+
+The `dotfiles` CLI is migrating to a hexagonal Python/Typer app in `cli/`
+(uv-managed). Run dev checks with `just check`. `bin/dotfiles` delegates migrated
+commands to the Python CLI and falls back to the legacy Bash router for the rest.
+
 ---
 
 ## Project Scaffolding
@@ -439,7 +445,8 @@ eval "$(dotfiles completions)"
 ```
 dotfiles/
 ├── install.sh              # Main installer (run this)
-├── bin/                    # CLI tools (dotfiles command)
+├── bin/                    # CLI tools (dotfiles command — shim delegates migrated subcommands to cli/)
+├── cli/                    # Python/Typer CLI (uv-managed, hexagonal). Dev gate: `just check`
 ├── shell/                  # Zsh config + theme
 ├── git/                    # Git config + global ignores
 ├── editors/                # Cursor settings + Obsidian vault configs

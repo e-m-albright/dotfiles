@@ -84,3 +84,10 @@ tools/*/.venv/
 tools/*/.ruff_cache/
 tools/*/__pycache__/
 tools/*/yt_ingest/__pycache__/
+
+# Python CLI (cli/) build + tool caches
+cli/.venv/
+cli/.ruff_cache/
+cli/.pytest_cache/
+cli/.coverage
+cli/htmlcov/
