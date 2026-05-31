@@ -35,7 +35,27 @@ def test_fake_filesystem_roundtrips() -> None:
     assert fs.read_text(p) == "ssh-ed25519 AAAA test\n"
 
 
+def test_fake_runner_honors_check_true_on_failure() -> None:
+    import subprocess
+
+    import pytest
+
+    runner = FakeProcessRunner()
+    runner.script(("false",), exit_code=1, stderr="boom")
+    with pytest.raises(subprocess.CalledProcessError):
+        runner.run(["false"], check=True)
+
+
+def test_fake_runner_check_true_ok_when_success() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("true",), exit_code=0)
+    result = runner.run(["true"], check=True)
+    assert result.ok is True
+
+
 def test_fake_clock_is_fixed() -> None:
-    clock = FakeClock(datetime(2026, 5, 31, 12, 0, 0))
+    from datetime import UTC
+
+    clock = FakeClock(datetime(2026, 5, 31, 12, 0, 0, tzinfo=UTC))
     assert isinstance(clock, Clock)
-    assert clock.now() == datetime(2026, 5, 31, 12, 0, 0)
+    assert clock.now() == datetime(2026, 5, 31, 12, 0, 0, tzinfo=UTC)

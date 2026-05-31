@@ -1,5 +1,6 @@
 """In-memory fakes implementing the core ports. Tests only."""
 
+import subprocess
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -36,9 +37,14 @@ class FakeProcessRunner:
     ) -> CommandResult:
         key = tuple(command)
         self.calls.append(key)
-        return self._scripted.get(
+        result = self._scripted.get(
             key, CommandResult(command=key, exit_code=0, stdout="", stderr="")
         )
+        if check and result.exit_code != 0:
+            raise subprocess.CalledProcessError(
+                result.exit_code, list(key), output=result.stdout, stderr=result.stderr
+            )
+        return result
 
 
 class FakeFileSystem:
