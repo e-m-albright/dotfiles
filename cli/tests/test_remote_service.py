@@ -177,3 +177,86 @@ def test_disable_dry_run_makes_no_changes() -> None:
     assert ("sudo", "systemsetup", "-setremotelogin", "off") not in runner.calls
     assert ("pkill", "-u", "evan", "mosh-server") not in runner.calls
     assert any("DRY RUN" in s.message for s in steps)
+
+
+def test_sudo_failure_is_reported_as_error_with_fda_hint() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(("id", "-un"), stdout="evan\n")
+    runner.script(("sudo", "systemsetup", "-setremotelogin", "off"), exit_code=1)
+    service = RemoteService(
+        runner=runner, fs=FakeFileSystem(), interactive=True, home=Path("/home/evan")
+    )
+
+    steps = service.disable(dry_run=False, kill_sessions=False)
+
+    err = [s for s in steps if s.level == "error"]
+    assert err, "expected an error step on sudo failure"
+    assert "Full Disk Access" in err[0].message
+
+
+def test_ensure_tool_reports_brew_install_failure() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("mosh", "--version"), exit_code=1)
+    runner.script(("brew", "install", "mosh"), exit_code=1)
+    runner.script(("zellij", "--version"), stdout="zellij 0.44.3\n")
+    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(("id", "-un"), stdout="evan\n")
+    runner.script(("sudo", "-n", "true"), exit_code=0)
+    service = RemoteService(
+        runner=runner,
+        fs=FakeFileSystem(),
+        interactive=True,
+        home=Path("/home/evan"),
+        which=lambda _name: "/opt/homebrew/bin/mosh-server",
+    )
+
+    steps = service.setup(dry_run=False, add_key=None, harden=False, session="mobile")
+
+    err = [s for s in steps if s.level == "error"]
+    assert err, "expected an error step on brew install failure"
+    assert "mosh" in err[0].message
+
+
+def test_add_key_preserves_existing_key_without_trailing_newline() -> None:
+    fs = FakeFileSystem()
+    keys = Path("/home/evan/.ssh/authorized_keys")
+    fs.mkdir(keys.parent)
+    fs.write_text(keys, "ssh-rsa AAAAOLD oldkey")  # no trailing newline
+    runner = _base_runner()
+    service = RemoteService(
+        runner=runner,
+        fs=fs,
+        interactive=True,
+        home=Path("/home/evan"),
+        which=lambda _name: "/opt/homebrew/bin/mosh-server",
+    )
+    new = "ssh-ed25519 AAAANEW newkey"
+    service.setup(dry_run=False, add_key=new, harden=False, session="mobile")
+    lines = fs.read_text(keys).splitlines()
+    assert "ssh-rsa AAAAOLD oldkey" in lines
+    assert new in lines
+
+
+def test_setup_harden_writes_config_and_restarts_sshd() -> None:
+    runner = _base_runner()
+    fs = FakeFileSystem()
+    service = RemoteService(
+        runner=runner,
+        fs=fs,
+        interactive=True,
+        home=Path("/home/evan"),
+        which=lambda _name: "/opt/homebrew/bin/mosh-server",
+    )
+    service.setup(dry_run=False, add_key=None, harden=True, session="mobile")
+    assert fs.exists(Path("/home/evan/.dotfiles-sshd-remote.conf"))
+    assert ("sudo", "mkdir", "-p", "/etc/ssh/sshd_config.d") in runner.calls
+    assert (
+        "sudo",
+        "install",
+        "-m",
+        "644",
+        "/home/evan/.dotfiles-sshd-remote.conf",
+        "/etc/ssh/sshd_config.d/90-dotfiles-remote.conf",
+    ) in runner.calls
+    assert ("sudo", "launchctl", "kickstart", "-k", "system/com.openssh.sshd") in runner.calls

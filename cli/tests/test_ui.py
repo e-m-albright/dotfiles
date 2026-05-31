@@ -23,7 +23,8 @@ def test_render_steps_writes_each_message_with_a_glyph() -> None:
     assert "careful" in out
     assert "boom" in out
     assert "noted" in out
-    # success/warn/error use distinct leading glyphs
+    # success/warn/error/info use distinct leading glyphs
     assert "✓" in out
     assert "⚠" in out
     assert "✗" in out
+    assert "•" in out

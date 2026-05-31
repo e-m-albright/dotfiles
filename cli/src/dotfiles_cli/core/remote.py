@@ -67,8 +67,8 @@ class RemoteService:
 
     def _tailscale(self) -> tuple[bool, str | None]:
         if self._runner.run(("tailscale", "status")).ok:
-            ip = self._line(("tailscale", "ip", "-4")).splitlines()
-            return True, (ip[0] if ip else None)
+            ip = self._line(("tailscale", "ip", "-4"))
+            return True, (ip or None)
         return False, None
 
     def status(self) -> RemoteStatus:
@@ -95,21 +95,37 @@ class RemoteService:
     def _sudo(self, args: tuple[str, ...], *, dry_run: bool) -> StepResult:
         if dry_run:
             return StepResult(level="info", message="DRY RUN: sudo " + " ".join(args))
-        if self._interactive or self._runner.run(("sudo", "-n", "true")).ok:
-            self._runner.run(("sudo", *args))
+        if not (self._interactive or self._runner.run(("sudo", "-n", "true")).ok):
+            return StepResult(
+                level="warn",
+                message="Needs sudo in an interactive terminal. Run manually: sudo "
+                + " ".join(args),
+            )
+        result = self._runner.run(("sudo", *args))
+        if result.ok:
             return StepResult(level="success", message="sudo " + " ".join(args))
-        return StepResult(
-            level="warn",
-            message="Needs sudo in an interactive terminal. Run manually: sudo " + " ".join(args),
-        )
+        hint = ""
+        if args and args[0] == "systemsetup":
+            hint = " — if blocked by Full Disk Access, use System Settings -> General -> Sharing"
+        return StepResult(level="error", message=f"sudo {' '.join(args)} failed{hint}")
 
     def _ensure_tool(self, name: str, *, dry_run: bool) -> StepResult:
         if self._runner.run((name, "--version")).ok:
             return StepResult(level="success", message=f"{name} available")
         if dry_run:
             return StepResult(level="info", message=f"DRY RUN: brew install {name}")
-        self._runner.run(("brew", "install", name))
+        result = self._runner.run(("brew", "install", name))
+        if not result.ok:
+            return StepResult(level="error", message=f"brew install {name} failed")
         return StepResult(level="success", message=f"installed {name}")
+
+    def _write_key(self, keys: Path, add_key: str) -> StepResult:
+        existing = self._fs.read_text(keys) if self._fs.exists(keys) else ""
+        if add_key in existing.splitlines():
+            return StepResult(level="success", message="Phone public key already present")
+        separator = "" if not existing or existing.endswith("\n") else "\n"
+        self._fs.write_text(keys, existing + separator + add_key + "\n")
+        return StepResult(level="success", message="Added phone public key")
 
     def _ensure_authorized_key(self, add_key: str | None, *, dry_run: bool) -> list[StepResult]:
         ssh_dir = self._home / ".ssh"
@@ -136,12 +152,7 @@ class RemoteService:
         if dry_run:
             out.append(StepResult(level="info", message="DRY RUN: append phone key if missing"))
             return out
-        existing = self._fs.read_text(keys) if self._fs.exists(keys) else ""
-        if add_key in existing.splitlines():
-            out.append(StepResult(level="success", message="Phone public key already present"))
-        else:
-            self._fs.write_text(keys, existing + add_key + "\n")
-            out.append(StepResult(level="success", message="Added phone public key"))
+        out.append(self._write_key(keys, add_key))
         return out
 
     def _enable_remote_login(self, *, dry_run: bool) -> StepResult:
