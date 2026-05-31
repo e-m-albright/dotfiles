@@ -1,0 +1,71 @@
+"""In-memory fakes implementing the core ports. Tests only."""
+
+from collections.abc import Mapping, Sequence
+from datetime import datetime
+from pathlib import Path
+
+from dotfiles_cli.core.models import CommandResult
+
+
+class FakeProcessRunner:
+    """Records calls; returns scripted results, defaulting to empty success."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, ...]] = []
+        self._scripted: dict[tuple[str, ...], CommandResult] = {}
+
+    def script(
+        self,
+        command: Sequence[str],
+        *,
+        exit_code: int = 0,
+        stdout: str = "",
+        stderr: str = "",
+    ) -> None:
+        key = tuple(command)
+        self._scripted[key] = CommandResult(
+            command=key, exit_code=exit_code, stdout=stdout, stderr=stderr
+        )
+
+    def run(
+        self,
+        command: Sequence[str],
+        *,
+        check: bool = False,
+        env: Mapping[str, str] | None = None,
+    ) -> CommandResult:
+        key = tuple(command)
+        self.calls.append(key)
+        return self._scripted.get(
+            key, CommandResult(command=key, exit_code=0, stdout="", stderr="")
+        )
+
+
+class FakeFileSystem:
+    """In-memory filesystem keyed by Path."""
+
+    def __init__(self) -> None:
+        self._files: dict[Path, str] = {}
+        self._dirs: set[Path] = set()
+
+    def read_text(self, path: Path) -> str:
+        return self._files[path]
+
+    def write_text(self, path: Path, content: str) -> None:
+        self._files[path] = content
+
+    def exists(self, path: Path) -> bool:
+        return path in self._files or path in self._dirs
+
+    def mkdir(self, path: Path, *, parents: bool = True) -> None:
+        self._dirs.add(path)
+
+
+class FakeClock:
+    """Fixed clock."""
+
+    def __init__(self, fixed: datetime) -> None:
+        self._fixed = fixed
+
+    def now(self) -> datetime:
+        return self._fixed
