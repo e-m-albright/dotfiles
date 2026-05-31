@@ -119,6 +119,7 @@ my-project/
 
 - **Zsh + Oh My Zsh**: Custom two-line prompt with git status, venv indicator, error-aware prompt character
 - **Ghostty**: GPU-accelerated terminal with desktop notifications
+- **Termius**: SSH/SFTP client and host manager
 - **Rectangle**: Window management
 - **Shell aliases**: `cc` (Claude Code with profiles), `ccr` (AI code review), `cca` (address PR feedback)
 
@@ -153,7 +154,7 @@ my-project/
 
 | Category | Tools |
 |----------|-------|
-| **Core** | git, git-lfs, delta (diffs), gh (GitHub CLI), jq, yq, wget, fd, ripgrep, fzf, zoxide, micro (editor), yazi (file manager) + preview helpers (poppler, resvg, imagemagick, sevenzip) |
+| **Core** | git, git-lfs, delta (diffs), gh (GitHub CLI), jq, yq, wget, fd, ripgrep, fzf, zoxide, helix (editor), yazi (file manager) + preview helpers (poppler, resvg, imagemagick, sevenzip), tmux, zellij |
 | **System** | htop, iftop, nmap, dockutil, terminal-notifier |
 | **Dev** | just (task runner), lefthook (git hooks), shellcheck (shell linting), hyperfine (benchmarks), atlas (migrations), duckdb, infisical (secrets), wrangler (Cloudflare deploys, via npm — brew formula is the unrelated Erlang tool) |
 

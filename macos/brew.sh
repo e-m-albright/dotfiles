@@ -149,6 +149,7 @@ core_cli=(
     sevenzip            # Peek inside archives (.zip, .7z, .rar)
     # ffmpeg            # Video/audio thumbnails — disabled: ~300MB+ with deps, rarely needed
     tmux                # Terminal multiplexer
+    zellij              # Modern terminal workspace and multiplexer
 )
 
 system_cli=(
@@ -212,6 +213,7 @@ productivity=(
     # raycast              # Launcher + actions; can replace Rectangle/Flycut
     # warp                 # AI terminal (disabled)
     ghostty                # GPU-accelerated terminal
+    termius                # SSH/SFTP client and host manager
     caffeine               # Intel-only, requires Rosetta
     flux-app               # Screen color temperature
     granola                # AI notepad for meetings
