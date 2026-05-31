@@ -4,7 +4,7 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
-from dotfiles_cli.core.models import ConnectionInfo, RemoteStatus
+from dotfiles_cli.core.models import ConnectionInfo, RemoteStatus, StepResult
 from dotfiles_cli.core.ports import FileSystem, ProcessRunner
 
 _KEY_PREFIXES = ("ssh-ed25519 ", "ssh-rsa ", "ecdsa-sha2-")
@@ -22,6 +22,10 @@ def is_ssh_public_key(value: str) -> bool:
         return False
     parts = value.split()
     return len(parts) >= 2 and bool(parts[1])
+
+
+class InvalidKeyError(ValueError):
+    """Raised when --add-key is not a valid SSH public key."""
 
 
 class RemoteService:
@@ -87,3 +91,98 @@ class RemoteService:
             mosh_server=self._mosh_server(),
             tailnet_ip=ip if connected else None,
         )
+
+    def _sudo(self, args: tuple[str, ...], *, dry_run: bool) -> StepResult:
+        if dry_run:
+            return StepResult(level="info", message="DRY RUN: sudo " + " ".join(args))
+        if self._interactive or self._runner.run(("sudo", "-n", "true")).ok:
+            self._runner.run(("sudo", *args))
+            return StepResult(level="success", message="sudo " + " ".join(args))
+        return StepResult(
+            level="warn",
+            message="Needs sudo in an interactive terminal. Run manually: sudo " + " ".join(args),
+        )
+
+    def _ensure_tool(self, name: str, *, dry_run: bool) -> StepResult:
+        if self._runner.run((name, "--version")).ok:
+            return StepResult(level="success", message=f"{name} available")
+        if dry_run:
+            return StepResult(level="info", message=f"DRY RUN: brew install {name}")
+        self._runner.run(("brew", "install", name))
+        return StepResult(level="success", message=f"installed {name}")
+
+    def _ensure_authorized_key(self, add_key: str | None, *, dry_run: bool) -> list[StepResult]:
+        ssh_dir = self._home / ".ssh"
+        keys = ssh_dir / "authorized_keys"
+        out: list[StepResult] = []
+        if dry_run:
+            out.append(StepResult(level="info", message=f"DRY RUN: ensure {keys} (700/600)"))
+        else:
+            self._fs.mkdir(ssh_dir)
+            if not self._fs.exists(keys):
+                self._fs.write_text(keys, "")
+            out.append(StepResult(level="success", message="SSH authorized_keys ready"))
+
+        if add_key is None:
+            out.append(
+                StepResult(
+                    level="warn",
+                    message="No phone key provided. Rerun with --add-key '<public key>'",
+                )
+            )
+            return out
+        if not is_ssh_public_key(add_key):
+            raise InvalidKeyError(add_key)
+        if dry_run:
+            out.append(StepResult(level="info", message="DRY RUN: append phone key if missing"))
+            return out
+        existing = self._fs.read_text(keys) if self._fs.exists(keys) else ""
+        if add_key in existing.splitlines():
+            out.append(StepResult(level="success", message="Phone public key already present"))
+        else:
+            self._fs.write_text(keys, existing + add_key + "\n")
+            out.append(StepResult(level="success", message="Added phone public key"))
+        return out
+
+    def _enable_remote_login(self, *, dry_run: bool) -> StepResult:
+        if self._remote_login_on():
+            return StepResult(level="success", message="Remote Login already enabled")
+        return self._sudo(("systemsetup", "-setremotelogin", "on"), dry_run=dry_run)
+
+    def _harden(self, harden: bool, *, dry_run: bool) -> list[StepResult]:
+        if not harden:
+            return [
+                StepResult(
+                    level="warn",
+                    message="SSH password auth unchanged. Rerun with --harden-ssh "
+                    "after adding your Termius key",
+                )
+            ]
+        if dry_run:
+            return [
+                StepResult(
+                    level="info", message=f"DRY RUN: write key-only config to {_HARDEN_PATH}"
+                ),
+                StepResult(level="info", message="DRY RUN: launchctl kickstart sshd"),
+            ]
+        staging = self._home / ".dotfiles-sshd-remote.conf"
+        self._fs.write_text(staging, _HARDEN_CONTENT)
+        out = [self._sudo(("mkdir", "-p", _HARDEN_DIR), dry_run=False)]
+        out.append(self._sudo(("install", "-m", "644", str(staging), _HARDEN_PATH), dry_run=False))
+        out.append(
+            self._sudo(("launchctl", "kickstart", "-k", "system/com.openssh.sshd"), dry_run=False)
+        )
+        out.append(StepResult(level="success", message="SSH hardened for key-only login"))
+        return out
+
+    def setup(
+        self, *, dry_run: bool, add_key: str | None, harden: bool, session: str
+    ) -> list[StepResult]:
+        steps = [
+            self._ensure_tool("mosh", dry_run=dry_run),
+            self._ensure_tool("zellij", dry_run=dry_run),
+        ]
+        steps.extend(self._ensure_authorized_key(add_key, dry_run=dry_run))
+        steps.append(self._enable_remote_login(dry_run=dry_run))
+        steps.extend(self._harden(harden, dry_run=dry_run))
+        return steps
