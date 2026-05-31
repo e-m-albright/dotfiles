@@ -35,3 +35,6 @@ pre-commit:
         - ".ai/prompts/**/*.{md,mdc}"
         - "AGENTS.md"
       run: python3 prompts/scaffolds/audit-pipeline/scripts/audit/ai_usage.py
+    cli-check:
+      glob: "cli/**/*.py"
+      run: just check
