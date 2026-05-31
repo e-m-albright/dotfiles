@@ -1,8 +1,12 @@
 """Top-level Typer application. Subcommands are mounted here; logic lives in core."""
 
+import sys
+
 import typer
 
 from dotfiles_cli import __version__
+from dotfiles_cli.cli.context import build_real_context
+from dotfiles_cli.cli.remote import remote_app
 from dotfiles_cli.console import console
 
 app = typer.Typer(
@@ -11,6 +15,13 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
+
+
+@app.callback()
+def _main(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
+    """Build the composition context once if a test hasn't injected one."""
+    if ctx.obj is None:
+        ctx.obj = build_real_context(interactive=sys.stdin.isatty())
 
 
 def _stub(name: str, display: str | None = None) -> typer.Typer:
@@ -25,7 +36,7 @@ def _stub(name: str, display: str | None = None) -> typer.Typer:
 
 
 # Command tree (stubs filled in by later phases P1b-P1d).
-app.add_typer(_stub("remote"), name="remote")
+app.add_typer(remote_app, name="remote")
 app.add_typer(_stub("session"), name="session")
 app.add_typer(_stub("session", display="sesh"), name="sesh")  # alias
 app.add_typer(_stub("doctor"), name="doctor")

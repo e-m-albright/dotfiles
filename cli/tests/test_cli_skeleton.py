@@ -23,3 +23,9 @@ def test_version_command() -> None:
 def test_session_alias_sesh_is_registered() -> None:
     result = runner.invoke(app, ["sesh", "--help"])
     assert result.exit_code == 0
+
+
+def test_root_callback_builds_context_when_none_injected() -> None:
+    # version command works without an injected obj (callback builds the real context)
+    result = runner.invoke(app, ["version"])
+    assert result.exit_code == 0
