@@ -28,6 +28,8 @@ sub_help () {
     printf "   test [--quick]       Run scaffold eval framework\n"
     printf "   completions          Output shell completions (eval to install)\n"
     printf "   llm-bench <cmd>      Evaluate local LM Studio models (list|bench|estimate|compare)\n"
+    printf "   remote-setup [opts] Set up SSH/Mosh/Zellij access for Termius\n"
+    printf "   remote-disable [opts] Turn off macOS Remote Login for phone access\n"
     printf "\n"
     printf "${BLUE}Namespaces:${NC}\n"
     printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
@@ -171,6 +173,16 @@ sub_doctor () {
     check_tool "Just" "just" "brew install just"
     check_tool "Delta" "delta" "brew install git-delta"
     check_tool "golangci-lint" "golangci-lint" "brew install golangci-lint"
+
+    printf "\n${BLUE}Remote Shell${NC}\n"
+    check_tool "Mosh" "mosh" "brew install mosh"
+    check_tool "Zellij" "zellij" "brew install zellij"
+    if [[ -d "/Applications/Termius.app" ]]; then
+        printf "  ${GREEN}✓${NC} %-20s installed\n" "Termius"
+    else
+        printf "  ${RED}✗${NC} %-20s ${YELLOW}brew install --cask termius${NC}\n" "Termius"
+        all_ok=false
+    fi
 
     printf "\n${BLUE}Configuration${NC}\n"
     check_symlink ".zshrc" "$DOTFILES_DIR/shell/.zshrc" ~/.zshrc
@@ -515,6 +527,14 @@ sub_llm_bench() {
     "$DOTFILES_DIR/macos/llm-bench.sh" "$@"
 }
 
+sub_remote_setup() {
+    "$DOTFILES_DIR/macos/remote-setup.sh" "$@"
+}
+
+sub_remote_disable() {
+    "$DOTFILES_DIR/macos/remote-disable.sh" "$@"
+}
+
 sub_completions() {
     cat << 'EOF'
 # Zsh completions for dotfiles command
@@ -533,6 +553,8 @@ _dotfiles() {
         'test:Run scaffold eval framework'
         'completions:Output shell completions'
         'llm-bench:Evaluate local LM Studio models'
+        'remote-setup:Set up SSH/Mosh/Zellij access for Termius'
+        'remote-disable:Turn off macOS Remote Login for phone access'
         'agent:Agent vendor namespace (setup, overview)'
         'verify:Verification namespace (vendors, skills)'
         'brew:Brew namespace (install, stale)'
@@ -605,6 +627,8 @@ case $COMMAND_NAME in
     test)        shift; sub_test "$@" ;;
     completions) sub_completions ;;
     llm-bench)   shift; sub_llm_bench "$@" ;;
+    remote-setup) shift; sub_remote_setup "$@" ;;
+    remote-disable) shift; sub_remote_disable "$@" ;;
 
     # Namespaces
     agent)  shift; ns_agent "$@" ;;

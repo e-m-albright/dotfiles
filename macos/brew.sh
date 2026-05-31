@@ -149,6 +149,7 @@ core_cli=(
     sevenzip            # Peek inside archives (.zip, .7z, .rar)
     # ffmpeg            # Video/audio thumbnails — disabled: ~300MB+ with deps, rarely needed
     tmux                # Terminal multiplexer
+    mosh                # Roaming SSH-compatible shell for phone connections
     zellij              # Modern terminal workspace and multiplexer
 )
 

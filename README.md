@@ -154,7 +154,7 @@ my-project/
 
 | Category | Tools |
 |----------|-------|
-| **Core** | git, git-lfs, delta (diffs), gh (GitHub CLI), jq, yq, wget, fd, ripgrep, fzf, zoxide, helix (editor), yazi (file manager) + preview helpers (poppler, resvg, imagemagick, sevenzip), tmux, zellij |
+| **Core** | git, git-lfs, delta (diffs), gh (GitHub CLI), jq, yq, wget, fd, ripgrep, fzf, zoxide, helix (editor), yazi (file manager) + preview helpers (poppler, resvg, imagemagick, sevenzip), tmux, mosh, zellij |
 | **System** | htop, iftop, nmap, dockutil, terminal-notifier |
 | **Dev** | just (task runner), lefthook (git hooks), shellcheck (shell linting), hyperfine (benchmarks), atlas (migrations), duckdb, infisical (secrets), wrangler (Cloudflare deploys, via npm — brew formula is the unrelated Erlang tool) |
 
@@ -407,7 +407,18 @@ dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
 dotfiles agents              # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent-setup        # Configure Claude + Cursor + Codex + Pi (--work/--personal, optional --reset-mcp)
 dotfiles completions         # Output shell completions
+dotfiles remote-setup --dry-run
+                             # Preview Termius SSH/Mosh/Zellij setup
+dotfiles remote-setup --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
+                             # Enable phone access with key-only SSH
+dotfiles remote-disable --dry-run
+                             # Preview turning off macOS Remote Login
+dotfiles remote-disable      # Turn off macOS Remote Login
+dotfiles remote-disable --kill-sessions
+                             # Turn off Remote Login and kill active SSH/Mosh sessions
 ```
+
+`remote-setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `remote-disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
 
 Enable tab completion:
 ```bash
