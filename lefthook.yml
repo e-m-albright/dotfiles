@@ -37,4 +37,10 @@ pre-commit:
       run: python3 prompts/scaffolds/audit-pipeline/scripts/audit/ai_usage.py
     cli-check:
       glob: "cli/**/*.py"
+      run: just lint-fast
+
+pre-push:
+  commands:
+    cli-full-check:
+      glob: "cli/**/*.py"
       run: just check

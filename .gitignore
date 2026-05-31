@@ -91,3 +91,4 @@ cli/.ruff_cache/
 cli/.pytest_cache/
 cli/.coverage
 cli/htmlcov/
+cli/**/__pycache__/
