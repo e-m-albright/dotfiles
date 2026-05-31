@@ -260,19 +260,15 @@ function renderFooter(ctx: ExtensionContext, gitState: GitState, quotaState: Quo
 	const contextPercent = usage?.percent === null || usage?.percent === undefined ? "?" : usage.percent.toFixed(1);
 	const contextTokens = usage?.tokens === null || usage?.tokens === undefined ? "?" : formatTokens(usage.tokens);
 	const groupSep = dim("   ");
-	const tokenParts: string[] = [];
-	if (totalInput) tokenParts.push(dim(` ${formatTokens(totalInput)}`));
-	if (totalOutput) tokenParts.push(dim(` ${formatTokens(totalOutput)}`));
-	const cacheParts: string[] = [];
-	if (totalCacheRead) cacheParts.push(dim(` ${formatTokens(totalCacheRead)}`));
-	if (totalCacheWrite) cacheParts.push(dim(` ${formatTokens(totalCacheWrite)}`));
+	const tokenText = `${dim("in")} ${dim(formatTokens(totalInput))} ${dim("out")} ${dim(formatTokens(totalOutput))}`;
+	const cacheText = `${dim("read")} ${dim(formatTokens(totalCacheRead))} ${dim("write")} ${dim(formatTokens(totalCacheWrite))}`;
 
 	const groups = [
 		amberRamp(contextPercentValue, `ctx: ${contextPercent}% ${contextTokens}/${formatTokens(contextWindow)}`),
 		authSegment(ctx, totalCost, quotaState),
 	];
-	if (tokenParts.length > 0) groups.push(`${dim("io:")} ${tokenParts.join(dim(" "))}`);
-	if (cacheParts.length > 0) groups.push(`${dim("cache-io:")} ${cacheParts.join(dim(" "))}`);
+	if (totalInput || totalOutput) groups.push(`${dim("tokens:")} ${tokenText}`);
+	if (totalCacheRead || totalCacheWrite) groups.push(`${dim("cache:")} ${cacheText}`);
 
 	let left = groups.join(groupSep);
 	let leftWidth = visibleWidth(left);
