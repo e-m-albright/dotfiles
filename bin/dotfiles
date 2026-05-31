@@ -614,6 +614,13 @@ ns_cursor() {
     esac
 }
 
+# Python CLI (P1a foundation). Migrated commands are delegated to uv run.
+# As later phases land, add their names to this list.
+PY_CLI_COMMANDS=" version "
+if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
+    exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+fi
+
 case $COMMAND_NAME in
     "" | "-h" | "--help") sub_help ;;
 
