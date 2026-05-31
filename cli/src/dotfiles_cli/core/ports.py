@@ -39,6 +39,10 @@ class FileSystem(Protocol):
 
 @runtime_checkable
 class Clock(Protocol):
-    """Time source, so time-dependent behavior stays testable."""
+    """Time source, so time-dependent behavior stays testable.
+
+    Implementations MUST return timezone-aware datetimes in UTC. Callers convert
+    to local time only at display edges; the core never handles naive datetimes.
+    """
 
     def now(self) -> datetime: ...

@@ -4,6 +4,8 @@ from pathlib import Path
 
 
 class LocalFileSystem:
+    """Real filesystem implementation of the FileSystem port."""
+
     def read_text(self, path: Path) -> str:
         return path.read_text()
 

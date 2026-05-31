@@ -2,7 +2,8 @@ from dotfiles_cli.core.ports import Clock, FileSystem, ProcessRunner
 
 
 def test_ports_are_runtime_checkable_protocols() -> None:
-    # Protocols decorated runtime_checkable support isinstance against duck types.
+    # runtime_checkable validates method *names* only, not signatures — so these
+    # assertions confirm structural subtyping works, not that signatures are correct.
     class DummyRunner:
         def run(self, command, *, check=False, env=None): ...
 

@@ -24,3 +24,4 @@ def test_system_clock_satisfies_port_and_returns_datetime() -> None:
     clock = SystemClock()
     assert isinstance(clock, Clock)
     assert isinstance(clock.now(), datetime)
+    assert clock.now().tzinfo is not None
