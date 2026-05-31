@@ -13,9 +13,11 @@ def test_help_lists_top_level_command_tree() -> None:
 
 
 def test_version_command() -> None:
+    from dotfiles_cli import __version__
+
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert __version__ in result.output
 
 
 def test_session_alias_sesh_is_registered() -> None:

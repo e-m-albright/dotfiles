@@ -13,12 +13,13 @@ app = typer.Typer(
 )
 
 
-def _stub(name: str) -> typer.Typer:
+def _stub(name: str, display: str | None = None) -> typer.Typer:
+    label = display or name
     sub = typer.Typer(help=f"{name} commands (implemented in a later phase).")
 
     @sub.callback(invoke_without_command=True)
-    def _root() -> None:  # pragma: no cover - placeholder until phase lands
-        console.print(f"[yellow]{name}[/] is not implemented yet.")
+    def _root() -> None:  # pragma: no cover  # type: ignore[reportUnusedFunction]
+        console.print(f"[yellow]{label}[/] is not implemented yet.")
 
     return sub
 
@@ -26,7 +27,7 @@ def _stub(name: str) -> typer.Typer:
 # Command tree (stubs filled in by later phases P1b-P1d).
 app.add_typer(_stub("remote"), name="remote")
 app.add_typer(_stub("session"), name="session")
-app.add_typer(_stub("session"), name="sesh")  # alias
+app.add_typer(_stub("session", display="sesh"), name="sesh")  # alias
 app.add_typer(_stub("doctor"), name="doctor")
 app.add_typer(_stub("brew"), name="brew")
 app.add_typer(_stub("agent"), name="agent")

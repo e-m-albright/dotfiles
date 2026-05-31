@@ -4,8 +4,11 @@ import logging
 
 import structlog
 
+from dotfiles_cli.core.settings import LogLevel
 
-def configure_logging(level: str = "WARNING") -> None:
+
+def configure_logging(level: LogLevel = "WARNING") -> None:
+    structlog.reset_defaults()
     numeric = getattr(logging, level.upper(), logging.WARNING)
     logging.basicConfig(format="%(message)s", level=numeric)
     logging.getLogger().setLevel(numeric)
