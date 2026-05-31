@@ -186,3 +186,28 @@ class RemoteService:
         steps.append(self._enable_remote_login(dry_run=dry_run))
         steps.extend(self._harden(harden, dry_run=dry_run))
         return steps
+
+    def _kill_sessions(self, *, dry_run: bool) -> list[StepResult]:
+        user = self._user()
+        if dry_run:
+            return [
+                StepResult(level="info", message=f"DRY RUN: pkill -u {user} mosh-server"),
+                StepResult(level="info", message=f"DRY RUN: pkill -u {user} sshd"),
+            ]
+        self._runner.run(("pkill", "-u", user, "mosh-server"))
+        self._runner.run(("pkill", "-u", user, "sshd"))
+        return [StepResult(level="success", message="Existing Mosh/SSH sessions killed")]
+
+    def disable(self, *, dry_run: bool, kill_sessions: bool) -> list[StepResult]:
+        steps: list[StepResult] = []
+        if not self._remote_login_on():
+            steps.append(StepResult(level="success", message="Remote Login already disabled"))
+        elif dry_run:
+            steps.append(
+                StepResult(level="info", message="DRY RUN: sudo systemsetup -setremotelogin off")
+            )
+        else:
+            steps.append(self._sudo(("systemsetup", "-setremotelogin", "off"), dry_run=False))
+        if kill_sessions:
+            steps.extend(self._kill_sessions(dry_run=dry_run))
+        return steps

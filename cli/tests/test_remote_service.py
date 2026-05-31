@@ -133,3 +133,47 @@ def test_setup_without_sudo_access_warns_instead_of_running() -> None:
 
     assert ("sudo", "systemsetup", "-setremotelogin", "on") not in runner.calls
     assert any("Needs sudo" in s.message for s in steps)
+
+
+def test_disable_when_already_off_optionally_kills_sessions() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: Off\n")
+    runner.script(("id", "-un"), stdout="evan\n")
+    service = RemoteService(
+        runner=runner, fs=FakeFileSystem(), interactive=True, home=Path("/home/evan")
+    )
+
+    steps = service.disable(dry_run=False, kill_sessions=True)
+
+    assert any("already disabled" in s.message for s in steps)
+    assert ("pkill", "-u", "evan", "mosh-server") in runner.calls
+    assert ("pkill", "-u", "evan", "sshd") in runner.calls
+
+
+def test_disable_turns_off_remote_login_when_on() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(("id", "-un"), stdout="evan\n")
+    runner.script(("sudo", "-n", "true"), exit_code=0)
+    service = RemoteService(
+        runner=runner, fs=FakeFileSystem(), interactive=True, home=Path("/home/evan")
+    )
+
+    service.disable(dry_run=False, kill_sessions=False)
+
+    assert ("sudo", "systemsetup", "-setremotelogin", "off") in runner.calls
+
+
+def test_disable_dry_run_makes_no_changes() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(("id", "-un"), stdout="evan\n")
+    service = RemoteService(
+        runner=runner, fs=FakeFileSystem(), interactive=True, home=Path("/home/evan")
+    )
+
+    steps = service.disable(dry_run=True, kill_sessions=True)
+
+    assert ("sudo", "systemsetup", "-setremotelogin", "off") not in runner.calls
+    assert ("pkill", "-u", "evan", "mosh-server") not in runner.calls
+    assert any("DRY RUN" in s.message for s in steps)
