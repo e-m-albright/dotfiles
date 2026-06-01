@@ -1,17 +1,24 @@
 """Agent overview service.
 
 Mirrors agents/overview.sh: produces structured data for each of the 6 sections.
-Hexagonal: imports only stdlib + core models/ports.
+Hexagonal: imports only stdlib + pydantic + core models/ports.
 """
 
 from __future__ import annotations
 
-import json
 import shutil
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
+from dotfiles.core.agent_config import (
+    ClaudeHooksConfig,
+    CursorHooksConfig,
+    PermissionsBlock,
+    SettingsWithPermissions,
+    load_config,
+    load_mcp_servers,
+)
 from dotfiles.core.models import (
     AgentOverview,
     AgentRow,
@@ -24,35 +31,6 @@ from dotfiles.core.models import (
 
 if TYPE_CHECKING:
     from dotfiles.core.ports import FileSystem, ProcessRunner
-
-# ---------------------------------------------------------------------------
-# Typed JSON helpers — keep pyright strict happy without Any leakage
-# ---------------------------------------------------------------------------
-
-_JsonObj = dict[str, object]
-
-
-def _load_json_obj(text: str) -> _JsonObj | None:
-    """Parse JSON text; return the dict or None if not a JSON object."""
-    try:
-        raw: object = json.loads(text)
-    except json.JSONDecodeError:
-        return None
-    if not isinstance(raw, dict):
-        return None
-    return cast(_JsonObj, raw)
-
-
-def _list_len(obj: _JsonObj, key: str) -> int:
-    """Length of obj[key] when it is a list, else 0."""
-    val: object = obj.get(key)
-    return len(cast(list[object], val)) if isinstance(val, list) else 0
-
-
-def _as_obj(obj: _JsonObj, key: str) -> _JsonObj:
-    """Return obj[key] as a _JsonObj, or empty dict if missing/wrong type."""
-    val: object = obj.get(key)
-    return cast(_JsonObj, val) if isinstance(val, dict) else {}
 
 
 class AgentOverviewService:
@@ -98,33 +76,17 @@ class AgentOverviewService:
     def section_mcp(self) -> list[McpRow]:
         """Read agents/shared/mcp-servers.json; one McpRow per object-valued entry."""
         shared_mcp = self._dotfiles / "agents" / "shared" / "mcp-servers.json"
-        if not self._fs.exists(shared_mcp):
-            return []
-        data = _load_json_obj(self._fs.read_text(shared_mcp))
-        if data is None:
-            return []
-
-        rows: list[McpRow] = []
-        for name, value in data.items():
-            if not isinstance(value, dict):
-                continue
-            server_entry = cast(_JsonObj, value)
-            raw_targets: object = server_entry.get("targets")
-            targets: list[str] = (
-                [t for t in cast(list[object], raw_targets) if isinstance(t, str)]
-                if isinstance(raw_targets, list)
-                else []
+        servers = load_mcp_servers(self._fs, shared_mcp)
+        return [
+            McpRow(
+                server=name,
+                claude="claude" in entry.targets,
+                cursor="cursor" in entry.targets,
+                codex="codex" in entry.targets,
+                gemini="gemini" in entry.targets,
             )
-            rows.append(
-                McpRow(
-                    server=name,
-                    claude="claude" in targets,
-                    cursor="cursor" in targets,
-                    codex="codex" in targets,
-                    gemini="gemini" in targets,
-                )
-            )
-        return rows
+            for name, entry in servers.items()
+        ]
 
     # ------------------------------------------------------------------
     # Section 2: Hooks
@@ -154,43 +116,24 @@ class AgentOverviewService:
 
     def _claude_hook_events(self, path: Path) -> set[str]:
         """Keys of .hooks dict in claude/hooks.json."""
-        return self._parse_hook_keys(path, "claude")
+        cfg = load_config(self._fs, path, ClaudeHooksConfig)
+        if cfg is None:
+            return set()
+        return {k for k in cfg.hooks if k}
 
     def _codex_hook_events(self, path: Path) -> set[str]:
         """Keys of .hooks dict in codex/hooks.json."""
-        return self._parse_hook_keys(path, "codex")
-
-    def _parse_hook_keys(self, path: Path, _label: str) -> set[str]:
-        if not self._fs.exists(path):
+        cfg = load_config(self._fs, path, ClaudeHooksConfig)
+        if cfg is None:
             return set()
-        data = _load_json_obj(self._fs.read_text(path))
-        if data is None:
-            return set()
-        raw_hooks: object = data.get("hooks")
-        if not isinstance(raw_hooks, dict):
-            return set()
-        hooks_dict = cast(_JsonObj, raw_hooks)
-        return {k for k in hooks_dict if k}
+        return {k for k in cfg.hooks if k}
 
     def _cursor_hook_events(self, path: Path) -> set[str]:
         """Values of .hooks[].event in cursor/hooks/hooks.json."""
-        if not self._fs.exists(path):
+        cfg = load_config(self._fs, path, CursorHooksConfig)
+        if cfg is None:
             return set()
-        data = _load_json_obj(self._fs.read_text(path))
-        if data is None:
-            return set()
-        raw_hooks: object = data.get("hooks")
-        if not isinstance(raw_hooks, list):
-            return set()
-        events: set[str] = set()
-        for h in cast(list[object], raw_hooks):
-            if not isinstance(h, dict):
-                continue
-            hook_obj = cast(_JsonObj, h)
-            raw_evt: object = hook_obj.get("event")
-            if isinstance(raw_evt, str) and raw_evt:
-                events.add(raw_evt)
-        return events
+        return {h.event for h in cfg.hooks if h.event}
 
     # ------------------------------------------------------------------
     # Section 3: Skills
@@ -304,38 +247,42 @@ class AgentOverviewService:
 
     def _perm_claude_deployed(self) -> list[PermissionRow]:
         path = self._home / ".claude" / "settings.json"
-        if not self._fs.exists(path):
+        cfg = load_config(self._fs, path, SettingsWithPermissions)
+        if cfg is None:
             return []
-        data = _load_json_obj(self._fs.read_text(path))
-        if data is None:
-            return []
-        perms = _as_obj(data, "permissions")
-        allow = _list_len(perms, "allow")
-        deny = _list_len(perms, "deny")
-        return [PermissionRow(label="Claude Code (deployed)", allow=allow, deny=deny)]
+        return [
+            PermissionRow(
+                label="Claude Code (deployed)",
+                allow=len(cfg.permissions.allow),
+                deny=len(cfg.permissions.deny),
+            )
+        ]
 
     def _perm_claude_source(self) -> list[PermissionRow]:
         path = self._dotfiles / "agents" / "claude" / "permissions.json"
-        if not self._fs.exists(path):
+        cfg = load_config(self._fs, path, PermissionsBlock)
+        if cfg is None:
             return []
-        data = _load_json_obj(self._fs.read_text(path))
-        if data is None:
-            return []
-        allow = _list_len(data, "allow")
-        deny = _list_len(data, "deny")
-        return [PermissionRow(label="Claude (dotfiles source)", allow=allow, deny=deny)]
+        return [
+            PermissionRow(
+                label="Claude (dotfiles source)",
+                allow=len(cfg.allow),
+                deny=len(cfg.deny),
+            )
+        ]
 
     def _perm_cursor(self) -> list[PermissionRow]:
         path = self._dotfiles / "agents" / "cursor" / "cli-config.json"
-        if not self._fs.exists(path):
+        cfg = load_config(self._fs, path, SettingsWithPermissions)
+        if cfg is None:
             return []
-        data = _load_json_obj(self._fs.read_text(path))
-        if data is None:
-            return []
-        perms = _as_obj(data, "permissions")
-        allow = _list_len(perms, "allow")
-        deny = _list_len(perms, "deny")
-        return [PermissionRow(label="Cursor CLI", allow=allow, deny=deny)]
+        return [
+            PermissionRow(
+                label="Cursor CLI",
+                allow=len(cfg.permissions.allow),
+                deny=len(cfg.permissions.deny),
+            )
+        ]
 
     def _perm_codex(self) -> list[PermissionRow]:
         path = self._dotfiles / "agents" / "codex" / "default.rules"
