@@ -1,0 +1,43 @@
+/* Cyberpunk black/gold — brand: ASCII-as-texture, command-deck feel. */
+Screen {
+    background: #0a0a0a;
+    color: #e8c34a;
+}
+
+Header {
+    background: #111111;
+    color: #f5d76e;
+    text-style: bold;
+}
+
+RemotePane, SessionsPane {
+    border: round #e8c34a;
+    border-title-color: #f5d76e;
+    border-title-style: bold;
+    background: #0d0d0d;
+    margin: 1 1;
+    padding: 1 2;
+    height: auto;
+}
+
+ListView {
+    background: #0d0d0d;
+}
+
+ListItem {
+    color: #d4af37;
+}
+
+Footer {
+    background: #111111;
+    color: #e8c34a;
+}
+
+#confirm-box {
+    border: thick #e8c34a;
+    background: #0d0d0d;
+    padding: 1 2;
+    width: 60;
+    height: auto;
+    align: center middle;
+}

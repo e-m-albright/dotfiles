@@ -203,6 +203,10 @@ class RemoteService:
         steps.extend(self._harden(harden, dry_run=dry_run))
         return steps
 
+    def kill_sessions(self, *, dry_run: bool) -> list[StepResult]:
+        """Kill existing Mosh/SSH sessions WITHOUT changing Remote Login state."""
+        return self._kill_sessions(dry_run=dry_run)
+
     def _kill_sessions(self, *, dry_run: bool) -> list[StepResult]:
         user = self._user
         if dry_run:

@@ -21,16 +21,25 @@ from dotfiles.console import console
 app = typer.Typer(
     name="dotfiles",
     help="Hexagonal CLI for the dotfiles dev environment.",
-    no_args_is_help=True,
+    no_args_is_help=False,
     add_completion=False,
 )
 
 
-@app.callback()
+def _launch_tui() -> None:
+    """Import lazily so non-TUI commands don't pay the Textual import cost."""
+    from dotfiles.tui.app import MissionControlApp
+
+    MissionControlApp().run()
+
+
+@app.callback(invoke_without_command=True)
 def _main(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
-    """Build the composition context once if a test hasn't injected one."""
+    """Build the composition context; bare `dotfiles` launches the TUI."""
     if ctx.obj is None:
         ctx.obj = build_real_context(interactive=sys.stdin.isatty())
+    if ctx.invoked_subcommand is None:
+        _launch_tui()
 
 
 # Command tree.
@@ -45,6 +54,12 @@ app.add_typer(llm_app, name="llm")
 app.add_typer(snapshot_app, name="snapshot")
 app.add_typer(ledger_app, name="ledger")
 app.add_typer(fleet_app, name="fleet")
+
+
+@app.command()
+def tui() -> None:
+    """Launch the Mission Control TUI."""
+    _launch_tui()
 
 
 @app.command()
