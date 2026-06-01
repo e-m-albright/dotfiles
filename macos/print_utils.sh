@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shared print functions for consistent formatting across all scripts.
-# Used by: install.sh, brew.sh, scaffold.sh, agents/claude/setup.sh, bin/dotfiles
+# Used by: install.sh, scaffold.sh, agents/claude/setup.sh, bin/dotfiles
 
 # Colors
 RED='\033[0;31m'
@@ -100,7 +100,7 @@ print_todo_optional() {
     printf "  ${CYAN}[-]${NC} ${DIM}%b${NC}\n" "$1"
 }
 
-# --- Package install messages (for brew.sh) ---
+# --- Package install messages ---
 
 print_pkg_installed() {
     printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${DIM}already installed${NC}\n" "$1"

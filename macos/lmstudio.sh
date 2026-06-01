@@ -2,7 +2,7 @@
 # Configure the local LLM in LM Studio: ensure the model is downloaded and pin
 # its context window. Idempotent — safe to re-run.
 #
-# Sourced by install.sh after brew.sh (which installs the `lm-studio` cask).
+# Sourced by install.sh after brew install (which installs the `lm-studio` cask).
 #
 # Why this exists: LM Studio loads models at a conservative 4096-token context
 # by default, which is far too small for agent system prompts (Zed's coding

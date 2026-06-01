@@ -42,7 +42,7 @@ sub_help () {
     printf "\n"
     printf "   agent lint           Validate skill/agent files against conventions\n"
     printf "\n"
-    printf "   brew install         Run brew.sh (sync packages from manifest)\n"
+    printf "   brew install         Sync packages from packages.toml manifest\n"
     printf "   brew stale           Find disabled packages still installed\n"
     printf "\n"
     printf "   shell profile        Profile shell startup time\n"

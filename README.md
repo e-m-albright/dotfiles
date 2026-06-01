@@ -144,7 +144,7 @@ my-project/
 - **Zed**: Default editor — set as `$EDITOR` / git editor and the macOS open handler for text, markdown, and source/config files (`.md`, `.txt`, `.yaml`, `.json`, `.toml`, `.py`, `.ts`, etc. — see `macos/file-associations.sh`; GPU-native, boots faster than Cursor for quick edits). Config managed in `editors/zed/` (settings + keymap symlinked). Drives external agents via **ACP** — `claude-acp`, `codex-acp`, `gemini` pre-wired to use **subscription logins, not API keys** (start a thread with `cmd-?`, authenticate in-thread; keybinds `cmd-alt-a`/`-o`/`-g`).
 - **Cursor**: Primary AI-native IDE (VS Code compatible, shared MCP servers, hooks, skills, agents)
 - **LM Studio**: Local LLM runner (MLX/GGUF, OpenAI-compatible server). Model + context window pinned via `macos/lmstudio.sh` (default: `google/gemma-4-e4b` @ 32K) — point Zed/Obsidian/CLIs at `http://localhost:1234/v1`.
-- **TypeWhisper**: On-device voice-to-text (Parakeet ASR + local Gemma cleanup via the LM Studio endpoint above, or Apple Intelligence). Replaced Wispr Flow 2026-05-29 — fully local, no subscription. No Homebrew cask; installed via `macos/brew.sh` post-install from GitHub releases.
+- **TypeWhisper**: On-device voice-to-text (Parakeet ASR + local Gemma cleanup via the LM Studio endpoint above, or Apple Intelligence). Replaced Wispr Flow 2026-05-29 — fully local, no subscription. No Homebrew cask; installed via `dotfiles brew install` post-install from GitHub releases.
 - **Obsidian**: Knowledge base — vault configs + community plugins managed via symlinks
 
   | Plugin | Purpose |
@@ -389,10 +389,17 @@ See `agents/cursor/` for all configuration files.
 
 ### Homebrew
 
-Edit `macos/brew.sh` to customize packages. Organized by category with opt-in toggles. Essentials include Chrome and Tailscale.
+Edit `macos/packages.toml` to customize packages. Organized by category with opt-in feature flags. Essentials include Chrome and Tailscale.
 
 ```bash
-AI=1 PRODUCTIVITY=1 SOCIAL=0 dotfiles brew
+# Sync packages from packages.toml (idempotent)
+dotfiles brew install
+
+# Skip optional groups
+dotfiles brew install --no-ai --no-social
+
+# Report stale (installed but not in manifest) and missing packages
+dotfiles brew stale
 ```
 
 ### The `dotfiles` Command
@@ -404,10 +411,10 @@ dotfiles doctor              # Check all tools are installed; exits non-zero whe
 dotfiles doctor --fix        # Repair symlinks and redeploy agent configs
 dotfiles update              # Update OS, Homebrew, runtimes, and dev tools
 dotfiles clean               # Clear Homebrew caches
-dotfiles brew                # Re-run Homebrew setup
+dotfiles brew install        # Sync Homebrew packages from packages.toml
+dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
 dotfiles scaffold            # Scaffold a project with AI rules
-dotfiles stale               # Find disabled packages still installed
 dotfiles test                # Run scaffold eval framework (--quick for fast)
 dotfiles profile-shell       # Profile shell startup time
 dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
@@ -490,7 +497,7 @@ dotfiles/
 
 ## TODO
 
-- [ ] **Evaluate Raycast** — Could replace both Rectangle (window management) and Flycut (clipboard manager) with a single tool. Already commented out in `macos/brew.sh`. Prioritize trying this.
+- [ ] **Evaluate Raycast** — Could replace both Rectangle (window management) and Flycut (clipboard manager) with a single tool. Already disabled in `macos/packages.toml`. Prioritize trying this.
 
 ---
 
@@ -498,7 +505,7 @@ dotfiles/
 
 **Machine setup:**
 - Idempotent — run anytime, get the same result
-- Opinionated but removable — edit `brew.sh` to customize
+- Opinionated but removable — edit `macos/packages.toml` to customize
 - Fast — parallel installs, skip what's already there
 
 **Project scaffolding:**

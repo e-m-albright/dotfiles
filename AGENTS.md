@@ -30,7 +30,7 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 
 ## Key Invariants
 
-- `brew.sh` package lists are the source of truth for what's installed. `bin/dotfiles doctor` and `bin/dotfiles stale` must stay in sync with these lists.
+- `macos/packages.toml` is the source of truth for what's installed. `bin/dotfiles doctor` and `dotfiles brew stale` must stay in sync with these lists.
 - `README.md` documents user-facing features. When adding/removing/renaming commands, packages, or config, update the README in the same commit.
 - `.ai/rules/` is the canonical rule library. Universal process rules (`process/*.mdc`) deploy to user-level via setup scripts (symlinked). Recipe rules are copied into projects by `scaffold.sh`.
 - `.ai/skills/` is the canonical skill library. Edit there; `dotfiles agent-setup` deploys to each vendor via the public `npx skills` CLI (claude-code) and a small `cp` loop for subagents (codex). No per-vendor mirror dirs in this repo. Validate with `dotfiles validate-skills`.

@@ -71,13 +71,31 @@ fi
 ################################################################################
 # Set up SSH for Git + Homebrew
 . "$DOTFILES_DIR/macos/ssh.sh"
-# Install brew with packages & casks
-. "$DOTFILES_DIR/macos/brew.sh"
+
+# Ensure uv is present (needed to run the Python CLI for brew install)
+print_section "uv (Python package manager)"
+if ! command -v uv >/dev/null 2>&1; then
+    print_action "Installing uv..."
+    if curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; then
+        # Reload PATH so uv is findable in the same shell session
+        export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+        print_success "uv installed"
+    else
+        print_warn "uv install failed — install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    fi
+else
+    print_info "uv already installed ($(uv --version))"
+fi
+
+# Install brew with packages & casks via Python CLI (packages.toml is source of truth)
+print_section "Homebrew packages"
+uv run --project "$DOTFILES_DIR/cli" dotfiles brew install
+
 # Setup macos dock
 . "$DOTFILES_DIR/macos/dock.sh"
-# Set file-type defaults (Zed for .md/.txt, etc.) — requires duti from brew.sh
+# Set file-type defaults (Zed for .md/.txt, etc.) — requires duti from packages.toml
 . "$DOTFILES_DIR/macos/file-associations.sh"
-# Configure local LLM: download model + pin context window — requires lm-studio from brew.sh
+# Configure local LLM: download model + pin context window — requires lm-studio from packages.toml
 . "$DOTFILES_DIR/macos/lmstudio.sh"
 ################################################################################
 
@@ -87,7 +105,7 @@ print_header "🔧 Languages & Runtimes"
 # -- Go
 print_section "Go"
 if ! command -v go >/dev/null 2>&1; then
-    print_info "Go not found (should be installed via brew.sh)"
+    print_info "Go not found (should be installed via packages.toml)"
 else
     print_info "Go already installed ($(go version | awk '{print $3}'))"
 fi
@@ -112,10 +130,10 @@ if command -v go >/dev/null 2>&1; then
     print_success "Go tools configured"
 fi
 
-# -- Node.js / FNM (Fast Node Manager — installed via brew in brew.sh)
+# -- Node.js / FNM (Fast Node Manager — installed via packages.toml)
 print_section "Node.js / FNM"
 if ! command -v fnm >/dev/null 2>&1; then
-    print_info "FNM not found (should be installed via brew.sh)"
+    print_info "FNM not found (should be installed via packages.toml)"
 else
     print_info "FNM already installed"
 fi
@@ -339,7 +357,7 @@ if command -v gh >/dev/null 2>&1; then
         fi
     fi
 else
-    print_info "gh not found — skipping MCP extension (installed via brew.sh)"
+    print_info "gh not found — skipping MCP extension (installed via packages.toml)"
 fi
 
 print_section "Setup"

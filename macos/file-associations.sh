@@ -2,7 +2,7 @@
 # Set default apps for common file types via duti.
 # Idempotent — safe to re-run.
 #
-# Sourced by install.sh after brew.sh (which installs duti).
+# Sourced by install.sh after brew install (which installs duti).
 #
 # Why this exists: macOS double-clicking a text, markdown, or source/config
 # file used to open Cursor, which is slow to cold-start. Routing to Zed (Rust,
@@ -19,7 +19,7 @@ if ! declare -f print_step >/dev/null 2>&1; then
 fi
 
 if ! command -v duti >/dev/null 2>&1; then
-    print_warning "duti not installed — skipping file associations (install via brew.sh)"
+    print_warning "duti not installed — skipping file associations (install via packages.toml)"
     return 0 2>/dev/null || exit 0
 fi
 
