@@ -3,6 +3,7 @@
 Tests inject a fake AppContext via `runner.invoke(app, args, obj=fake_ctx)`.
 """
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,6 +14,9 @@ from dotfiles_cli.adapters.process import SubprocessRunner
 from dotfiles_cli.core.ports import Clock, FileSystem, ProcessRunner
 from dotfiles_cli.core.sessions import SessionLauncher
 from dotfiles_cli.core.settings import Settings
+
+# Repo root: cli/src/dotfiles_cli/cli/context.py → parents[4] = repo root
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 @dataclass(frozen=True)
@@ -26,9 +30,11 @@ class AppContext:
     interactive: bool
     home: Path
     launcher: SessionLauncher
+    dotfiles_dir: Path = _REPO_ROOT
 
 
 def build_real_context(*, interactive: bool) -> AppContext:
+    dotfiles_dir = Path(os.environ["DOTFILES_DIR"]) if "DOTFILES_DIR" in os.environ else _REPO_ROOT
     return AppContext(
         runner=SubprocessRunner(),
         fs=LocalFileSystem(),
@@ -37,4 +43,5 @@ def build_real_context(*, interactive: bool) -> AppContext:
         interactive=interactive,
         home=Path.home(),
         launcher=FzfExecLauncher(),
+        dotfiles_dir=dotfiles_dir,
     )

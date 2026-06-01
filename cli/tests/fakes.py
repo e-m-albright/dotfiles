@@ -117,6 +117,7 @@ def make_fake_context(
     interactive: bool = False,
     home: Path | None = None,
     launcher: "FakeSessionLauncher | None" = None,
+    dotfiles_dir: Path | None = None,
 ) -> AppContext:
     """Build an AppContext backed by fakes for CLI tests."""
     return AppContext(
@@ -127,4 +128,5 @@ def make_fake_context(
         interactive=interactive,
         home=home or Path("/home/evan"),
         launcher=launcher or FakeSessionLauncher(),
+        dotfiles_dir=dotfiles_dir or Path("/home/evan/dotfiles"),
     )

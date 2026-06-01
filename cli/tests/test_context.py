@@ -34,6 +34,7 @@ def test_app_context_is_constructible_with_fakes() -> None:
         interactive=False,
         home=Path("/home/evan"),
         launcher=FakeSessionLauncher(),
+        dotfiles_dir=Path("/home/evan/dotfiles"),
     )
     assert ctx.home == Path("/home/evan")
 

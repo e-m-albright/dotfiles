@@ -6,6 +6,7 @@ import typer
 
 from dotfiles_cli import __version__
 from dotfiles_cli.cli.context import build_real_context
+from dotfiles_cli.cli.doctor import doctor_command
 from dotfiles_cli.cli.remote import remote_app
 from dotfiles_cli.cli.session import session_app
 from dotfiles_cli.console import console
@@ -40,7 +41,7 @@ def _stub(name: str, display: str | None = None) -> typer.Typer:
 app.add_typer(remote_app, name="remote")
 app.add_typer(session_app, name="session")
 app.add_typer(session_app, name="sesh")
-app.add_typer(_stub("doctor"), name="doctor")
+app.command("doctor")(doctor_command)
 app.add_typer(_stub("brew"), name="brew")
 app.add_typer(_stub("agent"), name="agent")
 app.add_typer(_stub("verify"), name="verify")
