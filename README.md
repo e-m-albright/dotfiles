@@ -454,6 +454,8 @@ dotfiles ledger prune        # Drop entries older than N days (default: 7)
 dotfiles fleet               # Show live agent sessions across Claude/Codex (+ ledger overlay)
 dotfiles fleet --all         # Include sessions past the live window
 dotfiles fleet --json        # Emit sessions as a JSON array
+dotfiles tui                 # Launch Mission Control TUI (phone command deck)
+dotfiles                     # Bare invocation also launches the TUI
 ```
 
 `dotfiles remote setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
@@ -465,6 +467,8 @@ dotfiles fleet --json        # Emit sessions as a JSON array
 `dotfiles ledger` is an append-only log of what each agent session is doing. It is populated automatically by the hot-path hook wired in `agents/claude/hooks.json` — run `dotfiles agent setup` once to deploy the hook to your Claude Code installation. Cursor and Pi are ledger-only in v1 (no passive transcript discovery yet); `dotfiles fleet` notes this explicitly rather than silently omitting them.
 
 `dotfiles fleet` passively discovers live Claude and Codex sessions from their transcript directories, maps working directories to git worktrees, and overlays the ledger for task context — all without requiring any agent cooperation. Sessions are shown newest-first; use `--all` to include sessions past the 15-minute live window, or `--json` for machine-readable output.
+
+`dotfiles tui` (or bare `dotfiles`) opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` to toggle Remote Login (sudo-aware), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane lists live zellij sessions; press Enter to attach (or switch session if already inside zellij).
 
 Enable tab completion:
 ```bash
