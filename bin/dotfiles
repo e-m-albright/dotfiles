@@ -291,14 +291,6 @@ sub_cursor_plugins() {
     fi
 }
 
-sub_validate_skills() {
-    "$DOTFILES_DIR/agents/shared/validate-skills.sh" "$@"
-}
-
-sub_verify_vendors() {
-    "$DOTFILES_DIR/agents/shared/verify-vendors.sh" "$@"
-}
-
 sub_llm_bench() {
     "$DOTFILES_DIR/macos/llm-bench.sh" "$@"
 }
@@ -350,15 +342,6 @@ ns_agent() {
     esac
 }
 
-ns_verify() {
-    local sub="${1:-}"; shift || true
-    case "$sub" in
-        vendors) sub_verify_vendors "$@" ;;
-        skills)  sub_validate_skills "$@" ;;
-        *) printf "${RED}%b Unknown: verify %s${NC} (try: vendors, skills)\n" "$ARROW" "$sub" >&2; exit 1 ;;
-    esac
-}
-
 ns_brew() {
     local sub="${1:-install}"; shift || true
     case "$sub" in
@@ -386,7 +369,7 @@ ns_cursor() {
 
 # Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
 # As later phases land, add their names to this list.
-PY_CLI_COMMANDS=" version remote session sesh doctor "
+PY_CLI_COMMANDS=" version remote session sesh doctor verify "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
@@ -406,17 +389,14 @@ case $COMMAND_NAME in
 
     # Namespaces
     agent)  shift; ns_agent "$@" ;;
-    verify) shift; ns_verify "$@" ;;
     brew)   shift; ns_brew "$@" ;;
     shell)  shift; ns_shell "$@" ;;
     cursor) shift; ns_cursor "$@" ;;
 
     # Backward-compat aliases for hyphenated names (silent — drop in a future cleanup)
-    agent-setup)     shift; sub_agent_setup "$@" ;;
-    agents)          shift; sub_agent_overview "$@" ;;
-    verify-vendors)  shift; sub_verify_vendors "$@" ;;
-    validate-skills) shift; sub_validate_skills "$@" ;;
-    profile-shell)   shift; sub_shell_profile "$@" ;;
+    agent-setup)   shift; sub_agent_setup "$@" ;;
+    agents)        shift; sub_agent_overview "$@" ;;
+    profile-shell) shift; sub_shell_profile "$@" ;;
     cursor-plugins)  shift; sub_cursor_plugins "$@" ;;
     stale)           shift; sub_brew_stale "$@" ;;
 
