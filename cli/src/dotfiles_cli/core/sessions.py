@@ -59,7 +59,7 @@ class SessionService:
         combined = result.stdout + result.stderr
         if _EMPTY_MARKER not in combined and not result.ok:
             raise SessionError(result.stderr.strip() or "zellij list-sessions failed")
-        return parse_sessions(combined)
+        return parse_sessions(result.stdout)
 
     def kill(self, name: str) -> StepResult:
         result = self._runner.run(("zellij", "kill-session", name))

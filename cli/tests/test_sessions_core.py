@@ -60,6 +60,17 @@ def test_list_returns_empty_even_if_zellij_exits_nonzero_on_no_sessions() -> Non
     assert SessionService(runner=runner).list() == []
 
 
+def test_list_returns_empty_when_marker_is_in_stderr() -> None:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("zellij", "list-sessions", "--no-formatting"),
+        exit_code=1,
+        stdout="",
+        stderr="No active zellij sessions found.\n",
+    )
+    assert SessionService(runner=runner).list() == []
+
+
 def test_list_raises_on_real_failure() -> None:
     import pytest
 
