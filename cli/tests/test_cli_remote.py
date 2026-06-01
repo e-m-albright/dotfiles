@@ -54,6 +54,22 @@ def test_remote_setup_bad_key_exits_nonzero() -> None:
     assert "does not look like" in result.output.lower() or "invalid" in result.output.lower()
 
 
+def test_remote_setup_warns_when_tailscale_disconnected() -> None:
+    fake = make_fake_context(runner=_runner_with_status(), interactive=True)
+    result = runner.invoke(app, ["remote", "setup", "--dry-run"], obj=fake)
+    assert result.exit_code == 0
+    assert "Tailscale does not look connected" in result.output
+
+
+def test_remote_disable_exits_nonzero_on_sudo_failure() -> None:
+    r = _runner_with_status("On")
+    r.script(("sudo", "systemsetup", "-setremotelogin", "off"), exit_code=1)
+    fake = make_fake_context(runner=r, interactive=True)
+    result = runner.invoke(app, ["remote", "disable"], obj=fake, env={"COLUMNS": "200"})
+    assert result.exit_code == 1
+    assert "Full Disk Access" in result.output
+
+
 def test_remote_disable_dry_run() -> None:
     fake = make_fake_context(runner=_runner_with_status("On"), interactive=True)
     result = runner.invoke(app, ["remote", "disable", "--dry-run", "--kill-sessions"], obj=fake)

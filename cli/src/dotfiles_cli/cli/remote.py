@@ -3,7 +3,7 @@
 import typer
 
 from dotfiles_cli.cli.context import AppContext
-from dotfiles_cli.cli.ui import render_steps
+from dotfiles_cli.cli.ui import has_errors, render_connection_info, render_steps
 from dotfiles_cli.console import console
 from dotfiles_cli.core.remote import InvalidKeyError, RemoteService
 
@@ -42,9 +42,9 @@ def setup(
         console.print("[red]--add-key does not look like an SSH public key[/]")
         raise typer.Exit(code=1) from None
     render_steps(console, steps)
-    info = service.connection_info(chosen)
-    console.print("\n[bold]Paste into Termius as the Mosh command:[/]")
-    console.print(info.mosh_command, soft_wrap=True)
+    render_connection_info(console, service.connection_info(chosen))
+    if has_errors(steps):
+        raise typer.Exit(code=1)
 
 
 @remote_app.command()
@@ -60,3 +60,5 @@ def disable(
     """Turn off macOS Remote Login (and optionally kill live sessions)."""
     steps = _service(ctx).disable(dry_run=dry_run, kill_sessions=kill_sessions)
     render_steps(console, steps)
+    if has_errors(steps):
+        raise typer.Exit(code=1)
