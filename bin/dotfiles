@@ -151,18 +151,6 @@ sub_dock () {
     printf "${GREEN}%b Success! MacOS dock command finished.${NC}\n" "$ARROW"
 }
 
-sub_agent_setup() {
-    # Primary vendor-locked clients (ADR-0003): Claude Code, Cursor, Codex.
-    # Pi re-added (ADR-0005) as a narrow local-first terminal agent — NOT the
-    # subscription-bridging aggregator ADR-0003 rejected. Local LM Studio + headless.
-    . "$DOTFILES_DIR/agents/claude/setup.sh" "$@"
-    . "$DOTFILES_DIR/agents/cursor/setup.sh" "$@"
-    . "$DOTFILES_DIR/agents/codex/setup.sh" "$@"
-    . "$DOTFILES_DIR/agents/gemini/setup.sh" "$@"
-    . "$DOTFILES_DIR/agents/pi/setup.sh" "$@"
-    printf "${GREEN}%b Agent setup complete.${NC}\n" "$ARROW"
-}
-
 sub_migrate_agents_sync() {
     "$DOTFILES_DIR/agents/migrate-agents-sync.sh" "$@"
 }
@@ -261,7 +249,6 @@ EOF
 ns_agent() {
     local sub="${1:-overview}"; shift || true
     case "$sub" in
-        setup)    sub_agent_setup "$@" ;;
         migrate-rules-sync) sub_migrate_agents_sync "$@" ;;
         *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, gemini-prompt)\n" "$ARROW" "$sub" >&2; exit 1 ;;
     esac
@@ -290,8 +277,8 @@ if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
 
-# Surgical route: agent overview, lint, and gemini-prompt are Python; others stay Bash.
-if [[ "${1:-}" == "agent" && ( "${2:-}" == "overview" || "${2:-}" == "lint" || "${2:-}" == "gemini-prompt" ) ]]; then
+# Surgical route: agent overview, lint, gemini-prompt, and setup are Python; others stay Bash.
+if [[ "${1:-}" == "agent" && ( "${2:-}" == "overview" || "${2:-}" == "lint" || "${2:-}" == "gemini-prompt" || "${2:-}" == "setup" ) ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "${2}" "${@:3}"
 fi
 
@@ -312,7 +299,6 @@ case $COMMAND_NAME in
     cursor) shift; ns_cursor "$@" ;;
 
     # Backward-compat aliases for hyphenated names (silent — drop in a future cleanup)
-    agent-setup)   shift; sub_agent_setup "$@" ;;
     profile-shell) shift; sub_shell_profile "$@" ;;
     cursor-plugins)  shift; sub_cursor_plugins "$@" ;;
 
