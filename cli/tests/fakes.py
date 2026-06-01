@@ -57,18 +57,29 @@ class FakeFileSystem:
         self._dirs: set[Path] = set()
         self.modes: dict[Path, int] = {}
         self.symlinks: dict[Path, Path] = {}
+        self._children: dict[Path, set[Path]] = {}
+
+    def _register_child(self, path: Path) -> None:
+        """Register path as a child of its parent (one level up)."""
+        parent = path.parent
+        if parent != path:  # avoid root registering itself
+            if parent not in self._children:
+                self._children[parent] = set()
+            self._children[parent].add(path)
 
     def read_text(self, path: Path) -> str:
         return self._files[path]
 
     def write_text(self, path: Path, content: str) -> None:
         self._files[path] = content
+        self._register_child(path)
 
     def exists(self, path: Path) -> bool:
         return path in self._files or path in self._dirs or path in self.symlinks
 
     def mkdir(self, path: Path, *, parents: bool = True) -> None:
         self._dirs.add(path)
+        self._register_child(path)
 
     def chmod(self, path: Path, mode: int) -> None:
         self.modes[path] = mode
@@ -82,6 +93,15 @@ class FakeFileSystem:
     def symlink(self, src: Path, dest: Path) -> None:
         self.symlinks[dest] = src
         self._files[dest] = ""  # exists() is True for a symlink
+        self._register_child(dest)
+
+    def is_dir(self, path: Path) -> bool:
+        return path in self._dirs
+
+    def iterdir(self, path: Path) -> list[Path]:
+        if path not in self._dirs:
+            return []
+        return list(self._children.get(path, set()))
 
 
 class FakeClock:

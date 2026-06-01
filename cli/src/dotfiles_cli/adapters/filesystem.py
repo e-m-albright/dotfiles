@@ -31,3 +31,11 @@ class LocalFileSystem:
         if dest.is_symlink() or dest.exists():
             dest.unlink()
         dest.symlink_to(src)
+
+    def is_dir(self, path: Path) -> bool:
+        return path.is_dir()
+
+    def iterdir(self, path: Path) -> list[Path]:
+        if not path.is_dir():
+            return []
+        return list(path.iterdir())

@@ -78,3 +78,44 @@ def test_fake_filesystem_symlink_ops() -> None:
     assert fs.is_symlink(dest) is True
     assert fs.readlink(dest) == src
     assert fs.exists(dest) is True
+
+
+def test_fake_filesystem_is_dir_and_iterdir_empty() -> None:
+    fs = FakeFileSystem()
+    d = Path("/home/u/skills")
+    assert fs.is_dir(d) is False
+    fs.mkdir(d)
+    assert fs.is_dir(d) is True
+    assert fs.iterdir(d) == []
+
+
+def test_fake_filesystem_iterdir_yields_written_files() -> None:
+    fs = FakeFileSystem()
+    d = Path("/home/u/skills")
+    fs.mkdir(d)
+    fs.write_text(d / "SKILL.md", "# S")
+    fs.write_text(d / "other.txt", "x")
+    children = fs.iterdir(d)
+    assert set(children) == {d / "SKILL.md", d / "other.txt"}
+
+
+def test_fake_filesystem_iterdir_yields_subdirs() -> None:
+    fs = FakeFileSystem()
+    parent = Path("/home/u/skills")
+    child = Path("/home/u/skills/foo")
+    fs.mkdir(parent)
+    fs.mkdir(child)
+    assert child in fs.iterdir(parent)
+
+
+def test_fake_filesystem_iterdir_nonexistent_returns_empty() -> None:
+    fs = FakeFileSystem()
+    assert fs.iterdir(Path("/does/not/exist")) == []
+
+
+def test_fake_filesystem_is_dir_false_for_file() -> None:
+    fs = FakeFileSystem()
+    p = Path("/home/u/file.txt")
+    fs.write_text(p, "data")
+    assert fs.is_dir(p) is False
+    assert fs.exists(p) is True

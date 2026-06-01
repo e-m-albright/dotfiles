@@ -36,3 +36,31 @@ def test_local_filesystem_symlink_ops(tmp_path: Path) -> None:
     fs.symlink(target, link)
     assert fs.is_symlink(link) is True
     assert fs.readlink(link) == target
+
+
+def test_local_filesystem_is_dir(tmp_path: Path) -> None:
+    fs = LocalFileSystem()
+    d = tmp_path / "subdir"
+    assert fs.is_dir(d) is False
+    fs.mkdir(d)
+    assert fs.is_dir(d) is True
+    # A file is not a dir
+    f = d / "file.txt"
+    fs.write_text(f, "x")
+    assert fs.is_dir(f) is False
+
+
+def test_local_filesystem_iterdir(tmp_path: Path) -> None:
+    fs = LocalFileSystem()
+    d = tmp_path / "skills"
+    fs.mkdir(d)
+    assert fs.iterdir(d) == []
+    fs.write_text(d / "SKILL.md", "# S")
+    (d / "sub").mkdir()
+    children = fs.iterdir(d)
+    assert {p.name for p in children} == {"SKILL.md", "sub"}
+
+
+def test_local_filesystem_iterdir_nonexistent(tmp_path: Path) -> None:
+    fs = LocalFileSystem()
+    assert fs.iterdir(tmp_path / "nope") == []

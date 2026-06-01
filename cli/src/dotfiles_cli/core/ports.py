@@ -44,6 +44,10 @@ class FileSystem(Protocol):
 
     def symlink(self, src: Path, dest: Path) -> None: ...
 
+    def is_dir(self, path: Path) -> bool: ...
+
+    def iterdir(self, path: Path) -> list[Path]: ...
+
 
 @runtime_checkable
 class Clock(Protocol):
