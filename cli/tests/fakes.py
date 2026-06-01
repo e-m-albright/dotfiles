@@ -131,6 +131,23 @@ class FakeHttpClient:
         return self._post_scripts.get(url, {})
 
 
+class FakeMultiPostHttpClient(FakeHttpClient):
+    """Returns POST responses in FIFO order, falling back to empty dict."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._post_queue: list[_JsonDict] = []
+
+    def queue_post(self, payload: _JsonDict) -> None:
+        self._post_queue.append(payload)
+
+    def post_json(self, url: str, body: _JsonDict) -> _JsonDict:
+        self.posts.append((url, body))
+        if self._post_queue:
+            return self._post_queue.pop(0)
+        return {}
+
+
 class FakeClock:
     """Fixed clock."""
 

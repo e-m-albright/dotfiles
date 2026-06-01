@@ -1,6 +1,7 @@
 """`dotfiles llm` commands: list, bench, estimate, compare LM Studio models."""
 
 import typer
+from rich.markup import escape
 
 from dotfiles_cli.cli.context import AppContext
 from dotfiles_cli.console import console
@@ -50,9 +51,9 @@ def list_models(ctx: typer.Context) -> None:
     try:
         output = _service(app_ctx).list_loaded()
     except RuntimeError as exc:
-        console.print(f"[red]Error:[/] {exc}")
+        console.print(f"[red]Error:[/] {escape(str(exc))}")
         raise typer.Exit(1) from exc
-    console.print(output, end="")
+    console.print(output, end="", markup=False)
 
 
 @llm_app.command()
@@ -65,7 +66,7 @@ def bench(
     try:
         result = _service(app_ctx).bench(model)
     except RuntimeError as exc:
-        console.print(f"[red]Error:[/] {exc}")
+        console.print(f"[red]Error:[/] {escape(str(exc))}")
         raise typer.Exit(1) from exc
     _render_bench(result)
 
@@ -81,9 +82,9 @@ def estimate(
     try:
         output = _service(app_ctx).estimate(model, ctx_size)
     except RuntimeError as exc:
-        console.print(f"[red]Error:[/] {exc}")
+        console.print(f"[red]Error:[/] {escape(str(exc))}")
         raise typer.Exit(1) from exc
-    console.print(output)
+    console.print(output, markup=False)
     console.print()
     console.print("  Working set ceiling on M4 Pro 48GB: ~40 GB")
 
@@ -98,12 +99,12 @@ def compare(
     app_ctx = _ctx(ctx)
     svc = _service(app_ctx)
 
-    console.print(f"[blue]Head-to-head: {model_a} vs {model_b}[/]")
+    console.print(f"[blue]Head-to-head: {escape(model_a)} vs {escape(model_b)}[/]")
 
     try:
         result_a = svc.bench(model_a)
     except RuntimeError as exc:
-        console.print(f"[red]Error benchmarking {model_a}:[/] {exc}")
+        console.print(f"[red]Error benchmarking {escape(model_a)}:[/] {escape(str(exc))}")
         raise typer.Exit(1) from exc
     _render_bench(result_a)
 
@@ -112,7 +113,7 @@ def compare(
     try:
         result_b = svc.bench(model_b)
     except RuntimeError as exc:
-        console.print(f"[red]Error benchmarking {model_b}:[/] {exc}")
+        console.print(f"[red]Error benchmarking {escape(model_b)}:[/] {escape(str(exc))}")
         raise typer.Exit(1) from exc
     _render_bench(result_b)
 

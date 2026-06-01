@@ -4,7 +4,7 @@ import pytest
 
 from dotfiles_cli.core.llm import BENCH_PROMPT, LMStudioService, _is_estimate_line, _random_words
 from dotfiles_cli.core.settings import LlmSettings
-from tests.fakes import FakeHttpClient, FakeProcessRunner
+from tests.fakes import FakeHttpClient, FakeMultiPostHttpClient, FakeProcessRunner
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -170,23 +170,6 @@ def _bench_setup(
     return svc, runner, http
 
 
-class _MultiPostHttpClient(FakeHttpClient):
-    """Variant that returns responses in sequence per URL (FIFO queue)."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._post_queue: list[dict] = []  # type: ignore[type-arg]
-
-    def queue_post(self, payload: dict) -> None:  # type: ignore[type-arg]
-        self._post_queue.append(payload)
-
-    def post_json(self, url: str, body: dict) -> dict:  # type: ignore[type-arg]
-        self.posts.append((url, body))
-        if self._post_queue:
-            return self._post_queue.pop(0)
-        return {}
-
-
 def _make_bench_service(
     model_id: str = "test-model",
     *,
@@ -197,9 +180,9 @@ def _make_bench_service(
     pp_in: int = 128,
     pp_ttft: float = 0.3,
     pp_gen: float = 0.5,
-) -> tuple[LMStudioService, FakeProcessRunner, _MultiPostHttpClient]:
+) -> tuple[LMStudioService, FakeProcessRunner, FakeMultiPostHttpClient]:
     runner = FakeProcessRunner()
-    http = _MultiPostHttpClient()
+    http = FakeMultiPostHttpClient()
     http.script_get(MODELS_URL, _models_payload(model_id))
     # warmup response (ignored)
     http.queue_post({})
@@ -269,7 +252,7 @@ def test_bench_tier_interactive() -> None:
 
 def test_bench_uses_current_model_when_none_given() -> None:
     runner = FakeProcessRunner()
-    http = _MultiPostHttpClient()
+    http = FakeMultiPostHttpClient()
     http.script_get(MODELS_URL, _models_payload("auto-model"))
     http.queue_post({})
     http.queue_post(_tg_payload())

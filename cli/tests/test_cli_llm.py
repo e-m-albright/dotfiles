@@ -5,7 +5,12 @@ from typing import Any
 from typer.testing import CliRunner
 
 from dotfiles_cli.cli.main import app
-from tests.fakes import FakeHttpClient, FakeProcessRunner, make_fake_context
+from tests.fakes import (
+    FakeHttpClient,
+    FakeMultiPostHttpClient,
+    FakeProcessRunner,
+    make_fake_context,
+)
 
 runner = CliRunner()
 
@@ -15,28 +20,6 @@ runner = CliRunner()
 
 MODELS_URL = "http://localhost:1234/api/v0/models"
 COMPLETIONS_URL = "http://localhost:1234/api/v0/chat/completions"
-
-# ---------------------------------------------------------------------------
-# Multi-response HTTP fake (mirrors _MultiPostHttpClient from test_llm_core.py)
-# ---------------------------------------------------------------------------
-
-
-class _MultiPostHttpClient(FakeHttpClient):
-    """Returns POST responses in FIFO order, falling back to last scripted."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._post_queue: list[dict[str, Any]] = []
-
-    def queue_post(self, payload: dict[str, Any]) -> None:
-        self._post_queue.append(payload)
-
-    def post_json(self, url: str, body: dict[str, Any]) -> dict[str, Any]:
-        self.posts.append((url, body))
-        if self._post_queue:
-            return self._post_queue.pop(0)
-        return {}
-
 
 # ---------------------------------------------------------------------------
 # Payload builders
@@ -85,9 +68,9 @@ def _bench_http(
     reasoning: int = 0,
     content: str = "hello world",
     pp_in: int = 128,
-) -> _MultiPostHttpClient:
+) -> FakeMultiPostHttpClient:
     """Build a scripted HTTP client for a full bench sequence."""
-    http = _MultiPostHttpClient()
+    http = FakeMultiPostHttpClient()
     http.script_get(MODELS_URL, _models_payload(model_id))
     http.queue_post({})  # warmup (ignored)
     http.queue_post(_tg_payload(tps=tps, ttft=ttft, reasoning=reasoning, content=content))
@@ -275,7 +258,7 @@ def test_llm_estimate_prints_ceiling_note() -> None:
 
 def test_llm_compare_exits_zero() -> None:
     # compare benches both models; build a multi-response client for the full sequence
-    http = _MultiPostHttpClient()
+    http = FakeMultiPostHttpClient()
     # model-a GET (ensure_loaded checks)
     http.script_get(MODELS_URL, _models_payload("model-a"))
     # model-a: warmup, tg, pp
@@ -297,7 +280,7 @@ def test_llm_compare_exits_zero() -> None:
 
 
 def test_llm_compare_output_contains_head_to_head() -> None:
-    http = _MultiPostHttpClient()
+    http = FakeMultiPostHttpClient()
     http.script_get(MODELS_URL, _models_payload("model-a"))
     http.queue_post({})
     http.queue_post(_tg_payload(tps=55.0))
@@ -316,7 +299,7 @@ def test_llm_compare_output_contains_head_to_head() -> None:
 
 
 def test_llm_compare_output_contains_both_throughput_blocks() -> None:
-    http = _MultiPostHttpClient()
+    http = FakeMultiPostHttpClient()
     http.script_get(MODELS_URL, _models_payload("model-a"))
     http.queue_post({})
     http.queue_post(_tg_payload(tps=55.0))
@@ -332,3 +315,17 @@ def test_llm_compare_output_contains_both_throughput_blocks() -> None:
     ctx = make_fake_context(runner=proc, http=http)
     result = runner.invoke(app, ["llm", "compare", "model-a", "model-b"], obj=ctx)
     assert result.output.count("Throughput") == 2
+
+
+def test_llm_output_with_brackets_not_eaten_by_rich_markup() -> None:
+    # A model/estimate string containing brackets must survive Rich markup
+    # rendering verbatim (regression guard for markup=False / escape()).
+    proc = FakeProcessRunner()
+    proc.script(
+        ("lms", "load", "qwen[Q4_K_M]", "-c", "262144", "--estimate-only", "-y"),
+        stdout="Memory estimate: 12.5 GB [max]\n",
+    )
+    ctx = make_fake_context(runner=proc)
+    result = runner.invoke(app, ["llm", "estimate", "qwen[Q4_K_M]"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "[max]" in result.output
