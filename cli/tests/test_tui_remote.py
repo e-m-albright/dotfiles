@@ -57,5 +57,6 @@ async def test_toggle_remote_login_warns_when_not_interactive():
 
         pane = app.query_one(RemotePane)
         result = pane.toggle_login_plan()
-        # planning only — no real systemsetup executed in the test
-        assert result.level in {"warn", "info", "success"}
+        # make_fake_context defaults interactive=False (non-interactive mosh) -> sudo-or-warn
+        assert result.level == "warn"
+        assert "sudo" in result.message.lower()
