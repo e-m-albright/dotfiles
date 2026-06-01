@@ -447,6 +447,12 @@ dotfiles snapshot            # Capture machine state (brew, runtimes, symlinks, 
 dotfiles snapshot ls         # List saved snapshots, newest first
 dotfiles snapshot diff [A] [B]
                              # Diff two snapshots; A/B are slug prefixes or 'now'
+dotfiles ledger ls           # List recent agent-activity ledger entries
+dotfiles ledger log ...      # Append one activity record (used by the hot-path hook)
+dotfiles ledger prune        # Drop entries older than N days (default: 7)
+dotfiles fleet               # Show live agent sessions across Claude/Codex (+ ledger overlay)
+dotfiles fleet --all         # Include sessions past the live window
+dotfiles fleet --json        # Emit sessions as a JSON array
 ```
 
 `dotfiles remote setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
@@ -454,6 +460,10 @@ dotfiles snapshot diff [A] [B]
 `dotfiles sesh` (alias: `dotfiles session`) manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote setup` also prints a picker-based Termius startup command that drops straight into the fzf session picker.
 
 `dotfiles snapshot` captures a point-in-time machine state and saves it as JSON under `~/.local/state/dotfiles/snapshots/`. Use `diff now` to compare the latest saved snapshot against the current live state, or pass two slug prefixes to diff any two captures.
+
+`dotfiles ledger` is an append-only log of what each agent session is doing. It is populated automatically by the hot-path hook wired in `agents/claude/hooks.json` — run `dotfiles agent setup` once to deploy the hook to your Claude Code installation. Cursor and Pi are ledger-only in v1 (no passive transcript discovery yet); `dotfiles fleet` notes this explicitly rather than silently omitting them.
+
+`dotfiles fleet` passively discovers live Claude and Codex sessions from their transcript directories, maps working directories to git worktrees, and overlays the ledger for task context — all without requiring any agent cooperation. Sessions are shown newest-first; use `--all` to include sessions past the 15-minute live window, or `--json` for machine-readable output.
 
 Enable tab completion:
 ```bash

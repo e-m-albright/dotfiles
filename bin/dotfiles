@@ -262,7 +262,7 @@ ns_cursor() {
 
 # Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
 # As later phases land, add their names to this list.
-PY_CLI_COMMANDS=" version remote session sesh doctor llm brew scaffold snapshot "
+PY_CLI_COMMANDS=" version remote session sesh doctor llm brew scaffold snapshot ledger fleet "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
