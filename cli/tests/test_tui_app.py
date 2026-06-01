@@ -38,3 +38,26 @@ def test_dashboard_snapshot(snap_compare):
     """Golden snapshot of the booted dashboard (Remote + Sessions panes)."""
     app = MissionControlApp(ctx=make_fake_context())
     assert snap_compare(app)
+
+
+def test_app_real_context_respects_stdin_interactivity(monkeypatch):
+    """When no ctx is injected, MissionControlApp must pass isatty() to build_real_context."""
+    import contextlib
+    import io
+    import sys
+
+    captured: list[bool] = []
+
+    def fake_build(*, interactive: bool) -> None:  # type: ignore[return]
+        captured.append(interactive)
+        raise SystemExit(0)  # abort before the app tries to contact real system
+
+    monkeypatch.setattr("dotfiles.tui.app.build_real_context", fake_build)
+
+    # Simulate non-interactive stdin (pipe / mosh)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(""))
+
+    with contextlib.suppress(SystemExit):
+        MissionControlApp()
+
+    assert captured == [False], "app should pass isatty()=False when stdin is not a tty"

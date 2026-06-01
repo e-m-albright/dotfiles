@@ -265,3 +265,30 @@ def test_setup_harden_writes_config_and_restarts_sshd(tmp_path: Path) -> None:
         "/etc/ssh/sshd_config.d/90-dotfiles-remote.conf",
     ) in runner.calls
     assert ("sudo", "launchctl", "kickstart", "-k", "system/com.openssh.sshd") in runner.calls
+
+
+def test_kill_sessions_runs_pkill_without_disabling_remote_login(tmp_path: Path) -> None:
+    """kill_sessions() must pkill mosh-server/sshd and NOT touch systemsetup -setremotelogin."""
+    runner = FakeProcessRunner()
+    runner.script(("id", "-un"), stdout="evan\n")
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+
+    steps = service.kill_sessions(dry_run=False)
+
+    assert ("pkill", "-u", "evan", "mosh-server") in runner.calls
+    assert ("pkill", "-u", "evan", "sshd") in runner.calls
+    assert ("sudo", "systemsetup", "-setremotelogin", "off") not in runner.calls
+    assert any(s.level == "success" for s in steps)
+
+
+def test_kill_sessions_dry_run_does_not_execute_pkill(tmp_path: Path) -> None:
+    """kill_sessions(dry_run=True) must only emit DRY RUN messages, never call pkill."""
+    runner = FakeProcessRunner()
+    runner.script(("id", "-un"), stdout="evan\n")
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+
+    steps = service.kill_sessions(dry_run=True)
+
+    assert ("pkill", "-u", "evan", "mosh-server") not in runner.calls
+    assert ("pkill", "-u", "evan", "sshd") not in runner.calls
+    assert all("DRY RUN" in s.message for s in steps)

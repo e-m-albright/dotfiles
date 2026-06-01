@@ -102,7 +102,7 @@ class RemotePane(Container):
     def _on_kill_confirmed(self, confirmed: bool | None) -> None:
         if not confirmed:
             return
-        self._service().disable(dry_run=False, kill_sessions=True)
+        self._service().kill_sessions(dry_run=False)
         self.notify("Killed mosh sessions", title="Remote", severity="warning")
         self.refresh_status()
 

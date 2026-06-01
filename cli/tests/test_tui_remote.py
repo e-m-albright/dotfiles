@@ -60,3 +60,65 @@ async def test_toggle_remote_login_warns_when_not_interactive():
         # make_fake_context defaults interactive=False (non-interactive mosh) -> sudo-or-warn
         assert result.level == "warn"
         assert "sudo" in result.message.lower()
+
+
+def _kill_ctx() -> AppContext:
+    """Context whose runner we can inspect for pkill calls."""
+    runner = FakeProcessRunner()
+    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(("tailscale", "status"), stdout="100.64.0.1 host\n")
+    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
+    runner.script(("id", "-un"), stdout="evan\n")
+    runner.script(("scutil", "--get", "LocalHostName"), stdout="orac\n")
+    return make_fake_context(runner=runner)
+
+
+@pytest.mark.asyncio
+async def test_kill_sessions_confirm_path_runs_pkill_not_disable():
+    """Confirming [k] must call kill_sessions (pkill mosh-server) and NOT systemsetup off."""
+    ctx = _kill_ctx()
+    app = MissionControlApp(ctx=ctx)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        from dotfiles.tui.panes.remote import RemotePane
+
+        pane = app.query_one(RemotePane)
+        # Directly invoke the confirmed callback (True = user confirmed)
+        pane._on_kill_confirmed(True)
+        # Let any background workers finish
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+
+        runner = ctx.runner
+        assert isinstance(runner, FakeProcessRunner)
+        assert ("pkill", "-u", "evan", "mosh-server") in runner.calls
+        assert ("pkill", "-u", "evan", "sshd") in runner.calls
+        # Must NOT disable Remote Login
+        assert ("sudo", "systemsetup", "-setremotelogin", "off") not in runner.calls
+
+
+@pytest.mark.asyncio
+async def test_kill_sessions_cancel_path_does_not_run_pkill():
+    """Cancelling [k] (dismiss=False or None) must not call pkill at all."""
+    ctx = _kill_ctx()
+    app = MissionControlApp(ctx=ctx)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        from dotfiles.tui.panes.remote import RemotePane
+
+        pane = app.query_one(RemotePane)
+
+        # Test False (cancel button)
+        pane._on_kill_confirmed(False)
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+
+        # Test None (dismissed without choice)
+        pane._on_kill_confirmed(None)
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+
+        runner = ctx.runner
+        assert isinstance(runner, FakeProcessRunner)
+        assert ("pkill", "-u", "evan", "mosh-server") not in runner.calls
+        assert ("pkill", "-u", "evan", "sshd") not in runner.calls

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import ClassVar
 
@@ -26,7 +27,7 @@ class MissionControlApp(App[None]):
 
     def __init__(self, *, ctx: AppContext | None = None) -> None:
         super().__init__()
-        self._ctx = ctx if ctx is not None else build_real_context(interactive=True)
+        self._ctx = ctx if ctx is not None else build_real_context(interactive=sys.stdin.isatty())
 
     @property
     def ctx(self) -> AppContext:
