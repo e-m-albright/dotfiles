@@ -115,7 +115,11 @@ fi
 
 # Install brew with packages & casks via Python CLI (packages.toml is source of truth)
 print_section "Homebrew packages"
-uv run --project "$DOTFILES_DIR/cli" dotfiles brew install
+if command -v uv >/dev/null 2>&1; then
+    uv run --project "$DOTFILES_DIR/cli" dotfiles brew install
+else
+    print_warn "Skipping brew install — uv not available (install uv and run: dotfiles brew install)"
+fi
 
 # Setup macos dock
 . "$DOTFILES_DIR/macos/dock.sh"
