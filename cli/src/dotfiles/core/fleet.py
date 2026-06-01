@@ -11,7 +11,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import cast
 
-from dotfiles.core.models import FleetSession
+from dotfiles.core.ledger import latest_by_session, read
+from dotfiles.core.models import FleetSession, LedgerEntry
 from dotfiles.core.ports import ProcessRunner
 
 
@@ -116,3 +117,78 @@ def worktree_branches(runner: ProcessRunner) -> dict[str, str]:
         elif not line.strip():
             current = None
     return branches
+
+
+def _enrich(
+    session: FleetSession,
+    *,
+    branches: dict[str, str],
+    by_sid: dict[str, LedgerEntry],
+    by_cwd: dict[str, LedgerEntry],
+) -> FleetSession:
+    """Attach worktree branch + ledger task to a discovered session."""
+    entry = (by_sid.get(session.session_id) if session.session_id else None) or by_cwd.get(
+        session.cwd
+    )
+    in_worktree = session.cwd in branches
+    return session.model_copy(
+        update={
+            "branch": branches[session.cwd] if in_worktree else session.branch,
+            "worktree": session.cwd if in_worktree else session.worktree,
+            "task": entry.task if entry else session.task,
+            "source": "both" if entry else session.source,
+        }
+    )
+
+
+def _ledger_only_sessions(
+    overlay: dict[str, LedgerEntry],
+    *,
+    branches: dict[str, str],
+    seen: set[tuple[str, str | None] | str],
+    cutoff: datetime,
+) -> list[FleetSession]:
+    """Build FleetSession records for ledger entries with no matching transcript."""
+    result: list[FleetSession] = []
+    for entry in overlay.values():
+        if entry.ts < cutoff:
+            continue
+        if (entry.vendor, entry.session_id) in seen or entry.cwd in seen:
+            continue
+        result.append(
+            FleetSession(
+                vendor=entry.vendor,
+                session_id=entry.session_id,
+                cwd=entry.cwd,
+                branch=entry.branch,
+                worktree=entry.cwd if entry.cwd in branches else None,
+                last_active=entry.ts,
+                task=entry.task,
+                source="ledger",
+            )
+        )
+    return result
+
+
+def list_fleet(
+    runner: ProcessRunner,
+    *,
+    home: Path,
+    state_dir: Path,
+    now: datetime,
+    live_threshold: int = 15,
+) -> list[FleetSession]:
+    """All live agent sessions: passive discovery + worktree + ledger overlay, newest first."""
+    discovered = claude_sessions(
+        home=home, now=now, live_threshold=live_threshold
+    ) + codex_sessions(home=home, now=now, live_threshold=live_threshold)
+    branches = worktree_branches(runner)
+    overlay = latest_by_session(read(state_dir))
+    by_cwd = {e.cwd: e for e in overlay.values()}
+    enriched = [_enrich(s, branches=branches, by_sid=overlay, by_cwd=by_cwd) for s in discovered]
+    seen: set[tuple[str, str | None] | str] = {(s.vendor, s.session_id) for s in enriched} | {
+        s.cwd for s in enriched
+    }
+    cutoff = now - timedelta(minutes=live_threshold)
+    enriched.extend(_ledger_only_sessions(overlay, branches=branches, seen=seen, cutoff=cutoff))
+    return sorted(enriched, key=lambda s: s.last_active, reverse=True)

@@ -8,8 +8,11 @@ from dotfiles.core.fleet import (
     claude_sessions,
     codex_sessions,
     decode_claude_slug,
+    list_fleet,
     worktree_branches,
 )
+from dotfiles.core.ledger import append
+from dotfiles.core.models import LedgerEntry
 from tests.fakes import FakeProcessRunner
 
 
@@ -74,3 +77,35 @@ def test_worktree_branches_parses_porcelain():
         "/home/evan/dotfiles": "main",
         "/home/evan/.worktrees/feat": "feat/x",
     }
+
+
+def test_list_fleet_overlays_ledger_and_worktree(tmp_path):
+    home = tmp_path / "home"
+    state_dir = tmp_path / "state"
+    now = datetime(2026, 6, 1, 12, 0, 0)
+    # one live claude session in a worktree
+    _touch(home / ".claude/projects/-home-evan-dotfiles/abc.jsonl", datetime(2026, 6, 1, 11, 59))
+    # ledger declares a task for that session
+    append(
+        state_dir,
+        LedgerEntry(
+            ts=datetime(2026, 6, 1, 11, 59),
+            session_id="abc",
+            vendor="claude",
+            cwd="/home/evan/dotfiles",
+            branch="main",
+            task="building fleet",
+            status="active",
+        ),
+    )
+    runner = FakeProcessRunner()
+    runner.script(
+        ("git", "worktree", "list", "--porcelain"),
+        stdout="worktree /home/evan/dotfiles\nbranch refs/heads/main\n",
+    )
+    fleet = list_fleet(runner, home=home, state_dir=state_dir, now=now, live_threshold=15)
+    assert len(fleet) == 1
+    assert fleet[0].task == "building fleet"
+    assert fleet[0].branch == "main"
+    assert fleet[0].worktree == "/home/evan/dotfiles"
+    assert fleet[0].source == "both"
