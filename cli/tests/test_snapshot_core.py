@@ -9,6 +9,7 @@ from dotfiles.core.models import (
     HookRow,
     McpRow,
     RulesSummary,
+    RuntimeChange,
     SkillsSummary,
     Snapshot,
     SymlinkState,
@@ -19,6 +20,7 @@ from dotfiles.core.snapshot import (
     collect_brew,
     collect_runtimes,
     collect_symlinks,
+    diff,
     list_snapshots,
     load_snapshot,
     write_snapshot,
@@ -139,3 +141,42 @@ def test_write_then_load_and_list(tmp_path):
     assert path.name == "2026-06-01T09-00-00.json"
     assert load_snapshot(path).taken_at == snap.taken_at
     assert list_snapshots(state_dir) == [path]
+
+
+def _snap(*, leaves, runtimes, symlinks, agent_config, ts=datetime(2026, 6, 1)) -> Snapshot:
+    return Snapshot(
+        taken_at=ts,
+        brew=BrewState(leaves=leaves, casks=()),
+        runtimes=runtimes,
+        symlinks=symlinks,
+        agent_config=agent_config,
+    )
+
+
+def test_diff_reports_each_category():
+    old = _snap(
+        leaves=("git", "jq"),
+        runtimes={"node": "v22.0.0"},
+        symlinks=(SymlinkState(path="/h/.zshrc", target="/d/shell/.zshrc", ok=True),),
+        agent_config={"claude": "aaa", "codex": "ccc"},
+    )
+    new = _snap(
+        leaves=("git", "ripgrep"),
+        runtimes={"node": "v22.3.0"},
+        symlinks=(SymlinkState(path="/h/.zshrc", target="/somewhere/else", ok=False),),
+        agent_config={"claude": "zzz", "codex": "ccc"},
+    )
+    d = diff(old, new)
+    assert d.brew_added == ("ripgrep",)
+    assert d.brew_removed == ("jq",)
+    assert d.runtimes_changed == (RuntimeChange(name="node", old="v22.0.0", new="v22.3.0"),)
+    assert d.symlinks_changed[0].broke is True
+    assert d.agent_config_changed == ("claude",)
+    assert d.is_empty is False
+
+
+def test_diff_of_identical_snapshots_is_empty():
+    snap = _snap(
+        leaves=("git",), runtimes={"node": "v22"}, symlinks=(), agent_config={"claude": "x"}
+    )
+    assert diff(snap, snap).is_empty is True

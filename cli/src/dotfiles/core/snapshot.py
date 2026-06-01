@@ -12,7 +12,10 @@ from dotfiles.core.agent_overview import AgentOverviewService
 from dotfiles.core.models import (
     AgentOverview,
     BrewState,
+    RuntimeChange,
     Snapshot,
+    SnapshotDiff,
+    SymlinkChange,
     SymlinkState,
 )
 from dotfiles.core.ports import ProcessRunner
@@ -151,3 +154,50 @@ def list_snapshots(state_dir: Path) -> list[Path]:
 def load_snapshot(path: Path) -> Snapshot:
     """Load a snapshot from its JSON file."""
     return Snapshot.model_validate_json(path.read_text())
+
+
+def _runtime_changes(old: Snapshot, new: Snapshot) -> tuple[RuntimeChange, ...]:
+    changes: list[RuntimeChange] = []
+    for name in sorted(set(old.runtimes) | set(new.runtimes)):
+        before = old.runtimes.get(name, "")
+        after = new.runtimes.get(name, "")
+        if before != after:
+            changes.append(RuntimeChange(name=name, old=before, new=after))
+    return tuple(changes)
+
+
+def _symlink_changes(old: Snapshot, new: Snapshot) -> tuple[SymlinkChange, ...]:
+    old_by_path = {s.path: s for s in old.symlinks}
+    changes: list[SymlinkChange] = []
+    for s in new.symlinks:
+        prev = old_by_path.get(s.path)
+        if prev is None or prev.target != s.target or prev.ok != s.ok:
+            changes.append(
+                SymlinkChange(
+                    path=s.path,
+                    old_target=prev.target if prev else "",
+                    new_target=s.target,
+                    broke=(not s.ok) and (prev is None or prev.ok),
+                )
+            )
+    return tuple(changes)
+
+
+def diff(old: Snapshot, new: Snapshot) -> SnapshotDiff:
+    """Compute the drift from `old` to `new` across all snapshot categories."""
+    old_brew = set(old.brew.leaves) | set(old.brew.casks)
+    new_brew = set(new.brew.leaves) | set(new.brew.casks)
+    config_changed = tuple(
+        sorted(
+            v
+            for v in set(old.agent_config) | set(new.agent_config)
+            if old.agent_config.get(v) != new.agent_config.get(v)
+        )
+    )
+    return SnapshotDiff(
+        brew_added=tuple(sorted(new_brew - old_brew)),
+        brew_removed=tuple(sorted(old_brew - new_brew)),
+        runtimes_changed=_runtime_changes(old, new),
+        symlinks_changed=_symlink_changes(old, new),
+        agent_config_changed=config_changed,
+    )
