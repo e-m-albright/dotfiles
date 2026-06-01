@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from dotfiles.cli.main import app
@@ -167,6 +168,27 @@ def test_force_overwrites_rules(tmp_path: Path) -> None:
     # The customized content is replaced by the source rule + manifest header.
     assert "CUSTOM" not in customized.read_text()
     assert customized.read_text().startswith("<!-- source:")
+
+
+def test_missing_git_fast_fails_for_new_project(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A new project with git unavailable exits 1 with a clear message, no git init."""
+    project = tmp_path / "proj"
+    fake = FakeProcessRunner()
+    ctx = make_fake_context(runner=fake, dotfiles_dir=_make_dotfiles(tmp_path))
+
+    # Fake `which`: git is missing, everything else present.
+    def _which(cmd: str) -> str | None:
+        return None if cmd == "git" else f"/usr/bin/{cmd}"
+
+    monkeypatch.setattr("dotfiles.cli.scaffold.shutil.which", _which)
+
+    result = runner.invoke(app, ["scaffold", "python", str(project)], obj=ctx)
+    assert result.exit_code == 1
+    assert "git is required" in result.output.lower()
+    # No git command was ever attempted.
+    assert not any(c[0] == "git" for c in fake.calls)
 
 
 def test_git_init_invoked_for_new_project(tmp_path: Path) -> None:

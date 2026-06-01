@@ -12,6 +12,7 @@ date is read here (at the CLI layer) and passed down — core never reads the cl
 from __future__ import annotations
 
 import shutil
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -222,9 +223,17 @@ def scaffold_command(
     plan = _build_plan(recipe, arg2, arg3, force=force, tools=tools)
     _print_header(plan)
 
+    def _which(cmd: str) -> bool:
+        return shutil.which(cmd) is not None
+
     # Pre-flight is warn-only (matching scaffold.sh).
-    pf = preflight(recipe, lambda cmd: shutil.which(cmd) is not None)
+    pf = preflight(recipe, _which)
     render_steps(console, [s for s in pf if s.level == "warn"])
+
+    # git is the one hard requirement: a new project's git init is core to
+    # scaffolding, so fail fast with a clear message rather than a confusing
+    # subprocess error mid-way. (Recipe toolchains stay warn-not-abort above.)
+    _require_git(plan, _which)
 
     steps = _scaffold_files(app_ctx.dotfiles_dir, plan)
     steps.extend(
@@ -306,6 +315,22 @@ def _deploy_optionals(
     if sync:
         steps.extend(deploy_agent_rules_sync(dotfiles_dir, plan.project_dir, force=plan.force))
     return steps
+
+
+def _require_git(plan: _Plan, which: Callable[[str], bool]) -> None:
+    """Hard-fail before scaffolding if git is needed but unavailable.
+
+    A project without a `.git` dir will be `git init`-ed by _git_and_hooks; if
+    git is missing that would blow up with an opaque subprocess error. Emit a
+    clear error StepResult and exit 1 *before* any filesystem changes.
+    """
+    needs_git_init = not (plan.project_dir / ".git").is_dir()
+    if needs_git_init and not which("git"):
+        render_steps(
+            console,
+            [StepResult(level="error", message="git is required to scaffold a new project")],
+        )
+        raise typer.Exit(1)
 
 
 def _git_and_hooks(runner: ProcessRunner, plan: _Plan) -> list[StepResult]:
