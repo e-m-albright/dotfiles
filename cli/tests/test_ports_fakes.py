@@ -53,6 +53,14 @@ def test_fake_runner_check_true_ok_when_success() -> None:
     assert result.ok is True
 
 
+def test_fake_filesystem_records_chmod() -> None:
+    fs = FakeFileSystem()
+    p = Path("/home/u/.ssh")
+    fs.mkdir(p)
+    fs.chmod(p, 0o700)
+    assert fs.modes[p] == 0o700
+
+
 def test_fake_clock_is_fixed() -> None:
     from datetime import UTC
 

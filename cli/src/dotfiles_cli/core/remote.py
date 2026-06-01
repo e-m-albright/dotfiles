@@ -140,8 +140,10 @@ class RemoteService:
             out.append(StepResult(level="info", message=f"DRY RUN: ensure {keys} (700/600)"))
         else:
             self._fs.mkdir(ssh_dir)
+            self._fs.chmod(ssh_dir, 0o700)
             if not self._fs.exists(keys):
                 self._fs.write_text(keys, "")
+            self._fs.chmod(keys, 0o600)
             out.append(StepResult(level="success", message="SSH authorized_keys ready"))
 
         if add_key is None:

@@ -36,6 +36,8 @@ class FileSystem(Protocol):
 
     def mkdir(self, path: Path, *, parents: bool = True) -> None: ...
 
+    def chmod(self, path: Path, mode: int) -> None: ...
+
 
 @runtime_checkable
 class Clock(Protocol):

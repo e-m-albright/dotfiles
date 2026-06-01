@@ -55,6 +55,7 @@ class FakeFileSystem:
     def __init__(self) -> None:
         self._files: dict[Path, str] = {}
         self._dirs: set[Path] = set()
+        self.modes: dict[Path, int] = {}
 
     def read_text(self, path: Path) -> str:
         return self._files[path]
@@ -67,6 +68,9 @@ class FakeFileSystem:
 
     def mkdir(self, path: Path, *, parents: bool = True) -> None:
         self._dirs.add(path)
+
+    def chmod(self, path: Path, mode: int) -> None:
+        self.modes[path] = mode
 
 
 class FakeClock:

@@ -17,3 +17,6 @@ class LocalFileSystem:
 
     def mkdir(self, path: Path, *, parents: bool = True) -> None:
         path.mkdir(parents=parents, exist_ok=True)
+
+    def chmod(self, path: Path, mode: int) -> None:
+        path.chmod(mode)

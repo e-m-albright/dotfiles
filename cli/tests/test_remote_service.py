@@ -238,6 +238,35 @@ def test_add_key_preserves_existing_key_without_trailing_newline() -> None:
     assert new in lines
 
 
+def test_setup_hardens_ssh_dir_and_authorized_keys_perms() -> None:
+    fs = FakeFileSystem()
+    runner = _base_runner()
+    service = RemoteService(
+        runner=runner,
+        fs=fs,
+        interactive=True,
+        home=Path("/home/evan"),
+        which=lambda _name: "/opt/homebrew/bin/mosh-server",
+    )
+    service.setup(dry_run=False, add_key=None, harden=False, session="mobile")
+    assert fs.modes[Path("/home/evan/.ssh")] == 0o700
+    assert fs.modes[Path("/home/evan/.ssh/authorized_keys")] == 0o600
+
+
+def test_setup_dry_run_does_not_chmod() -> None:
+    fs = FakeFileSystem()
+    runner = _base_runner()
+    service = RemoteService(
+        runner=runner,
+        fs=fs,
+        interactive=True,
+        home=Path("/home/evan"),
+        which=lambda _name: "/opt/homebrew/bin/mosh-server",
+    )
+    service.setup(dry_run=True, add_key=None, harden=False, session="mobile")
+    assert fs.modes == {}
+
+
 def test_setup_harden_writes_config_and_restarts_sshd() -> None:
     runner = _base_runner()
     fs = FakeFileSystem()
