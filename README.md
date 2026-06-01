@@ -68,7 +68,17 @@ dotfiles scaffold --force python .
 # Add extra tool support (default: claude + cursor)
 dotfiles scaffold python my-api --tools copilot,gemini
 dotfiles scaffold --tools all python my-api
+
+# Opt-in extras (deploy portable tooling fragments)
+dotfiles scaffold python my-api --with-audit-pipeline    # scripts/audit/ + just/audit/
+dotfiles scaffold python my-api --with-baselines         # code-health ratchet
+dotfiles scaffold python my-api --with-code-health       # both of the above
+dotfiles scaffold python my-api --with-agent-rules-sync  # bake .ai/rules into AGENTS.md
 ```
+
+`dotfiles scaffold <recipe> [app-type] <path>` — the second positional is the
+app-type when it names a known framework (e.g. `python cli ...`), otherwise it is
+the project path and the recipe's default app-type is used.
 
 Safe to run multiple times — only adds missing pieces. AGENTS.md is generated once, then project-owned (use `--force` to regenerate).
 
@@ -94,7 +104,7 @@ my-project/
 - **Tool symlinks** are auto-generated from a registry (`agents/shared/tool-targets.json`)
 - Default tools: claude + cursor. Use `--tools copilot,gemini` or `--tools all` for more.
 
-**Multi-tool rule discovery** — `.ai/rules/` is the single source of truth. `scaffold.sh` creates tool-specific symlinks so each AI tool discovers the same rules in its native directory:
+**Multi-tool rule discovery** — `.ai/rules/` is the single source of truth. `dotfiles scaffold` creates tool-specific symlinks so each AI tool discovers the same rules in its native directory:
 
 | Tool | Discovery | Directory |
 |------|-----------|-----------|
@@ -415,7 +425,6 @@ dotfiles brew install        # Sync Homebrew packages from packages.toml
 dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
 dotfiles scaffold            # Scaffold a project with AI rules
-dotfiles test                # Run scaffold eval framework (--quick for fast)
 dotfiles profile-shell       # Profile shell startup time
 dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
 dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
@@ -486,8 +495,8 @@ dotfiles/
 │   ├── ides.md             #   IDE/editor tracker — current setup + candidates (Zed, Neovim, Helix, Warp)
 │   ├── tools-to-evaluate.md #  Bookmarked tools/services to investigate
 │   └── specs/              #   In-flight design specs and plans
-└── prompts/                # Project scaffolding
-    ├── scaffold.sh         # Deploy rules + templates to projects
+└── prompts/                # Project scaffolding assets (the `dotfiles scaffold` command lives in cli/)
+    ├── scaffolds/          # Opt-in fragments: audit-pipeline, baselines, agent-rules-sync
     ├── guides/             # Reference docs (not deployed to projects)
     │   └── developer-workflow.md  # How all the tools work together
     └── */templates/        # Starter files per recipe (.gitignore, justfile, etc.)
