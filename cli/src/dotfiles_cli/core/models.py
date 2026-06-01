@@ -75,3 +75,22 @@ class Session(BaseModel):
     name: str
     running: bool
     current: bool
+
+
+CheckStatus = Literal["ok", "missing", "warn", "fixed"]
+
+
+class CheckResult(BaseModel):
+    """One row of `dotfiles doctor` output."""
+
+    model_config = ConfigDict(frozen=True)
+
+    section: str
+    name: str
+    status: CheckStatus
+    detail: str = ""
+    hint: str = ""
+
+    @property
+    def is_failure(self) -> bool:
+        return self.status == "missing"
