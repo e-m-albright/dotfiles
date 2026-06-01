@@ -237,3 +237,4 @@ class AgentOverview(BaseModel):
     agents: tuple[AgentRow, ...]
     rules: RulesSummary
     permissions: tuple[PermissionRow, ...]
+    vendor_surfaces: tuple[VendorSurface, ...] = ()

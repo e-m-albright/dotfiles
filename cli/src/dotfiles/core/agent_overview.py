@@ -27,7 +27,9 @@ from dotfiles.core.models import (
     PermissionRow,
     RulesSummary,
     SkillsSummary,
+    VendorSurface,
 )
+from dotfiles.core.verify import VendorVerifyService
 
 if TYPE_CHECKING:
     from dotfiles.core.ports import FileSystem, ProcessRunner
@@ -67,7 +69,22 @@ class AgentOverviewService:
             agents=tuple(self.section_agents()),
             rules=self.section_rules(),
             permissions=tuple(self.section_permissions()),
+            vendor_surfaces=tuple(self.vendor_surfaces()),
         )
+
+    # ------------------------------------------------------------------
+    # Vendor surfaces (delegates to VendorVerifyService)
+    # ------------------------------------------------------------------
+
+    def vendor_surfaces(self) -> list[VendorSurface]:
+        """Return vendor surface presence checks, delegating to VendorVerifyService."""
+        svc = VendorVerifyService(
+            fs=self._fs,
+            home=self._home,
+            dotfiles_dir=self._dotfiles,
+            which=self._which,
+        )
+        return svc.vendors()
 
     # ------------------------------------------------------------------
     # Section 1: MCP Servers

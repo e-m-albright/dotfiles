@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from dotfiles.core.agent_overview import AgentOverviewService
-from dotfiles.core.models import AgentOverview
+from dotfiles.core.models import AgentOverview, VendorSurface
 from tests.fakes import FakeFileSystem, FakeProcessRunner
 
 DOTFILES = Path("/dotfiles")
@@ -21,6 +21,17 @@ def make_service(fs: FakeFileSystem) -> AgentOverviewService:
         runner=FakeProcessRunner(),
         dotfiles_dir=DOTFILES,
         home=HOME,
+    )
+
+
+def make_service_with_which(fs: FakeFileSystem, which: dict[str, str]) -> AgentOverviewService:
+    """Build service with a scripted which() for CLI-gated vendor checks."""
+    return AgentOverviewService(
+        fs=fs,
+        runner=FakeProcessRunner(),
+        dotfiles_dir=DOTFILES,
+        home=HOME,
+        which=which.get,
     )
 
 
@@ -509,3 +520,68 @@ class TestOverviewAggregator:
         assert len(result.agents) == 1
         assert result.rules.canonical_rules == 1
         assert len(result.permissions) == 1
+
+
+# ===========================================================================
+# Vendor surfaces (folded into overview)
+# ===========================================================================
+
+
+class TestVendorSurfaces:
+    def test_vendor_surfaces_returns_list_of_vendor_surface(self) -> None:
+        fs = FakeFileSystem()
+        svc = make_service(fs)
+        surfaces = svc.vendor_surfaces()
+        assert isinstance(surfaces, list)
+        assert all(isinstance(s, VendorSurface) for s in surfaces)
+
+    def test_surfaces_include_claude_entries(self) -> None:
+        fs = FakeFileSystem()
+        # Seed some Claude paths as present
+        fs.mkdir(HOME / ".claude" / "skills")
+        fs.write_text(HOME / ".claude.json", "{}")
+        surfaces = make_service(fs).vendor_surfaces()
+        vendors = {s.vendor for s in surfaces}
+        assert "claude" in vendors
+
+    def test_present_path_has_present_status(self) -> None:
+        fs = FakeFileSystem()
+        # ~/.claude/settings.json exists as a file → "present"
+        fs.write_text(HOME / ".claude" / "settings.json", "{}")
+        surfaces = make_service(fs).vendor_surfaces()
+        settings_row = next(
+            (s for s in surfaces if s.vendor == "claude" and s.label == "settings.json"),
+            None,
+        )
+        assert settings_row is not None
+        assert settings_row.status == "present"
+
+    def test_missing_path_has_missing_status(self) -> None:
+        fs = FakeFileSystem()
+        surfaces = make_service(fs).vendor_surfaces()
+        # Nothing seeded → all claude surfaces missing
+        claude_surfaces = [s for s in surfaces if s.vendor == "claude"]
+        assert all(s.status == "missing" for s in claude_surfaces)
+
+    def test_gemini_skipped_when_cli_absent(self) -> None:
+        fs = FakeFileSystem()
+        # Explicitly pass a which() that finds nothing
+        svc = make_service_with_which(fs, {})
+        surfaces = svc.vendor_surfaces()
+        gemini = [s for s in surfaces if s.vendor == "gemini"]
+        assert len(gemini) == 1
+        assert gemini[0].status == "skipped"
+
+    def test_gemini_checked_when_cli_present(self) -> None:
+        fs = FakeFileSystem()
+        svc = make_service_with_which(fs, {"gemini": "/usr/local/bin/gemini"})
+        surfaces = svc.vendor_surfaces()
+        gemini = [s for s in surfaces if s.vendor == "gemini"]
+        assert len(gemini) > 1 or gemini[0].status != "skipped"
+
+    def test_overview_vendor_surfaces_populated(self) -> None:
+        fs = FakeFileSystem()
+        result = make_service(fs).overview()
+        # vendor_surfaces should be a non-empty tuple (at minimum claude entries)
+        assert isinstance(result.vendor_surfaces, tuple)
+        assert len(result.vendor_surfaces) > 0
