@@ -151,21 +151,21 @@ def test_agent_lint_empty_dotfiles_exits_zero(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# agent gemini-prompt
+# agent web-chat-instructions
 # ---------------------------------------------------------------------------
 
 
 def test_gemini_prompt_list_exits_zero(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "hello"), ("02-b.md", "world!"))
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "gemini-prompt", "--list"], obj=ctx)
+    result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
 def test_gemini_prompt_list_prints_chunk_names(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "hello"), ("02-b.md", "world!"))
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "gemini-prompt", "--list"], obj=ctx)
+    result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
     assert "01-a.md" in result.output
     assert "02-b.md" in result.output
 
@@ -173,7 +173,7 @@ def test_gemini_prompt_list_prints_chunk_names(tmp_path: Path) -> None:
 def test_gemini_prompt_list_prints_char_counts(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "hello"))
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "gemini-prompt", "--list"], obj=ctx)
+    result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
     assert "5" in result.output  # len("hello".encode()) == 5
 
 
@@ -181,7 +181,7 @@ def test_gemini_prompt_default_missing_pbcopy_exits_one(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "hello"))
     proc = FakeProcessRunner()
     ctx = make_fake_context(runner=proc, dotfiles_dir=dotfiles)
-    list_result = runner.invoke(app, ["agent", "gemini-prompt", "--list"], obj=ctx)
+    list_result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
     assert list_result.exit_code == 0
 
 
@@ -190,13 +190,13 @@ def test_gemini_prompt_list_no_pbcopy_required(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "abc"))
     proc = FakeProcessRunner()
     ctx = make_fake_context(runner=proc, dotfiles_dir=dotfiles)
-    runner.invoke(app, ["agent", "gemini-prompt", "--list"], obj=ctx)
+    runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
     assert ("pbcopy",) not in proc.calls
 
 
 def test_gemini_prompt_missing_chunks_dir_exits_one(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "gemini-prompt", "--list"], obj=ctx)
+    result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
     assert result.exit_code == 1
 
 

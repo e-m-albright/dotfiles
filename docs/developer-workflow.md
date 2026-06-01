@@ -370,7 +370,7 @@ Edit `agents/claude/hooks.json` directly, then run `dotfiles agent setup`.
 
 ## Code Review: Fix-First
 
-Our review criteria (`.ai/skills/premerge-review/references/review-criteria.md`) use a **fix-first classification** inspired by gstack. Every review finding gets classified before reporting:
+Our review criteria (`.ai/skills/review/references/bug-hunt-criteria.md`) use a **fix-first classification** inspired by gstack. Every review finding gets classified before reporting:
 
 | Classification | Action | Example |
 |---------------|--------|---------|

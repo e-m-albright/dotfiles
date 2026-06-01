@@ -17,7 +17,7 @@ Apply when reviewing frontend or UI code. Not every item applies to every change
 
 **When NOT to use:**
 - **`impeccable`** — when you want to *design, build, or substantially redesign* an interface (visual direction, layout from scratch, ambitious effects). This skill audits UI that already exists against a checklist; `impeccable` creates it.
-- **`premerge-review`** — when the change is backend/logic and you want a correctness/security pass, not a UI one.
+- **`review`** — when the change is backend/logic and you want a correctness/security pass, not a UI one.
 
 ## Visual Hierarchy & Layout
 

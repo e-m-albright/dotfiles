@@ -42,7 +42,7 @@ sub_help () {
     printf "   agent overview       Show active agentic setup (Python dashboard)\n"
     printf "   agent migrate-rules-sync [path]\n"
     printf "                        Adopt cross-harness rule sync in an existing project\n"
-    printf "   agent gemini-prompt [--step|--list]\n"
+    printf "   agent web-chat-instructions [--step|--list]\n"
     printf "                        Load advisor prompt into clipboard, chunked for Gemini saved-info\n"
     printf "\n"
     printf "   agent lint           Validate skill/agent files against conventions\n"
@@ -232,7 +232,7 @@ _dotfiles() {
         'sesh:zellij sessions (alias)'
         'tui:Launch the Mission Control TUI'
         'snapshot:Machine-state snapshots (ls, diff)'
-        'agent:Agent vendor namespace (overview, lint, setup, verify, gemini-prompt)'
+        'agent:Agent vendor namespace (overview, lint, setup, verify, web-chat-instructions)'
         'brew:Brew namespace (install, stale)'
         'shell:Shell namespace (profile)'
         'cursor:Cursor namespace (plugins)'
@@ -249,7 +249,7 @@ ns_agent() {
     local sub="${1:-overview}"; shift || true
     case "$sub" in
         migrate-rules-sync) sub_migrate_agents_sync "$@" ;;
-        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, gemini-prompt)\n" "$ARROW" "$sub" >&2; exit 1 ;;
+        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, web-chat-instructions)\n" "$ARROW" "$sub" >&2; exit 1 ;;
     esac
 }
 
@@ -278,12 +278,12 @@ if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
 
-# Surgical route: agent overview, lint, gemini-prompt, setup, and verify are Python; others stay Bash.
+# Surgical route: agent overview, lint, web-chat-instructions, setup, and verify are Python; others stay Bash.
 # Bare `agent` (no subcommand) defaults to overview, matching the old dispatcher.
 if [[ "${1:-}" == "agent" ]]; then
     agent_sub="${2:-overview}"
     case "$agent_sub" in
-        overview|lint|gemini-prompt|setup|verify)
+        overview|lint|web-chat-instructions|setup|verify)
             exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "$agent_sub" "${@:3}" ;;
     esac
 fi

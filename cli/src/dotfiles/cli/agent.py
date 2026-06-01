@@ -389,8 +389,8 @@ def lint(ctx: typer.Context) -> None:
         raise typer.Exit(1)
 
 
-@agent_app.command("gemini-prompt")
-def gemini_prompt(
+@agent_app.command("web-chat-instructions")
+def web_chat_instructions(
     ctx: typer.Context,
     list_chunks: bool = typer.Option(
         False, "--list", help="Print chunk filenames and sizes, then exit."
@@ -399,7 +399,7 @@ def gemini_prompt(
         False, "--step", help="Interactive: copy each chunk and wait for enter."
     ),
 ) -> None:
-    """Load advisor prompt chunks into clipboard for Gemini saved-info."""
+    """Load system-instruction chunks into the clipboard for a web chat (Gemini saved-info)."""
     app_ctx = app_context(ctx)
 
     svc = GeminiChunksService(

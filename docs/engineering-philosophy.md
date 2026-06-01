@@ -1,6 +1,6 @@
 # Engineering Philosophy
 
-> Universal principles for any codebase. Distilled from a private code-health manifesto. Cross-referenced by `.ai/rules/`, `.ai/prompts/audits/`, and `.ai/skills/code-quality-audit/`.
+> Universal principles for any codebase. Distilled from a private code-health manifesto. Cross-referenced by `.ai/rules/`, `.ai/prompts/audits/`, and `.ai/skills/review/`.
 
 Agentic programming amplifies whatever foundation you build on. Strong foundation compounds velocity: agents reuse clean abstractions, follow typed contracts, produce code that slots into the existing architecture without friction. Weak foundation compounds debt: agents copy-paste patterns, invent parallel registries, produce code that works today and rots tomorrow.
 
@@ -88,7 +88,7 @@ When a pattern repeats: first encode it as a convention (file naming, directory 
 
 ## How agents should use this
 
-When you (the agent) are about to write or change code, ask which principles apply. When auditing, grade against these as the universal rubric (see `.ai/skills/code-quality-audit/SKILL.md` for the full grading process).
+When you (the agent) are about to write or change code, ask which principles apply. When auditing, grade against these as the universal rubric (see `.ai/skills/review/SKILL.md` for the full grading process).
 
 When projects adopt these principles, the per-language `.ai/rules/` files (Python, Rust, TypeScript, etc.) translate them into language-specific gates and patterns. The principle is universal; the enforcement is local.
 

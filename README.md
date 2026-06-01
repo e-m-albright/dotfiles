@@ -209,8 +209,7 @@ Setup is automated via `dotfiles agent setup` (also runs during install):
 - **Config**: `~/.codex/config.toml` with MCP servers and `project_doc_fallback_filenames = ["CODEX.md"]`
 - **Statusline**: `[tui]` theme + status-line text segments installed from `agents/codex/statusline.toml`
 - **Hooks**: Format-on-save (reuses Claude's hook), sensitive file guard, terminal notifications
-- **Skills**: `dotfiles-doctor`, `pr-summary`, `git-worktree-manager`, `dep-audit`, `brew-reconcile`, `migration-writer`
-- **Agents**: `shellcheck-reviewer`
+- **Skills**: deployed from `.ai/skills/` via `npx skills`
 - **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — targets "codex" or "claude"
 - **Command auto-approve**: `~/.codex/rules/default.rules` deployed from `agents/codex/default.rules` (universal allowlist; Codex appends interactive approvals — fold back periodically)
 
@@ -268,7 +267,7 @@ Setup is automated via `dotfiles agent setup` (also runs during install):
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
 - **Skills**: deployed from `.ai/skills/` via `npx skills`
-- **Agents**: `shellcheck-reviewer`
+- **Agents**: deployed from `.ai/agents/`
 - **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion, Playwright, Chrome DevTools (standalone); Context7 (via plugin)
 - **Browser-tool tiers**: See `docs/knowledge/browser-tooling.md` — when to reach for Playwright tests (Tier 1), agent-browser/pinchtab CLIs (Tier 2), Playwright/Chrome DevTools MCPs (Tier 3-4), or Stagehand (Tier 5)
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
