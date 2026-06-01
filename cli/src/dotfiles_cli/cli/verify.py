@@ -6,7 +6,8 @@ import typer
 
 from dotfiles_cli.cli.context import AppContext
 from dotfiles_cli.console import console
-from dotfiles_cli.core.models import VendorSurface
+from dotfiles_cli.core.models import FileValidation, VendorSurface
+from dotfiles_cli.core.skills import SkillValidateService
 from dotfiles_cli.core.verify import VendorVerifyService
 
 verify_app = typer.Typer(help="Verify vendor agent surfaces (skills, MCP, hooks, etc.).")
@@ -85,3 +86,46 @@ def vendors(ctx: typer.Context) -> None:
     )
     console.print("Verification depth varies — see CLI-confirmation lines above.")
     console.print("To deploy or refresh:  [dim]dotfiles agent setup[/]")
+
+
+def _render_validation(v: FileValidation) -> None:
+    if v.status == "ok":
+        console.print(f"[green]OK  [/] {v.rel_path} [dim]({v.body_lines}-line body)[/]")
+    elif v.status == "warn":
+        console.print(f"[yellow]WARN[/] {v.rel_path}")
+        for w in v.warnings:
+            console.print(f"  [yellow]⚠[/] {w}")
+    else:
+        console.print(f"[red]FAIL[/] {v.rel_path}")
+        for e in v.errors:
+            console.print(f"  [red]✗[/] {e}")
+        for w in v.warnings:
+            console.print(f"  [yellow]⚠[/] {w}")
+
+
+@verify_app.command()
+def skills(ctx: typer.Context) -> None:
+    """Validate .ai/skills/ and .ai/agents/ markdown files."""
+    app_ctx = ctx.obj
+    assert isinstance(app_ctx, AppContext)
+
+    service = SkillValidateService(fs=app_ctx.fs, dotfiles_dir=app_ctx.dotfiles_dir)
+    results = service.validate()
+
+    for v in results:
+        _render_validation(v)
+
+    n_fail = sum(1 for v in results if v.status == "fail")
+    n_warn = sum(1 for v in results if v.status == "warn")
+    n_ok = sum(1 for v in results if v.status == "ok")
+
+    console.print()
+    console.print("[dim]── Summary ──[/]")
+    console.print(f"  [green]{n_ok} passed[/]")
+    if n_warn:
+        console.print(f"  [yellow]{n_warn} with warnings[/]")
+    if n_fail:
+        console.print(f"  [red]{n_fail} failed[/]")
+
+    if n_fail:
+        raise typer.Exit(1)

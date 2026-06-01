@@ -1,4 +1,4 @@
-"""Tests for `dotfiles verify vendors` Typer command."""
+"""Tests for `dotfiles verify` Typer commands (vendors + skills)."""
 
 from pathlib import Path
 
@@ -93,4 +93,81 @@ def test_verify_vendors_gemini_skipped_when_absent() -> None:
 
 def test_verify_vendors_help_is_available() -> None:
     result = runner.invoke(app, ["verify", "vendors", "--help"])
+    assert result.exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# verify skills
+# ---------------------------------------------------------------------------
+
+_DOTFILES = Path("/home/evan/dotfiles")
+_SKILLS_ROOT = _DOTFILES / ".ai" / "skills"
+_AGENTS_ROOT = _DOTFILES / ".ai" / "agents"
+
+_VALID_SKILL_TEXT = (
+    "---\n"
+    "name: my-skill\n"
+    "description: Use when you need to do something useful here.\n"
+    "---\n\n"
+    "# My Skill\n\nDoes things.\n"
+)
+
+
+def _fs_with_valid_skill() -> FakeFileSystem:
+    fs = FakeFileSystem()
+    fs.mkdir(_SKILLS_ROOT)
+    skill_dir = _SKILLS_ROOT / "my-skill"
+    fs.mkdir(skill_dir)
+    fs.write_text(skill_dir / "SKILL.md", _VALID_SKILL_TEXT)
+    return fs
+
+
+def _fs_with_invalid_skill() -> FakeFileSystem:
+    fs = FakeFileSystem()
+    fs.mkdir(_SKILLS_ROOT)
+    skill_dir = _SKILLS_ROOT / "my-skill"
+    fs.mkdir(skill_dir)
+    fs.write_text(skill_dir / "SKILL.md", "# no frontmatter\n")
+    return fs
+
+
+def test_verify_skills_help_is_available() -> None:
+    result = runner.invoke(app, ["verify", "skills", "--help"])
+    assert result.exit_code == 0
+
+
+def test_verify_skills_valid_skill_exits_zero() -> None:
+    ctx = make_fake_context(fs=_fs_with_valid_skill(), dotfiles_dir=_DOTFILES)
+    result = runner.invoke(app, ["verify", "skills"], obj=ctx)
+    assert result.exit_code == 0, result.output
+
+
+def test_verify_skills_valid_skill_shows_ok() -> None:
+    ctx = make_fake_context(fs=_fs_with_valid_skill(), dotfiles_dir=_DOTFILES)
+    result = runner.invoke(app, ["verify", "skills"], obj=ctx)
+    assert "OK" in result.output
+
+
+def test_verify_skills_invalid_skill_exits_one() -> None:
+    ctx = make_fake_context(fs=_fs_with_invalid_skill(), dotfiles_dir=_DOTFILES)
+    result = runner.invoke(app, ["verify", "skills"], obj=ctx)
+    assert result.exit_code == 1
+
+
+def test_verify_skills_invalid_skill_shows_fail() -> None:
+    ctx = make_fake_context(fs=_fs_with_invalid_skill(), dotfiles_dir=_DOTFILES)
+    result = runner.invoke(app, ["verify", "skills"], obj=ctx)
+    assert "FAIL" in result.output
+
+
+def test_verify_skills_shows_summary() -> None:
+    ctx = make_fake_context(fs=_fs_with_valid_skill(), dotfiles_dir=_DOTFILES)
+    result = runner.invoke(app, ["verify", "skills"], obj=ctx)
+    assert "Summary" in result.output
+    assert "passed" in result.output
+
+
+def test_verify_skills_empty_dotfiles_exits_zero() -> None:
+    ctx = make_fake_context(dotfiles_dir=_DOTFILES)
+    result = runner.invoke(app, ["verify", "skills"], obj=ctx)
     assert result.exit_code == 0
