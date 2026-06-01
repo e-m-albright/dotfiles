@@ -268,8 +268,13 @@ if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
 fi
 
 # Surgical route: agent overview, lint, gemini-prompt, setup, and verify are Python; others stay Bash.
-if [[ "${1:-}" == "agent" && ( "${2:-}" == "overview" || "${2:-}" == "lint" || "${2:-}" == "gemini-prompt" || "${2:-}" == "setup" || "${2:-}" == "verify" ) ]]; then
-    exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "${2}" "${@:3}"
+# Bare `agent` (no subcommand) defaults to overview, matching the old dispatcher.
+if [[ "${1:-}" == "agent" ]]; then
+    agent_sub="${2:-overview}"
+    case "$agent_sub" in
+        overview|lint|gemini-prompt|setup|verify)
+            exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "$agent_sub" "${@:3}" ;;
+    esac
 fi
 
 case $COMMAND_NAME in

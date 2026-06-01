@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 
 from dotfiles.core.agent_setup.claude import (
+    _clean_mcp_permissions,
     _rewrite_http_to_mcp_remote,
     setup_claude,
 )
@@ -526,6 +527,33 @@ class TestCleanMode:
         allow = _settings(home).get("permissions", {}).get("allow", [])
         # stale-server is not in mcp-servers.json → should be removed
         assert "mcp__stale-server__some_tool" not in allow
+
+    def test_clean_mcp_perm_keeps_cross_target_server(self, dotfiles: Path, home: Path) -> None:
+        """_clean_mcp_permissions keeps a registry server that doesn't target Claude.
+
+        Exercises the pruner directly: in a full setup run _setup_permissions
+        replaces the allow-list afterwards, so this is the precise unit under test.
+        """
+        claude_home = home / ".claude"
+        claude_home.mkdir(parents=True)
+        (claude_home / "settings.json").write_text(
+            json.dumps(
+                {
+                    "permissions": {
+                        # codex-only targets codex (not claude) but IS in the registry;
+                        # tool-scoped form must be matched by the server prefix.
+                        "allow": ["mcp__codex-only__run", "mcp__stale-server__x", "Bash(git:*)"],
+                        "deny": [],
+                        "defaultMode": "auto",
+                    }
+                }
+            )
+        )
+        _clean_mcp_permissions(dotfiles, claude_home)
+        allow = _settings(home).get("permissions", {}).get("allow", [])
+        assert "mcp__codex-only__run" in allow  # known registry server (any target) → kept
+        assert "Bash(git:*)" in allow  # non-mcp perm untouched
+        assert "mcp__stale-server__x" not in allow  # truly-unknown server → removed
 
     def test_clean_removes_stale_projects(self, dotfiles: Path, home: Path) -> None:
         nonexistent = "/tmp/__nonexistent_test_project_12345__"

@@ -396,8 +396,9 @@ print_section "Setup"
 print_section "Agent Permissions"
 "$DOTFILES_DIR/.agents/generate-permissions.sh" claude || true
 
-# Clear cache
-. "$DOTFILES_DIR/bin/dotfiles" clean
+# Clear cache (execute, don't source — avoids re-evaluating the CLI dispatcher
+# in the installer's shell)
+"$DOTFILES_DIR/bin/dotfiles" clean
 
 mkdir -p ~/code
 

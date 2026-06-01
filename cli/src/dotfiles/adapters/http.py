@@ -17,7 +17,9 @@ class HttpError(RuntimeError):
 class UrllibHttpClient:
     """HttpClient backed by stdlib urllib — no extra dependencies."""
 
-    def __init__(self, *, timeout: float = 120.0) -> None:
+    def __init__(self, *, timeout: float = 300.0) -> None:
+        # 300s (not 120s): an LM Studio token-generation bench on a very slow
+        # local model can exceed two minutes; the original curl had no timeout.
         self._timeout = timeout
 
     def get_json(self, url: str) -> dict[str, Any]:

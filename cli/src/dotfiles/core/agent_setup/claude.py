@@ -27,6 +27,7 @@ from typing import Any, cast
 
 from dotfiles.core.agent_setup.lib import (
     StepResult,
+    all_mcp_server_names,
     deploy_skills,
     deploy_subagents,
     mcp_servers_for,
@@ -419,14 +420,20 @@ def _is_stale_mcp_perm(perm: str, expected_plugins: set[str], expected_mcp: set[
         plugin_name = plugin_part.split("_", 1)[0].lower()
         return not any(ep.split("@")[0].lower() == plugin_name for ep in expected_plugins)
     if perm.startswith("mcp__"):
-        server_name = perm[len("mcp__") :]
+        # Permissions are mcp__<server>__<tool> or mcp__<server>; match on the
+        # server prefix so a tool-scoped grant (mcp__context7__search) is kept
+        # whenever its server is known.
+        server_name = perm[len("mcp__") :].split("__", 1)[0]
         return server_name not in expected_mcp
     return False
 
 
 def _clean_mcp_permissions(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     expected_plugins = _expected_plugin_ids(dotfiles_dir)
-    expected_mcp = set(mcp_servers_for(dotfiles_dir, "claude").keys())
+    # Every registry server (all targets), not just Claude's — a cursor-only
+    # server's permission must not be pruned from Claude's allow-list. Matches
+    # the original bash, which keyed on the whole mcp-servers.json.
+    expected_mcp = all_mcp_server_names(dotfiles_dir)
 
     settings = _load_settings(claude_home)
     perms = cast(_JsonDict, settings.get("permissions") or {})

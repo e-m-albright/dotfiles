@@ -103,8 +103,10 @@ def test_add_taps_error(tmp_path: Path) -> None:
 
     results = add_taps(manifest, runner)
     levels = [r.level for r in results]
-    assert "error" in levels
+    # A failed tap is tolerant (warn), not a hard error that aborts the install.
+    assert "warn" in levels
     assert "success" in levels
+    assert "error" not in levels
 
 
 def test_add_taps_empty(tmp_path: Path) -> None:
@@ -364,7 +366,7 @@ def test_install_typewhisper_full_happy_path(monkeypatch: pytest.MonkeyPatch) ->
     tw_url = "https://github.com/TypeWhisper/typewhisper-mac/releases/download/v1.0/TypeWhisper.dmg"
     runner.script(_TW_FETCH_CMD, stdout=tw_url + "\n")
     runner.script(
-        ("sh", "-c", f"curl -fsSL -o {_TW_DMG_PATH!r} {tw_url!r}"),
+        ("curl", "-fsSL", "-o", _TW_DMG_PATH, tw_url),
         exit_code=0,
     )
     _mount_cmd = (
@@ -376,7 +378,7 @@ def test_install_typewhisper_full_happy_path(monkeypatch: pytest.MonkeyPatch) ->
         stdout="/Volumes/TypeWhisper\n",
     )
     runner.script(
-        ("sh", "-c", "cp -R '/Volumes/TypeWhisper'/TypeWhisper.app /Applications/"),
+        ("cp", "-R", "/Volumes/TypeWhisper/TypeWhisper.app", "/Applications/"),
         exit_code=0,
     )
     results = install_typewhisper(runner)

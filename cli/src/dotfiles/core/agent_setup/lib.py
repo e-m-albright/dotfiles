@@ -113,6 +113,29 @@ def mcp_servers_for(
     return result
 
 
+def all_mcp_server_names(dotfiles_dir: Path) -> set[str]:
+    """Return every server name in the MCP registry, regardless of target.
+
+    Used by clean-mode permission pruning to decide which ``mcp__`` permissions
+    are still "known". A permission for a cursor-only server (``mcp__context7``)
+    must not be pruned from Claude's allow-list just because that server doesn't
+    target Claude — mirrors the bash ``jq 'keys[]'`` over the whole registry.
+    Excludes ``$``-prefixed meta keys (e.g. ``$comment``).
+    """
+    import json as _json
+
+    json_path = dotfiles_dir / "agents" / "shared" / "mcp-servers.json"
+    if not json_path.exists():
+        return set()
+    try:
+        raw: object = _json.loads(json_path.read_text())
+    except (_json.JSONDecodeError, OSError):
+        return set()
+    if not isinstance(raw, dict):
+        return set()
+    return {k for k in cast(dict[str, object], raw) if not k.startswith("$")}
+
+
 def merge_managed_mcp(
     existing_mcp: Mapping[str, object],
     servers: Mapping[str, object],

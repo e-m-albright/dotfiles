@@ -5,6 +5,7 @@ Faithful port of copy_ai_rule() + add_manifest_header() from scaffold.sh.
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 from dotfiles.core.models import StepResult
@@ -70,8 +71,6 @@ def copy_ai_rule(
 
     if dest.is_file() and not force:
         return StepResult(level="info", message=f"skip .ai/rules/{rule_name}")
-
-    import shutil
 
     shutil.copy2(source, dest)
     add_manifest_header(dest, rule_path, today)

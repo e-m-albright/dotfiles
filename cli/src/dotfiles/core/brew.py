@@ -273,8 +273,11 @@ def add_taps(manifest: PackageManifest, runner: ProcessRunner) -> list[StepResul
         if res.exit_code == 0:
             results.append(StepResult(level="success", message=f"tap {tap}"))
         else:
+            # Tolerant like the original brew.sh (`brew tap ... || true`): a
+            # transient tap failure (e.g. network) is a warning, not a hard
+            # error that aborts the whole `brew install`.
             results.append(
-                StepResult(level="error", message=f"brew tap {tap} failed: {res.stderr.strip()}")
+                StepResult(level="warn", message=f"brew tap {tap} failed: {res.stderr.strip()}")
             )
     return results
 
@@ -437,12 +440,13 @@ def install_typewhisper(runner: ProcessRunner) -> list[StepResult]:
             StepResult(level="error", message="TypeWhisper: no stable DMG found on GitHub Releases")
         ]
 
-    # Download
-    dl_res = runner.run(("sh", "-c", f"curl -fsSL -o {_TW_DMG_PATH!r} {tw_url!r}"))
+    # Download. argv form (no shell) so the GitHub-sourced URL is never parsed
+    # by a shell — removes the injection footgun of interpolating tw_url into sh -c.
+    dl_res = runner.run(("curl", "-fsSL", "-o", _TW_DMG_PATH, tw_url))
     if dl_res.exit_code != 0:
         return [StepResult(level="error", message="TypeWhisper: download failed")]
 
-    # Mount
+    # Mount (genuine pipeline → needs a shell; only the constant path is interpolated)
     _mount_cmd = (
         f"hdiutil attach {_TW_DMG_PATH!r} -nobrowse -noautoopen 2>/dev/null"
         " | grep -oE '/Volumes/.*' | tail -1"
@@ -452,14 +456,12 @@ def install_typewhisper(runner: ProcessRunner) -> list[StepResult]:
     if not tw_mount:
         return [StepResult(level="error", message="TypeWhisper: DMG mount failed")]
 
-    # Copy
-    copy_res = runner.run(("sh", "-c", f"cp -R {tw_mount!r}/TypeWhisper.app /Applications/"))
+    # Copy — argv form (no shell).
+    copy_res = runner.run(("cp", "-R", f"{tw_mount}/TypeWhisper.app", "/Applications/"))
 
-    # Detach (best-effort)
-    runner.run(("sh", "-c", f"hdiutil detach {tw_mount!r} -quiet 2>/dev/null || true"))
-
-    # Cleanup
-    runner.run(("sh", "-c", f"rm -f {_TW_DMG_PATH!r}"))
+    # Detach + cleanup (best-effort; argv, exit code ignored).
+    runner.run(("hdiutil", "detach", tw_mount, "-quiet"))
+    runner.run(("rm", "-f", _TW_DMG_PATH))
 
     if copy_res.exit_code != 0:
         return [StepResult(level="error", message="TypeWhisper: copy to /Applications failed")]
