@@ -30,6 +30,15 @@ def test_render_steps_writes_each_message_with_a_glyph() -> None:
     assert "•" in out
 
 
+def test_render_steps_escapes_rich_markup_in_message() -> None:
+    """Brackets in step messages (e.g. [HTTP 403]) must not be treated as markup."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=False, width=100)
+    render_steps(console, [StepResult(level="error", message="oops [HTTP 403]")])
+    out = buf.getvalue()
+    assert "[HTTP 403]" in out
+
+
 def test_has_errors() -> None:
     from dotfiles.cli.ui import has_errors
 

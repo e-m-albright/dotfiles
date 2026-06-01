@@ -3,6 +3,7 @@
 from collections.abc import Iterable
 
 from rich.console import Console
+from rich.markup import escape
 
 from dotfiles.core.models import ConnectionInfo, StepLevel, StepResult
 
@@ -16,7 +17,7 @@ _GLYPH: dict[StepLevel, str] = {
 
 def render_steps(console: Console, steps: Iterable[StepResult]) -> None:
     for step in steps:
-        console.print(f"  {_GLYPH[step.level]} {step.message}")
+        console.print(f"  {_GLYPH[step.level]} {escape(step.message)}")
 
 
 def has_errors(steps: Iterable[StepResult]) -> bool:
