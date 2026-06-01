@@ -15,8 +15,14 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
-from dotfiles.core.agent_setup.bake_rules import bake_rules
-from dotfiles.core.agent_setup.lib import StepResult, mcp_servers_for, mcp_skip
+from dotfiles.core.agent_setup.lib import (
+    StepResult,
+    baked_rule_count,
+    build_global_instructions,
+    mcp_servers_for,
+    mcp_skip,
+    merge_managed_mcp,
+)
 from dotfiles.core.agent_setup.settings_merger import (
     load_json_or,
     merge_replace,
@@ -78,12 +84,12 @@ def _setup_settings_and_mcp(
         cast(dict[str, object], raw_mcp) if isinstance(raw_mcp, dict) else {}
     )
 
-    if reset_mcp:
-        # Purge managed keys before merging (remove stale managed entries)
-        managed_keys = set(mcp_servers_for(dotfiles_dir, "gemini").keys())
-        existing_mcp = {k: v for k, v in existing_mcp.items() if k not in managed_keys}
-
-    merged_mcp: dict[str, object] = {**existing_mcp, **servers}
+    merged_mcp = merge_managed_mcp(
+        existing_mcp,
+        servers,
+        managed_keys=set(mcp_servers_for(dotfiles_dir, "gemini").keys()),
+        reset_mcp=reset_mcp,
+    )
     updated = merge_replace(existing, ["mcpServers"], merged_mcp)
     write_json_safely(settings_file, updated)
 
@@ -92,21 +98,12 @@ def _setup_settings_and_mcp(
 
 def _setup_instructions(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:
     """Write ~/.gemini/GEMINI.md = rules.md header + baked rules."""
-    global_rules = dotfiles_dir / "agents" / "shared" / "rules.md"
-    if not global_rules.is_file():
+    content = build_global_instructions(dotfiles_dir)
+    if content is None:
         return []
 
-    rules_content = global_rules.read_text()
-    baked = bake_rules(dotfiles_dir)
-
-    content_parts = ["# Global Agent Instructions", "", rules_content, ""]
-    if baked:
-        content_parts.append(baked)
-
-    gemini_md = gemini_home / "GEMINI.md"
-    gemini_md.write_text("\n".join(content_parts), encoding="utf-8")
-
-    rule_count = len(list((dotfiles_dir / ".ai" / "rules" / "process").glob("*.mdc")))
+    (gemini_home / "GEMINI.md").write_text(content, encoding="utf-8")
+    rule_count = baked_rule_count(dotfiles_dir)
     return [
         StepResult(
             ok=True,

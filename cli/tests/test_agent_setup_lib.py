@@ -11,10 +11,13 @@ from pathlib import Path
 import pytest
 
 from dotfiles.core.agent_setup.lib import (
+    baked_rule_count,
+    build_global_instructions,
     deploy_skills,
     deploy_subagents,
     mcp_servers_for,
     mcp_skip,
+    merge_managed_mcp,
     symlink_process_rules,
 )
 from tests.fakes import FakeProcessRunner, write_tree
@@ -393,3 +396,84 @@ class TestSymlinkProcessRules:
         assert len(results) == 5
         for i in range(5):
             assert (dest / f"rule-{i}.md").is_symlink()
+
+
+# ---------------------------------------------------------------------------
+# merge_managed_mcp
+# ---------------------------------------------------------------------------
+
+
+class TestMergeManagedMcp:
+    def test_servers_win_over_existing(self) -> None:
+        out = merge_managed_mcp(
+            {"granola": {"url": "old"}},
+            {"granola": {"url": "new"}},
+            managed_keys={"granola"},
+            reset_mcp=False,
+        )
+        assert out == {"granola": {"url": "new"}}
+
+    def test_unmanaged_existing_entries_preserved(self) -> None:
+        out = merge_managed_mcp(
+            {"user-added": {"url": "x"}},
+            {"granola": {"url": "y"}},
+            managed_keys={"granola"},
+            reset_mcp=False,
+        )
+        assert out == {"user-added": {"url": "x"}, "granola": {"url": "y"}}
+
+    def test_reset_purges_stale_managed_keys_only(self) -> None:
+        # "old-managed" is managed but no longer in servers → dropped on reset.
+        # "user-added" is unmanaged → always kept.
+        out = merge_managed_mcp(
+            {"old-managed": {"url": "stale"}, "user-added": {"url": "keep"}},
+            {"granola": {"url": "new"}},
+            managed_keys={"old-managed", "granola"},
+            reset_mcp=True,
+        )
+        assert out == {"user-added": {"url": "keep"}, "granola": {"url": "new"}}
+
+    def test_no_reset_keeps_stale_managed_keys(self) -> None:
+        out = merge_managed_mcp(
+            {"old-managed": {"url": "stale"}},
+            {"granola": {"url": "new"}},
+            managed_keys={"old-managed", "granola"},
+            reset_mcp=False,
+        )
+        assert out == {"old-managed": {"url": "stale"}, "granola": {"url": "new"}}
+
+
+# ---------------------------------------------------------------------------
+# build_global_instructions
+# ---------------------------------------------------------------------------
+
+
+class TestBuildGlobalInstructions:
+    def _dotfiles(self, tmp_path: Path, rules: dict[str, str] | None = None) -> Path:
+        tree: dict[str, str | None] = {"agents/shared/rules.md": "SHARED RULES BODY"}
+        for name, body in (rules or {}).items():
+            tree[f".ai/rules/process/{name}"] = body
+        write_tree(tmp_path, tree)
+        return tmp_path
+
+    def test_none_when_rules_md_absent(self, tmp_path: Path) -> None:
+        assert build_global_instructions(tmp_path) is None
+
+    def test_header_and_shared_rules_present(self, tmp_path: Path) -> None:
+        out = build_global_instructions(self._dotfiles(tmp_path))
+        assert out is not None
+        assert out.startswith("# Global Agent Instructions\n\nSHARED RULES BODY\n")
+
+    def test_extra_sections_land_between_rules_and_baked(self, tmp_path: Path) -> None:
+        dotfiles = self._dotfiles(tmp_path, {"a.mdc": "---\ndescription: x\n---\nRULE A BODY"})
+        out = build_global_instructions(
+            dotfiles, extra_sections=("## Vendor-Specific", "", "- note")
+        )
+        assert out is not None
+        assert "## Vendor-Specific\n\n- note" in out
+        # extra section appears before the baked rules block
+        assert out.index("## Vendor-Specific") < out.index("RULE A BODY")
+
+    def test_baked_rule_count_matches_process_files(self, tmp_path: Path) -> None:
+        dotfiles = self._dotfiles(tmp_path, {"a.mdc": "x", "b.mdc": "y", "notes.txt": "z"})
+        assert baked_rule_count(dotfiles) == 2

@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import os
 import shutil
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
 from dotfiles.core.agent_config import load_mcp_servers
+from dotfiles.core.agent_setup.bake_rules import bake_rules
 from dotfiles.core.ports import ProcessRunner
 
 # ---------------------------------------------------------------------------
@@ -110,6 +111,64 @@ def mcp_servers_for(
         result[name] = config
 
     return result
+
+
+def merge_managed_mcp(
+    existing_mcp: Mapping[str, object],
+    servers: Mapping[str, object],
+    *,
+    managed_keys: set[str],
+    reset_mcp: bool,
+) -> dict[str, object]:
+    """Merge *servers* over *existing_mcp*, honouring ``--reset-mcp``.
+
+    The single source of truth for the merge/purge logic shared by every JSON
+    vendor (Claude, Gemini, Cursor, Claude Desktop). When *reset_mcp* is True,
+    *managed_keys* are stripped from the existing config first so renamed or
+    removed managed servers don't linger; user-added (unmanaged) entries are
+    always preserved. Current *servers* always win on key collisions.
+    """
+    base = (
+        {k: v for k, v in existing_mcp.items() if k not in managed_keys}
+        if reset_mcp
+        else dict(existing_mcp)
+    )
+    return {**base, **servers}
+
+
+# ---------------------------------------------------------------------------
+# Global instruction file (shared rules.md + baked process rules)
+# ---------------------------------------------------------------------------
+
+
+def build_global_instructions(
+    dotfiles_dir: Path,
+    *,
+    extra_sections: Sequence[str] = (),
+) -> str | None:
+    """Assemble the global instruction file body, or None if rules.md is absent.
+
+    The single source of truth for the ``# Global Agent Instructions`` file that
+    Codex, Gemini, and Pi each write to their own root path. *extra_sections* are
+    inserted verbatim between the shared ``rules.md`` and the baked process rules
+    (Codex uses this for its Codex-Specific block). Keeping one assembler here
+    stops the three vendors' output from drifting apart.
+    """
+    global_rules = dotfiles_dir / "agents" / "shared" / "rules.md"
+    if not global_rules.is_file():
+        return None
+
+    parts: list[str] = ["# Global Agent Instructions", "", global_rules.read_text(), ""]
+    parts.extend(extra_sections)
+    baked = bake_rules(dotfiles_dir)
+    if baked:
+        parts.append(baked)
+    return "\n".join(parts)
+
+
+def baked_rule_count(dotfiles_dir: Path) -> int:
+    """Count the process rules that ``build_global_instructions`` will bake in."""
+    return len(list((dotfiles_dir / ".ai" / "rules" / "process").glob("*.mdc")))
 
 
 # ---------------------------------------------------------------------------

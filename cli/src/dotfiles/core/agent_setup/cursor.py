@@ -23,6 +23,7 @@ from dotfiles.core.agent_setup.lib import (
     StepResult,
     mcp_servers_for,
     mcp_skip,
+    merge_managed_mcp,
     symlink_process_rules,
 )
 from dotfiles.core.agent_setup.settings_merger import (
@@ -98,12 +99,12 @@ def _setup_mcp(dotfiles_dir: Path, home: Path, *, reset_mcp: bool = False) -> li
         cast(dict[str, object], raw_mcp) if isinstance(raw_mcp, dict) else {}
     )
 
-    if reset_mcp:
-        # Purge managed keys before merging (remove stale managed entries)
-        managed_keys = set(mcp_servers_for(dotfiles_dir, "cursor").keys())
-        existing_mcp = {k: v for k, v in existing_mcp.items() if k not in managed_keys}
-
-    merged_mcp: dict[str, object] = {**existing_mcp, **servers}
+    merged_mcp = merge_managed_mcp(
+        existing_mcp,
+        servers,
+        managed_keys=set(mcp_servers_for(dotfiles_dir, "cursor").keys()),
+        reset_mcp=reset_mcp,
+    )
     updated = merge_replace(existing, ["mcpServers"], merged_mcp)
     write_json_safely(mcp_file, updated)
 

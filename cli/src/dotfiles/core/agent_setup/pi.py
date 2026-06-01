@@ -17,8 +17,11 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
-from dotfiles.core.agent_setup.bake_rules import bake_rules
-from dotfiles.core.agent_setup.lib import StepResult, deploy_subagents
+from dotfiles.core.agent_setup.lib import (
+    StepResult,
+    build_global_instructions,
+    deploy_subagents,
+)
 from dotfiles.core.ports import ProcessRunner
 
 _PI_NPM_PKG = "@earendil-works/pi-coding-agent"
@@ -100,19 +103,11 @@ def _setup_config_symlinks(dotfiles_dir: Path, pi_home: Path) -> list[StepResult
 
 def _setup_instructions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
     """Write ~/.pi/agent/AGENTS.md = rules.md header + baked rules."""
-    global_rules = dotfiles_dir / "agents" / "shared" / "rules.md"
-    if not global_rules.is_file():
+    content = build_global_instructions(dotfiles_dir)
+    if content is None:
         return []
 
-    rules_content = global_rules.read_text()
-    baked = bake_rules(dotfiles_dir)
-
-    content_parts = ["# Global Agent Instructions", "", rules_content, ""]
-    if baked:
-        content_parts.append(baked)
-
-    agents_md = pi_home / "AGENTS.md"
-    agents_md.write_text("\n".join(content_parts), encoding="utf-8")
+    (pi_home / "AGENTS.md").write_text(content, encoding="utf-8")
     return [
         StepResult(ok=True, message="Global instructions + baked rules (~/.pi/agent/AGENTS.md)")
     ]

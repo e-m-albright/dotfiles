@@ -31,6 +31,7 @@ from dotfiles.core.agent_setup.lib import (
     deploy_subagents,
     mcp_servers_for,
     mcp_skip,
+    merge_managed_mcp,
     symlink_process_rules,
 )
 from dotfiles.core.agent_setup.settings_merger import (
@@ -191,15 +192,12 @@ def _setup_mcp(
 
     existing = load_json_or(claude_json, {})
     existing_mcp = cast(_JsonDict, existing.get("mcpServers") or {})
-
-    if reset_mcp:
-        # Remove managed keys, then re-add
-        managed_keys = set(mcp_servers_for(dotfiles_dir, "claude").keys())
-        purged = {k: v for k, v in existing_mcp.items() if k not in managed_keys}
-        new_mcp: _JsonDict = {**purged, **servers}
-    else:
-        new_mcp = {**existing_mcp, **servers}
-
+    new_mcp = merge_managed_mcp(
+        existing_mcp,
+        servers,
+        managed_keys=set(mcp_servers_for(dotfiles_dir, "claude").keys()),
+        reset_mcp=reset_mcp,
+    )
     updated = merge_replace(existing, ["mcpServers"], new_mcp)
     write_json_safely(claude_json, updated)
     return [StepResult(ok=True, message=f"Configured {len(servers)} MCP servers (Claude Code)")]
@@ -252,11 +250,9 @@ def _setup_desktop(dotfiles_dir: Path, home: Path, *, reset_mcp: bool) -> list[S
     if mcp_json.is_file():
         servers, managed_keys = _desktop_servers(dotfiles_dir, home, reset_mcp=reset_mcp)
         existing_mcp = cast(_JsonDict, existing.get("mcpServers") or {})
-        if reset_mcp:
-            purged = {k: v for k, v in existing_mcp.items() if k not in managed_keys}
-            new_mcp: _JsonDict = {**purged, **servers}
-        else:
-            new_mcp = {**existing_mcp, **servers}
+        new_mcp = merge_managed_mcp(
+            existing_mcp, servers, managed_keys=managed_keys, reset_mcp=reset_mcp
+        )
         existing = merge_replace(existing, ["mcpServers"], new_mcp)
         results.append(
             StepResult(ok=True, message=f"Configured {len(servers)} MCP servers (Claude Desktop)")

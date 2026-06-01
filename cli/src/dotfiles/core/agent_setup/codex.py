@@ -21,9 +21,10 @@ import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
-from dotfiles.core.agent_setup.bake_rules import bake_rules
 from dotfiles.core.agent_setup.lib import (
     StepResult,
+    baked_rule_count,
+    build_global_instructions,
     deploy_skills,
     deploy_subagents,
     mcp_servers_for,
@@ -61,34 +62,24 @@ def setup_codex(
 # ---------------------------------------------------------------------------
 
 
+_CODEX_SPECIFIC: tuple[str, ...] = (
+    "## Codex-Specific",
+    "",
+    "- This project uses AGENTS.md as the primary instruction file.",
+    "- When CODEX.md exists at the project root, it is a symlink to AGENTS.md.",
+    "- Follow the same conventions as Claude Code: verify before claiming done,"
+    " TDD when tests exist, minimize surface area.",
+)
+
+
 def _setup_instructions(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
     """Write ~/.codex/AGENTS.md = shared rules.md + codex-specific + baked rules."""
-    global_rules = dotfiles_dir / "agents" / "shared" / "rules.md"
-    if not global_rules.is_file():
+    content = build_global_instructions(dotfiles_dir, extra_sections=_CODEX_SPECIFIC)
+    if content is None:
         return []
 
-    rules_content = global_rules.read_text()
-    baked = bake_rules(dotfiles_dir)
-
-    lines: list[str] = [
-        "# Global Agent Instructions",
-        "",
-        rules_content,
-        "",
-        "## Codex-Specific",
-        "",
-        "- This project uses AGENTS.md as the primary instruction file.",
-        "- When CODEX.md exists at the project root, it is a symlink to AGENTS.md.",
-        "- Follow the same conventions as Claude Code: verify before claiming done,"
-        " TDD when tests exist, minimize surface area.",
-    ]
-    if baked:
-        lines.append(baked)
-
-    agents_md = codex_home / "AGENTS.md"
-    agents_md.write_text("\n".join(lines), encoding="utf-8")
-
-    rule_count = len(list((dotfiles_dir / ".ai" / "rules" / "process").glob("*.mdc")))
+    (codex_home / "AGENTS.md").write_text(content, encoding="utf-8")
+    rule_count = baked_rule_count(dotfiles_dir)
     return [
         StepResult(
             ok=True,
