@@ -6,9 +6,12 @@ Concrete implementations live in `dotfiles_cli.adapters`; tests inject fakes.
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from dotfiles_cli.core.models import CommandResult
+
+# Alias for unstructured external JSON data (LM Studio API responses).
+JsonDict = dict[str, Any]
 
 
 @runtime_checkable
@@ -64,6 +67,6 @@ class Clock(Protocol):
 class HttpClient(Protocol):
     """HTTP client port — mockable seam for LM Studio API calls."""
 
-    def get_json(self, url: str) -> dict: ...  # type: ignore[type-arg]
+    def get_json(self, url: str) -> JsonDict: ...
 
-    def post_json(self, url: str, body: dict) -> dict: ...  # type: ignore[type-arg]
+    def post_json(self, url: str, body: JsonDict) -> JsonDict: ...

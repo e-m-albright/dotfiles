@@ -4,10 +4,13 @@ import subprocess
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from dotfiles_cli.cli.context import AppContext
 from dotfiles_cli.core.models import CommandResult
 from dotfiles_cli.core.settings import Settings
+
+_JsonDict = dict[str, Any]
 
 
 class FakeProcessRunner:
@@ -109,21 +112,21 @@ class FakeHttpClient:
 
     def __init__(self) -> None:
         self.gets: list[str] = []
-        self.posts: list[tuple[str, dict]] = []  # type: ignore[type-arg]
-        self._get_scripts: dict[str, dict] = {}  # type: ignore[type-arg]
-        self._post_scripts: dict[str, dict] = {}  # type: ignore[type-arg]
+        self.posts: list[tuple[str, _JsonDict]] = []
+        self._get_scripts: dict[str, _JsonDict] = {}
+        self._post_scripts: dict[str, _JsonDict] = {}
 
-    def script_get(self, url: str, payload: dict) -> None:  # type: ignore[type-arg]
+    def script_get(self, url: str, payload: _JsonDict) -> None:
         self._get_scripts[url] = payload
 
-    def script_post(self, url: str, payload: dict) -> None:  # type: ignore[type-arg]
+    def script_post(self, url: str, payload: _JsonDict) -> None:
         self._post_scripts[url] = payload
 
-    def get_json(self, url: str) -> dict:  # type: ignore[type-arg]
+    def get_json(self, url: str) -> _JsonDict:
         self.gets.append(url)
         return self._get_scripts.get(url, {})
 
-    def post_json(self, url: str, body: dict) -> dict:  # type: ignore[type-arg]
+    def post_json(self, url: str, body: _JsonDict) -> _JsonDict:
         self.posts.append((url, body))
         return self._post_scripts.get(url, {})
 
