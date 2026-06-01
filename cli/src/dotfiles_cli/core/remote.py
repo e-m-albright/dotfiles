@@ -2,6 +2,7 @@
 
 import shutil
 from collections.abc import Callable
+from functools import cached_property
 from pathlib import Path
 
 from dotfiles_cli.core.models import ConnectionInfo, RemoteStatus, StepResult
@@ -50,13 +51,16 @@ class RemoteService:
         result = self._runner.run(command)
         return result.stdout.strip() if result.ok else ""
 
+    @cached_property
     def _user(self) -> str:
         return self._line(("id", "-un")) or "user"
 
+    @cached_property
     def _host(self) -> str:
         host = self._line(("scutil", "--get", "LocalHostName"))
         return host or self._line(("hostname", "-s")) or "localhost"
 
+    @cached_property
     def _mosh_server(self) -> str:
         if self._fs.exists(Path("/opt/homebrew/bin/mosh-server")):
             return "/opt/homebrew/bin/mosh-server"
@@ -65,6 +69,7 @@ class RemoteService:
     def _remote_login_on(self) -> bool:
         return "On" in self._line(("systemsetup", "-getremotelogin"))
 
+    @cached_property
     def _tailscale(self) -> tuple[bool, str | None]:
         if self._runner.run(("tailscale", "status")).ok:
             ip = self._line(("tailscale", "ip", "-4"))
@@ -72,23 +77,23 @@ class RemoteService:
         return False, None
 
     def status(self) -> RemoteStatus:
-        connected, ip = self._tailscale()
+        connected, ip = self._tailscale
         return RemoteStatus(
             remote_login_on=self._remote_login_on(),
             tailscale_connected=connected,
             tailnet_ip=ip,
-            host=self._host(),
-            user=self._user(),
-            mosh_server=self._mosh_server(),
+            host=self._host,
+            user=self._user,
+            mosh_server=self._mosh_server,
         )
 
     def connection_info(self, session: str) -> ConnectionInfo:
-        connected, ip = self._tailscale()
+        connected, ip = self._tailscale
         return ConnectionInfo(
-            user=self._user(),
-            host=self._host(),
+            user=self._user,
+            host=self._host,
             session=session,
-            mosh_server=self._mosh_server(),
+            mosh_server=self._mosh_server,
             tailnet_ip=ip if connected else None,
         )
 
@@ -199,7 +204,7 @@ class RemoteService:
         return steps
 
     def _kill_sessions(self, *, dry_run: bool) -> list[StepResult]:
-        user = self._user()
+        user = self._user
         if dry_run:
             return [
                 StepResult(level="info", message=f"DRY RUN: pkill -u {user} mosh-server"),

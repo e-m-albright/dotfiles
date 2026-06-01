@@ -18,24 +18,33 @@ def _runner_with_status(remote_login: str = "Off") -> FakeProcessRunner:
 
 
 def _flat(output: str) -> str:
-    """Collapse Rich's line-wrapping so multi-line assertions work."""
+    """Collapse Rich's line-wrapping so multi-line assertions work (DRY-RUN step messages only)."""
     return " ".join(output.split())
+
+
+def _mosh_line(output: str) -> str:
+    """Return the single line containing the mosh command; fail if it was wrapped."""
+    lines = [ln for ln in output.splitlines() if ln.startswith("mosh --server=")]
+    assert len(lines) == 1, f"mosh command must be one line, got: {lines!r}"
+    return lines[0]
 
 
 def test_remote_setup_dry_run_prints_connection_command() -> None:
     fake = make_fake_context(runner=_runner_with_status(), interactive=True)
-    result = runner.invoke(app, ["remote", "setup", "--dry-run"], obj=fake)
+    result = runner.invoke(app, ["remote", "setup", "--dry-run"], obj=fake, env={"COLUMNS": "40"})
     assert result.exit_code == 0
-    flat = _flat(result.output)
-    assert "mosh --server=" in flat
-    assert "zellij attach --create mobile" in flat
+    line = _mosh_line(result.output)
+    assert "zellij attach --create mobile" in line
 
 
 def test_remote_setup_session_flag_changes_command() -> None:
     fake = make_fake_context(runner=_runner_with_status(), interactive=True)
-    result = runner.invoke(app, ["remote", "setup", "--dry-run", "--session", "work"], obj=fake)
+    result = runner.invoke(
+        app, ["remote", "setup", "--dry-run", "--session", "work"], obj=fake, env={"COLUMNS": "40"}
+    )
     assert result.exit_code == 0
-    assert "zellij attach --create work" in _flat(result.output)
+    line = _mosh_line(result.output)
+    assert "zellij attach --create work" in line
 
 
 def test_remote_setup_bad_key_exits_nonzero() -> None:

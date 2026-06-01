@@ -2,10 +2,12 @@
 
 import subprocess
 from collections.abc import Mapping, Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
+from dotfiles_cli.cli.context import AppContext
 from dotfiles_cli.core.models import CommandResult
+from dotfiles_cli.core.settings import Settings
 
 
 class FakeProcessRunner:
@@ -85,11 +87,6 @@ def make_fake_context(
     home: Path | None = None,
 ):
     """Build an AppContext backed by fakes for CLI tests."""
-    from datetime import UTC, datetime
-
-    from dotfiles_cli.cli.context import AppContext
-    from dotfiles_cli.core.settings import Settings
-
     return AppContext(
         runner=runner or FakeProcessRunner(),
         fs=fs or FakeFileSystem(),

@@ -11,7 +11,8 @@ remote_app = typer.Typer(help="Set up or disable phone (Termius) remote-shell ac
 
 
 def _service(ctx: typer.Context) -> RemoteService:
-    app_ctx: AppContext = ctx.obj
+    app_ctx = ctx.obj
+    assert isinstance(app_ctx, AppContext)
     return RemoteService(
         runner=app_ctx.runner,
         fs=app_ctx.fs,
@@ -31,7 +32,8 @@ def setup(
     session: str | None = typer.Option(None, "--session", help="Zellij session name."),
 ) -> None:
     """Set up SSH/Mosh/Zellij access for Termius."""
-    app_ctx: AppContext = ctx.obj
+    app_ctx = ctx.obj
+    assert isinstance(app_ctx, AppContext)
     service = _service(ctx)
     chosen = session or app_ctx.settings.default_session
     try:
@@ -42,7 +44,7 @@ def setup(
     render_steps(console, steps)
     info = service.connection_info(chosen)
     console.print("\n[bold]Paste into Termius as the Mosh command:[/]")
-    console.print(info.mosh_command)
+    console.print(info.mosh_command, soft_wrap=True)
 
 
 @remote_app.command()
