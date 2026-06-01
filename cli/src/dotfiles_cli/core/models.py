@@ -4,6 +4,77 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+# ---------------------------------------------------------------------------
+# Agent overview models
+# ---------------------------------------------------------------------------
+
+
+class McpRow(BaseModel):
+    """One MCP server row in the agent overview."""
+
+    model_config = ConfigDict(frozen=True)
+
+    server: str
+    claude: bool
+    cursor: bool
+    codex: bool
+    gemini: bool
+
+
+class HookRow(BaseModel):
+    """One hook-event row in the agent overview."""
+
+    model_config = ConfigDict(frozen=True)
+
+    event: str
+    claude: bool
+    cursor: bool
+    codex: bool
+
+
+class SkillsSummary(BaseModel):
+    """Skill counts in the agent overview."""
+
+    model_config = ConfigDict(frozen=True)
+
+    canonical_skills: int
+    claude_deployed: int
+    shared_deployed: int
+
+
+class AgentRow(BaseModel):
+    """One subagent row in the agent overview."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    claude: bool
+    codex: bool
+    pi: bool
+
+
+class RulesSummary(BaseModel):
+    """Rule counts in the agent overview."""
+
+    model_config = ConfigDict(frozen=True)
+
+    canonical_rules: int
+    claude_deployed: int
+    cursor_deployed: int
+
+
+class PermissionRow(BaseModel):
+    """One permission-source row in the agent overview."""
+
+    model_config = ConfigDict(frozen=True)
+
+    label: str
+    allow: int
+    deny: int
+    # For codex default.rules, deny=0 and allow holds prefix_rule count.
+    # prefix_rules is a convenience alias — callers use it for codex rows.
+    prefix_rules: int = 0
+
 
 class CommandResult(BaseModel):
     """Result of running an external command via a ProcessRunner port."""
@@ -153,3 +224,16 @@ class BenchResult(BaseModel):
         if self.tg_tps >= 20:
             return "tolerable"
         return "painful"
+
+
+class AgentOverview(BaseModel):
+    """Complete snapshot of the agentic setup, from AgentOverviewService.overview()."""
+
+    model_config = ConfigDict(frozen=True)
+
+    mcp: tuple[McpRow, ...]
+    hooks: tuple[HookRow, ...]
+    skills: SkillsSummary
+    agents: tuple[AgentRow, ...]
+    rules: RulesSummary
+    permissions: tuple[PermissionRow, ...]
