@@ -1,8 +1,9 @@
-"""`dotfiles agent` commands: dashboard overview + skill/agent lint."""
+"""`dotfiles agent` commands: dashboard overview + skill/agent lint + setup."""
 
 from __future__ import annotations
 
 from collections.abc import Iterable
+from enum import StrEnum
 from itertools import groupby
 
 import typer
@@ -12,6 +13,12 @@ from rich.table import Table
 from dotfiles.cli.context import AppContext
 from dotfiles.console import console
 from dotfiles.core.agent_overview import AgentOverviewService
+from dotfiles.core.agent_setup.claude import setup_claude
+from dotfiles.core.agent_setup.codex import setup_codex
+from dotfiles.core.agent_setup.cursor import setup_cursor
+from dotfiles.core.agent_setup.gemini import setup_gemini
+from dotfiles.core.agent_setup.lib import StepResult
+from dotfiles.core.agent_setup.pi import setup_pi
 from dotfiles.core.gemini import GeminiChunksService, GeminiError
 from dotfiles.core.models import (
     AgentOverview,
@@ -25,6 +32,17 @@ from dotfiles.core.models import (
 from dotfiles.core.skills import validate_skill_files
 
 agent_app = typer.Typer(help="Agentic setup: overview dashboard and skill/agent lint.")
+
+
+class _VendorChoice(StrEnum):
+    """Supported vendor names for `agent setup`."""
+
+    claude = "claude"
+    cursor = "cursor"
+    codex = "codex"
+    gemini = "gemini"
+    pi = "pi"
+
 
 # ---------------------------------------------------------------------------
 # Glyph / render helpers (moved from cli/verify.py)
@@ -213,8 +231,102 @@ def _render_overview(data: AgentOverview) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Setup helpers
+# ---------------------------------------------------------------------------
+
+# Order matches original sub_agent_setup(): claude → cursor → codex → gemini → pi
+_ALL_VENDORS: list[_VendorChoice] = [
+    _VendorChoice.claude,
+    _VendorChoice.cursor,
+    _VendorChoice.codex,
+    _VendorChoice.gemini,
+    _VendorChoice.pi,
+]
+
+
+def _render_setup_results(vendor: str, results: list[StepResult]) -> bool:
+    """Print step results for one vendor; return True if any step failed."""
+    header = _VENDOR_HEADERS.get(vendor, vendor)
+    console.print(f"\n[bold blue]── {header} ──[/]")
+    any_error = False
+    for r in results:
+        if r.ok:
+            glyph = "[green]✓[/]"
+        else:
+            glyph = "[red]✗[/]"
+            any_error = True
+        line = f"  {glyph} {escape(r.message)}"
+        if r.details:
+            line += f" [dim]{escape(r.details)}[/]"
+        console.print(line)
+    return any_error
+
+
+# ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
+
+_VENDOR_ARG = typer.Argument(
+    None,
+    help="Vendor to configure (claude/cursor/codex/gemini/pi). Omit to run all.",
+)
+_RESET_MCP_OPT = typer.Option(
+    False,
+    "--reset-mcp",
+    help="Reset managed MCP entries to dotfiles defaults (claude + cursor + codex).",
+)
+_CLEAN_OPT = typer.Option(
+    False,
+    "--clean",
+    help="Remove nonconforming plugins/MCPs/stale projects (claude only).",
+)
+
+
+def _run_vendor(
+    v: _VendorChoice,
+    app_ctx: AppContext,
+    *,
+    clean: bool,
+    reset_mcp: bool,
+) -> list[StepResult]:
+    """Dispatch to the correct setup_* function for a single vendor."""
+    kw = {"runner": app_ctx.runner, "home": app_ctx.home, "dotfiles_dir": app_ctx.dotfiles_dir}
+    if v == _VendorChoice.claude:
+        return setup_claude(**kw, clean=clean, reset_mcp=reset_mcp)  # type: ignore[arg-type]
+    if v == _VendorChoice.cursor:
+        return setup_cursor(**kw)  # type: ignore[arg-type]
+    if v == _VendorChoice.codex:
+        return setup_codex(**kw)  # type: ignore[arg-type]
+    if v == _VendorChoice.gemini:
+        return setup_gemini(**kw)  # type: ignore[arg-type]
+    return setup_pi(**kw)  # type: ignore[arg-type]
+
+
+@agent_app.command()
+def setup(
+    ctx: typer.Context,
+    vendor: _VendorChoice | None = _VENDOR_ARG,
+    reset_mcp: bool = _RESET_MCP_OPT,
+    clean: bool = _CLEAN_OPT,
+) -> None:
+    """Configure AI vendor tooling (Claude Code, Cursor, Codex, Gemini, Pi)."""
+    app_ctx = ctx.obj
+    assert isinstance(app_ctx, AppContext)
+
+    vendors_to_run: list[_VendorChoice] = [vendor] if vendor is not None else _ALL_VENDORS
+
+    any_error = False
+    for v in vendors_to_run:
+        results = _run_vendor(v, app_ctx, clean=clean, reset_mcp=reset_mcp)
+        if _render_setup_results(v.value, results):
+            any_error = True
+
+    console.print()
+    if any_error:
+        console.print("[red]Agent setup completed with errors.[/]")
+        raise typer.Exit(1)
+    else:
+        console.print("[green]Agent setup complete.[/]")
 
 
 @agent_app.command()
