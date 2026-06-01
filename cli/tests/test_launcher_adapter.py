@@ -1,5 +1,5 @@
-from dotfiles_cli.adapters.launcher import FzfExecLauncher
-from dotfiles_cli.core.sessions import SessionLauncher
+from dotfiles.adapters.launcher import FzfExecLauncher
+from dotfiles.core.sessions import SessionLauncher
 
 
 def test_launcher_satisfies_port() -> None:

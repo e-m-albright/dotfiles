@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from dotfiles_cli.core.skills import SkillValidateService, validate_file
+from dotfiles.core.skills import SkillValidateService, validate_file
 from tests.fakes import FakeFileSystem
 
 # ---------------------------------------------------------------------------

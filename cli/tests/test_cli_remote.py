@@ -1,6 +1,6 @@
 from typer.testing import CliRunner
 
-from dotfiles_cli.cli.main import app
+from dotfiles.cli.main import app
 from tests.fakes import FakeProcessRunner, make_fake_context
 
 runner = CliRunner()

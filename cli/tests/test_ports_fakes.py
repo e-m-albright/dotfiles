@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from dotfiles_cli.core.ports import Clock, FileSystem, ProcessRunner
+from dotfiles.core.ports import Clock, FileSystem, ProcessRunner
 from tests.fakes import FakeClock, FakeFileSystem, FakeProcessRunner
 
 

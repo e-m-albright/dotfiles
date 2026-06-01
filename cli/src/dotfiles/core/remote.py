@@ -5,8 +5,8 @@ from collections.abc import Callable
 from functools import cached_property
 from pathlib import Path
 
-from dotfiles_cli.core.models import ConnectionInfo, RemoteStatus, StepResult
-from dotfiles_cli.core.ports import FileSystem, ProcessRunner
+from dotfiles.core.models import ConnectionInfo, RemoteStatus, StepResult
+from dotfiles.core.ports import FileSystem, ProcessRunner
 
 _KEY_PREFIXES = ("ssh-ed25519 ", "ssh-rsa ", "ecdsa-sha2-")
 

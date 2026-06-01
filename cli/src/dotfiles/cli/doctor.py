@@ -7,10 +7,10 @@ from typing import Annotated
 
 import typer
 
-from dotfiles_cli.cli.context import AppContext
-from dotfiles_cli.console import console
-from dotfiles_cli.core.doctor import DoctorService
-from dotfiles_cli.core.models import CheckResult
+from dotfiles.cli.context import AppContext
+from dotfiles.console import console
+from dotfiles.core.doctor import DoctorService
+from dotfiles.core.models import CheckResult
 
 _GLYPH: dict[str, str] = {
     "ok": "[green]✓[/]",

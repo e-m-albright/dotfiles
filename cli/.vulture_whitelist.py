@@ -1,5 +1,5 @@
 # Referenced dynamically via Protocol structural typing / Typer registration.
-from dotfiles_cli.core import ports, sessions
+from dotfiles.core import ports, sessions
 
 _ = ports.ProcessRunner.run
 _ = ports.FileSystem.read_text

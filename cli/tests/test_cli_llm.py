@@ -4,7 +4,7 @@ from typing import Any
 
 from typer.testing import CliRunner
 
-from dotfiles_cli.cli.main import app
+from dotfiles.cli.main import app
 from tests.fakes import (
     FakeHttpClient,
     FakeMultiPostHttpClient,

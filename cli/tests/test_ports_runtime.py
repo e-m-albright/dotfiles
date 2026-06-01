@@ -1,4 +1,4 @@
-from dotfiles_cli.core.ports import Clock, FileSystem, ProcessRunner
+from dotfiles.core.ports import Clock, FileSystem, ProcessRunner
 
 
 def test_ports_are_runtime_checkable_protocols() -> None:

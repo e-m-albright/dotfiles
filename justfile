@@ -30,7 +30,7 @@ complexity:
     uv run complexipy src -mx 10
 
 test:
-    uv run pytest --cov=dotfiles_cli --cov-report=term-missing --cov-fail-under=85
+    uv run pytest --cov=dotfiles --cov-report=term-missing --cov-fail-under=85
 
 audit:
     uv run pip-audit

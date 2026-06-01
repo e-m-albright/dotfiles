@@ -14,10 +14,10 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from dotfiles_cli.core.models import FileValidation, FileValidationStatus
+from dotfiles.core.models import FileValidation, FileValidationStatus
 
 if TYPE_CHECKING:
-    from dotfiles_cli.core.ports import FileSystem
+    from dotfiles.core.ports import FileSystem
 
 # Compiled once; matches standalone MUST/ALWAYS/NEVER (word-boundary, not
 # adjacent to [A-Za-z0-9_]).

@@ -4,14 +4,14 @@ import sys
 
 import typer
 
-from dotfiles_cli import __version__
-from dotfiles_cli.cli.context import build_real_context
-from dotfiles_cli.cli.doctor import doctor_command
-from dotfiles_cli.cli.llm import llm_app
-from dotfiles_cli.cli.remote import remote_app
-from dotfiles_cli.cli.session import session_app
-from dotfiles_cli.cli.verify import verify_app
-from dotfiles_cli.console import console
+from dotfiles import __version__
+from dotfiles.cli.context import build_real_context
+from dotfiles.cli.doctor import doctor_command
+from dotfiles.cli.llm import llm_app
+from dotfiles.cli.remote import remote_app
+from dotfiles.cli.session import session_app
+from dotfiles.cli.verify import verify_app
+from dotfiles.console import console
 
 app = typer.Typer(
     name="dotfiles",

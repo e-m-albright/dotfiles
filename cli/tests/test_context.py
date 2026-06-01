@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from dotfiles_cli.adapters.clock import SystemClock
-from dotfiles_cli.adapters.filesystem import LocalFileSystem
-from dotfiles_cli.adapters.process import SubprocessRunner
-from dotfiles_cli.cli.context import AppContext, build_real_context
-from dotfiles_cli.core.ports import Clock, FileSystem, ProcessRunner
+from dotfiles.adapters.clock import SystemClock
+from dotfiles.adapters.filesystem import LocalFileSystem
+from dotfiles.adapters.process import SubprocessRunner
+from dotfiles.cli.context import AppContext, build_real_context
+from dotfiles.core.ports import Clock, FileSystem, ProcessRunner
 
 
 def test_build_real_context_wires_real_adapters() -> None:
@@ -23,7 +23,7 @@ def test_build_real_context_wires_real_adapters() -> None:
 def test_app_context_is_constructible_with_fakes() -> None:
     from datetime import UTC, datetime
 
-    from dotfiles_cli.core.settings import Settings
+    from dotfiles.core.settings import Settings
     from tests.fakes import (
         FakeClock,
         FakeFileSystem,
@@ -47,8 +47,8 @@ def test_app_context_is_constructible_with_fakes() -> None:
 
 
 def test_real_context_has_launcher() -> None:
-    from dotfiles_cli.adapters.launcher import FzfExecLauncher
-    from dotfiles_cli.cli.context import build_real_context
+    from dotfiles.adapters.launcher import FzfExecLauncher
+    from dotfiles.cli.context import build_real_context
 
     ctx = build_real_context(interactive=False)
     assert isinstance(ctx.launcher, FzfExecLauncher)

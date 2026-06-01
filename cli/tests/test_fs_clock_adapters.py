@@ -1,9 +1,9 @@
 from datetime import datetime
 from pathlib import Path
 
-from dotfiles_cli.adapters.clock import SystemClock
-from dotfiles_cli.adapters.filesystem import LocalFileSystem
-from dotfiles_cli.core.ports import Clock, FileSystem
+from dotfiles.adapters.clock import SystemClock
+from dotfiles.adapters.filesystem import LocalFileSystem
+from dotfiles.core.ports import Clock, FileSystem
 
 
 def test_local_filesystem_satisfies_port() -> None:

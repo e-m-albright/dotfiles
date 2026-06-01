@@ -12,7 +12,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from dotfiles_cli.core.models import (
+from dotfiles.core.models import (
     AgentOverview,
     AgentRow,
     HookRow,
@@ -23,7 +23,7 @@ from dotfiles_cli.core.models import (
 )
 
 if TYPE_CHECKING:
-    from dotfiles_cli.core.ports import FileSystem, ProcessRunner
+    from dotfiles.core.ports import FileSystem, ProcessRunner
 
 # ---------------------------------------------------------------------------
 # Typed JSON helpers — keep pyright strict happy without Any leakage

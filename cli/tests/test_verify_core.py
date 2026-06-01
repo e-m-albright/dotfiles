@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from dotfiles_cli.core.verify import VendorVerifyService
+from dotfiles.core.verify import VendorVerifyService
 from tests.fakes import FakeFileSystem
 
 

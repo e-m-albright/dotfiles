@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from dotfiles_cli.core.doctor import DoctorService
-from dotfiles_cli.core.models import CheckResult
+from dotfiles.core.doctor import DoctorService
+from dotfiles.core.models import CheckResult
 from tests.fakes import FakeFileSystem, FakeProcessRunner
 
 

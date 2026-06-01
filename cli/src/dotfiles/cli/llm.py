@@ -3,10 +3,10 @@
 import typer
 from rich.markup import escape
 
-from dotfiles_cli.cli.context import AppContext
-from dotfiles_cli.console import console
-from dotfiles_cli.core.llm import LMStudioService
-from dotfiles_cli.core.models import BenchResult
+from dotfiles.cli.context import AppContext
+from dotfiles.console import console
+from dotfiles.core.llm import LMStudioService
+from dotfiles.core.models import BenchResult
 
 llm_app = typer.Typer(help="Evaluate local LM Studio models (list|bench|estimate|compare).")
 

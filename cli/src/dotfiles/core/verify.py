@@ -19,10 +19,10 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from dotfiles_cli.core.models import VendorSurface
+from dotfiles.core.models import VendorSurface
 
 if TYPE_CHECKING:
-    from dotfiles_cli.core.ports import FileSystem
+    from dotfiles.core.ports import FileSystem
 
 
 class VendorVerifyService:

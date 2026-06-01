@@ -1,6 +1,6 @@
 from typer.testing import CliRunner
 
-from dotfiles_cli.cli.main import app
+from dotfiles.cli.main import app
 
 runner = CliRunner()
 
@@ -13,7 +13,7 @@ def test_help_lists_top_level_command_tree() -> None:
 
 
 def test_version_command() -> None:
-    from dotfiles_cli import __version__
+    from dotfiles import __version__
 
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0

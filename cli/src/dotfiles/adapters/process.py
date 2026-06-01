@@ -3,7 +3,7 @@
 import subprocess
 from collections.abc import Mapping, Sequence
 
-from dotfiles_cli.core.models import CommandResult
+from dotfiles.core.models import CommandResult
 
 
 class SubprocessRunner:

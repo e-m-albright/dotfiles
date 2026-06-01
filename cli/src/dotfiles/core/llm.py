@@ -10,9 +10,9 @@ import string
 from collections.abc import Callable
 from typing import Any, cast
 
-from dotfiles_cli.core.models import BenchResult
-from dotfiles_cli.core.ports import HttpClient, ProcessRunner
-from dotfiles_cli.core.settings import LlmSettings
+from dotfiles.core.models import BenchResult
+from dotfiles.core.ports import HttpClient, ProcessRunner
+from dotfiles.core.settings import LlmSettings
 
 BENCH_PROMPT = (
     "Write a Python function `first_n_primes(n)` returning the first N prime numbers "

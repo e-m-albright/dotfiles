@@ -1,4 +1,4 @@
-from dotfiles_cli.core.models import CommandResult
+from dotfiles.core.models import CommandResult
 
 
 def test_command_result_ok_is_true_for_zero_exit() -> None:

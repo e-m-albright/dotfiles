@@ -4,11 +4,11 @@ from itertools import groupby
 
 import typer
 
-from dotfiles_cli.cli.context import AppContext
-from dotfiles_cli.console import console
-from dotfiles_cli.core.models import FileValidation, VendorSurface
-from dotfiles_cli.core.skills import SkillValidateService
-from dotfiles_cli.core.verify import VendorVerifyService
+from dotfiles.cli.context import AppContext
+from dotfiles.console import console
+from dotfiles.core.models import FileValidation, VendorSurface
+from dotfiles.core.skills import SkillValidateService
+from dotfiles.core.verify import VendorVerifyService
 
 verify_app = typer.Typer(help="Verify vendor agent surfaces (skills, MCP, hooks, etc.).")
 

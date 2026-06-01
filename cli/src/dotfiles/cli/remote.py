@@ -2,10 +2,10 @@
 
 import typer
 
-from dotfiles_cli.cli.context import AppContext
-from dotfiles_cli.cli.ui import has_errors, render_connection_info, render_steps
-from dotfiles_cli.console import console
-from dotfiles_cli.core.remote import InvalidKeyError, RemoteService
+from dotfiles.cli.context import AppContext
+from dotfiles.cli.ui import has_errors, render_connection_info, render_steps
+from dotfiles.console import console
+from dotfiles.core.remote import InvalidKeyError, RemoteService
 
 remote_app = typer.Typer(help="Set up or disable phone (Termius) remote-shell access.")
 

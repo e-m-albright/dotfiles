@@ -6,9 +6,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from dotfiles_cli.cli.context import AppContext
-from dotfiles_cli.core.models import CommandResult
-from dotfiles_cli.core.settings import LlmSettings, Settings
+from dotfiles.cli.context import AppContext
+from dotfiles.core.models import CommandResult
+from dotfiles.core.settings import LlmSettings, Settings
 
 _JsonDict = dict[str, Any]
 

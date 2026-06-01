@@ -1,5 +1,5 @@
-from dotfiles_cli.core.models import Session
-from dotfiles_cli.core.sessions import SessionService, attach_command, parse_sessions
+from dotfiles.core.models import Session
+from dotfiles.core.sessions import SessionService, attach_command, parse_sessions
 from tests.fakes import FakeProcessRunner
 
 
@@ -74,7 +74,7 @@ def test_list_returns_empty_when_marker_is_in_stderr() -> None:
 def test_list_raises_on_real_failure() -> None:
     import pytest
 
-    from dotfiles_cli.core.sessions import SessionError
+    from dotfiles.core.sessions import SessionError
 
     runner = FakeProcessRunner()
     runner.script(

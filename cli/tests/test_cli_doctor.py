@@ -4,7 +4,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from dotfiles_cli.cli.main import app
+from dotfiles.cli.main import app
 from tests.fakes import make_fake_context
 
 runner = CliRunner()
@@ -35,8 +35,8 @@ def test_doctor_all_ok_exits_zero() -> None:
     """When all checks pass, exit code is 0."""
     from datetime import UTC, datetime
 
-    from dotfiles_cli.cli.context import AppContext
-    from dotfiles_cli.core.settings import Settings
+    from dotfiles.cli.context import AppContext
+    from dotfiles.core.settings import Settings
     from tests.fakes import (
         FakeClock,
         FakeFileSystem,

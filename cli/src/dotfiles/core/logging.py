@@ -4,7 +4,7 @@ import logging
 
 import structlog
 
-from dotfiles_cli.core.settings import LogLevel
+from dotfiles.core.settings import LogLevel
 
 
 def configure_logging(level: LogLevel = "WARNING") -> None:

@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles_cli.core.agent_overview import AgentOverviewService
-from dotfiles_cli.core.models import AgentOverview
+from dotfiles.core.agent_overview import AgentOverviewService
+from dotfiles.core.models import AgentOverview
 from tests.fakes import FakeFileSystem, FakeProcessRunner
 
 DOTFILES = Path("/dotfiles")

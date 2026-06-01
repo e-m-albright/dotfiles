@@ -2,10 +2,10 @@
 
 import typer
 
-from dotfiles_cli.cli.context import AppContext
-from dotfiles_cli.cli.ui import has_errors, render_steps
-from dotfiles_cli.console import console
-from dotfiles_cli.core.sessions import SessionError, SessionService, attach_command
+from dotfiles.cli.context import AppContext
+from dotfiles.cli.ui import has_errors, render_steps
+from dotfiles.console import console
+from dotfiles.core.sessions import SessionError, SessionService, attach_command
 
 session_app = typer.Typer(
     help="List/attach/create/kill zellij sessions (same on phone and laptop)."

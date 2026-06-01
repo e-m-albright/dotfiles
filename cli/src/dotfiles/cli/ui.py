@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 from rich.console import Console
 
-from dotfiles_cli.core.models import ConnectionInfo, StepLevel, StepResult
+from dotfiles.core.models import ConnectionInfo, StepLevel, StepResult
 
 _GLYPH: dict[StepLevel, str] = {
     "success": "[green]✓[/]",

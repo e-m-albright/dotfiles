@@ -7,16 +7,16 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from dotfiles_cli.adapters.clock import SystemClock
-from dotfiles_cli.adapters.filesystem import LocalFileSystem
-from dotfiles_cli.adapters.http import UrllibHttpClient
-from dotfiles_cli.adapters.launcher import FzfExecLauncher
-from dotfiles_cli.adapters.process import SubprocessRunner
-from dotfiles_cli.core.ports import Clock, FileSystem, HttpClient, ProcessRunner
-from dotfiles_cli.core.sessions import SessionLauncher
-from dotfiles_cli.core.settings import LlmSettings, Settings
+from dotfiles.adapters.clock import SystemClock
+from dotfiles.adapters.filesystem import LocalFileSystem
+from dotfiles.adapters.http import UrllibHttpClient
+from dotfiles.adapters.launcher import FzfExecLauncher
+from dotfiles.adapters.process import SubprocessRunner
+from dotfiles.core.ports import Clock, FileSystem, HttpClient, ProcessRunner
+from dotfiles.core.sessions import SessionLauncher
+from dotfiles.core.settings import LlmSettings, Settings
 
-# Repo root: cli/src/dotfiles_cli/cli/context.py → parents[4] = repo root
+# Repo root: cli/src/dotfiles/cli/context.py → parents[4] = repo root
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 
 

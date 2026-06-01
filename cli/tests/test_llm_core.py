@@ -2,8 +2,8 @@
 
 import pytest
 
-from dotfiles_cli.core.llm import BENCH_PROMPT, LMStudioService, _is_estimate_line, _random_words
-from dotfiles_cli.core.settings import LlmSettings
+from dotfiles.core.llm import BENCH_PROMPT, LMStudioService, _is_estimate_line, _random_words
+from dotfiles.core.settings import LlmSettings
 from tests.fakes import FakeHttpClient, FakeMultiPostHttpClient, FakeProcessRunner
 
 # ---------------------------------------------------------------------------

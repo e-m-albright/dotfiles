@@ -4,8 +4,8 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
-from dotfiles_cli.core.models import CheckResult
-from dotfiles_cli.core.ports import FileSystem, ProcessRunner
+from dotfiles.core.models import CheckResult
+from dotfiles.core.ports import FileSystem, ProcessRunner
 
 
 class DoctorService:

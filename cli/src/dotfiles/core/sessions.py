@@ -3,8 +3,8 @@
 from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
-from dotfiles_cli.core.models import Session, StepResult
-from dotfiles_cli.core.ports import ProcessRunner
+from dotfiles.core.models import Session, StepResult
+from dotfiles.core.ports import ProcessRunner
 
 _EMPTY_MARKER = "No active zellij sessions found"
 
