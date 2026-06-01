@@ -9,28 +9,14 @@ from __future__ import annotations
 import os
 import shutil
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
 from dotfiles.core.agent_config import load_mcp_servers
 from dotfiles.core.agent_setup.bake_rules import bake_rules
 from dotfiles.core.fsutil import symlink
+from dotfiles.core.models import StepResult  # canonical type; re-exported for vendor adapters
 from dotfiles.core.ports import ProcessRunner
-
-# ---------------------------------------------------------------------------
-# Result type
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class StepResult:
-    """Outcome of a single deployment step."""
-
-    ok: bool
-    message: str
-    details: str = ""
-
 
 # ---------------------------------------------------------------------------
 # MCP helpers
@@ -217,7 +203,7 @@ def deploy_subagents(dotfiles_dir: Path, dest_dir: Path) -> list[StepResult]:
             continue
         dest = dest_dir / agent.name
         shutil.copy2(agent, dest)
-        results.append(StepResult(ok=True, message=f"Deployed subagent {agent.name}"))
+        results.append(StepResult(level="success", message=f"Deployed subagent {agent.name}"))
 
     return results
 
@@ -244,11 +230,13 @@ def deploy_skills(
     """
     src = dotfiles_dir / ".ai" / "skills"
     if not src.is_dir():
-        return StepResult(ok=False, message="Skills source directory not found", details=str(src))
+        return StepResult(
+            level="error", message="Skills source directory not found", details=str(src)
+        )
 
     if which("npx") is None:
         return StepResult(
-            ok=False,
+            level="error",
             message="npx not found — cannot deploy skills",
             details="Install Node.js to enable skill deployment",
         )
@@ -268,9 +256,9 @@ def deploy_skills(
     )
     result = runner.run(cmd, check=False)
     if result.exit_code == 0:
-        return StepResult(ok=True, message=f"Deployed skills via npx skills ({vendor})")
+        return StepResult(level="success", message=f"Deployed skills via npx skills ({vendor})")
     return StepResult(
-        ok=False,
+        level="error",
         message=f"Failed to deploy skills via npx skills ({vendor})",
         details=result.stderr,
     )
@@ -321,9 +309,9 @@ def _symlink_rule(rule: Path, dest_path: Path) -> StepResult:
     """Ensure dest_path → rule symlink exists and is correct. Idempotent."""
     link_name = dest_path.name
     if dest_path.is_symlink() and dest_path.resolve() == rule.resolve():
-        return StepResult(ok=True, message=f"Already linked {link_name}")
+        return StepResult(level="success", message=f"Already linked {link_name}")
     symlink(rule, dest_path)
-    return StepResult(ok=True, message=f"Symlinked {link_name}")
+    return StepResult(level="success", message=f"Symlinked {link_name}")
 
 
 def symlink_process_rules(
@@ -341,7 +329,7 @@ def symlink_process_rules(
     """
     src = dotfiles_dir / ".ai" / "rules" / "process"
     if not src.is_dir():
-        return [StepResult(ok=False, message=f"No process rules at {src}")]
+        return [StepResult(level="error", message=f"No process rules at {src}")]
 
     dest_dir.mkdir(parents=True, exist_ok=True)
     other_suffix = ".mdc" if suffix == ".md" else ".md"

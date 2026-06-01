@@ -41,7 +41,7 @@ def setup_gemini(
 ) -> list[StepResult]:
     """Configure Gemini CLI. Returns a list of StepResult (one per step)."""
     if which("gemini") is None:
-        return [StepResult(ok=True, message="skipped — gemini not installed")]
+        return [StepResult(level="success", message="skipped — gemini not installed")]
 
     gemini_home = home / ".gemini"
     gemini_home.mkdir(parents=True, exist_ok=True)
@@ -93,7 +93,7 @@ def _setup_settings_and_mcp(
     updated = merge_replace(existing, ["mcpServers"], merged_mcp)
     write_json_safely(settings_file, updated)
 
-    return [StepResult(ok=True, message=f"Configured {len(servers)} MCP servers (Gemini)")]
+    return [StepResult(level="success", message=f"Configured {len(servers)} MCP servers (Gemini)")]
 
 
 def _setup_instructions(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:
@@ -106,7 +106,7 @@ def _setup_instructions(dotfiles_dir: Path, gemini_home: Path) -> list[StepResul
     rule_count = baked_rule_count(dotfiles_dir)
     return [
         StepResult(
-            ok=True,
+            level="success",
             message=f"Global instructions + {rule_count} baked rules (~/.gemini/GEMINI.md)",
         )
     ]

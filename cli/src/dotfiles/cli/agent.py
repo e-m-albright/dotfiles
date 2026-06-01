@@ -11,13 +11,13 @@ from rich.markup import escape
 from rich.table import Table
 
 from dotfiles.cli.context import AppContext
+from dotfiles.cli.ui import has_errors, render_steps
 from dotfiles.console import console
 from dotfiles.core.agent_overview import AgentOverviewService
 from dotfiles.core.agent_setup.claude import setup_claude
 from dotfiles.core.agent_setup.codex import setup_codex
 from dotfiles.core.agent_setup.cursor import setup_cursor
 from dotfiles.core.agent_setup.gemini import setup_gemini
-from dotfiles.core.agent_setup.lib import StepResult
 from dotfiles.core.agent_setup.pi import setup_pi
 from dotfiles.core.gemini import GeminiChunksService, GeminiError
 from dotfiles.core.models import (
@@ -27,6 +27,7 @@ from dotfiles.core.models import (
     HookRow,
     McpRow,
     PermissionRow,
+    StepResult,
     VendorSurface,
     VendorVerify,
 )
@@ -250,18 +251,8 @@ def _render_setup_results(vendor: str, results: list[StepResult]) -> bool:
     """Print step results for one vendor; return True if any step failed."""
     header = _VENDOR_HEADERS.get(vendor, vendor)
     console.print(f"\n[bold blue]── {header} ──[/]")
-    any_error = False
-    for r in results:
-        if r.ok:
-            glyph = "[green]✓[/]"
-        else:
-            glyph = "[red]✗[/]"
-            any_error = True
-        line = f"  {glyph} {escape(r.message)}"
-        if r.details:
-            line += f" [dim]{escape(r.details)}[/]"
-        console.print(line)
-    return any_error
+    render_steps(console, results)
+    return has_errors(results)
 
 
 # ---------------------------------------------------------------------------

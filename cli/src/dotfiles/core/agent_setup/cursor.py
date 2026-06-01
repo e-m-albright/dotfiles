@@ -109,7 +109,11 @@ def _setup_mcp(dotfiles_dir: Path, home: Path, *, reset_mcp: bool = False) -> li
     updated = merge_replace(existing, ["mcpServers"], merged_mcp)
     write_json_safely(mcp_file, updated)
 
-    return [StepResult(ok=True, message=f"Configured {len(servers)} MCP servers (Cursor, in-repo)")]
+    return [
+        StepResult(
+            level="success", message=f"Configured {len(servers)} MCP servers (Cursor, in-repo)"
+        )
+    ]
 
 
 def _setup_rules(dotfiles_dir: Path) -> list[StepResult]:
@@ -132,7 +136,7 @@ def _setup_rules(dotfiles_dir: Path) -> list[StepResult]:
     )
 
     (rules_dir / "shared-rules.mdc").write_text(content, encoding="utf-8")
-    return [StepResult(ok=True, message="Generated rules/shared-rules.mdc")]
+    return [StepResult(level="success", message="Generated rules/shared-rules.mdc")]
 
 
 def _setup_cli_config(dotfiles_dir: Path, home: Path) -> list[StepResult]:
@@ -141,7 +145,7 @@ def _setup_cli_config(dotfiles_dir: Path, home: Path) -> list[StepResult]:
     if not src.is_file():
         return []
     symlink(src, home / ".cursor" / "cli-config.json")
-    return [StepResult(ok=True, message="Deployed cli-config.json")]
+    return [StepResult(level="success", message="Deployed cli-config.json")]
 
 
 def _setup_plugin(dotfiles_dir: Path, home: Path) -> list[StepResult]:
@@ -149,9 +153,13 @@ def _setup_plugin(dotfiles_dir: Path, home: Path) -> list[StepResult]:
     src = dotfiles_dir / "agents" / "cursor"
     dest = home / ".cursor" / "plugins" / "dotfiles"
     if dest.is_symlink() and dest.resolve() == src.resolve():
-        return [StepResult(ok=True, message="Plugin already registered")]
+        return [StepResult(level="success", message="Plugin already registered")]
     symlink(src, dest)
-    return [StepResult(ok=True, message="Registered dotfiles plugin (~/.cursor/plugins/dotfiles)")]
+    return [
+        StepResult(
+            level="success", message="Registered dotfiles plugin (~/.cursor/plugins/dotfiles)"
+        )
+    ]
 
 
 def _setup_cursorignore(dotfiles_dir: Path) -> list[StepResult]:
@@ -165,4 +173,4 @@ def _setup_cursorignore(dotfiles_dir: Path) -> list[StepResult]:
 
     content = _CURSORIGNORE_HEADER + ignore_src.read_text() + _CURSORIGNORE_CURSOR_SPECIFIC
     cursor_ignore.write_text(content, encoding="utf-8")
-    return [StepResult(ok=True, message="Generated .cursorignore")]
+    return [StepResult(level="success", message="Generated .cursorignore")]

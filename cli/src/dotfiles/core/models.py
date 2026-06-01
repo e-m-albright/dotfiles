@@ -96,12 +96,22 @@ StepLevel = Literal["success", "info", "warn", "error"]
 
 
 class StepResult(BaseModel):
-    """One reported step of a remote action, rendered by the CLI/TUI."""
+    """One reported step of an action (remote, scaffold, agent setup …).
+
+    The single step-result type for the whole app, rendered by ``ui.render_steps``.
+    *details* is optional supplementary text shown dimmed after the message.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     level: StepLevel
     message: str
+    details: str = ""
+
+    @property
+    def ok(self) -> bool:
+        """True unless this step is an error — the success/fail view used by setup steps."""
+        return self.level != "error"
 
 
 class RemoteStatus(BaseModel):

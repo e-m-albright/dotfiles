@@ -17,7 +17,10 @@ _GLYPH: dict[StepLevel, str] = {
 
 def render_steps(console: Console, steps: Iterable[StepResult]) -> None:
     for step in steps:
-        console.print(f"  {_GLYPH[step.level]} {escape(step.message)}")
+        line = f"  {_GLYPH[step.level]} {escape(step.message)}"
+        if step.details:
+            line += f" [dim]{escape(step.details)}[/]"
+        console.print(line)
 
 
 def has_errors(steps: Iterable[StepResult]) -> bool:

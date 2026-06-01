@@ -69,7 +69,7 @@ def _ensure_pi_installed(
     """Try to npm install -g pi if npm is available; otherwise report failure."""
     if which("npm") is None:
         return StepResult(
-            ok=False,
+            level="error",
             message=(
                 f"Pi not installed and npm unavailable — skipping"
                 f" (install: npm install -g {_PI_NPM_PKG})"
@@ -77,9 +77,9 @@ def _ensure_pi_installed(
         )
     result = runner.run(("npm", "install", "-g", _PI_NPM_PKG), check=False)
     if result.exit_code == 0:
-        return StepResult(ok=True, message=f"Installed pi ({_PI_NPM_PKG})")
+        return StepResult(level="success", message=f"Installed pi ({_PI_NPM_PKG})")
     return StepResult(
-        ok=False,
+        level="error",
         message=f"Pi install failed — run manually: npm install -g {_PI_NPM_PKG}",
         details=result.stderr,
     )
@@ -92,10 +92,10 @@ def _setup_config_symlinks(dotfiles_dir: Path, pi_home: Path) -> list[StepResult
     for name in ("settings.json", "models.json"):
         src = pi_dir / name
         if not src.is_file():
-            results.append(StepResult(ok=False, message=f"Source not found: {src}"))
+            results.append(StepResult(level="error", message=f"Source not found: {src}"))
             continue
         symlink(src, pi_home / name)
-        results.append(StepResult(ok=True, message=f"Linked Pi {name}"))
+        results.append(StepResult(level="success", message=f"Linked Pi {name}"))
     return results
 
 
@@ -107,7 +107,9 @@ def _setup_instructions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
 
     (pi_home / "AGENTS.md").write_text(content, encoding="utf-8")
     return [
-        StepResult(ok=True, message="Global instructions + baked rules (~/.pi/agent/AGENTS.md)")
+        StepResult(
+            level="success", message="Global instructions + baked rules (~/.pi/agent/AGENTS.md)"
+        )
     ]
 
 
@@ -126,7 +128,7 @@ def _setup_extensions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
         if not ts_file.is_file():
             continue
         symlink(ts_file, ext_dest / ts_file.name)
-        results.append(StepResult(ok=True, message=f"Linked Pi extension {ts_file.name}"))
+        results.append(StepResult(level="success", message=f"Linked Pi extension {ts_file.name}"))
 
     return results
 
@@ -145,15 +147,15 @@ def _install_pi_packages(
     results: list[StepResult] = []
     for pkg in ("pi-superpowers-plus", "mitsupi"):
         if _pi_package_present(runner, pkg):
-            results.append(StepResult(ok=True, message=f"{pkg} already installed"))
+            results.append(StepResult(level="success", message=f"{pkg} already installed"))
             continue
         install = runner.run(("pi", "install", f"npm:{pkg}"), check=False)
         if install.exit_code == 0:
-            results.append(StepResult(ok=True, message=f"Installed {pkg}"))
+            results.append(StepResult(level="success", message=f"Installed {pkg}"))
         else:
             results.append(
                 StepResult(
-                    ok=False,
+                    level="error",
                     message=f"Install failed — run manually: pi install npm:{pkg}",
                     details=install.stderr,
                 )

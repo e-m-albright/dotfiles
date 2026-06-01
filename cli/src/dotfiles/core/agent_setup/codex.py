@@ -82,7 +82,7 @@ def _setup_instructions(dotfiles_dir: Path, codex_home: Path) -> list[StepResult
     rule_count = baked_rule_count(dotfiles_dir)
     return [
         StepResult(
-            ok=True,
+            level="success",
             message=f"Global instructions + {rule_count} baked rules (~/.codex/AGENTS.md)",
         )
     ]
@@ -108,7 +108,7 @@ def _setup_default_rules(dotfiles_dir: Path, codex_home: Path) -> list[StepResul
         if dest_lines > src_lines and src.read_bytes() != dest.read_bytes():
             return [
                 StepResult(
-                    ok=True,
+                    level="success",
                     message=(
                         "~/.codex/rules/default.rules has more lines than dotfiles baseline"
                         " — leaving in place."
@@ -122,7 +122,7 @@ def _setup_default_rules(dotfiles_dir: Path, codex_home: Path) -> list[StepResul
     n = sum(1 for line in dest.read_text().splitlines() if line.startswith("prefix_rule"))
     return [
         StepResult(
-            ok=True,
+            level="success",
             message=f"Deployed {n} command auto-approve rules (~/.codex/rules/default.rules)",
         )
     ]
@@ -152,7 +152,7 @@ def _setup_mcp(dotfiles_dir: Path, codex_home: Path, home: Path) -> list[StepRes
         new_text = render_mcp_toml(servers)  # type: ignore[arg-type]
 
     config_toml.write_text(new_text, encoding="utf-8")
-    return [StepResult(ok=True, message=f"Configured {len(servers)} MCP servers (Codex)")]
+    return [StepResult(level="success", message=f"Configured {len(servers)} MCP servers (Codex)")]
 
 
 _DOC_FALLBACK_LINE = 'project_doc_fallback_filenames = ["CODEX.md"]'
@@ -168,7 +168,9 @@ def _ensure_doc_fallback(codex_home: Path) -> list[StepResult]:
     config_toml = codex_home / "config.toml"
     if not config_toml.is_file():
         config_toml.write_text(_DOC_FALLBACK_LINE + "\n", encoding="utf-8")
-        return [StepResult(ok=True, message="Set project_doc_fallback_filenames (CODEX.md)")]
+        return [
+            StepResult(level="success", message="Set project_doc_fallback_filenames (CODEX.md)")
+        ]
 
     text = config_toml.read_text()
     try:
@@ -181,7 +183,7 @@ def _ensure_doc_fallback(codex_home: Path) -> list[StepResult]:
 
     # Prepend the line so it appears near the top (before MCP blocks)
     config_toml.write_text(_DOC_FALLBACK_LINE + "\n\n" + text, encoding="utf-8")
-    return [StepResult(ok=True, message="Set project_doc_fallback_filenames (CODEX.md)")]
+    return [StepResult(level="success", message="Set project_doc_fallback_filenames (CODEX.md)")]
 
 
 def _setup_statusline(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
@@ -204,7 +206,9 @@ def _setup_statusline(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
 
     new_text = _merge_tui_section(existing, statusline_content)
     config_toml.write_text(new_text, encoding="utf-8")
-    return [StepResult(ok=True, message="Configured Codex statusline (~/.codex/config.toml)")]
+    return [
+        StepResult(level="success", message="Configured Codex statusline (~/.codex/config.toml)")
+    ]
 
 
 def _merge_tui_section(toml_text: str, statusline_toml: str) -> str:
@@ -300,4 +304,4 @@ def _setup_hooks(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
     if not src.is_file():
         return []
     shutil.copy2(src, codex_home / "hooks.json")
-    return [StepResult(ok=True, message="Deployed hooks (~/.codex/hooks.json)")]
+    return [StepResult(level="success", message="Deployed hooks (~/.codex/hooks.json)")]

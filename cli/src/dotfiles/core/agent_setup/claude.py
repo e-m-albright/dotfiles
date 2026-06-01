@@ -103,9 +103,9 @@ def _setup_instructions(dotfiles_dir: Path, claude_home: Path) -> list[StepResul
     """Copy global-claude.md → ~/.claude/CLAUDE.md."""
     src = dotfiles_dir / "agents" / "claude" / "global-claude.md"
     if not src.is_file():
-        return [StepResult(ok=False, message="No global-claude.md found")]
+        return [StepResult(level="error", message="No global-claude.md found")]
     shutil.copy2(src, claude_home / "CLAUDE.md")
-    return [StepResult(ok=True, message="System instructions (~/.claude/CLAUDE.md)")]
+    return [StepResult(level="success", message="System instructions (~/.claude/CLAUDE.md)")]
 
 
 def _setup_marketplaces(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
@@ -117,7 +117,9 @@ def _setup_marketplaces(dotfiles_dir: Path, claude_home: Path) -> list[StepResul
     settings = _load_settings(claude_home)
     updated = merge_replace(settings, ["extraKnownMarketplaces"], marketplaces)
     _save_settings(claude_home, updated)
-    return [StepResult(ok=True, message=f"Configured {len(marketplaces)} plugin marketplaces")]
+    return [
+        StepResult(level="success", message=f"Configured {len(marketplaces)} plugin marketplaces")
+    ]
 
 
 def _parse_plugins_yaml(plugins_yaml: Path) -> _JsonDict:
@@ -154,7 +156,7 @@ def _setup_plugins(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     settings = _load_settings(claude_home)
     updated = merge_replace(settings, ["enabledPlugins"], plugins)
     _save_settings(claude_home, updated)
-    return [StepResult(ok=True, message=f"Enabled {len(plugins)} Claude Code plugins")]
+    return [StepResult(level="success", message=f"Enabled {len(plugins)} Claude Code plugins")]
 
 
 def _setup_permissions(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
@@ -179,7 +181,9 @@ def _setup_permissions(dotfiles_dir: Path, claude_home: Path) -> list[StepResult
     a = len(cast("list[str]", perms_src.get("allow", [])))
     d = len(cast("list[str]", perms_src.get("deny", [])))
     return [
-        StepResult(ok=True, message=f"Permissions: {a} allow, {d} deny (~/.claude/settings.json)")
+        StepResult(
+            level="success", message=f"Permissions: {a} allow, {d} deny (~/.claude/settings.json)"
+        )
     ]
 
 
@@ -201,7 +205,9 @@ def _setup_mcp(
     )
     updated = merge_replace(existing, ["mcpServers"], new_mcp)
     write_json_safely(claude_json, updated)
-    return [StepResult(ok=True, message=f"Configured {len(servers)} MCP servers (Claude Code)")]
+    return [
+        StepResult(level="success", message=f"Configured {len(servers)} MCP servers (Claude Code)")
+    ]
 
 
 def _rewrite_http_to_mcp_remote(entry: _JsonDict) -> _JsonDict:
@@ -256,7 +262,9 @@ def _setup_desktop(dotfiles_dir: Path, home: Path, *, reset_mcp: bool) -> list[S
         )
         existing = merge_replace(existing, ["mcpServers"], new_mcp)
         results.append(
-            StepResult(ok=True, message=f"Configured {len(servers)} MCP servers (Claude Desktop)")
+            StepResult(
+                level="success", message=f"Configured {len(servers)} MCP servers (Claude Desktop)"
+            )
         )
 
     prefs_src = dotfiles_dir / "agents" / "claude" / "desktop-preferences.json"
@@ -267,7 +275,9 @@ def _setup_desktop(dotfiles_dir: Path, home: Path, *, reset_mcp: bool) -> list[S
         # dotfiles prefs are base; existing user prefs win on conflict
         merged_prefs: _JsonDict = {**prefs, **existing_prefs}
         existing = merge_replace(existing, ["preferences"], merged_prefs)
-        results.append(StepResult(ok=True, message=f"Configured {len(prefs)} Desktop preferences"))
+        results.append(
+            StepResult(level="success", message=f"Configured {len(prefs)} Desktop preferences")
+        )
 
     write_json_safely(desktop_config, existing)
     return results
@@ -284,7 +294,7 @@ def _setup_hooks(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     updated = merge_replace(settings, ["hooks"], hooks)
     _save_settings(claude_home, updated)
     n = len(hooks)
-    return [StepResult(ok=True, message=f"Configured {n} hook events")]
+    return [StepResult(level="success", message=f"Configured {n} hook events")]
 
 
 def _setup_statusline(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
@@ -297,7 +307,7 @@ def _setup_statusline(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]
     settings = _load_settings(claude_home)
     updated = merge_replace(settings, ["statusLine"], status_line)
     _save_settings(claude_home, updated)
-    return [StepResult(ok=True, message="Statusline configured")]
+    return [StepResult(level="success", message="Statusline configured")]
 
 
 def _setup_preferences(claude_home: Path) -> list[StepResult]:
@@ -307,7 +317,7 @@ def _setup_preferences(claude_home: Path) -> list[StepResult]:
     settings = merge_replace(settings, ["preferredNotifChannel"], "terminal_bell")
     settings = merge_replace(settings, ["defaultMode"], "acceptEdits")
     _save_settings(claude_home, settings)
-    return [StepResult(ok=True, message="Voice mode + terminal bell + acceptEdits enabled")]
+    return [StepResult(level="success", message="Voice mode + terminal bell + acceptEdits enabled")]
 
 
 def _install_external_skills(
@@ -350,9 +360,13 @@ def _setup_skills(
         runner, home, ext_file.read_text().splitlines()
     )
     if ext_installed > 0:
-        results.append(StepResult(ok=True, message=f"Installed {ext_installed} external skills"))
+        results.append(
+            StepResult(level="success", message=f"Installed {ext_installed} external skills")
+        )
     results.append(
-        StepResult(ok=True, message=f"{ext_count} external skills tracked (external-skills.txt)")
+        StepResult(
+            level="success", message=f"{ext_count} external skills tracked (external-skills.txt)"
+        )
     )
     return results
 
@@ -394,7 +408,7 @@ def _clean_plugins(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     removed = len(current) - len(kept)
     updated = merge_replace(settings, ["enabledPlugins"], kept)
     _save_settings(claude_home, updated)
-    return [StepResult(ok=True, message=f"Removed {removed} nonconforming plugins")]
+    return [StepResult(level="success", message=f"Removed {removed} nonconforming plugins")]
 
 
 def _expected_marketplace_ids(dotfiles_dir: Path) -> set[str]:
@@ -410,7 +424,7 @@ def _clean_marketplaces(dotfiles_dir: Path, claude_home: Path) -> list[StepResul
     removed = len(current) - len(kept)
     updated = merge_replace(settings, ["extraKnownMarketplaces"], kept)
     _save_settings(claude_home, updated)
-    return [StepResult(ok=True, message=f"Removed {removed} nonconforming marketplaces")]
+    return [StepResult(level="success", message=f"Removed {removed} nonconforming marketplaces")]
 
 
 def _is_stale_mcp_perm(perm: str, expected_plugins: set[str], expected_mcp: set[str]) -> bool:
@@ -445,7 +459,7 @@ def _clean_mcp_permissions(dotfiles_dir: Path, claude_home: Path) -> list[StepRe
     new_perms: _JsonDict = {**perms, "allow": cleaned}
     updated = merge_replace(settings, ["permissions"], new_perms)
     _save_settings(claude_home, updated)
-    return [StepResult(ok=True, message=f"Removed {removed} stale MCP permissions")]
+    return [StepResult(level="success", message=f"Removed {removed} stale MCP permissions")]
 
 
 def _clean_stale_projects(home: Path) -> list[StepResult]:
@@ -458,4 +472,4 @@ def _clean_stale_projects(home: Path) -> list[StepResult]:
     removed = len(projects) - len(kept)
     updated = merge_replace(data, ["projects"], kept)
     write_json_safely(claude_json, updated)
-    return [StepResult(ok=True, message=f"Removed {removed} stale project entries")]
+    return [StepResult(level="success", message=f"Removed {removed} stale project entries")]
