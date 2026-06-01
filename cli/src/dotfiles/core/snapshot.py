@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import shutil
 from collections.abc import Callable
 from pathlib import Path
 
 from dotfiles.core.models import (
+    AgentOverview,
     BrewState,
     SymlinkState,
 )
@@ -70,3 +72,31 @@ def collect_symlinks(*, home: Path, dotfiles_dir: Path) -> tuple[SymlinkState, .
         else:
             states.append(SymlinkState(path=str(dest), target="", ok=False))
     return tuple(states)
+
+
+def _vendor_tokens(overview: AgentOverview, vendor: str) -> list[str]:
+    """Stable, sorted tokens describing one vendor's deployed agentic config."""
+    tokens: list[str] = []
+    for row in overview.mcp:
+        if getattr(row, vendor, False):
+            tokens.append(f"mcp:{row.server}")
+    for hook in overview.hooks:
+        if getattr(hook, vendor, False):
+            tokens.append(f"hook:{hook.event}")
+    if vendor == "claude":
+        tokens.append(f"skills:{overview.skills.claude_deployed}")
+        tokens.append(f"rules:{overview.rules.claude_deployed}")
+    elif vendor == "cursor":
+        tokens.append(f"rules:{overview.rules.cursor_deployed}")
+    elif vendor == "codex":
+        tokens.append(f"skills:{overview.skills.shared_deployed}")
+    return sorted(tokens)
+
+
+def agent_config_hashes(overview: AgentOverview) -> dict[str, str]:
+    """A stable content hash of each vendor's deployed MCP/hooks/skills/rules."""
+    hashes: dict[str, str] = {}
+    for vendor in ("claude", "cursor", "codex", "gemini"):
+        joined = "\n".join(_vendor_tokens(overview, vendor))
+        hashes[vendor] = hashlib.sha256(joined.encode()).hexdigest()[:12]
+    return hashes
