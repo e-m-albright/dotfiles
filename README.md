@@ -221,7 +221,7 @@ See `agents/codex/` for all configuration files.
 Setup is automated via `dotfiles agent setup`:
 
 - **Settings**: `~/.gemini/settings.json` seeded from `agents/gemini/settings.json` (preserves existing auth)
-- **Global instructions**: `~/.gemini/GEMINI.md` baked from `.ai/rules/process/*.mdc` (same source as Codex/Pi)
+- **Global instructions**: `~/.gemini/GEMINI.md` written verbatim from `agents/shared/rules.md` (the same kernel every vendor gets)
 - **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — servers with `gemini` in `targets`
 
 Gemini does not yet have skills or subagents surfaces; rules cover the equivalent ground.
@@ -263,9 +263,8 @@ MCP config: `agents/shared/mcp-servers.json` (shared source), deployed to Claude
 
 Setup is automated via `dotfiles agent setup` (also runs during install):
 
-- **Global instructions**: `~/.claude/CLAUDE.md` installed from `agents/claude/global-claude.md` (process guardrails, command style, project file discovery)
-- **Universal rules**: `~/.claude/rules/*.md` symlinked from `.ai/rules/process/` (always current with dotfiles)
-- **Permissions**: `permissions.{allow,deny,defaultMode}` from `agents/claude/permissions.json` (canonical baseline — fold interactive approvals back periodically)
+- **Global instructions**: `~/.claude/CLAUDE.md` written from `agents/shared/rules.md` (the universal kernel — process, safety, voice, command style)
+- - **Permissions**: `permissions.{allow,deny,defaultMode}` from `agents/claude/permissions.json` (canonical baseline — fold interactive approvals back periodically)
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
 - **Skills**: deployed from `.ai/skills/` via `npx skills`
@@ -295,7 +294,7 @@ Setup is automated via `dotfiles agent setup cursor` (also runs during install):
 
 - **MCP servers**: From shared source (`agents/shared/mcp-servers.json`)
 - **Editor config**: `editors/cursor/settings.json` + `editors/cursor/keybindings.json` symlinked into Cursor User config
-- **Universal rules**: Symlinked from `.ai/rules/process/` (always current with dotfiles)
+- **Universal rules**: `~/.cursor/rules/shared-rules.mdc` generated from `agents/shared/rules.md` (the one kernel)
 - **Hooks**: Shared hook definitions deployed from `agents/cursor/hooks/`
 - **Skills**: Cursor doesn't have a skills concept; rules cover the equivalent surface
 - **Subagents**: Cursor doesn't dispatch subagents; the `.ai/agents/` collection deploys to Claude Code and Codex only

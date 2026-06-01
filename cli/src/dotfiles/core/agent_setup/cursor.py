@@ -24,7 +24,6 @@ from dotfiles.core.agent_setup.lib import (
     mcp_servers_for,
     mcp_skip,
     merge_managed_mcp,
-    symlink_process_rules,
 )
 from dotfiles.core.agent_setup.settings_merger import (
     load_json_or,
@@ -66,9 +65,6 @@ def setup_cursor(
     results: list[StepResult] = []
     results.extend(_setup_mcp(dotfiles_dir, home, reset_mcp=reset_mcp))
     results.extend(_setup_rules(dotfiles_dir))
-    results.extend(
-        symlink_process_rules(dotfiles_dir, dotfiles_dir / "agents" / "cursor" / "rules", ".mdc")
-    )
     results.extend(_setup_cli_config(dotfiles_dir, home))
     results.extend(_setup_plugin(dotfiles_dir, home))
     results.extend(_setup_cursorignore(dotfiles_dir))

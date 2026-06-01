@@ -161,18 +161,12 @@ class TestGeminiPresent:
     def test_gemini_md_starts_with_header(self, dotfiles: Path, home: Path) -> None:
         self._run(dotfiles, home)
         content = (home / ".gemini" / "GEMINI.md").read_text()
-        assert content.startswith("# Global Agent Instructions")
+        assert content.startswith("# Shared Agentic Rules")
 
     def test_gemini_md_contains_rules_md(self, dotfiles: Path, home: Path) -> None:
         self._run(dotfiles, home)
         content = (home / ".gemini" / "GEMINI.md").read_text()
         assert "Shared Agentic Rules" in content
-
-    def test_gemini_md_contains_baked_rules(self, dotfiles: Path, home: Path) -> None:
-        self._run(dotfiles, home)
-        content = (home / ".gemini" / "GEMINI.md").read_text()
-        # baked rules include the rule name as a heading
-        assert "## global-process" in content
 
     def test_settings_result_mentions_mcp_count(self, dotfiles: Path, home: Path) -> None:
         results = self._run(dotfiles, home)

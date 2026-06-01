@@ -256,5 +256,4 @@ If any files appear under a directory the project considers ephemeral, something
 ## Cross-references
 
 - `git-worktree-manager` skill — narrow CRUD on worktrees with smart naming
-- `.ai/rules/process/multi-agent.mdc` — etiquette that prevents these messes in the first place
 - `session-recovery` skill — when the audit reveals interrupted work to resume

@@ -13,8 +13,6 @@ from pathlib import Path
 from typing import cast
 
 from dotfiles.core.agent_config import load_mcp_servers
-from dotfiles.core.agent_setup.bake_rules import bake_rules
-from dotfiles.core.fsutil import symlink
 from dotfiles.core.models import StepResult  # canonical type; re-exported for vendor adapters
 from dotfiles.core.ports import ProcessRunner
 
@@ -156,29 +154,18 @@ def build_global_instructions(
     *,
     extra_sections: Sequence[str] = (),
 ) -> str | None:
-    """Assemble the global instruction file body, or None if rules.md is absent.
+    """Return the core agent instructions, or None if the kernel doc is absent.
 
-    The single source of truth for the ``# Global Agent Instructions`` file that
-    Codex, Gemini, and Pi each write to their own root path. *extra_sections* are
-    inserted verbatim between the shared ``rules.md`` and the baked process rules
-    (Codex uses this for its Codex-Specific block). Keeping one assembler here
-    stops the three vendors' output from drifting apart.
+    One hand-authored doc (``agents/shared/rules.md``) is the single source of
+    truth, written verbatim to every vendor's instruction file. *extra_sections*
+    are appended (Codex uses this for its Codex-specific block). No composition,
+    no baking — what you read in rules.md is what each tool gets.
     """
-    global_rules = dotfiles_dir / "agents" / "shared" / "rules.md"
-    if not global_rules.is_file():
+    kernel = dotfiles_dir / "agents" / "shared" / "rules.md"
+    if not kernel.is_file():
         return None
-
-    parts: list[str] = ["# Global Agent Instructions", "", global_rules.read_text(), ""]
-    parts.extend(extra_sections)
-    baked = bake_rules(dotfiles_dir)
-    if baked:
-        parts.append(baked)
+    parts: list[str] = [kernel.read_text(), *extra_sections]
     return "\n".join(parts)
-
-
-def baked_rule_count(dotfiles_dir: Path) -> int:
-    """Count the process rules that ``build_global_instructions`` will bake in."""
-    return len(list((dotfiles_dir / ".ai" / "rules" / "process").glob("*.mdc")))
 
 
 # ---------------------------------------------------------------------------
@@ -262,80 +249,3 @@ def deploy_skills(
         message=f"Failed to deploy skills via npx skills ({vendor})",
         details=result.stderr,
     )
-
-
-# ---------------------------------------------------------------------------
-# Process-rules symlinking
-# ---------------------------------------------------------------------------
-
-
-def _clean_stale_rule_links(dest_dir: Path, other_suffix: str) -> None:
-    """Remove symlinks in dest_dir that use the old suffix (suffix-migration cleanup)."""
-    for stale in dest_dir.glob(f"*{other_suffix}"):
-        if stale.is_symlink():
-            stale.unlink()
-
-
-def _is_managed_rule_link(link: Path, src: Path) -> bool:
-    """True if *link* is a symlink we own — i.e. it points directly into *src*.
-
-    Checked via the link target, not its resolved file, so a dangling link to a
-    deleted rule still counts as managed (and therefore prunable).
-    """
-    if not link.is_symlink():
-        return False
-    target = link.readlink()
-    if not target.is_absolute():
-        target = link.parent / target
-    try:
-        return target.parent.resolve() == src.resolve()
-    except OSError:
-        return False
-
-
-def _prune_orphaned_rule_links(dest_dir: Path, src: Path, valid_stems: set[str]) -> None:
-    """Remove managed symlinks whose source rule no longer exists in *src*.
-
-    Without this, retiring a process rule leaves a dangling ``<name>`` symlink in
-    every vendor's rules dir on the next setup — the suffix-migration cleanup only
-    catches the *other* suffix, not same-suffix orphans.
-    """
-    for link in dest_dir.iterdir():
-        if link.stem not in valid_stems and _is_managed_rule_link(link, src):
-            link.unlink()
-
-
-def _symlink_rule(rule: Path, dest_path: Path) -> StepResult:
-    """Ensure dest_path → rule symlink exists and is correct. Idempotent."""
-    link_name = dest_path.name
-    if dest_path.is_symlink() and dest_path.resolve() == rule.resolve():
-        return StepResult(level="success", message=f"Already linked {link_name}")
-    symlink(rule, dest_path)
-    return StepResult(level="success", message=f"Symlinked {link_name}")
-
-
-def symlink_process_rules(
-    dotfiles_dir: Path,
-    dest_dir: Path,
-    suffix: str,
-) -> list[StepResult]:
-    """Symlink each ``dotfiles_dir/.ai/rules/process/*.mdc`` into ``dest_dir``.
-
-    Link names use *suffix* (e.g. ``".md"`` for Claude Code, ``".mdc"`` for Cursor).
-    Stale links with the *other* suffix are cleaned up first, matching the
-    suffix-migration safety logic in lib.sh.
-
-    Mirrors ``symlink_process_rules()`` from lib.sh.
-    """
-    src = dotfiles_dir / ".ai" / "rules" / "process"
-    if not src.is_dir():
-        return [StepResult(level="error", message=f"No process rules at {src}")]
-
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    other_suffix = ".mdc" if suffix == ".md" else ".md"
-    _clean_stale_rule_links(dest_dir, other_suffix)
-
-    rules = [rule for rule in sorted(src.glob("*.mdc")) if rule.is_file()]
-    _prune_orphaned_rule_links(dest_dir, src, {rule.stem for rule in rules})
-
-    return [_symlink_rule(rule, dest_dir / (rule.stem + suffix)) for rule in rules]

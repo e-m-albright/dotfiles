@@ -17,7 +17,6 @@ from typing import cast
 
 from dotfiles.core.agent_setup.lib import (
     StepResult,
-    baked_rule_count,
     build_global_instructions,
     mcp_servers_for,
     mcp_skip,
@@ -97,16 +96,10 @@ def _setup_settings_and_mcp(
 
 
 def _setup_instructions(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:
-    """Write ~/.gemini/GEMINI.md = rules.md header + baked rules."""
+    """Write ~/.gemini/GEMINI.md = core agent instructions."""
     content = build_global_instructions(dotfiles_dir)
     if content is None:
         return []
 
     (gemini_home / "GEMINI.md").write_text(content, encoding="utf-8")
-    rule_count = baked_rule_count(dotfiles_dir)
-    return [
-        StepResult(
-            level="success",
-            message=f"Global instructions + {rule_count} baked rules (~/.gemini/GEMINI.md)",
-        )
-    ]
+    return [StepResult(level="success", message="Core instructions (~/.gemini/GEMINI.md)")]

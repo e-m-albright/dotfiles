@@ -126,7 +126,7 @@ class TestSetupInstructions:
     def test_agents_md_starts_with_header(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
         content = (home / ".codex" / "AGENTS.md").read_text()
-        assert content.startswith("# Global Agent Instructions")
+        assert content.startswith("# Shared Agentic Rules")
 
     def test_agents_md_contains_shared_rules(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
@@ -138,17 +138,6 @@ class TestSetupInstructions:
         content = (home / ".codex" / "AGENTS.md").read_text()
         assert "## Codex-Specific" in content
         assert "AGENTS.md as the primary instruction file" in content
-
-    def test_agents_md_contains_baked_rules(self, dotfiles: Path, home: Path) -> None:
-        _run(dotfiles, home)
-        content = (home / ".codex" / "AGENTS.md").read_text()
-        assert "## global-process" in content
-
-    def test_result_mentions_rule_count(self, dotfiles: Path, home: Path) -> None:
-        results = _run(dotfiles, home)
-        instructions_result = next((r for r in results if "baked rules" in r.message), None)
-        assert instructions_result is not None
-        assert "1" in instructions_result.message  # 1 .mdc file in fixture
 
 
 # ---------------------------------------------------------------------------

@@ -184,17 +184,12 @@ class TestAgentsMd:
     def test_agents_md_starts_with_header(self, dotfiles: Path, home: Path) -> None:
         self._run(dotfiles, home)
         content = (home / ".pi" / "agent" / "AGENTS.md").read_text()
-        assert content.startswith("# Global Agent Instructions")
+        assert content.startswith("# Shared Agentic Rules")
 
     def test_agents_md_contains_rules_md(self, dotfiles: Path, home: Path) -> None:
         self._run(dotfiles, home)
         content = (home / ".pi" / "agent" / "AGENTS.md").read_text()
         assert "Shared Agentic Rules" in content
-
-    def test_agents_md_contains_baked_rules(self, dotfiles: Path, home: Path) -> None:
-        self._run(dotfiles, home)
-        content = (home / ".pi" / "agent" / "AGENTS.md").read_text()
-        assert "## global-process" in content
 
 
 # ---------------------------------------------------------------------------

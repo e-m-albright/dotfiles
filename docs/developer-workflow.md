@@ -340,21 +340,11 @@ Use `/write-skill` (from superpowers) to create new skills with TDD — it watch
 
 **Priority**: Project skills (`.claude/skills/`) > Personal skills (`~/.claude/skills/`) > Plugin skills.
 
-### Adding Rules
+### Editing the rule kernel
 
-Rules live in `.ai/rules/` with `.mdc` extension and YAML frontmatter:
+The universal agent rules are one hand-authored doc: `agents/shared/rules.md`. Edit it, run `dotfiles agent setup`, and it's written verbatim to every vendor's instruction file (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.pi/agent/AGENTS.md`, and a Cursor `shared-rules.mdc` wrapper). No baking, no per-rule symlinks.
 
-```markdown
----
-description: When this rule applies
-globs: "**/*.py"        # optional: file-pattern trigger
-alwaysApply: false      # true = always loaded into context
----
-
-# Rule content here
-```
-
-Only the universal kernel lives in `.ai/rules/process/`. Stack-specific taste is reference, not a pushed rule — it lives in `docs/stacks/`.
+Stack-specific taste is reference, not a pushed rule — it lives in `docs/stacks/`. Per-project rules belong in that project's `AGENTS.md` (use `dotfiles agent migrate-rules-sync`).
 
 ### Adding MCP Servers
 

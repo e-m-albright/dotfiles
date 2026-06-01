@@ -90,7 +90,7 @@ DESKTOP_PREFS_JSON = json.dumps(
     }
 )
 
-GLOBAL_CLAUDE_MD = "# Global Instructions\n\nFollow these rules.\n"
+CORE_RULES_MD = "# Agent Instructions\n\nFollow these rules.\n"
 
 EXTERNAL_SKILLS_TXT = """\
 # External skills
@@ -111,7 +111,7 @@ def dotfiles(tmp_path: Path) -> Path:
         d,
         {
             "agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
-            "agents/claude/global-claude.md": GLOBAL_CLAUDE_MD,
+            "agents/shared/rules.md": CORE_RULES_MD,
             "agents/claude/plugins.yaml": PLUGINS_YAML,
             "agents/claude/marketplaces.json": MARKETPLACES_JSON,
             "agents/claude/permissions.json": PERMISSIONS_JSON,
@@ -121,7 +121,6 @@ def dotfiles(tmp_path: Path) -> Path:
             "agents/claude/statusline.sh": "#!/usr/bin/env bash\necho ok\n",
             ".ai/skills/.keep": "",
             ".ai/agents/myagent.md": "# MyAgent\n",
-            ".ai/rules/process/global-process.mdc": ("---\ndescription: proc\n---\n\n# Body\n"),
         },
     )
     return d
@@ -174,7 +173,7 @@ class TestSetupInstructions:
     def test_claude_md_content(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
         content = (home / ".claude" / "CLAUDE.md").read_text()
-        assert "Global Instructions" in content
+        assert "Agent Instructions" in content
 
 
 # ---------------------------------------------------------------------------
@@ -471,20 +470,6 @@ class TestSubagentsAndRules:
     def test_subagents_deployed(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
         assert (home / ".claude" / "agents" / "myagent.md").is_file()
-
-    def test_process_rules_symlinked(self, dotfiles: Path, home: Path) -> None:
-        _run(dotfiles, home)
-        rules_dir = home / ".claude" / "rules"
-        links = list(rules_dir.glob("*.md"))
-        assert len(links) >= 1
-        # All should be symlinks
-        for link in links:
-            assert link.is_symlink()
-
-    def test_process_rules_use_md_suffix(self, dotfiles: Path, home: Path) -> None:
-        _run(dotfiles, home)
-        links = list((home / ".claude" / "rules").glob("*.md"))
-        assert all(link.suffix == ".md" for link in links)
 
 
 # ---------------------------------------------------------------------------

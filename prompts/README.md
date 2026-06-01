@@ -7,4 +7,4 @@ Prompt-construction assets — source material for the system prompts and adviso
 - `gemini-chunks/` — system instructions chunked to fit Gemini saved-info
 - `scaffolds/agent-rules-sync/` — the cross-harness rule-sync fragment installed by `dotfiles agent migrate-rules-sync`
 
-Curated technology taste and development knowledge now live in [`docs/stacks/`](../docs/stacks/README.md) and [`docs/knowledge/`](../docs/knowledge/README.md). The universal rule kernel is in `.ai/rules/process/`; skills in `.ai/skills/`.
+Curated technology taste and development knowledge now live in [`docs/stacks/`](../docs/stacks/README.md) and [`docs/knowledge/`](../docs/knowledge/README.md). The universal rule kernel is `agents/shared/rules.md`; skills in `.ai/skills/`.

@@ -58,7 +58,7 @@ If multiple agents are pushing to the same branch:
 - Commit your fix immediately when ready; do not let it sit while another agent's push absorbs it.
 - If a sibling commit broke a gate, fix it forward and credit the cause in the commit message ("Sibling push abc1234 introduced X"). Do not revert sibling work.
 
-See `.ai/rules/process/multi-agent.mdc` for the full etiquette.
+
 
 ## When a check fails repeatedly
 

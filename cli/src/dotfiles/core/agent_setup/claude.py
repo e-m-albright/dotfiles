@@ -1,7 +1,7 @@
 """agent_setup.claude — port of agents/claude/setup.sh.
 
 Configures Claude Code:
-  - Copy agents/claude/global-claude.md → ~/.claude/CLAUDE.md
+  - Write the core agent instructions (agents/shared/rules.md) → ~/.claude/CLAUDE.md
   - Merge marketplaces (marketplaces.json → settings.json:.extraKnownMarketplaces)
   - Merge plugins (plugins.yaml → settings.json:.enabledPlugins)
   - Replace permissions (permissions.json → settings.json:.permissions)
@@ -12,7 +12,7 @@ Configures Claude Code:
   - Merge MCP servers + desktop-preferences into ~/Library/.../claude_desktop_config.json
     (http type rewrites to npx -y mcp-remote stdio bridge)
   - deploy_skills(claude-code) + external-skills.txt
-  - deploy_subagents + symlink_process_rules (.md suffix)
+  - deploy_subagents
   - clean=True: prune nonconforming plugins/marketplaces/stale mcp__ perms/stale projects
 
 All paths injected; Path.home() MUST NOT appear here.
@@ -28,12 +28,12 @@ from typing import Any, cast
 from dotfiles.core.agent_setup.lib import (
     StepResult,
     all_mcp_server_names,
+    build_global_instructions,
     deploy_skills,
     deploy_subagents,
     mcp_servers_for,
     mcp_skip,
     merge_managed_mcp,
-    symlink_process_rules,
 )
 from dotfiles.core.agent_setup.settings_merger import (
     load_json_or,
@@ -75,7 +75,6 @@ def setup_claude(
     results.extend(_setup_hooks(dotfiles_dir, claude_home))
     results.extend(_setup_skills(runner, dotfiles_dir, home, which=which))
     results.extend(deploy_subagents(dotfiles_dir, claude_home / "agents"))
-    results.extend(symlink_process_rules(dotfiles_dir, claude_home / "rules", ".md"))
     results.extend(_setup_statusline(dotfiles_dir, claude_home))
     results.extend(_setup_preferences(claude_home))
 
@@ -100,12 +99,12 @@ def _save_settings(claude_home: Path, data: _JsonDict) -> None:
 
 
 def _setup_instructions(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
-    """Copy global-claude.md → ~/.claude/CLAUDE.md."""
-    src = dotfiles_dir / "agents" / "claude" / "global-claude.md"
-    if not src.is_file():
-        return [StepResult(level="error", message="No global-claude.md found")]
-    shutil.copy2(src, claude_home / "CLAUDE.md")
-    return [StepResult(level="success", message="System instructions (~/.claude/CLAUDE.md)")]
+    """Write the core agent instructions → ~/.claude/CLAUDE.md."""
+    content = build_global_instructions(dotfiles_dir)
+    if content is None:
+        return [StepResult(level="error", message="No agents/shared/rules.md found")]
+    (claude_home / "CLAUDE.md").write_text(content, encoding="utf-8")
+    return [StepResult(level="success", message="Core instructions (~/.claude/CLAUDE.md)")]
 
 
 def _setup_marketplaces(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:

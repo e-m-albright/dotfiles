@@ -231,26 +231,6 @@ class TestSharedRules:
 
 
 # ---------------------------------------------------------------------------
-# process rules symlinks (.mdc suffix)
-# ---------------------------------------------------------------------------
-
-
-class TestProcessRules:
-    def test_process_rules_symlinked_with_mdc_suffix(self, dotfiles: Path, home: Path) -> None:
-        _run(dotfiles, home)
-        link = dotfiles / "agents" / "cursor" / "rules" / "global-process.mdc"
-        assert link.is_symlink()
-
-    def test_process_rule_symlink_points_to_source(self, dotfiles: Path, home: Path) -> None:
-        _run(dotfiles, home)
-        link = dotfiles / "agents" / "cursor" / "rules" / "global-process.mdc"
-        assert (
-            link.resolve()
-            == (dotfiles / ".ai" / "rules" / "process" / "global-process.mdc").resolve()
-        )
-
-
-# ---------------------------------------------------------------------------
 # cli-config.json symlink
 # ---------------------------------------------------------------------------
 

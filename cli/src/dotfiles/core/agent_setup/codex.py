@@ -23,7 +23,6 @@ from pathlib import Path
 
 from dotfiles.core.agent_setup.lib import (
     StepResult,
-    baked_rule_count,
     build_global_instructions,
     deploy_skills,
     deploy_subagents,
@@ -73,19 +72,13 @@ _CODEX_SPECIFIC: tuple[str, ...] = (
 
 
 def _setup_instructions(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
-    """Write ~/.codex/AGENTS.md = shared rules.md + codex-specific + baked rules."""
+    """Write ~/.codex/AGENTS.md = core agent instructions + codex-specific block."""
     content = build_global_instructions(dotfiles_dir, extra_sections=_CODEX_SPECIFIC)
     if content is None:
         return []
 
     (codex_home / "AGENTS.md").write_text(content, encoding="utf-8")
-    rule_count = baked_rule_count(dotfiles_dir)
-    return [
-        StepResult(
-            level="success",
-            message=f"Global instructions + {rule_count} baked rules (~/.codex/AGENTS.md)",
-        )
-    ]
+    return [StepResult(level="success", message="Core instructions (~/.codex/AGENTS.md)")]
 
 
 def _setup_default_rules(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:

@@ -60,7 +60,7 @@ Generate a concise artifact plan with file targets:
 - specs: `docs/specs/` or `docs/roadmap/`
 - test gaps: test file paths plus any affected-files manifest that needs updating
 - skill updates: `.ai/skills/<skill-name>/SKILL.md`
-- standards updates: `AGENTS.md` or `.ai/rules/process/*.mdc` (ask first for broad policy changes)
+- standards updates: `AGENTS.md` or `agents/shared/rules.md` (ask first for broad policy changes)
 - memory updates: ask the user before promoting an in-session learning to global memory
 
 Prefer additive changes that make future work discoverable by both humans and agents.

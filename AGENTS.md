@@ -1,6 +1,6 @@
 # Dotfiles Repository
 
-Read all `.ai/rules/*.mdc` files for process, safety, and coding conventions.
+Follow `agents/shared/rules.md` — the universal agent kernel, deployed verbatim to every vendor — plus any project-specific rules below.
 
 This is a personal dotfiles and development environment configuration repo. It bootstraps a Mac to a curated developer experience: machine setup scripts, editor configs, and the agentic-coding tooling (rules, skills, MCP) we deploy across vendors.
 
@@ -11,8 +11,7 @@ This is a personal dotfiles and development environment configuration repo. It b
 - `editors/obsidian/` -- Obsidian vault settings, community plugins, plugin configs
 - `agents/claude/` -- Claude Code plugins, MCP servers, hooks, universal rule deployment
 - `agents/cursor/` -- Cursor MCP servers, rules, hooks, universal rule deployment
-- `agents/shared/` -- Shared agentic config (MCP servers, tool registry, rules, ignore patterns)
-- `.ai/rules/` -- Cross-vendor AI process rules (the universal kernel; language/framework taste lives in `docs/stacks/`)
+- `agents/shared/` -- Shared agentic config: `rules.md` (the universal agent kernel deployed to every vendor), MCP servers, ignore patterns
 - `.ai/prompts/` -- Reusable, versioned audit/review prompts (universal, language-agnostic templates)
 - `.ai/skills/` -- Canonical skill source (universal). Deployed to each vendor's user-level dir at setup time via the public `npx skills` CLI (`vercel-labs/skills`) which copies real files into `~/.claude/skills/`, `~/.agents/skills/` (Codex), etc. No per-vendor mirror dirs in this repo.
 - `.ai/agents/` -- Canonical subagent source (single `.md` files). Deployed via small `cp` loops in each vendor's `setup.sh` since `npx skills` only handles SKILL.md-shaped skills.
@@ -32,7 +31,7 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 
 - `macos/packages.toml` is the source of truth for what's installed. `bin/dotfiles doctor` and `dotfiles brew stale` must stay in sync with these lists.
 - `README.md` documents user-facing features. When adding/removing/renaming commands, packages, or config, update the README in the same commit.
-- `.ai/rules/process/` is the canonical universal rule kernel, deployed globally to every vendor by `dotfiles agent setup`. Language/framework opinions are NOT pushed as rules — they live as reference in `docs/stacks/`.
+- `agents/shared/rules.md` is the canonical universal rule kernel — one hand-authored doc deployed verbatim to every vendor by `dotfiles agent setup` (Cursor gets a frontmatter wrapper). No baking, no per-rule symlinks. Language/framework opinions are NOT pushed as rules — they live as reference in `docs/stacks/`.
 - `.ai/skills/` is the canonical skill library. Edit there; `dotfiles agent setup` deploys to each vendor via the public `npx skills` CLI (claude-code) and a small `cp` loop for subagents (codex). No per-vendor mirror dirs in this repo. Validate with `dotfiles validate-skills`.
 - **Decisions and curated memory live in this repo, under version control — not in any coding tool's private memory.** Record decisions as ADRs in `docs/adr/` (numbered, committed); keep curated tool/stack notes in `docs/`. Unless something must stay private, prefer the repo so the curated memory is owned by the project, reviewable, and portable across tools.
 
