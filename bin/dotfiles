@@ -15,6 +15,8 @@ export DOTFILES_DIR EXTRA_DIR
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 
 sub_help () {
+    # Gold-gradient wordmark (banner.py is canonical); never let it break help.
+    uv run --project "$DOTFILES_DIR/cli" python -c "from dotfiles.banner import print_banner; print_banner()" 2>/dev/null || true
     printf "%s Usage: ${YELLOW}%s <command>${NC}\n" "$ARROW" "$BIN_NAME"
     printf "\n"
     printf "${BLUE}Core commands:${NC}\n"

@@ -34,8 +34,20 @@ def test_tui_command_is_registered(monkeypatch):
     assert launched == [True]
 
 
+@pytest.mark.asyncio
+async def test_dashboard_has_gradient_banner_header():
+    app = MissionControlApp(ctx=make_fake_context())
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        from textual.widgets import Static
+
+        banner = app.query_one("#banner", Static)
+        text = getattr(banner.render(), "plain", str(banner.render()))
+        assert "█" in text
+
+
 def test_dashboard_snapshot(snap_compare):
-    """Golden snapshot of the booted dashboard (Remote + Sessions panes)."""
+    """Golden snapshot of the booted dashboard (banner + Remote + Sessions panes)."""
     app = MissionControlApp(ctx=make_fake_context())
     assert snap_compare(app)
 

@@ -4,9 +4,10 @@ Screen {
     color: #e8c34a;
 }
 
-Header {
-    background: #111111;
-    color: #f5d76e;
+#banner {
+    background: #0a0a0a;
+    padding: 1 1 0 2;
+    height: auto;
     text-style: bold;
 }
 

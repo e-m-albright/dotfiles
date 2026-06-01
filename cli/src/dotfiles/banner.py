@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from rich.console import Console
 from rich.text import Text
 
 # The "block" wordmark (single source of truth for the brand banner).
@@ -18,6 +19,13 @@ BLOCK_LINES: tuple[str, ...] = (
     "██║  ██║██║   ██║   ██║   ██╔══╝  ██║██║     ██╔══╝  ╚════██║",
     "██████╔╝╚██████╔╝   ██║   ██║     ██║███████╗███████╗███████║",
     "╚═════╝  ╚═════╝    ╚═╝   ╚═╝     ╚═╝╚══════╝╚══════╝╚══════╝",
+)
+
+# Compact wordmark for narrow (phone) surfaces like the TUI header.
+COMPACT_LINES: tuple[str, ...] = (
+    "░█▀▄░█▀█░▀█▀░█▀▀░▀█▀░█░░░█▀▀░█▀▀",
+    "░█░█░█░█░░█░░█▀▀░░█░░█░░░█▀▀░▀▀█",
+    "░▀▀░░▀▀▀░░▀░░▀░░░▀▀▀░▀▀▀░▀▀▀░▀▀▀",
 )
 
 # pale gold -> theme gold -> dark goldenrod
@@ -43,3 +51,8 @@ def gradient_banner(lines: Sequence[str] = BLOCK_LINES) -> Text:
             text.append(ch, style=f"#{r:02x}{g:02x}{b:02x}")
         text.append("\n")
     return text
+
+
+def print_banner(lines: Sequence[str] = BLOCK_LINES, *, console: Console | None = None) -> None:
+    """Print the gradient wordmark. Used by the bash shim's help so banner.py stays canonical."""
+    (console or Console()).print(gradient_banner(lines))

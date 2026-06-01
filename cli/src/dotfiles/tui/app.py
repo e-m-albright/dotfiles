@@ -9,8 +9,9 @@ from typing import ClassVar
 from textual.app import App, ComposeResult
 from textual.binding import BindingType
 from textual.containers import Vertical
-from textual.widgets import Footer, Header
+from textual.widgets import Footer, Static
 
+from dotfiles.banner import COMPACT_LINES, gradient_banner
 from dotfiles.cli.context import AppContext, build_real_context
 from dotfiles.tui.panes.remote import RemotePane
 from dotfiles.tui.panes.sessions import SessionsPane
@@ -37,7 +38,7 @@ class MissionControlApp(App[None]):
         self.sub_title = "▚▚ phone command deck ▚▚"
 
     def compose(self) -> ComposeResult:
-        yield Header()
+        yield Static(gradient_banner(COMPACT_LINES), id="banner")
         with Vertical():
             yield RemotePane(self._ctx)
             yield SessionsPane(self._ctx)
