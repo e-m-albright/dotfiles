@@ -5,6 +5,9 @@ import pytest
 from dotfiles.core.llm import BENCH_PROMPT, LMStudioService, _is_estimate_line, _random_words
 from dotfiles.core.settings import LlmSettings
 from tests.fakes import FakeHttpClient, FakeMultiPostHttpClient, FakeProcessRunner
+from tests.llm_payloads import models_payload as _models_payload
+from tests.llm_payloads import pp_payload as _pp_payload
+from tests.llm_payloads import tg_payload as _tg_payload
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -38,40 +41,6 @@ def _service(
     which_fn = (lambda _cmd: "/usr/local/bin/lms") if lms_on_path else (lambda _cmd: None)
     svc = LMStudioService(runner=r, http=h, settings=s, which=which_fn)
     return svc, r, h
-
-
-def _models_payload(model_id: str, state: str = "loaded") -> dict:  # type: ignore[type-arg]
-    return {"data": [{"id": model_id, "state": state}]}
-
-
-def _tg_payload(
-    *,
-    tps: float = 55.0,
-    ttft: float = 0.08,
-    reasoning: int = 0,
-    content: str = "def first_n_primes(n): ...",
-    completion_tokens: int = 50,
-) -> dict:  # type: ignore[type-arg]
-    return {
-        "stats": {
-            "tokens_per_second": tps,
-            "time_to_first_token": ttft,
-            "generation_time": 0.9,
-        },
-        "usage": {
-            "completion_tokens": completion_tokens,
-            "completion_tokens_details": {"reasoning_tokens": reasoning},
-        },
-        "choices": [{"message": {"content": content}}],
-    }
-
-
-def _pp_payload(*, pp_in: int = 128, ttft: float = 0.3, gen: float = 0.5) -> dict:  # type: ignore[type-arg]
-    return {
-        "stats": {"time_to_first_token": ttft, "generation_time": gen},
-        "usage": {"prompt_tokens": pp_in},
-        "choices": [{"message": {"content": "x"}}],
-    }
 
 
 # ---------------------------------------------------------------------------
