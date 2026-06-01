@@ -94,3 +94,17 @@ class CheckResult(BaseModel):
     @property
     def is_failure(self) -> bool:
         return self.status == "missing"
+
+
+VendorSurfaceStatus = Literal["present", "empty", "missing", "skipped"]
+
+
+class VendorSurface(BaseModel):
+    """One path check within a vendor surface report."""
+
+    model_config = ConfigDict(frozen=True)
+
+    vendor: str
+    label: str
+    status: VendorSurfaceStatus
+    detail: str = ""
