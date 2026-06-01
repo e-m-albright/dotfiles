@@ -8,7 +8,8 @@ state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles"
 ledger="$state_dir/ledger.jsonl"
 mkdir -p "$state_dir"
 
-ts="$(date -u +%Y-%m-%dT%H:%M:%S)"
+# Local (naive) time to match fleet/ledger readers, which use naive local datetimes.
+ts="$(date +%Y-%m-%dT%H:%M:%S)"
 session_id="${LEDGER_SESSION:-${CLAUDE_SESSION_ID:-unknown}}"
 vendor="${LEDGER_VENDOR:-claude}"
 cwd="$PWD"
