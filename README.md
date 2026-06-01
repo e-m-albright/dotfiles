@@ -413,18 +413,17 @@ dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
 dotfiles agents              # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent-setup        # Configure Claude + Cursor + Codex + Pi (--work/--personal, optional --reset-mcp)
 dotfiles completions         # Output shell completions
-dotfiles remote-setup --dry-run
+dotfiles remote setup --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
-dotfiles remote-setup --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
+dotfiles remote setup --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
                              # Enable phone access with key-only SSH
-dotfiles remote-disable --dry-run
+dotfiles remote disable --dry-run
                              # Preview turning off macOS Remote Login
-dotfiles remote-disable      # Turn off macOS Remote Login
-dotfiles remote-disable --kill-sessions
+dotfiles remote disable --kill-sessions
                              # Turn off Remote Login and kill active SSH/Mosh sessions
 ```
 
-`remote-setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `remote-disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
+`dotfiles remote setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
 
 Enable tab completion:
 ```bash
