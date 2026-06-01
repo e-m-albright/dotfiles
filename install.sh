@@ -72,6 +72,32 @@ fi
 # Set up SSH for Git + Homebrew
 . "$DOTFILES_DIR/macos/ssh.sh"
 
+# Homebrew bootstrap — must come before any brew/dotfiles-brew calls
+print_section "Homebrew"
+if ! command -v brew >/dev/null 2>&1; then
+    print_action "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    # Add Homebrew to PATH for this session and persist for future shells.
+    # SC2016: single quotes are intentional — we want the literal string written to .zprofile, not expanded.
+    # shellcheck disable=SC2016
+    if ! grep -q 'eval "$(/opt/homebrew/bin/brew shellenv)"' "$HOME/.zprofile" 2>/dev/null; then
+        # shellcheck disable=SC2016
+        printf '\neval "$(/opt/homebrew/bin/brew shellenv)"\n' >> "$HOME/.zprofile"
+        print_success "Added Homebrew to .zprofile"
+    fi
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+    print_success "Homebrew installed"
+else
+    print_info "Homebrew already installed ($(brew --version | head -1))"
+fi
+
+# Update Homebrew index so formulae/casks are current.
+# (Skipping brew upgrade here — upgrading everything on every setup run is too
+# aggressive; packages are managed declaratively via packages.toml instead.)
+brew update >/dev/null 2>&1
+print_success "Homebrew index updated"
+
 # Ensure uv is present (needed to run the Python CLI for brew install)
 print_section "uv (Python package manager)"
 if ! command -v uv >/dev/null 2>&1; then
