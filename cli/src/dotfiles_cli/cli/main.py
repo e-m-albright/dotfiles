@@ -7,6 +7,7 @@ import typer
 from dotfiles_cli import __version__
 from dotfiles_cli.cli.context import build_real_context
 from dotfiles_cli.cli.doctor import doctor_command
+from dotfiles_cli.cli.llm import llm_app
 from dotfiles_cli.cli.remote import remote_app
 from dotfiles_cli.cli.session import session_app
 from dotfiles_cli.cli.verify import verify_app
@@ -47,7 +48,7 @@ app.add_typer(_stub("brew"), name="brew")
 app.add_typer(_stub("agent"), name="agent")
 app.add_typer(verify_app, name="verify")
 app.add_typer(_stub("scaffold"), name="scaffold")
-app.add_typer(_stub("llm"), name="llm")
+app.add_typer(llm_app, name="llm")
 
 
 @app.command()

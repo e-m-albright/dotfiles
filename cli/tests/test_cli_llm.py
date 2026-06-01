@@ -1,0 +1,334 @@
+"""Tests for `dotfiles llm` Typer commands (list/bench/estimate/compare)."""
+
+from typing import Any
+
+from typer.testing import CliRunner
+
+from dotfiles_cli.cli.main import app
+from tests.fakes import FakeHttpClient, FakeProcessRunner, make_fake_context
+
+runner = CliRunner()
+
+# ---------------------------------------------------------------------------
+# URL constants (must match LlmSettings defaults)
+# ---------------------------------------------------------------------------
+
+MODELS_URL = "http://localhost:1234/api/v0/models"
+COMPLETIONS_URL = "http://localhost:1234/api/v0/chat/completions"
+
+# ---------------------------------------------------------------------------
+# Multi-response HTTP fake (mirrors _MultiPostHttpClient from test_llm_core.py)
+# ---------------------------------------------------------------------------
+
+
+class _MultiPostHttpClient(FakeHttpClient):
+    """Returns POST responses in FIFO order, falling back to last scripted."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._post_queue: list[dict[str, Any]] = []
+
+    def queue_post(self, payload: dict[str, Any]) -> None:
+        self._post_queue.append(payload)
+
+    def post_json(self, url: str, body: dict[str, Any]) -> dict[str, Any]:
+        self.posts.append((url, body))
+        if self._post_queue:
+            return self._post_queue.pop(0)
+        return {}
+
+
+# ---------------------------------------------------------------------------
+# Payload builders
+# ---------------------------------------------------------------------------
+
+
+def _models_payload(model_id: str, state: str = "loaded") -> dict[str, Any]:
+    return {"data": [{"id": model_id, "state": state}]}
+
+
+def _tg_payload(
+    *,
+    tps: float = 55.0,
+    ttft: float = 0.08,
+    reasoning: int = 0,
+    content: str = "def first_n_primes(n): ...",
+    completion_tokens: int = 50,
+) -> dict[str, Any]:
+    return {
+        "stats": {
+            "tokens_per_second": tps,
+            "time_to_first_token": ttft,
+            "generation_time": 0.9,
+        },
+        "usage": {
+            "completion_tokens": completion_tokens,
+            "completion_tokens_details": {"reasoning_tokens": reasoning},
+        },
+        "choices": [{"message": {"content": content}}],
+    }
+
+
+def _pp_payload(*, pp_in: int = 128, ttft: float = 0.3, gen: float = 0.5) -> dict[str, Any]:
+    return {
+        "stats": {"time_to_first_token": ttft, "generation_time": gen},
+        "usage": {"prompt_tokens": pp_in},
+        "choices": [{"message": {"content": "x"}}],
+    }
+
+
+def _bench_http(
+    *,
+    model_id: str = "test-model",
+    tps: float = 55.0,
+    ttft: float = 0.08,
+    reasoning: int = 0,
+    content: str = "hello world",
+    pp_in: int = 128,
+) -> _MultiPostHttpClient:
+    """Build a scripted HTTP client for a full bench sequence."""
+    http = _MultiPostHttpClient()
+    http.script_get(MODELS_URL, _models_payload(model_id))
+    http.queue_post({})  # warmup (ignored)
+    http.queue_post(_tg_payload(tps=tps, ttft=ttft, reasoning=reasoning, content=content))
+    http.queue_post(_pp_payload(pp_in=pp_in))
+    return http
+
+
+# ---------------------------------------------------------------------------
+# llm --help
+# ---------------------------------------------------------------------------
+
+
+def test_llm_help_exits_zero() -> None:
+    result = runner.invoke(app, ["llm", "--help"])
+    assert result.exit_code == 0, result.output
+
+
+def test_llm_help_lists_list_subcommand() -> None:
+    result = runner.invoke(app, ["llm", "--help"])
+    assert "list" in result.output
+
+
+def test_llm_help_lists_bench_subcommand() -> None:
+    result = runner.invoke(app, ["llm", "--help"])
+    assert "bench" in result.output
+
+
+def test_llm_help_lists_estimate_subcommand() -> None:
+    result = runner.invoke(app, ["llm", "--help"])
+    assert "estimate" in result.output
+
+
+def test_llm_help_lists_compare_subcommand() -> None:
+    result = runner.invoke(app, ["llm", "--help"])
+    assert "compare" in result.output
+
+
+# ---------------------------------------------------------------------------
+# llm list
+# ---------------------------------------------------------------------------
+
+
+def test_llm_list_prints_lms_ps_output() -> None:
+    """lms is on PATH on this machine; FakeProcessRunner scripts (lms, ps) output."""
+    proc = FakeProcessRunner()
+    proc.script(("lms", "ps"), stdout="my-model  loaded\n")
+    ctx = make_fake_context(runner=proc)
+    result = runner.invoke(app, ["llm", "list"], obj=ctx)
+    # lms is installed, so we expect the scripted output to be printed
+    assert result.exit_code == 0, result.output
+    assert "my-model" in result.output
+
+
+def test_llm_list_exit_zero() -> None:
+    proc = FakeProcessRunner()
+    proc.script(("lms", "ps"), stdout="model-a  loaded\n")
+    ctx = make_fake_context(runner=proc)
+    result = runner.invoke(app, ["llm", "list"], obj=ctx)
+    assert result.exit_code == 0, result.output
+
+
+# ---------------------------------------------------------------------------
+# llm bench
+# ---------------------------------------------------------------------------
+
+
+def test_llm_bench_exits_zero() -> None:
+    http = _bench_http(model_id="test-model", tps=55.0)
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    assert result.exit_code == 0, result.output
+
+
+def test_llm_bench_output_contains_throughput() -> None:
+    http = _bench_http(model_id="test-model", tps=55.0)
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    assert "Throughput" in result.output
+
+
+def test_llm_bench_output_contains_tier_label() -> None:
+    """tg tps=55 → interactive-grade tier."""
+    http = _bench_http(model_id="test-model", tps=55.0)
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    assert "interactive-grade" in result.output
+
+
+def test_llm_bench_output_contains_tps_value() -> None:
+    http = _bench_http(model_id="test-model", tps=72.5)
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    assert "72.50" in result.output
+
+
+def test_llm_bench_output_contains_ttft() -> None:
+    http = _bench_http(model_id="test-model", ttft=0.123)
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    assert "TTFT" in result.output
+    assert "0.123" in result.output
+
+
+def test_llm_bench_reasoning_tokens_shown() -> None:
+    http = _bench_http(model_id="test-model", reasoning=0)
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    assert "Reasoning tokens" in result.output
+
+
+def test_llm_bench_thinking_model_detected() -> None:
+    """reasoning_tokens > 0 → output contains THINKING MODEL."""
+    http = _bench_http(model_id="think-model", reasoning=512)
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench", "think-model"], obj=ctx)
+    assert "THINKING MODEL" in result.output
+
+
+def test_llm_bench_non_reasoning_model_no_thinking_label() -> None:
+    http = _bench_http(model_id="plain-model", reasoning=0)
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench", "plain-model"], obj=ctx)
+    assert "THINKING MODEL" not in result.output
+
+
+def test_llm_bench_no_model_arg_uses_loaded() -> None:
+    """bench without model ID uses the currently loaded model via /api/v0/models."""
+    http = _bench_http(model_id="auto-model", tps=45.0)
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "Throughput" in result.output
+
+
+def test_llm_bench_no_model_no_loaded_exits_one() -> None:
+    http = FakeHttpClient()
+    http.script_get(MODELS_URL, {"data": []})
+    ctx = make_fake_context(http=http)
+    result = runner.invoke(app, ["llm", "bench"], obj=ctx)
+    assert result.exit_code == 1
+
+
+# ---------------------------------------------------------------------------
+# llm estimate
+# ---------------------------------------------------------------------------
+
+
+def test_llm_estimate_exits_zero() -> None:
+    proc = FakeProcessRunner()
+    proc.script(
+        ("lms", "load", "big-model", "-c", "262144", "--estimate-only", "-y"),
+        stdout="Estimated memory usage: 12 GB\n",
+    )
+    ctx = make_fake_context(runner=proc)
+    result = runner.invoke(app, ["llm", "estimate", "big-model"], obj=ctx)
+    assert result.exit_code == 0, result.output
+
+
+def test_llm_estimate_output_contains_estimate_line() -> None:
+    proc = FakeProcessRunner()
+    proc.script(
+        ("lms", "load", "big-model", "-c", "262144", "--estimate-only", "-y"),
+        stdout="Estimated memory usage: 12 GB\nSome other line\n",
+    )
+    ctx = make_fake_context(runner=proc)
+    result = runner.invoke(app, ["llm", "estimate", "big-model"], obj=ctx)
+    assert "Estimated memory usage" in result.output
+
+
+def test_llm_estimate_prints_ceiling_note() -> None:
+    proc = FakeProcessRunner()
+    proc.script(
+        ("lms", "load", "big-model", "-c", "262144", "--estimate-only", "-y"),
+        stdout="Estimated memory usage: 12 GB\n",
+    )
+    ctx = make_fake_context(runner=proc)
+    result = runner.invoke(app, ["llm", "estimate", "big-model"], obj=ctx)
+    assert "40 GB" in result.output
+
+
+# ---------------------------------------------------------------------------
+# llm compare
+# ---------------------------------------------------------------------------
+
+
+def test_llm_compare_exits_zero() -> None:
+    # compare benches both models; build a multi-response client for the full sequence
+    http = _MultiPostHttpClient()
+    # model-a GET (ensure_loaded checks)
+    http.script_get(MODELS_URL, _models_payload("model-a"))
+    # model-a: warmup, tg, pp
+    http.queue_post({})
+    http.queue_post(_tg_payload(tps=55.0))
+    http.queue_post(_pp_payload())
+    # model-b: warmup, tg, pp (GET still returns model-a state — ensure_loaded will trigger load)
+    http.queue_post({})
+    http.queue_post(_tg_payload(tps=80.0))
+    http.queue_post(_pp_payload())
+
+    proc = FakeProcessRunner()
+    proc.script(("lms", "unload", "--all"), stdout="")
+    proc.script(("lms", "load", "model-b", "-c", "32768", "-y"), stdout="")
+
+    ctx = make_fake_context(runner=proc, http=http)
+    result = runner.invoke(app, ["llm", "compare", "model-a", "model-b"], obj=ctx)
+    assert result.exit_code == 0, result.output
+
+
+def test_llm_compare_output_contains_head_to_head() -> None:
+    http = _MultiPostHttpClient()
+    http.script_get(MODELS_URL, _models_payload("model-a"))
+    http.queue_post({})
+    http.queue_post(_tg_payload(tps=55.0))
+    http.queue_post(_pp_payload())
+    http.queue_post({})
+    http.queue_post(_tg_payload(tps=80.0))
+    http.queue_post(_pp_payload())
+
+    proc = FakeProcessRunner()
+    proc.script(("lms", "unload", "--all"), stdout="")
+    proc.script(("lms", "load", "model-b", "-c", "32768", "-y"), stdout="")
+
+    ctx = make_fake_context(runner=proc, http=http)
+    result = runner.invoke(app, ["llm", "compare", "model-a", "model-b"], obj=ctx)
+    assert "Head-to-head" in result.output
+
+
+def test_llm_compare_output_contains_both_throughput_blocks() -> None:
+    http = _MultiPostHttpClient()
+    http.script_get(MODELS_URL, _models_payload("model-a"))
+    http.queue_post({})
+    http.queue_post(_tg_payload(tps=55.0))
+    http.queue_post(_pp_payload())
+    http.queue_post({})
+    http.queue_post(_tg_payload(tps=80.0))
+    http.queue_post(_pp_payload())
+
+    proc = FakeProcessRunner()
+    proc.script(("lms", "unload", "--all"), stdout="")
+    proc.script(("lms", "load", "model-b", "-c", "32768", "-y"), stdout="")
+
+    ctx = make_fake_context(runner=proc, http=http)
+    result = runner.invoke(app, ["llm", "compare", "model-a", "model-b"], obj=ctx)
+    assert result.output.count("Throughput") == 2
