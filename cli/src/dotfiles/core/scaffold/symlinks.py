@@ -20,6 +20,8 @@ def _symlink_rules_for_tool(
     rules_dir: str,
     suffix: str,
     prefix: str,
+    *,
+    force: bool = False,
 ) -> None:
     """Create symlinks in <project_dir>/<rules_dir>/ pointing to .ai/rules/ files.
 
@@ -28,9 +30,10 @@ def _symlink_rules_for_tool(
       - Symlink target string: ``<prefix>.ai/rules/<name>.mdc``
         (prefix is taken verbatim from the registry, e.g. "../../")
       - Idempotent: skip if symlink already points at the right target;
-        remove and recreate if it points somewhere else or is a plain file
-        (mirroring the FORCE-agnostic symlink refresh in scaffold.sh —
-        scaffold.sh ALWAYS refreshes symlinks regardless of --force).
+        a stale symlink is always replaced.
+      - A PLAIN FILE at the tool-link path is preserved unless *force* is set
+        (mirroring scaffold.sh, which only removes a real file with FORCE —
+        otherwise it leaves a user's hand-placed file untouched).
 
     No return value — symlink creation side-effects only.
     """
@@ -51,28 +54,43 @@ def _symlink_rules_for_tool(
         tool_link = tool_rules_dir / target_name
         expected_target = f"{prefix}.ai/rules/{rule_name}"
 
-        if tool_link.is_symlink():
-            current_target = str(tool_link.readlink())
-            if current_target == expected_target:
-                continue  # already correct
-            tool_link.unlink()
-        elif tool_link.exists():
-            # Plain file: remove it (scaffold.sh removes it with FORCE check,
-            # but symlink refresh always happens in the non-FORCE path too)
-            tool_link.unlink()
+        if _clear_tool_link(tool_link, expected_target, force=force):
+            tool_link.symlink_to(expected_target)
 
-        tool_link.symlink_to(expected_target)
+
+def _clear_tool_link(tool_link: Path, expected_target: str, *, force: bool) -> bool:
+    """Prepare *tool_link* for (re)creation; return True if a symlink should be made.
+
+    - Correct symlink already in place → return False (no-op).
+    - Stale symlink → unlink and return True.
+    - Plain file → only unlink+relink under *force*; otherwise preserve it
+      (scaffold.sh's FORCE check for a user's hand-placed real file).
+    - Nothing there → return True.
+    """
+    if tool_link.is_symlink():
+        if str(tool_link.readlink()) == expected_target:
+            return False  # already correct
+        tool_link.unlink()
+        return True
+    if tool_link.exists():
+        if not force:
+            return False  # preserve real file
+        tool_link.unlink()
+    return True
 
 
 def setup_tool_symlinks(
     project_dir: Path,
     tools: dict[str, ToolTarget],
+    *,
+    force: bool = False,
 ) -> None:
     """Set up tool-specific rule symlinks for all tools in *tools*.
 
     Individual ToolTarget entries supply rules_dir / suffix / symlink_prefix.
     Symlinks are refreshed from whatever *.mdc files are present in
-    project_dir/.ai/rules/ (matching the bash behaviour).
+    project_dir/.ai/rules/ (matching the bash behaviour).  A real file at a
+    tool-link path is only overwritten when *force* is set.
     """
     for tool_target in tools.values():
         if (
@@ -86,6 +104,7 @@ def setup_tool_symlinks(
             tool_target.rules_dir,
             tool_target.suffix,
             tool_target.symlink_prefix,
+            force=force,
         )
 
 

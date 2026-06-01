@@ -268,7 +268,7 @@ def _scaffold_files(dotfiles_dir: Path, plan: _Plan) -> list[StepResult]:
 
     registry = load_registry(dotfiles_dir)
     symlink_tools = tools_for_filter(registry, plan.tools_filter, strategy="symlink")
-    setup_tool_symlinks(plan.project_dir, symlink_tools)
+    setup_tool_symlinks(plan.project_dir, symlink_tools, force=plan.force)
     for root in generate_root_symlinks(
         plan.project_dir, _root_symlink_tools(registry, plan.tools_filter), force=plan.force
     ):

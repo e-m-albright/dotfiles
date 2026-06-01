@@ -264,6 +264,40 @@ class TestSetupToolSymlinks:
 
         assert str(stale_link.readlink()) == "../../.ai/rules/python.mdc"
 
+    def test_plain_file_preserved_without_force(self, tmp_path: Path) -> None:
+        """A real file at the tool-link path is left untouched without --force."""
+        project_dir = tmp_path / "proj"
+        project_dir.mkdir()
+        self._seed_rules(project_dir, ["python.mdc"])
+
+        rules_link_dir = project_dir / ".cursor" / "rules"
+        rules_link_dir.mkdir(parents=True)
+        real_file = rules_link_dir / "python.mdc"
+        real_file.write_text("# hand-placed real file\n")
+
+        tools = {"cursor": _cursor_tool()}
+        setup_tool_symlinks(project_dir, tools)
+
+        assert not real_file.is_symlink()
+        assert real_file.read_text() == "# hand-placed real file\n"
+
+    def test_plain_file_replaced_with_force(self, tmp_path: Path) -> None:
+        """--force removes the real file and relinks it to .ai/rules/."""
+        project_dir = tmp_path / "proj"
+        project_dir.mkdir()
+        self._seed_rules(project_dir, ["python.mdc"])
+
+        rules_link_dir = project_dir / ".cursor" / "rules"
+        rules_link_dir.mkdir(parents=True)
+        real_file = rules_link_dir / "python.mdc"
+        real_file.write_text("# hand-placed real file\n")
+
+        tools = {"cursor": _cursor_tool()}
+        setup_tool_symlinks(project_dir, tools, force=True)
+
+        assert real_file.is_symlink()
+        assert str(real_file.readlink()) == "../../.ai/rules/python.mdc"
+
     def test_no_rules_dir_no_crash(self, tmp_path: Path) -> None:
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
