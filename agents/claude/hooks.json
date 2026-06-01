@@ -34,27 +34,10 @@
         ]
       }
     ],
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/dotfiles/agents/shared/ledger-hook.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "matcher": "",
         "hooks": [
-          {
-            "type": "command",
-            "command": "~/dotfiles/agents/shared/ledger-hook.sh",
-            "timeout": 5
-          },
           {
             "type": "command",
             "command": "[ -n \"$CURSOR_AGENT\" ] && exit 0; terminal-notifier -title \"Claude Code · $(basename \"$CLAUDE_PROJECT_DIR\")\" -message \"$(cat ~/.claude/agent-status-$PPID 2>/dev/null || echo 'Done — ready for input')\" -sound Glass 2>/dev/null || true"

@@ -12,7 +12,6 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = "WARNING"
     default_session: str = "mobile"
-    fleet_live_minutes: int = 15
 
 
 class LlmSettings(BaseSettings):

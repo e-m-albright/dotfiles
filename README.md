@@ -360,12 +360,6 @@ dotfiles snapshot            # Capture machine state (brew, runtimes, symlinks, 
 dotfiles snapshot ls         # List saved snapshots, newest first
 dotfiles snapshot diff [A] [B]
                              # Diff two snapshots; A/B are slug prefixes or 'now'
-dotfiles ledger ls           # List recent agent-activity ledger entries
-dotfiles ledger log ...      # Append one activity record (used by the hot-path hook)
-dotfiles ledger prune        # Drop entries older than N days (default: 7)
-dotfiles fleet               # Show live agent sessions across Claude/Codex (+ ledger overlay)
-dotfiles fleet --all         # Include sessions past the live window
-dotfiles fleet --json        # Emit sessions as a JSON array
 dotfiles tui                 # Launch Mission Control TUI (phone command deck)
 dotfiles                     # Bare invocation prints help (use 'dotfiles tui' for the dashboard)
 ```
@@ -375,10 +369,6 @@ dotfiles                     # Bare invocation prints help (use 'dotfiles tui' f
 `dotfiles sesh` (alias: `dotfiles session`) manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote setup` also prints a picker-based Termius startup command that drops straight into the fzf session picker.
 
 `dotfiles snapshot` captures a point-in-time machine state and saves it as JSON under `~/.local/state/dotfiles/snapshots/`. Use `diff now` to compare the latest saved snapshot against the current live state, or pass two slug prefixes to diff any two captures.
-
-`dotfiles ledger` is an append-only log of what each agent session is doing. It is populated automatically by the hot-path hook wired in `agents/claude/hooks.json` — run `dotfiles agent setup` once to deploy the hook to your Claude Code installation. Cursor and Pi are ledger-only in v1 (no passive transcript discovery yet); `dotfiles fleet` notes this explicitly rather than silently omitting them.
-
-`dotfiles fleet` passively discovers live Claude and Codex sessions from their transcript directories, maps working directories to git worktrees, and overlays the ledger for task context — all without requiring any agent cooperation. Sessions are shown newest-first; use `--all` to include sessions past the 15-minute live window, or `--json` for machine-readable output.
 
 `dotfiles tui` opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. (Bare `dotfiles` with no args prints help.) The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` to toggle Remote Login (sudo-aware), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane lists live zellij sessions; press Enter to attach (or switch session if already inside zellij).
 

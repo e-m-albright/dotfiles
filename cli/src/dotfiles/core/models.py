@@ -273,40 +273,6 @@ class AgentOverview(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Ledger + fleet models
-# ---------------------------------------------------------------------------
-
-
-class LedgerEntry(BaseModel):
-    """One agent-activity record. Written by the hot-path hook, read by fleet."""
-
-    model_config = ConfigDict(frozen=True)
-
-    ts: datetime
-    session_id: str
-    vendor: str
-    cwd: str
-    branch: str | None = None
-    task: str | None = None
-    status: str
-
-
-class FleetSession(BaseModel):
-    """One live agent session discovered by fleet (passive + ledger overlay)."""
-
-    model_config = ConfigDict(frozen=True)
-
-    vendor: str
-    session_id: str | None
-    cwd: str
-    branch: str | None
-    worktree: str | None
-    last_active: datetime
-    task: str | None
-    source: Literal["transcript", "ledger", "both"]
-
-
-# ---------------------------------------------------------------------------
 # Snapshot / drift models
 # ---------------------------------------------------------------------------
 

@@ -36,8 +36,6 @@ sub_help () {
     printf "${BLUE}Command center:${NC}\n"
     printf "   tui                    Launch the Mission Control TUI (phone-drivable dashboard)\n"
     printf "   snapshot [ls|diff]     Capture / list / diff machine-state snapshots\n"
-    printf "   fleet [--all|--json]   Live agent sessions across Claude/Codex (+ ledger)\n"
-    printf "   ledger <cmd>           Agent-activity ledger: log, ls, prune\n"
     printf "\n"
     printf "${BLUE}Namespaces:${NC}\n"
     printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
@@ -234,8 +232,6 @@ _dotfiles() {
         'sesh:zellij sessions (alias)'
         'tui:Launch the Mission Control TUI'
         'snapshot:Machine-state snapshots (ls, diff)'
-        'fleet:Live agent sessions across Claude/Codex'
-        'ledger:Agent-activity ledger (log, ls, prune)'
         'agent:Agent vendor namespace (overview, lint, setup, verify, gemini-prompt)'
         'brew:Brew namespace (install, stale)'
         'shell:Shell namespace (profile)'
@@ -277,7 +273,7 @@ ns_cursor() {
 # As later phases land, add their names to this list.
 # INVARIANT: every name here must also appear in sub_help and sub_completions —
 # enforced by cli/tests/test_command_tree.py so the lists can't silently drift.
-PY_CLI_COMMANDS=" version remote session sesh doctor llm brew snapshot ledger fleet tui "
+PY_CLI_COMMANDS=" version remote session sesh doctor llm brew snapshot tui "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
