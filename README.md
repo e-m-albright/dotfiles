@@ -400,7 +400,8 @@ AI=1 PRODUCTIVITY=1 SOCIAL=0 dotfiles brew
 ```bash
 dotfiles help                # Show available commands
 dotfiles install             # Re-run full setup (install.sh)
-dotfiles doctor              # Check all tools are installed (--fix to repair config)
+dotfiles doctor              # Check all tools are installed; exits non-zero when tools are missing
+dotfiles doctor --fix        # Repair symlinks and redeploy agent configs
 dotfiles update              # Update OS, Homebrew, runtimes, and dev tools
 dotfiles clean               # Clear Homebrew caches
 dotfiles brew                # Re-run Homebrew setup
