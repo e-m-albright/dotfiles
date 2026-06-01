@@ -26,3 +26,10 @@ def test_check_true_raises_on_failure() -> None:
 
     with pytest.raises(subprocess.CalledProcessError):
         SubprocessRunner().run(["false"], check=True)
+
+
+def test_subprocess_runner_pipes_input_to_stdin() -> None:
+    """stdin= kwarg is passed as stdin; cat echoes it back on stdout."""
+    result = SubprocessRunner().run(["cat"], stdin="hi")
+    assert result.ok is True
+    assert result.stdout == "hi"

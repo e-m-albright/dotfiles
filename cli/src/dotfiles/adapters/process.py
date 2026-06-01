@@ -15,6 +15,7 @@ class SubprocessRunner:
         *,
         check: bool = False,
         env: Mapping[str, str] | None = None,
+        stdin: str | None = None,
     ) -> CommandResult:
         completed = subprocess.run(
             list(command),
@@ -22,6 +23,7 @@ class SubprocessRunner:
             text=True,
             check=check,
             env=dict(env) if env is not None else None,
+            input=stdin,
         )
         return CommandResult(
             command=tuple(command),

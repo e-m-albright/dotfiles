@@ -24,6 +24,7 @@ class ProcessRunner(Protocol):
         *,
         check: bool = False,
         env: Mapping[str, str] | None = None,
+        stdin: str | None = None,
     ) -> CommandResult: ...
 
 

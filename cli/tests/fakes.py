@@ -18,6 +18,8 @@ class FakeProcessRunner:
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, ...]] = []
+        self.calls_with_input: list[tuple[tuple[str, ...], str | None]] = []
+        self.inputs: list[str | None] = []
         self._scripted: dict[tuple[str, ...], CommandResult] = {}
 
     def script(
@@ -39,9 +41,12 @@ class FakeProcessRunner:
         *,
         check: bool = False,
         env: Mapping[str, str] | None = None,
+        stdin: str | None = None,
     ) -> CommandResult:
         key = tuple(command)
         self.calls.append(key)
+        self.inputs.append(stdin)
+        self.calls_with_input.append((key, stdin))
         result = self._scripted.get(
             key, CommandResult(command=key, exit_code=0, stdout="", stderr="")
         )

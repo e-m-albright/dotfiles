@@ -119,3 +119,16 @@ def test_fake_filesystem_is_dir_false_for_file() -> None:
     fs.write_text(p, "data")
     assert fs.is_dir(p) is False
     assert fs.exists(p) is True
+
+
+def test_fake_runner_records_input() -> None:
+    runner = FakeProcessRunner()
+    runner.run(["pbcopy"], stdin="hello clipboard")
+    assert runner.inputs == ["hello clipboard"]
+    assert runner.calls_with_input == [(("pbcopy",), "hello clipboard")]
+
+
+def test_fake_runner_records_none_input_by_default() -> None:
+    runner = FakeProcessRunner()
+    runner.run(["echo", "hi"])
+    assert runner.inputs == [None]
