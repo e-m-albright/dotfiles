@@ -11,7 +11,6 @@ from dotfiles.cli.doctor import doctor_command
 from dotfiles.cli.llm import llm_app
 from dotfiles.cli.remote import remote_app
 from dotfiles.cli.session import session_app
-from dotfiles.cli.verify import verify_app
 from dotfiles.console import console
 
 app = typer.Typer(
@@ -47,7 +46,6 @@ app.add_typer(session_app, name="sesh")
 app.command("doctor")(doctor_command)
 app.add_typer(_stub("brew"), name="brew")
 app.add_typer(agent_app, name="agent")
-app.add_typer(verify_app, name="verify")
 app.add_typer(_stub("scaffold"), name="scaffold")
 app.add_typer(llm_app, name="llm")
 
