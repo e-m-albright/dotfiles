@@ -108,3 +108,19 @@ class VendorSurface(BaseModel):
     label: str
     status: VendorSurfaceStatus
     detail: str = ""
+
+
+FileValidationStatus = Literal["ok", "warn", "fail"]
+
+
+class FileValidation(BaseModel):
+    """Result of validating one skill or agent markdown file."""
+
+    model_config = ConfigDict(frozen=True)
+
+    rel_path: str
+    kind: str  # "skill" or "agent"
+    status: FileValidationStatus
+    body_lines: int = 0
+    errors: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
