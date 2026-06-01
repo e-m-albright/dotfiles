@@ -1,6 +1,7 @@
 """Agent overview service.
 
-Mirrors agents/overview.sh: produces structured data for each of the 6 sections.
+Produces structured data for each of the 6 sections:
+MCP, hooks, skills, agents, rules, permissions.
 Hexagonal: imports only stdlib + pydantic + core models/ports.
 """
 

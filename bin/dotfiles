@@ -34,14 +34,13 @@ sub_help () {
     printf "\n"
     printf "${BLUE}Namespaces:${NC}\n"
     printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
-    printf "   agent overview       Show active agentic setup\n"
+    printf "   agent overview       Show active agentic setup (Python dashboard)\n"
     printf "   agent migrate-rules-sync [path]\n"
     printf "                        Adopt cross-harness rule sync in an existing project\n"
     printf "   agent gemini-prompt [--step|--list]\n"
     printf "                        Load advisor prompt into clipboard, chunked for Gemini saved-info\n"
     printf "\n"
-    printf "   verify vendors       Probe each vendor for installed surfaces\n"
-    printf "   verify skills        Validate skill/agent files against conventions\n"
+    printf "   agent lint           Validate skill/agent files against conventions\n"
     printf "\n"
     printf "   brew install         Run brew.sh (sync packages from manifest)\n"
     printf "   brew stale           Find disabled packages still installed\n"
@@ -222,10 +221,6 @@ sub_brew_stale() {
     printf "\n"
 }
 
-sub_agent_overview() {
-    "$DOTFILES_DIR/agents/overview.sh" "$@"
-}
-
 sub_migrate_agents_sync() {
     "$DOTFILES_DIR/agents/migrate-agents-sync.sh" "$@"
 }
@@ -312,8 +307,7 @@ _dotfiles() {
         'remote:Phone remote-shell access (setup, disable)'
         'session:zellij sessions (ls, attach, new, kill, picker)'
         'sesh:zellij sessions (alias)'
-        'agent:Agent vendor namespace (setup, overview)'
-        'verify:Verification namespace (vendors, skills)'
+        'agent:Agent vendor namespace (overview, lint, setup, gemini-prompt)'
         'brew:Brew namespace (install, stale)'
         'shell:Shell namespace (profile)'
         'cursor:Cursor namespace (plugins)'
@@ -330,10 +324,9 @@ ns_agent() {
     local sub="${1:-overview}"; shift || true
     case "$sub" in
         setup)    sub_agent_setup "$@" ;;
-        overview) sub_agent_overview "$@" ;;
         migrate-rules-sync) sub_migrate_agents_sync "$@" ;;
         gemini-prompt)      sub_gemini_prompt "$@" ;;
-        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, overview, migrate-rules-sync, gemini-prompt)\n" "$ARROW" "$sub" >&2; exit 1 ;;
+        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, gemini-prompt)\n" "$ARROW" "$sub" >&2; exit 1 ;;
     esac
 }
 
@@ -364,9 +357,14 @@ ns_cursor() {
 
 # Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
 # As later phases land, add their names to this list.
-PY_CLI_COMMANDS=" version remote session sesh doctor verify llm "
+PY_CLI_COMMANDS=" version remote session sesh doctor llm "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+fi
+
+# Surgical route: agent overview + agent lint are Python; other agent subcommands stay Bash.
+if [[ "${1:-}" == "agent" && ( "${2:-}" == "overview" || "${2:-}" == "lint" ) ]]; then
+    exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "${2}" "${@:3}"
 fi
 
 case $COMMAND_NAME in
@@ -388,7 +386,7 @@ case $COMMAND_NAME in
 
     # Backward-compat aliases for hyphenated names (silent — drop in a future cleanup)
     agent-setup)   shift; sub_agent_setup "$@" ;;
-    agents)        shift; sub_agent_overview "$@" ;;
+    agents)        exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent overview "$@" ;;
     profile-shell) shift; sub_shell_profile "$@" ;;
     cursor-plugins)  shift; sub_cursor_plugins "$@" ;;
     stale)           shift; sub_brew_stale "$@" ;;
