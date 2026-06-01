@@ -1,11 +1,10 @@
 # Dotfiles
 
-Opinionated Mac setup + project scaffolding for fast, maintainable development.
+Box up an opinionated developer experience as idempotent, repeatable setup.
 
-**Two things happen here:**
+Clone on a fresh Mac, run one install script, and the machine is bootstrapped: Homebrew packages, macOS preferences and Dock, and the curated agentic-coding tooling (rules, skills, MCP) we've blessed — deployed globally across Claude Code, Cursor, Codex, Gemini, and Pi. A tight `dotfiles` CLI keeps it healthy (doctor, snapshot, brew sync) and handles small conveniences (remote SSH, model benchmarks). A small phone-drivable TUI manages long-running agent sessions on the go.
 
-1. **Machine setup** — Run `install.sh` and get a fully configured dev environment
-2. **Project scaffolding** — Seed new or existing projects with cross-vendor AI rules
+**This is** the single source for our developer experience — when we bless a tool, it goes in here and becomes core. **It is not** a project generator or a terminal dashboard. It sets up the computer and gets out of the way. Technology taste (which language, which framework) lives as reviewable reference in [`docs/stacks/`](docs/stacks/README.md) — consulted per-project, never pushed.
 
 ---
 
@@ -40,92 +39,6 @@ The installer is idempotent — safe to re-run anytime.
 The `dotfiles` CLI is migrating to a hexagonal Python/Typer app in `cli/`
 (uv-managed). Run dev checks with `just check`. `bin/dotfiles` delegates migrated
 commands to the Python CLI and falls back to the legacy Bash router for the rest.
-
----
-
-## Project Scaffolding
-
-Seed new or existing projects with cross-vendor AI rules that work with Claude Code, Cursor, and Gemini CLI.
-
-### Usage
-
-```bash
-# Create new projects
-dotfiles scaffold typescript my-app           # SvelteKit (default)
-dotfiles scaffold typescript astro my-blog    # Astro
-dotfiles scaffold python my-api               # FastAPI (default)
-dotfiles scaffold python cli my-tool          # Typer CLI
-dotfiles scaffold golang my-service           # Chi (default)
-dotfiles scaffold rust my-tool                # Axum (default)
-
-# Seed existing projects (use . for current directory)
-dotfiles scaffold typescript .
-dotfiles scaffold python ~/code/my-api
-
-# Force-update rules in an existing project
-dotfiles scaffold --force python .
-
-# Add extra tool support (default: claude + cursor)
-dotfiles scaffold python my-api --tools copilot,gemini
-dotfiles scaffold --tools all python my-api
-
-# Opt-in extras (deploy portable tooling fragments)
-dotfiles scaffold python my-api --with-audit-pipeline    # scripts/audit/ + just/audit/
-dotfiles scaffold python my-api --with-baselines         # code-health ratchet
-dotfiles scaffold python my-api --with-code-health       # both of the above
-dotfiles scaffold python my-api --with-agent-rules-sync  # bake .ai/rules into AGENTS.md
-```
-
-`dotfiles scaffold <recipe> [app-type] <path>` — the second positional is the
-app-type when it names a known framework (e.g. `python cli ...`), otherwise it is
-the project path and the recipe's default app-type is used.
-
-Safe to run multiple times — only adds missing pieces. AGENTS.md is generated once, then project-owned (use `--force` to regenerate).
-
-This adds cross-vendor AI rules — lightweight scaffolding that guides AI agents:
-
-```
-my-project/
-├── AGENTS.md                  # Universal entry point (project-owned)
-├── .ai/
-│   ├── rules/*.mdc            # Recipe-specific rules (copied from dotfiles)
-│   └── artifacts/             # Working files (gitignored)
-│       ├── plans/
-│       ├── research/
-│       ├── decisions/         # ADRs (versioned)
-│       └── sessions/
-└── .cursor/rules/             # Cursor symlinks → .ai/rules/ (default)
-    # Plus --tools extras: .github/instructions/, .gemini/rules/, GEMINI.md→, CODEX.md→ (symlinks to AGENTS.md)
-```
-
-**How rules are deployed:**
-- **Universal rules** (process, safety, style) are deployed at the **user level** by `dotfiles agent setup` / `dotfiles install` — symlinked to dotfiles so they're always current
-- **Recipe rules** (language, framework, stack) are **copied into projects** — project can customize
-- **Tool symlinks** are auto-generated from a registry (`agents/shared/tool-targets.json`)
-- Default tools: claude + cursor. Use `--tools copilot,gemini` or `--tools all` for more.
-
-**Multi-tool rule discovery** — `.ai/rules/` is the single source of truth. `dotfiles scaffold` creates tool-specific symlinks so each AI tool discovers the same rules in its native directory:
-
-| Tool | Discovery | Directory |
-|------|-----------|-----------|
-| Claude Code | CLAUDE.md → AGENTS.md | (direct) |
-| Cursor | Symlinks | .cursor/rules/ |
-| Codex CLI | CODEX.md → AGENTS.md | (direct, also reads AGENTS.md natively) |
-| Jules | AGENTS.md | (cloud-only, reads from GitHub repo directly) |
-| GitHub Copilot | Symlinks | .github/instructions/ |
-| Gemini CLI | GEMINI.md → AGENTS.md + symlinks | .gemini/rules/ |
-
-### Available Recipes
-
-| Recipe | App Type | Stack | Use Case |
-|--------|----------|-------|----------|
-| `typescript` | `svelte` (default) | Bun + SvelteKit 2 + Svelte 5 | Full-stack apps |
-| `typescript` | `astro` | Bun + Astro | Content sites, blogs |
-| `python` | `fastapi` (default) | UV + FastAPI + SQLAlchemy | APIs, AI services |
-| `python` | `cli` | UV + Typer + Rich | CLI tools, scripts |
-| `golang` | `chi` (default) | Go 1.25+ Chi router + sqlc | APIs, services |
-| `rust` | `axum` (default) | Tokio + Axum + SQLx | APIs, services |
-| `rust` | `tauri` | Tauri 2 + SvelteKit | Desktop apps |
 
 ---
 
@@ -355,7 +268,7 @@ Setup is automated via `dotfiles agent setup` (also runs during install):
 - **Permissions**: `permissions.{allow,deny,defaultMode}` from `agents/claude/permissions.json` (canonical baseline — fold interactive approvals back periodically)
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
-- **Skills**: `scaffold-project`, `dotfiles-doctor`
+- **Skills**: deployed from `.ai/skills/` via `npx skills`
 - **Agents**: `shellcheck-reviewer`
 - **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion, Playwright, Chrome DevTools (standalone); Context7 (via plugin)
 - **Browser-tool tiers**: See `docs/knowledge/browser-tooling.md` — when to reach for Playwright tests (Tier 1), agent-browser/pinchtab CLIs (Tier 2), Playwright/Chrome DevTools MCPs (Tier 3-4), or Stagehand (Tier 5)
@@ -424,7 +337,6 @@ dotfiles clean               # Clear Homebrew caches
 dotfiles brew install        # Sync Homebrew packages from packages.toml
 dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
-dotfiles scaffold            # Scaffold a project with AI rules
 dotfiles profile-shell       # Profile shell startup time
 dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
 dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
@@ -511,16 +423,15 @@ dotfiles/
 │   │   └── audits/         #     Universal: god-functions, abstractions, coupling, duplication
 │   ├── skills/             #   Canonical skill source — agents/<vendor>/skills/<name> are symlinks here
 │   └── artifacts/          #   Ephemeral working files (gitignored)
-├── docs/
+├── docs/                   # Curated knowledge base (see docs/README.md)
 │   ├── engineering-philosophy.md  # 12 universal principles
-│   ├── ides.md             #   IDE/editor tracker — current setup + candidates (Zed, Neovim, Helix, Warp)
-│   ├── tools-to-evaluate.md #  Bookmarked tools/services to investigate
+│   ├── stacks/             #   Technology taste by language/framework (consulted per-project)
+│   ├── knowledge/          #   Cross-cutting practice (AI tools, prompting, discovery, memory)
+│   ├── adr/                #   Numbered architecture decisions
+│   ├── developer-workflow.md  # How all the tools work together
 │   └── specs/              #   In-flight design specs and plans
-└── prompts/                # Project scaffolding assets (the `dotfiles scaffold` command lives in cli/)
-    ├── scaffolds/          # Opt-in fragments: audit-pipeline, baselines, agent-rules-sync
-    ├── guides/             # Reference docs (not deployed to projects)
-    │   └── developer-workflow.md  # How all the tools work together
-    └── */templates/        # Starter files per recipe (.gitignore, justfile, etc.)
+└── prompts/                # Prompt-construction assets (system prompts, advisor personas)
+    └── scaffolds/agent-rules-sync/  # cross-harness rule-sync fragment (dotfiles agent migrate-rules-sync)
 ```
 
 ---
@@ -538,7 +449,7 @@ dotfiles/
 - Opinionated but removable — edit `macos/packages.toml` to customize
 - Fast — parallel installs, skip what's already there
 
-**Project scaffolding:**
-- One pick per category — no "it depends"
-- Agent-first — all configs work with Claude, Cursor, Gemini
-- Start minimal — add tools when you need them, not before
+**Agentic config:**
+- One curated kernel of rules + skills, deployed globally to every vendor — maintained in one place, no per-project linking
+- Taste documented, not pushed — `docs/stacks/` is reference an agent consults per-project; nothing is force-injected
+- Bless a tool and it becomes core; otherwise it stays out of the garden

@@ -27,7 +27,6 @@ sub_help () {
     printf "   update               Update OS, Homebrew, runtimes, and dev tools\n"
     printf "   clean                Clean up Homebrew caches\n"
     printf "   dock                 Reset macOS Dock layout\n"
-    printf "   scaffold <recipe> [app-type] <path>  Scaffold a new project with AI rules\n"
     printf "   completions          Output shell completions (eval to install)\n"
     printf "   llm <cmd>            Evaluate local LM Studio models (list|bench|estimate|compare)\n"
     printf "   remote setup [opts]    Set up SSH/Mosh/Zellij access for Termius\n"
@@ -228,7 +227,6 @@ _dotfiles() {
         'update:Update OS, Homebrew, runtimes, and dev tools'
         'clean:Clean caches'
         'dock:Reset macOS Dock'
-        'scaffold:Scaffold a new project with AI rules'
         'completions:Output shell completions'
         'llm:Evaluate local LM Studio models (list|bench|estimate|compare)'
         'remote:Phone remote-shell access (setup, disable)'
@@ -279,7 +277,7 @@ ns_cursor() {
 # As later phases land, add their names to this list.
 # INVARIANT: every name here must also appear in sub_help and sub_completions —
 # enforced by cli/tests/test_command_tree.py so the lists can't silently drift.
-PY_CLI_COMMANDS=" version remote session sesh doctor llm brew scaffold snapshot ledger fleet tui "
+PY_CLI_COMMANDS=" version remote session sesh doctor llm brew snapshot ledger fleet tui "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi

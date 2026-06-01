@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shared print functions for consistent formatting across all scripts.
-# Used by: install.sh, scaffold.sh, bin/dotfiles
+# Used by: install.sh, bin/dotfiles
 
 # Colors
 RED='\033[0;31m'

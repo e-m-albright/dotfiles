@@ -2,7 +2,7 @@
 
 Read all `.ai/rules/*.mdc` files for process, safety, and coding conventions.
 
-This is a personal dotfiles and development environment configuration repo. It manages machine setup scripts, editor configs, AI rules, and project scaffolding.
+This is a personal dotfiles and development environment configuration repo. It bootstraps a Mac to a curated developer experience: machine setup scripts, editor configs, and the agentic-coding tooling (rules, skills, MCP) we deploy across vendors.
 
 ## What This Repo Contains
 
@@ -12,12 +12,12 @@ This is a personal dotfiles and development environment configuration repo. It m
 - `agents/claude/` -- Claude Code plugins, MCP servers, hooks, universal rule deployment
 - `agents/cursor/` -- Cursor MCP servers, rules, hooks, universal rule deployment
 - `agents/shared/` -- Shared agentic config (MCP servers, tool registry, rules, ignore patterns)
-- `.ai/rules/` -- Cross-vendor AI rules (process, languages, frameworks, tooling)
+- `.ai/rules/` -- Cross-vendor AI process rules (the universal kernel; language/framework taste lives in `docs/stacks/`)
 - `.ai/prompts/` -- Reusable, versioned audit/review prompts (universal, language-agnostic templates)
 - `.ai/skills/` -- Canonical skill source (universal). Deployed to each vendor's user-level dir at setup time via the public `npx skills` CLI (`vercel-labs/skills`) which copies real files into `~/.claude/skills/`, `~/.agents/skills/` (Codex), etc. No per-vendor mirror dirs in this repo.
 - `.ai/agents/` -- Canonical subagent source (single `.md` files). Deployed via small `cp` loops in each vendor's `setup.sh` since `npx skills` only handles SKILL.md-shaped skills.
 - `.ai/artifacts/` -- **gitignored** ephemeral working files (research notes, audit raw outputs, session logs)
-- `prompts/` -- Scaffolding recipes, templates, and reference guides
+- `prompts/` -- Prompt-construction assets (system prompts, advisor personas) + the `scaffolds/agent-rules-sync` fragment used by `dotfiles agent migrate-rules-sync`
 
 ## This Repo
 
@@ -32,11 +32,9 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 
 - `macos/packages.toml` is the source of truth for what's installed. `bin/dotfiles doctor` and `dotfiles brew stale` must stay in sync with these lists.
 - `README.md` documents user-facing features. When adding/removing/renaming commands, packages, or config, update the README in the same commit.
-- `.ai/rules/` is the canonical rule library. Universal process rules (`process/*.mdc`) deploy to user-level via setup scripts (symlinked). Recipe rules are copied into projects by `scaffold.sh`.
+- `.ai/rules/process/` is the canonical universal rule kernel, deployed globally to every vendor by `dotfiles agent setup`. Language/framework opinions are NOT pushed as rules — they live as reference in `docs/stacks/`.
 - `.ai/skills/` is the canonical skill library. Edit there; `dotfiles agent setup` deploys to each vendor via the public `npx skills` CLI (claude-code) and a small `cp` loop for subagents (codex). No per-vendor mirror dirs in this repo. Validate with `dotfiles validate-skills`.
-- `prompts/guides/skills/*.md` are implementation references that complement `.ai/rules/`. They should stay consistent with each other.
-- `agents/shared/tool-targets.json` is the tool discovery registry. Adding a new AI tool means adding a JSON entry, not writing code.
-- **Decisions and curated memory live in this repo, under version control — not in any coding tool's private memory.** Record decisions as ADRs in `docs/adr/` (numbered, committed); keep curated tool/stack notes in `docs/` and `prompts/guides/`. Unless something must stay private, prefer the repo so the curated memory is owned by the project, reviewable, and portable across tools.
+- **Decisions and curated memory live in this repo, under version control — not in any coding tool's private memory.** Record decisions as ADRs in `docs/adr/` (numbered, committed); keep curated tool/stack notes in `docs/`. Unless something must stay private, prefer the repo so the curated memory is owned by the project, reviewable, and portable across tools.
 
 ## Working in This Repo
 

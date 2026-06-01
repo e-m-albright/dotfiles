@@ -107,7 +107,7 @@ StepLevel = Literal["success", "info", "warn", "error"]
 
 
 class StepResult(BaseModel):
-    """One reported step of an action (remote, scaffold, agent setup …).
+    """One reported step of an action (remote, agent setup, brew …).
 
     The single step-result type for the whole app, rendered by ``ui.render_steps``.
     *details* is optional supplementary text shown dimmed after the message.

@@ -48,7 +48,6 @@ dotfiles install        # Full setup from scratch
 dotfiles doctor         # Health check — tools, symlinks, configs (--fix to repair)
 dotfiles update         # Update everything — brew, runtimes, tools, npm globals
 dotfiles stale          # Find disabled packages still installed + broken symlinks
-dotfiles scaffold       # Create a new project with AI rules and templates
 dotfiles agent setup   # Re-deploy all vendor configs (plugins, hooks, MCP, skills)
 dotfiles agent overview # Show active MCP servers, hooks, skills across Claude + Cursor
 dotfiles brew           # Re-run Homebrew setup
@@ -115,29 +114,17 @@ git who            # Shortlog by author
 
 ## Starting a New Project
 
-### 1. Scaffold
+### 1. Set up the project's own structure
+
+Create the project however its ecosystem expects (`bun create`, `uv init`, `cargo new`, `go mod init`, …). dotfiles no longer scaffolds projects — consult [`docs/stacks/`](stacks/README.md) for our current taste (tooling, layout, idioms) and apply what fits.
+
+### 2. Adopt cross-harness agent rules (optional)
 
 ```bash
-dotfiles scaffold
+dotfiles agent migrate-rules-sync
 ```
 
-This walks you through selecting a recipe (typescript, python, golang, rust) and app type (e.g., svelte, fastapi, cli, axum). It creates:
-
-| File/Dir | Purpose |
-|----------|---------|
-| `AGENTS.md` | Project-level AI instructions (customize this) |
-| `.ai/rules/*.mdc` | Universal rules (synced from dotfiles) + stack-specific rules |
-| `.cursor/rules/*.mdc` | Symlinks to `.ai/rules/` |
-| `.agents/` | Working directory for AI artifacts (plans, research, decisions) |
-| `justfile` | Task runner commands |
-| `lefthook.yml` | Git hooks config |
-| `.gitignore` | Language-appropriate ignores |
-| `.env.example` | Environment variable template |
-| Template configs | biome.json, pyproject.toml, Cargo.toml, etc. |
-
-### 2. Customize AGENTS.md
-
-The scaffolded `AGENTS.md` is a starting point. Edit it to describe:
+This installs the rule-sync fragment so the project's `AGENTS.md` stays current with the universal kernel. Write an `AGENTS.md` describing:
 - What this project does
 - Key architectural decisions
 - Team conventions that differ from defaults
@@ -190,7 +177,6 @@ The superpowers plugin provides a structured pipeline for feature development. Y
 | `/commit` | Stage, generate message, commit |
 | `/commit-push-pr` | Commit + push + open PR |
 | `/review-pr` | Comprehensive PR review with specialized agents |
-| `/scaffold` | Run the project scaffolder |
 | `/doctor` | Run dotfiles doctor |
 | `/agents-overview` | Show all active MCP, hooks, skills |
 
@@ -368,7 +354,7 @@ alwaysApply: false      # true = always loaded into context
 # Rule content here
 ```
 
-Universal rules go in `.ai/rules/process/`. Stack-specific rules go in `languages/`, `tooling/`, or `frameworks/`.
+Only the universal kernel lives in `.ai/rules/process/`. Stack-specific taste is reference, not a pushed rule — it lives in `docs/stacks/`.
 
 ### Adding MCP Servers
 
@@ -404,25 +390,6 @@ Our review criteria (`.ai/skills/premerge-review/references/review-criteria.md`)
 This reduces noise dramatically. Instead of a 20-item list where 15 are mechanical, you get the 15 fixed silently and a focused 5-item list of things that actually need judgment.
 
 The review also evaluates five dimensions: **Correctness**, **Security**, **API quality**, **Maintainability**, **Testing**. Not personas — explicit checklists of what to look for in each dimension. See the full rule for details.
-
-## Testing the Scaffold
-
-```bash
-cd cli && just check       # Lint, typecheck, complexity, and the full pytest suite
-cd cli && uv run pytest tests/test_cli_scaffold.py tests/test_scaffold_*.py
-```
-
-Scaffold logic lives in `cli/src/dotfiles/core/scaffold/` (one module per concern)
-and the Typer command in `cli/src/dotfiles/cli/scaffold.py`. Tests cover:
-
-1. **Per-module logic** (`tests/test_scaffold_*.py`) — recipe→rule mappings, manifest
-   headers, symlink construction, gitignore idempotency, optional scaffolds, preflight,
-   project rename, template copy — all against `tmp_path`.
-2. **CLI orchestration** (`tests/test_cli_scaffold.py`) — positional disambiguation
-   (app-type vs project-path), `--tools all` via the registry, `--force` overwrite,
-   git init, and flag handling.
-
-Run this after changing any rule, template, or scaffold logic.
 
 ## Patterns Worth Knowing
 

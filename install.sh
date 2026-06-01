@@ -358,16 +358,13 @@ else
     print_info "Obsidian vault not found at $OBSIDIAN_VAULT — skipping config"
 fi
 
-# Prompts / Recipe Book
-print_header "📚 Prompts & Recipes"
-print_section "Recipe Book"
+# Prompts
+print_header "📚 Prompts"
 # Make scripts executable
 chmod +x "$DOTFILES_DIR/.agents/generate-permissions.sh" 2>/dev/null || true
 # Remove old 'recipe' symlink if it exists (deprecated)
 rm -f "$DOTFILES_DIR/bin/recipe" 2>/dev/null || true
-print_success "Recipe book configured"
-print_info "  Usage: dotfiles scaffold <recipe> [app-type] <path>"
-print_info "  Example: dotfiles scaffold typescript svelte my-app"
+print_success "Prompt assets ready"
 
 # Claude Code (instructions, plugins, voice, permissions)
 print_header "🤖 Claude Code"
