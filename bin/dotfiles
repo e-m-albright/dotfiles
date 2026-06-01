@@ -267,8 +267,8 @@ if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
 
-# Surgical route: agent overview, lint, gemini-prompt, and setup are Python; others stay Bash.
-if [[ "${1:-}" == "agent" && ( "${2:-}" == "overview" || "${2:-}" == "lint" || "${2:-}" == "gemini-prompt" || "${2:-}" == "setup" ) ]]; then
+# Surgical route: agent overview, lint, gemini-prompt, setup, and verify are Python; others stay Bash.
+if [[ "${1:-}" == "agent" && ( "${2:-}" == "overview" || "${2:-}" == "lint" || "${2:-}" == "gemini-prompt" || "${2:-}" == "setup" || "${2:-}" == "verify" ) ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "${2}" "${@:3}"
 fi
 
