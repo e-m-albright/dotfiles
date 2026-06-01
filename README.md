@@ -89,7 +89,7 @@ my-project/
 ```
 
 **How rules are deployed:**
-- **Universal rules** (process, safety, style) are deployed at the **user level** by `dotfiles agent-setup` / `dotfiles install` — symlinked to dotfiles so they're always current
+- **Universal rules** (process, safety, style) are deployed at the **user level** by `dotfiles agent setup` / `dotfiles install` — symlinked to dotfiles so they're always current
 - **Recipe rules** (language, framework, stack) are **copied into projects** — project can customize
 - **Tool symlinks** are auto-generated from a registry (`agents/shared/tool-targets.json`)
 - Default tools: claude + cursor. Use `--tools copilot,gemini` or `--tools all` for more.
@@ -280,7 +280,7 @@ See `prompts/guides/ai-tools.md` for the full landscape and investigation notes.
 
 ### Codex CLI
 
-Setup is automated via `dotfiles agent-setup` (also runs during install):
+Setup is automated via `dotfiles agent setup` (also runs during install):
 
 - **Global instructions**: `~/.codex/AGENTS.md` deployed from shared rules
 - **Config**: `~/.codex/config.toml` with MCP servers and `project_doc_fallback_filenames = ["CODEX.md"]`
@@ -295,7 +295,7 @@ See `agents/codex/` for all configuration files.
 
 ### Gemini CLI
 
-Setup is automated via `dotfiles agent-setup`:
+Setup is automated via `dotfiles agent setup`:
 
 - **Settings**: `~/.gemini/settings.json` seeded from `agents/gemini/settings.json` (preserves existing auth)
 - **Global instructions**: `~/.gemini/GEMINI.md` baked from `.ai/rules/process/*.mdc` (same source as Codex/Pi)
@@ -334,11 +334,11 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Sentry** | MCP / CLI (`sentry-cli`) | Error tracking, issue triage, release management | Evaluate |
 | **Dagster** | Plugin / MCP | Data pipeline orchestration & observability | Evaluate |
 
-MCP config: `agents/shared/mcp-servers.json` (shared source), deployed to Claude Code and Cursor by their respective setup scripts.
+MCP config: `agents/shared/mcp-servers.json` (shared source), deployed to Claude Code and Cursor by `dotfiles agent setup`.
 
 ### Claude Code
 
-Setup is automated via `dotfiles agent-setup` (also runs during install):
+Setup is automated via `dotfiles agent setup` (also runs during install):
 
 - **Global instructions**: `~/.claude/CLAUDE.md` installed from `agents/claude/global-claude.md` (process guardrails, command style, project file discovery)
 - **Universal rules**: `~/.claude/rules/*.md` symlinked from `.ai/rules/process/` (always current with dotfiles)
@@ -368,7 +368,7 @@ See `agents/claude/` for all configuration files.
 
 ### Cursor
 
-Setup is automated via `agents/cursor/setup.sh` (also runs during install):
+Setup is automated via `dotfiles agent setup cursor` (also runs during install):
 
 - **MCP servers**: From shared source (`agents/shared/mcp-servers.json`)
 - **Editor config**: `editors/cursor/settings.json` + `editors/cursor/keybindings.json` symlinked into Cursor User config
@@ -419,7 +419,7 @@ dotfiles test                # Run scaffold eval framework (--quick for fast)
 dotfiles profile-shell       # Profile shell startup time
 dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
 dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
-dotfiles agent-setup        # Configure Claude + Cursor + Codex + Pi (--work/--personal, optional --reset-mcp)
+dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean)
 dotfiles completions         # Output shell completions
 dotfiles remote setup --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
