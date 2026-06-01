@@ -252,6 +252,25 @@ class AgentOverview(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Ledger + fleet models
+# ---------------------------------------------------------------------------
+
+
+class LedgerEntry(BaseModel):
+    """One agent-activity record. Written by the hot-path hook, read by fleet."""
+
+    model_config = ConfigDict(frozen=True)
+
+    ts: datetime
+    session_id: str
+    vendor: str
+    cwd: str
+    branch: str | None = None
+    task: str | None = None
+    status: str
+
+
+# ---------------------------------------------------------------------------
 # Snapshot / drift models
 # ---------------------------------------------------------------------------
 
