@@ -5,11 +5,14 @@ from __future__ import annotations
 import hashlib
 import shutil
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 
+from dotfiles.core.agent_overview import AgentOverviewService
 from dotfiles.core.models import (
     AgentOverview,
     BrewState,
+    Snapshot,
     SymlinkState,
 )
 from dotfiles.core.ports import ProcessRunner
@@ -100,3 +103,51 @@ def agent_config_hashes(overview: AgentOverview) -> dict[str, str]:
         joined = "\n".join(_vendor_tokens(overview, vendor))
         hashes[vendor] = hashlib.sha256(joined.encode()).hexdigest()[:12]
     return hashes
+
+
+def capture(
+    runner: ProcessRunner,
+    *,
+    dotfiles_dir: Path,
+    home: Path,
+    taken_at: datetime,
+    which: Callable[[str], str | None] = shutil.which,
+) -> Snapshot:
+    """Collect a full machine-state snapshot. `taken_at` is injected (never now() in core)."""
+    overview = AgentOverviewService(
+        runner=runner, dotfiles_dir=dotfiles_dir, home=home, which=which
+    ).overview()
+    return Snapshot(
+        taken_at=taken_at,
+        brew=collect_brew(runner),
+        runtimes=collect_runtimes(runner, which=which),
+        symlinks=collect_symlinks(home=home, dotfiles_dir=dotfiles_dir),
+        agent_config=agent_config_hashes(overview),
+    )
+
+
+def _slug(taken_at: datetime) -> str:
+    """Filesystem-safe timestamp slug, e.g. 2026-06-01T09-00-00."""
+    return taken_at.strftime("%Y-%m-%dT%H-%M-%S")
+
+
+def write_snapshot(state_dir: Path, snapshot: Snapshot) -> Path:
+    """Persist a snapshot as JSON under state_dir/snapshots/. Returns the file path."""
+    snap_dir = state_dir / "snapshots"
+    snap_dir.mkdir(parents=True, exist_ok=True)
+    path = snap_dir / f"{_slug(snapshot.taken_at)}.json"
+    path.write_text(snapshot.model_dump_json(indent=2))
+    return path
+
+
+def list_snapshots(state_dir: Path) -> list[Path]:
+    """All saved snapshot files, newest first (lexical sort works on the ISO slug)."""
+    snap_dir = state_dir / "snapshots"
+    if not snap_dir.is_dir():
+        return []
+    return sorted(snap_dir.glob("*.json"), reverse=True)
+
+
+def load_snapshot(path: Path) -> Snapshot:
+    """Load a snapshot from its JSON file."""
+    return Snapshot.model_validate_json(path.read_text())

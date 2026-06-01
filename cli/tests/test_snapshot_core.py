@@ -15,9 +15,13 @@ from dotfiles.core.models import (
 )
 from dotfiles.core.snapshot import (
     agent_config_hashes,
+    capture,
     collect_brew,
     collect_runtimes,
     collect_symlinks,
+    list_snapshots,
+    load_snapshot,
+    write_snapshot,
 )
 from tests.fakes import FakeProcessRunner, write_tree
 
@@ -97,3 +101,41 @@ def test_agent_config_hash_changes_when_mcp_changes():
     )
     changed = agent_config_hashes(changed_overview)
     assert changed["claude"] != base["claude"]
+
+
+def _scripted_runner() -> FakeProcessRunner:
+    runner = FakeProcessRunner()
+    runner.script(("brew", "leaves"), stdout="git\n")
+    runner.script(("brew", "list", "--cask", "-1"), stdout="cursor\n")
+    runner.script(("node", "--version"), stdout="v22.3.0\n")
+    return runner
+
+
+def test_capture_builds_a_snapshot(tmp_path):
+    runner = _scripted_runner()
+    snap = capture(
+        runner,
+        dotfiles_dir=tmp_path / "d",
+        home=tmp_path / "h",
+        taken_at=datetime(2026, 6, 1, 9, 0, 0),
+        which=lambda c: c if c == "node" else None,
+    )
+    assert snap.brew.leaves == ("git",)
+    assert snap.runtimes == {"node": "v22.3.0"}
+    assert set(snap.agent_config) == {"claude", "cursor", "codex", "gemini"}
+
+
+def test_write_then_load_and_list(tmp_path):
+    runner = _scripted_runner()
+    snap = capture(
+        runner,
+        dotfiles_dir=tmp_path / "d",
+        home=tmp_path / "h",
+        taken_at=datetime(2026, 6, 1, 9, 0, 0),
+        which=lambda c: None,
+    )
+    state_dir = tmp_path / "state"
+    path = write_snapshot(state_dir, snap)
+    assert path.name == "2026-06-01T09-00-00.json"
+    assert load_snapshot(path).taken_at == snap.taken_at
+    assert list_snapshots(state_dir) == [path]
