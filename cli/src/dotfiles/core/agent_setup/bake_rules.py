@@ -13,14 +13,18 @@ from pathlib import Path
 
 
 def _strip_frontmatter(text: str) -> str:
-    """Strip YAML frontmatter (everything up to and including the 2nd ``---`` line)."""
+    """Strip YAML frontmatter (everything up to and including the 2nd ``---`` line).
+
+    Faithful to the awk in bake-rules.sh: ``awk '/^---$/{c++;next} c>=2{print}'``.
+    Does NOT strip leading newlines from the body — awk prints whatever follows.
+    """
     lines = text.splitlines(keepends=True)
     dashes_seen = 0
     for i, line in enumerate(lines):
         if line.rstrip("\n\r") == "---":
             dashes_seen += 1
             if dashes_seen == 2:
-                return "".join(lines[i + 1 :]).lstrip("\n")
+                return "".join(lines[i + 1 :])
     # No frontmatter found — return as-is
     return text
 
@@ -28,9 +32,10 @@ def _strip_frontmatter(text: str) -> str:
 def bake_rules(dotfiles_dir: Path) -> str:
     """Bake all process rules into a single Markdown string.
 
-    Matches the output shape of ``bake_rules()`` in bake-rules.sh:
-    - Preamble header + italicised source note
-    - Each rule as ``\\n---\\n\\n## <name>\\n\\n<body>``
+    Matches the exact output shape of ``bake_rules()`` in bake-rules.sh:
+    - Preamble header line (``# Universal rules (baked from ...)``)
+    - Italicised source note
+    - Each rule preceded by ``\\n---\\n\\n## <name>\\n\\n`` (including the first)
     - Rules are sorted alphabetically (glob order)
     """
     rules_dir = dotfiles_dir / ".ai" / "rules" / "process"
@@ -41,7 +46,15 @@ def bake_rules(dotfiles_dir: Path) -> str:
     if not rule_files:
         return ""
 
-    parts: list[str] = []
+    # Preamble — matches the two printf lines in bake-rules.sh
+    tilde_dir = str(rules_dir).replace(str(Path.home()), "~")
+    preamble = (
+        "\n# Universal rules (baked from .ai/rules/process/)\n\n"
+        f"_These rules govern process, safety, and coding conventions for all AI coding work."
+        f" Source: `{tilde_dir}/*.mdc`._"
+    )
+
+    parts: list[str] = [preamble]
     for rule in rule_files:
         if not rule.is_file():
             continue
@@ -49,4 +62,6 @@ def bake_rules(dotfiles_dir: Path) -> str:
         body = _strip_frontmatter(rule.read_text())
         parts.append(f"## {name}\n\n{body}")
 
+    # Each rule (including the first) is preceded by \n---\n\n
+    # preamble + N rules → join everything with \n---\n\n
     return "\n---\n\n".join(parts)

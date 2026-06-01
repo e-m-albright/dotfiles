@@ -17,19 +17,21 @@ from tests.fakes import write_tree
 
 class TestStripFrontmatter:
     def test_strips_yaml_block(self) -> None:
+        """Faithful to awk: everything after the second --- is returned verbatim."""
         text = "---\ndescription: A rule\nalwaysApply: true\n---\n\n# Body\n\nContent here.\n"
         result = _strip_frontmatter(text)
-        assert result == "# Body\n\nContent here.\n"
+        assert result == "\n# Body\n\nContent here.\n"
 
     def test_no_frontmatter_returns_as_is(self) -> None:
         text = "# Body\n\nNo frontmatter.\n"
         result = _strip_frontmatter(text)
         assert result == text
 
-    def test_strips_leading_blank_after_second_dashes(self) -> None:
+    def test_preserves_leading_blank_after_second_dashes(self) -> None:
+        """awk prints whatever follows the second ---, including leading newlines."""
         text = "---\nkey: val\n---\n\n\nContent\n"
         result = _strip_frontmatter(text)
-        assert result == "Content\n"
+        assert result == "\n\nContent\n"
 
     def test_single_dashes_block_not_stripped(self) -> None:
         """Only one --- means no closed frontmatter; return as-is."""
@@ -97,7 +99,9 @@ class TestBakeRules:
     def test_single_rule_stripped_and_wrapped(self, tmp_path: Path) -> None:
         dotfiles = self._make_dotfiles(tmp_path, {"alpha.mdc": RULE_A})
         result = bake_rules(dotfiles)
-        assert result.startswith("## alpha\n\n")
+        # Preamble comes first, then separator, then rule section
+        assert result.startswith("\n# Universal rules (baked from .ai/rules/process/)\n")
+        assert "## alpha" in result
         assert "# Alpha" in result
         assert "Alpha content." in result
         # Frontmatter must not appear
@@ -129,23 +133,48 @@ class TestBakeRules:
         assert "Gamma content." in result
 
     def test_section_separator_count(self, tmp_path: Path) -> None:
-        """N rules → N-1 separators."""
+        """N rules → N separators (preamble + N rule sections joined by \\n---\\n\\n)."""
         rules = {f"rule-{i:02d}.mdc": f"# Rule {i}\n\nContent.\n" for i in range(4)}
         dotfiles = self._make_dotfiles(tmp_path, rules)
         result = bake_rules(dotfiles)
-        assert result.count("\n---\n\n") == 3
+        # preamble + 4 rules = 5 parts → 4 separators
+        assert result.count("\n---\n\n") == 4
+
+    def test_preamble_header_present(self, tmp_path: Path) -> None:
+        """Output starts with the preamble header matching the old bash printf."""
+        dotfiles = self._make_dotfiles(tmp_path, {"alpha.mdc": RULE_A})
+        result = bake_rules(dotfiles)
+        assert "\n# Universal rules (baked from .ai/rules/process/)\n" in result
+
+    def test_preamble_italics_source_note(self, tmp_path: Path) -> None:
+        """Output contains the italicised source note line."""
+        dotfiles = self._make_dotfiles(tmp_path, {"alpha.mdc": RULE_A})
+        result = bake_rules(dotfiles)
+        assert "_These rules govern process, safety, and coding conventions" in result
+        assert "*.mdc`._" in result
+
+    def test_leading_separator_before_first_rule(self, tmp_path: Path) -> None:
+        """First rule is preceded by \\n---\\n\\n (not directly after preamble)."""
+        dotfiles = self._make_dotfiles(tmp_path, {"alpha.mdc": RULE_A})
+        result = bake_rules(dotfiles)
+        # preamble block ends, then separator, then rule
+        preamble_end = result.index("*.mdc`._") + len("*.mdc`._")
+        assert result[preamble_end : preamble_end + 8] == "\n---\n\n##"
 
     def test_name_is_stem_not_filename(self, tmp_path: Path) -> None:
         dotfiles = self._make_dotfiles(tmp_path, {"my-rule.mdc": RULE_A})
         result = bake_rules(dotfiles)
         assert "## my-rule\n" in result
-        assert ".mdc" not in result
+        # .mdc appears only in preamble source path glob, not in rule headings
+        assert "## my-rule.mdc" not in result
 
     def test_real_rule_format(self, tmp_path: Path) -> None:
         """Integration: verify the actual dotfiles process rules can be baked."""
         real_dotfiles = Path("/Users/evan/dotfiles")
         result = bake_rules(real_dotfiles)
-        # Should produce non-empty output with section headers
+        # Should produce non-empty output with preamble + section headers
+        assert "# Universal rules (baked from .ai/rules/process/)" in result
+        assert "_These rules govern process" in result
         assert "## " in result
         assert "\n---\n\n" in result
         # Must not contain raw frontmatter delimiters at the start of sections
