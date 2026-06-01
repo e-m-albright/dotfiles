@@ -53,6 +53,6 @@ src/components/          # Astro + Svelte components
 
 ## See also
 
-- [../typescript.md](../typescript.md) — TypeScript stack selection and idioms
+- [../README.md](../README.md) — TypeScript stack selection and idioms
 - [sveltekit.md](sveltekit.md) — full-stack app framework
-- [../../engineering-philosophy.md](../../engineering-philosophy.md) — universal code-health principles
+- [../../../engineering-philosophy.md](../../../engineering-philosophy.md) — universal code-health principles

@@ -1,7 +1,7 @@
 # Python — ML / Data Science
 
 > Curated taste, not mandate — read this to derive per-project choices.
-> Extends [python.md](python.md): start with the base Python stack, add ML tools as needed. Install with `uv add` / `uv pip install`.
+> Extends [the base Python stack](README.md): start with the base Python stack, add ML tools as needed. Install with `uv add` / `uv pip install`.
 
 ## Selection (by phase)
 
@@ -245,6 +245,6 @@ trainer.fit(LitModel(), train_dataloader)
 
 ## See also
 
-- [python.md](python.md) — base Python stack, idioms, performance swaps
+- [the base Python stack](README.md) — base Python stack, idioms, performance swaps
 - [frameworks/fastapi.md](frameworks/fastapi.md) — serving ML behind an API
-- [../engineering-philosophy.md](../engineering-philosophy.md) — universal code-health principles
+- [../../engineering-philosophy.md](../../engineering-philosophy.md) — universal code-health principles

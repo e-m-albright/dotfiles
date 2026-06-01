@@ -4,24 +4,20 @@
 
 ## How to use, per project
 
-1. Read the relevant language doc for **Selection** (pick / avoid / by phase) — most projects only need Phase 1.
+1. Open the language directory and read its `README.md` for **Selection** (pick / avoid / by phase) — most projects only need Phase 1.
 2. Skim **Idioms** for how we write the language.
 3. Pull **Code patterns** when you need a concrete starting point.
-4. Cross-reference `../engineering-philosophy.md` (the universal principles) and any relevant `../adr/` decision.
+4. Check the language's `frameworks/` for the blessed framework choices.
+5. Cross-reference [`../engineering-philosophy.md`](../engineering-philosophy.md) (universal principles) and any relevant [`../adr/`](../adr/) decision.
 
 ## Languages
 
-- [python.md](python.md) · [python-ml.md](python-ml.md) — data/ML extension
-- [typescript.md](typescript.md)
-- [golang.md](golang.md)
-- [rust.md](rust.md)
+Each language is a directory: `README.md` (selection + idioms + patterns) and a `frameworks/` subdir.
 
-## Frameworks
-
-- [frameworks/fastapi.md](frameworks/fastapi.md) (Python)
-- [frameworks/sveltekit.md](frameworks/sveltekit.md) · [frameworks/astro.md](frameworks/astro.md) (TS)
-- [frameworks/chi.md](frameworks/chi.md) (Go)
-- [frameworks/axum.md](frameworks/axum.md) · [frameworks/tauri.md](frameworks/tauri.md) (Rust)
+- [**python/**](python/README.md) — + [ml.md](python/ml.md) (data/ML) · frameworks: [fastapi](python/frameworks/fastapi.md)
+- [**typescript/**](typescript/README.md) — frameworks: [sveltekit](typescript/frameworks/sveltekit.md), [astro](typescript/frameworks/astro.md)
+- [**golang/**](golang/README.md) — frameworks: [chi](golang/frameworks/chi.md)
+- [**rust/**](rust/README.md) — frameworks: [axum](rust/frameworks/axum.md), [tauri](rust/frameworks/tauri.md)
 
 ## Cross-cutting
 

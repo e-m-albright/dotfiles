@@ -165,4 +165,4 @@ export const selectUserSchema = createSelectSchema(users);
 
 - [frameworks/sveltekit.md](frameworks/sveltekit.md) — SvelteKit 2 + Svelte 5 patterns
 - [frameworks/astro.md](frameworks/astro.md) — Astro content sites and islands
-- [../../docs/engineering-philosophy.md](../engineering-philosophy.md) — universal code-health principles
+- [../../engineering-philosophy.md](../../engineering-philosophy.md) — universal code-health principles

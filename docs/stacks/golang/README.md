@@ -232,4 +232,4 @@ internal/                    # Private application code
 ## See also
 
 - [`frameworks/chi.md`](frameworks/chi.md) — chi/v5 router patterns
-- [`../engineering-philosophy.md`](../engineering-philosophy.md) — universal code-health principles
+- [`../../engineering-philosophy.md`](../../engineering-philosophy.md) — universal code-health principles

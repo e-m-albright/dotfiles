@@ -2,7 +2,7 @@
 
 > chi/v5 patterns for Go HTTP services. Reach for chi over the stdlib mux when you
 > want composable middleware, route groups, and URL-param helpers. For the broader
-> Go stack and idioms, see [`../golang.md`](../golang.md).
+> Go stack and idioms, see [`../README.md`](../README.md).
 
 ## Quick reference
 
@@ -59,4 +59,4 @@ sqlc generate              # Regenerate database code
 
 ## See also
 
-- [`../golang.md`](../golang.md) — Go stack selection, idioms, and code patterns
+- [`../README.md`](../README.md) — Go stack selection, idioms, and code patterns

@@ -1,6 +1,6 @@
 # Axum
 
-> Production HTTP APIs in Rust. Read with [../rust.md](../rust.md) for the underlying language taste.
+> Production HTTP APIs in Rust. Read with [../README.md](../README.md) for the underlying language taste.
 
 ## Stack
 

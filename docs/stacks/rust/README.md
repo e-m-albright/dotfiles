@@ -209,4 +209,4 @@ Conventions:
 
 - [frameworks/axum.md](frameworks/axum.md) — Axum web APIs (extractors, error envelope, SQLx, SSE).
 - [frameworks/tauri.md](frameworks/tauri.md) — Tauri 2 desktop apps (commands, state, events, IPC).
-- [../../docs/engineering-philosophy.md](../engineering-philosophy.md) — universal code-health principles.
+- [../../engineering-philosophy.md](../../engineering-philosophy.md) — universal code-health principles.

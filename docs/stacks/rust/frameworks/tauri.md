@@ -1,6 +1,6 @@
 # Tauri 2
 
-> Cross-platform desktop apps with a Rust backend and a web frontend. Read with [../rust.md](../rust.md) for the underlying language taste. Picked over Electron (heavy, not Rust).
+> Cross-platform desktop apps with a Rust backend and a web frontend. Read with [../README.md](../README.md) for the underlying language taste. Picked over Electron (heavy, not Rust).
 
 ## Stack
 

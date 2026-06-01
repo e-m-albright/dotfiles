@@ -13,7 +13,7 @@ Validation:  Pydantic v2
 Agents:      PydanticAI + Instructor
 ```
 
-FastAPI over Flask (no async) or Django (heavy). See [../python.md](../python.md) for the full stack rationale.
+FastAPI over Flask (no async) or Django (heavy). See [../README.md](../README.md) for the full stack rationale.
 
 ## Idioms
 
@@ -166,5 +166,5 @@ just db-migrate   # run migrations
 
 ## See also
 
-- [../python.md](../python.md) — Python stack, idioms, performance swaps
-- [../python-ml.md](../python-ml.md) — ML / data-science stack
+- [../README.md](../README.md) — Python stack, idioms, performance swaps
+- [../ml.md](../ml.md) — ML / data-science stack

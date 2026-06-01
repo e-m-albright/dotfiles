@@ -63,7 +63,7 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 ## Reference Docs
 
 The curated knowledge base lives in `docs/` (see `docs/README.md`):
-- `docs/stacks/` -- technology taste by language/framework (pick/avoid, idioms, patterns), plus `services.md`, `infrastructure.md`, `python-ml.md`
+- `docs/stacks/` -- technology taste by language/framework (pick/avoid, idioms, patterns), plus `services.md`, `infrastructure.md`, `python/ml.md`
 - `docs/knowledge/` -- cross-cutting practice: `ai-tools.md`, `token-efficiency.md`, `browser-tooling.md`, `customer-discovery.md`, `project-memory.md`, prompting guides
 - `docs/engineering-philosophy.md` -- 12 universal code-health principles; `docs/adr/` -- numbered decisions
 - `docs/pi-power-setup.md` -- Pi agent power setup (mitsupi, safe-git, oh-my-pi vs base Pi)

@@ -156,6 +156,6 @@ src/app/
 
 ## See also
 
-- [python-ml.md](python-ml.md) — ML / data-science stack and idioms
+- [ml.md](ml.md) — ML / data-science stack and idioms
 - [frameworks/fastapi.md](frameworks/fastapi.md) — FastAPI patterns
-- [../engineering-philosophy.md](../engineering-philosophy.md) — universal code-health principles
+- [../../engineering-philosophy.md](../../engineering-philosophy.md) — universal code-health principles

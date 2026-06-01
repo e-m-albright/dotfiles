@@ -134,6 +134,6 @@ bun run db:studio          # Open Drizzle Studio
 
 ## See also
 
-- [../typescript.md](../typescript.md) — TypeScript stack selection and idioms
+- [../README.md](../README.md) — TypeScript stack selection and idioms
 - [astro.md](astro.md) — content sites and islands
-- [../../engineering-philosophy.md](../../engineering-philosophy.md) — universal code-health principles
+- [../../../engineering-philosophy.md](../../../engineering-philosophy.md) — universal code-health principles
