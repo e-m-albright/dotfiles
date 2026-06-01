@@ -41,6 +41,10 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "PTH", "TID", "PT"]
+# Keep unused-import as a *lint* (the gate still flags genuinely-dead imports),
+# but never let `ruff check --fix` (incl. the format-on-save hook) auto-delete an
+# import the instant it's added, before its first use. Stops the mid-edit churn.
+unfixable = ["F401"]
 
 [tool.pyright]
 include = ["src", "tests"]
