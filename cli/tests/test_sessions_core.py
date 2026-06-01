@@ -1,5 +1,6 @@
 from dotfiles_cli.core.models import Session
-from dotfiles_cli.core.sessions import parse_sessions
+from dotfiles_cli.core.sessions import SessionService, attach_command, parse_sessions
+from tests.fakes import FakeProcessRunner
 
 
 def test_parse_empty() -> None:
@@ -19,3 +20,31 @@ def test_parse_running_current_and_exited() -> None:
         Session(name="work", running=True, current=True),
         Session(name="old", running=False, current=False),
     ]
+
+
+def test_attach_command_uses_create() -> None:
+    assert attach_command("mobile") == ("zellij", "attach", "--create", "mobile")
+
+
+def test_service_list_parses_runner_output() -> None:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("zellij", "list-sessions", "--no-formatting"),
+        stdout="mobile [Created 1h ago]\nwork [Created 5m ago] (current)\n",
+    )
+    names = [s.name for s in SessionService(runner=runner).list()]
+    assert names == ["mobile", "work"]
+
+
+def test_service_kill_runs_kill_session_and_reports() -> None:
+    runner = FakeProcessRunner()
+    step = SessionService(runner=runner).kill("work")
+    assert ("zellij", "kill-session", "work") in runner.calls
+    assert step.level == "success"
+
+
+def test_service_kill_reports_error_on_failure() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("zellij", "kill-session", "work"), exit_code=1, stderr="no session")
+    step = SessionService(runner=runner).kill("work")
+    assert step.level == "error"

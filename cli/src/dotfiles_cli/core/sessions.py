@@ -1,6 +1,10 @@
 """zellij session listing/attach logic. Pure over the ProcessRunner port."""
 
-from dotfiles_cli.core.models import Session
+from collections.abc import Sequence
+from typing import Protocol, runtime_checkable
+
+from dotfiles_cli.core.models import Session, StepResult
+from dotfiles_cli.core.ports import ProcessRunner
 
 _EMPTY_MARKER = "No active zellij sessions found"
 
@@ -22,3 +26,34 @@ def parse_sessions(output: str) -> list[Session]:
             )
         )
     return sessions
+
+
+def attach_command(name: str) -> tuple[str, ...]:
+    """The zellij command that attaches to `name`, creating it if absent."""
+    return ("zellij", "attach", "--create", name)
+
+
+@runtime_checkable
+class SessionLauncher(Protocol):
+    """Interactive hand-off: pick from a list, and exec into a command."""
+
+    def pick(self, _options: Sequence[str]) -> str | None: ...
+
+    def attach(self, command: Sequence[str]) -> None: ...
+
+
+class SessionService:
+    """Lists and kills zellij sessions via the ProcessRunner port."""
+
+    def __init__(self, *, runner: ProcessRunner) -> None:
+        self._runner = runner
+
+    def list(self) -> list[Session]:
+        result = self._runner.run(("zellij", "list-sessions", "--no-formatting"))
+        return parse_sessions(result.stdout)
+
+    def kill(self, name: str) -> StepResult:
+        result = self._runner.run(("zellij", "kill-session", name))
+        if result.ok:
+            return StepResult(level="success", message=f"Killed session {name}")
+        return StepResult(level="error", message=f"Could not kill session {name}")
