@@ -29,3 +29,9 @@ def test_root_callback_builds_context_when_none_injected() -> None:
     # version command works without an injected obj (callback builds the real context)
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
+
+
+def test_session_and_sesh_share_real_commands() -> None:
+    for name in ("session", "sesh"):
+        result = runner.invoke(app, [name, "ls", "--help"])
+        assert result.exit_code == 0

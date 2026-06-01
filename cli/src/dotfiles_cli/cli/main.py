@@ -7,6 +7,7 @@ import typer
 from dotfiles_cli import __version__
 from dotfiles_cli.cli.context import build_real_context
 from dotfiles_cli.cli.remote import remote_app
+from dotfiles_cli.cli.session import session_app
 from dotfiles_cli.console import console
 
 app = typer.Typer(
@@ -37,8 +38,8 @@ def _stub(name: str, display: str | None = None) -> typer.Typer:
 
 # Command tree (stubs filled in by later phases P1b-P1d).
 app.add_typer(remote_app, name="remote")
-app.add_typer(_stub("session"), name="session")
-app.add_typer(_stub("session", display="sesh"), name="sesh")  # alias
+app.add_typer(session_app, name="session")
+app.add_typer(session_app, name="sesh")
 app.add_typer(_stub("doctor"), name="doctor")
 app.add_typer(_stub("brew"), name="brew")
 app.add_typer(_stub("agent"), name="agent")
