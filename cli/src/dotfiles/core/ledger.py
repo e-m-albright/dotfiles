@@ -5,9 +5,11 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+from dotfiles.core.logging import get_logger
 from dotfiles.core.models import LedgerEntry
 
 _LEDGER = "ledger.jsonl"
+_log = get_logger(__name__)
 
 
 def append(state_dir: Path, entry: LedgerEntry) -> None:
@@ -16,8 +18,9 @@ def append(state_dir: Path, entry: LedgerEntry) -> None:
         state_dir.mkdir(parents=True, exist_ok=True)
         with (state_dir / _LEDGER).open("a") as fh:
             fh.write(entry.model_dump_json() + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        # Hot-path hook must never fail because of the ledger — degrade, but trace it.
+        _log.debug("ledger_append_failed", state_dir=str(state_dir), error=str(exc))
 
 
 def read(state_dir: Path) -> list[LedgerEntry]:
@@ -31,7 +34,8 @@ def read(state_dir: Path) -> list[LedgerEntry]:
             continue
         try:
             entries.append(LedgerEntry.model_validate_json(line))
-        except ValueError:
+        except ValueError as exc:
+            _log.debug("ledger_skip_bad_line", path=str(path), error=str(exc))
             continue
     return entries
 

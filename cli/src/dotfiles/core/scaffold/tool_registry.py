@@ -9,7 +9,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pydantic
 from pydantic import BaseModel, ConfigDict, Field
+
+from dotfiles.core.logging import get_logger
+
+_log = get_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # Model
@@ -52,7 +57,8 @@ def load_registry(dotfiles_dir: Path) -> dict[str, ToolTarget]:
         raw = json.loads(registry_path.read_text())
         tools_raw: dict[str, object] = raw.get("tools", {})
         return {name: ToolTarget.model_validate(data) for name, data in tools_raw.items()}
-    except Exception:
+    except (json.JSONDecodeError, OSError, AttributeError, pydantic.ValidationError) as exc:
+        _log.warning("tool_registry_load_failed", path=str(registry_path), error=str(exc))
         return {}
 
 

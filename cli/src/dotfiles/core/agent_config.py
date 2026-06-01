@@ -14,6 +14,10 @@ from typing import cast
 import pydantic
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
+from dotfiles.core.logging import get_logger
+
+_log = get_logger(__name__)
+
 # ---------------------------------------------------------------------------
 # Config file models
 # ---------------------------------------------------------------------------
@@ -96,7 +100,8 @@ def load_config[M: BaseModel](
             return None
         text = path.read_text()
         return model.model_validate_json(text)
-    except (pydantic.ValidationError, ValueError):
+    except (pydantic.ValidationError, ValueError) as exc:
+        _log.warning("config_parse_failed", path=str(path), model=model.__name__, error=str(exc))
         return None
 
 
@@ -106,9 +111,11 @@ def load_mcp_servers(path: Path) -> dict[str, McpServerEntry]:
         return {}
     try:
         raw: object = json.loads(path.read_text())
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError) as exc:
+        _log.warning("mcp_servers_read_failed", path=str(path), error=str(exc))
         return {}
     if not isinstance(raw, dict):
+        _log.warning("mcp_servers_not_object", path=str(path))
         return {}
     raw_dict = cast(dict[str, object], raw)
     # Filter to object-only entries before validation
@@ -117,5 +124,6 @@ def load_mcp_servers(path: Path) -> dict[str, McpServerEntry]:
     }
     try:
         return _MCP_SERVERS_ADAPTER.validate_python(obj_only)
-    except pydantic.ValidationError:
+    except pydantic.ValidationError as exc:
+        _log.warning("mcp_servers_invalid", path=str(path), error=str(exc))
         return {}

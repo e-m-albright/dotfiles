@@ -8,7 +8,7 @@ from dotfiles import __version__
 from dotfiles.banner import gradient_banner
 from dotfiles.cli.agent import agent_app
 from dotfiles.cli.brew import brew_app
-from dotfiles.cli.context import build_real_context
+from dotfiles.cli.context import AppContext, build_real_context
 from dotfiles.cli.doctor import doctor_command
 from dotfiles.cli.fleet import fleet_app
 from dotfiles.cli.ledger import ledger_app
@@ -18,6 +18,7 @@ from dotfiles.cli.scaffold import scaffold_command
 from dotfiles.cli.session import session_app
 from dotfiles.cli.snapshot import snapshot_app
 from dotfiles.console import console
+from dotfiles.core.logging import configure_logging
 
 app = typer.Typer(
     name="dotfiles",
@@ -39,6 +40,8 @@ def _main(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
     """Build the composition context once if a test hasn't injected one."""
     if ctx.obj is None:
         ctx.obj = build_real_context(interactive=sys.stdin.isatty())
+    if isinstance(ctx.obj, AppContext):
+        configure_logging(ctx.obj.settings.log_level)
 
 
 # Command tree.
