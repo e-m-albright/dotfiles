@@ -32,3 +32,9 @@ def test_tui_command_is_registered(monkeypatch):
     result = runner.invoke(cli_app, ["tui"])
     assert result.exit_code == 0
     assert launched == [True]
+
+
+def test_dashboard_snapshot(snap_compare):
+    """Golden snapshot of the booted dashboard (Remote + Sessions panes)."""
+    app = MissionControlApp(ctx=make_fake_context())
+    assert snap_compare(app)

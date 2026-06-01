@@ -32,6 +32,9 @@ class MissionControlApp(App[None]):
     def ctx(self) -> AppContext:
         return self._ctx
 
+    def on_mount(self) -> None:
+        self.sub_title = "▚▚ phone command deck ▚▚"
+
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical():
