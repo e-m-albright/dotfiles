@@ -11,7 +11,7 @@ import shutil
 from collections.abc import Callable
 
 from dotfiles.core.agent_config import McpServerEntry
-from dotfiles.core.models import McpProbe
+from dotfiles.core.models import AgentOverview, McpProbe, VendorVerify
 from dotfiles.core.ports import HttpClient
 
 _VENDORS = ("claude", "cursor", "codex", "gemini")
@@ -39,3 +39,73 @@ def probe_mcp(
             return McpProbe(server=server, ok=True, detail=f"{entry.command} on PATH")
         return McpProbe(server=server, ok=False, detail=f"{entry.command} not found")
     return McpProbe(server=server, ok=False, detail="no url or command configured")
+
+
+def _vendor_counts(overview: AgentOverview, vendor: str) -> tuple[int, int, int, int]:
+    """Return (skills_deployed, skills_expected, agents_deployed, agents_expected)."""
+    canonical = overview.skills.canonical_skills
+    if vendor == "claude":
+        skills_dep, skills_exp = overview.skills.claude_deployed, canonical
+    elif vendor == "codex":
+        skills_dep, skills_exp = overview.skills.shared_deployed, canonical
+    else:
+        skills_dep, skills_exp = 0, 0
+
+    if vendor in ("claude", "codex"):
+        agents_dep = sum(1 for a in overview.agents if getattr(a, vendor, False))
+        agents_exp = len(overview.agents)
+    else:
+        agents_dep, agents_exp = 0, 0
+    return skills_dep, skills_exp, agents_dep, agents_exp
+
+
+def _drift(skills_dep: int, skills_exp: int, agents_dep: int, agents_exp: int) -> tuple[str, ...]:
+    drift: list[str] = []
+    if skills_exp and skills_dep != skills_exp:
+        drift.append(f"skills {skills_dep}/{skills_exp} deployed")
+    if agents_exp and agents_dep != agents_exp:
+        drift.append(f"agents {agents_dep}/{agents_exp} deployed")
+    return tuple(drift)
+
+
+def _vendor_probes(
+    vendor: str,
+    mcp_servers: dict[str, McpServerEntry],
+    *,
+    http: HttpClient,
+    which: Callable[[str], str | None],
+    offline: bool,
+) -> tuple[McpProbe, ...]:
+    if offline:
+        return ()
+    return tuple(
+        probe_mcp(name, entry, http=http, which=which)
+        for name, entry in mcp_servers.items()
+        if vendor in entry.targets
+    )
+
+
+def build_vendor_verifies(
+    overview: AgentOverview,
+    mcp_servers: dict[str, McpServerEntry],
+    *,
+    http: HttpClient,
+    which: Callable[[str], str | None] = shutil.which,
+    offline: bool = False,
+) -> list[VendorVerify]:
+    """Per-vendor skill-health from an AgentOverview + the MCP server config."""
+    verifies: list[VendorVerify] = []
+    for vendor in _VENDORS:
+        skills_dep, skills_exp, agents_dep, agents_exp = _vendor_counts(overview, vendor)
+        verifies.append(
+            VendorVerify(
+                vendor=vendor,
+                skills_deployed=skills_dep,
+                skills_expected=skills_exp,
+                agents_deployed=agents_dep,
+                agents_expected=agents_exp,
+                drift=_drift(skills_dep, skills_exp, agents_dep, agents_exp),
+                mcp=_vendor_probes(vendor, mcp_servers, http=http, which=which, offline=offline),
+            )
+        )
+    return verifies
