@@ -20,3 +20,14 @@ class LocalFileSystem:
 
     def chmod(self, path: Path, mode: int) -> None:
         path.chmod(mode)
+
+    def is_symlink(self, path: Path) -> bool:
+        return path.is_symlink()
+
+    def readlink(self, path: Path) -> Path:
+        return path.readlink()
+
+    def symlink(self, src: Path, dest: Path) -> None:
+        if dest.is_symlink() or dest.exists():
+            dest.unlink()
+        dest.symlink_to(src)

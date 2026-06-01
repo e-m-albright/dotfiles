@@ -56,6 +56,7 @@ class FakeFileSystem:
         self._files: dict[Path, str] = {}
         self._dirs: set[Path] = set()
         self.modes: dict[Path, int] = {}
+        self.symlinks: dict[Path, Path] = {}
 
     def read_text(self, path: Path) -> str:
         return self._files[path]
@@ -64,13 +65,23 @@ class FakeFileSystem:
         self._files[path] = content
 
     def exists(self, path: Path) -> bool:
-        return path in self._files or path in self._dirs
+        return path in self._files or path in self._dirs or path in self.symlinks
 
     def mkdir(self, path: Path, *, parents: bool = True) -> None:
         self._dirs.add(path)
 
     def chmod(self, path: Path, mode: int) -> None:
         self.modes[path] = mode
+
+    def is_symlink(self, path: Path) -> bool:
+        return path in self.symlinks
+
+    def readlink(self, path: Path) -> Path:
+        return self.symlinks[path]
+
+    def symlink(self, src: Path, dest: Path) -> None:
+        self.symlinks[dest] = src
+        self._files[dest] = ""  # exists() is True for a symlink
 
 
 class FakeClock:

@@ -67,3 +67,14 @@ def test_fake_clock_is_fixed() -> None:
     clock = FakeClock(datetime(2026, 5, 31, 12, 0, 0, tzinfo=UTC))
     assert isinstance(clock, Clock)
     assert clock.now() == datetime(2026, 5, 31, 12, 0, 0, tzinfo=UTC)
+
+
+def test_fake_filesystem_symlink_ops() -> None:
+    fs = FakeFileSystem()
+    src = Path("/src/.zshrc")
+    dest = Path("/home/u/.zshrc")
+    assert fs.is_symlink(dest) is False
+    fs.symlink(src, dest)
+    assert fs.is_symlink(dest) is True
+    assert fs.readlink(dest) == src
+    assert fs.exists(dest) is True
