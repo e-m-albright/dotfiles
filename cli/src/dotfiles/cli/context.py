@@ -30,17 +30,22 @@ class AppContext:
     http: HttpClient = field(default_factory=UrllibHttpClient)
     llm_settings: LlmSettings = field(default_factory=LlmSettings)
     dotfiles_dir: Path = _REPO_ROOT
+    state_dir: Path = _REPO_ROOT / ".local-state"  # overridden by build_real_context
 
 
 def build_real_context(*, interactive: bool) -> AppContext:
     dotfiles_dir = Path(os.environ["DOTFILES_DIR"]) if "DOTFILES_DIR" in os.environ else _REPO_ROOT
+    home = Path.home()
+    xdg_state = os.environ.get("XDG_STATE_HOME")
+    state_root = Path(xdg_state) if xdg_state else home / ".local" / "state"
     return AppContext(
         runner=SubprocessRunner(),
         settings=Settings(),
         interactive=interactive,
-        home=Path.home(),
+        home=home,
         launcher=FzfExecLauncher(),
         http=UrllibHttpClient(),
         llm_settings=LlmSettings(),
         dotfiles_dir=dotfiles_dir,
+        state_dir=state_root / "dotfiles",
     )

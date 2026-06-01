@@ -133,15 +133,18 @@ def make_fake_context(
     dotfiles_dir: Path | None = None,
     http: FakeHttpClient | None = None,
     llm_settings: LlmSettings | None = None,
+    state_dir: Path | None = None,
 ) -> AppContext:
     """Build an AppContext backed by fakes for CLI tests."""
+    home_path = home or Path("/home/evan")
     return AppContext(
         runner=runner or FakeProcessRunner(),
         settings=Settings(),
         interactive=interactive,
-        home=home or Path("/home/evan"),
+        home=home_path,
         launcher=launcher or FakeSessionLauncher(),
         http=http or FakeHttpClient(),
         llm_settings=llm_settings or LlmSettings(),
         dotfiles_dir=dotfiles_dir or Path("/home/evan/dotfiles"),
+        state_dir=state_dir or (home_path / ".local" / "state" / "dotfiles"),
     )
