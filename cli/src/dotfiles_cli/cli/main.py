@@ -9,6 +9,7 @@ from dotfiles_cli.cli.context import build_real_context
 from dotfiles_cli.cli.doctor import doctor_command
 from dotfiles_cli.cli.remote import remote_app
 from dotfiles_cli.cli.session import session_app
+from dotfiles_cli.cli.verify import verify_app
 from dotfiles_cli.console import console
 
 app = typer.Typer(
@@ -44,7 +45,7 @@ app.add_typer(session_app, name="sesh")
 app.command("doctor")(doctor_command)
 app.add_typer(_stub("brew"), name="brew")
 app.add_typer(_stub("agent"), name="agent")
-app.add_typer(_stub("verify"), name="verify")
+app.add_typer(verify_app, name="verify")
 app.add_typer(_stub("scaffold"), name="scaffold")
 app.add_typer(_stub("llm"), name="llm")
 
