@@ -286,7 +286,7 @@ Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs
 | `google.gemini-code-assist` | disabled | Gemini Code Assist for IDE |
 | `openai.codex` | disabled | Codex IDE extension |
 
-See `prompts/guides/ai-tools.md` for the full landscape and investigation notes.
+See `docs/knowledge/ai-tools.md` for the full landscape and investigation notes.
 
 ### Codex CLI
 
@@ -358,7 +358,7 @@ Setup is automated via `dotfiles agent setup` (also runs during install):
 - **Skills**: `scaffold-project`, `dotfiles-doctor`
 - **Agents**: `shellcheck-reviewer`
 - **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion, Playwright, Chrome DevTools (standalone); Context7 (via plugin)
-- **Browser-tool tiers**: See `prompts/guides/browser-tooling.md` — when to reach for Playwright tests (Tier 1), agent-browser/pinchtab CLIs (Tier 2), Playwright/Chrome DevTools MCPs (Tier 3-4), or Stagehand (Tier 5)
+- **Browser-tool tiers**: See `docs/knowledge/browser-tooling.md` — when to reach for Playwright tests (Tier 1), agent-browser/pinchtab CLIs (Tier 2), Playwright/Chrome DevTools MCPs (Tier 3-4), or Stagehand (Tier 5)
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
 - **Preferences**: Voice mode, terminal bell, acceptEdits mode
 - **Desktop**: MCP servers + preferences (cowork, sidebar, web search)

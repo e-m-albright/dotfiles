@@ -392,4 +392,4 @@ Do NOT refactor anything. Report only.
 ## References
 
 - Reddit: r/ClaudeCode "Claude Code (~100 hours) vs Codex (~20 hours)" — community techniques
-- See also: `prompts/guides/ai-coding-frameworks.md` (framework design), `prompts/guides/ai-tools.md` (tool landscape)
+- See also: `ai-coding-frameworks.md` (framework design), `ai-tools.md` (tool landscape)

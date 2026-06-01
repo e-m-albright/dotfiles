@@ -266,7 +266,7 @@ There is **no fully-managed vendor-agnostic agent cron.** Choices: (a) **vendor 
 Personal vibes-check on the current player set (2026-05). Opinions, not benchmarks — refine as we get hands-on.
 
 - **Cloudflare** -- Generally a strong platform that keeps getting better (Workers, D1, R2, Pages, Queues all maturing). Some questions on the team, but the product trajectory is solid.
-- **Vercel** -- Probably still a decent solution for Next.js-native frontends. Terrible place to scale (pricing traps, vendor lock-in — already flagged in `prompts/guides/services.md` "When NOT to Use"). Some questions on the team. Very AI-forward / tech-forward, so they'll keep shipping interesting things.
+- **Vercel** -- Probably still a decent solution for Next.js-native frontends. Terrible place to scale (pricing traps, vendor lock-in — already flagged in `docs/stacks/services.md` "When NOT to Use"). Some questions on the team. Very AI-forward / tech-forward, so they'll keep shipping interesting things.
 - **Render** -- Dark horse. Worth a real evaluation: product quality, principles/values, pricing structure. Currently filed as "budget option for simple services" in services.md but probably deserves more attention.
 - **Railway** -- Seems pretty good. Possibly a little too dumbed down — TBD whether that's a feature or a ceiling. Pricing structure matters; worth scrutinizing same as Render.
 - **Supabase** -- Not really a full cloud provider — they're Postgres-plus-extras (auth, storage, realtime, edge functions). Useful piece of a stack, not a primary host.

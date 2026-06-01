@@ -579,7 +579,7 @@ To start using Claude Code Routines:
 1. Ensure GitHub is connected at claude.ai/code
 2. Go to claude.ai/code/routines (or use `/schedule` in CLI)
 3. Pick a repo + branch
-4. Write a prompt (see `prompts/guides/prompt-tactics.md` for templates)
+4. Write a prompt (see `prompt-tactics.md` for templates)
 5. Set schedule (start with weekly, promote to daily once you trust the output)
 6. Review the `claude/`-prefixed branch it creates — merge manually
 

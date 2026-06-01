@@ -62,13 +62,8 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 
 ## Reference Docs
 
-- `prompts/guides/ai-tools.md` -- AI frameworks, evals, coding assistants
-- `prompts/guides/services.md` -- Cloud services reference
-- `prompts/guides/infrastructure.md` -- Docker, Pulumi, observability
-- `prompts/guides/customer-discovery.md` -- Customer interview methodology
-- `prompts/guides/project-memory.md` -- Decision organization system
-- `prompts/guides/ml-python.md` -- Python ML/data science patterns
-- `prompts/guides/token-efficiency.md` -- LLM token efficiency, task decomposition, model routing
-- `prompts/guides/browser-tooling.md` -- Tiered browser/UI tools (Playwright tests, agent-browser, pinchtab, Playwright MCP, Chrome DevTools MCP, Stagehand)
-- `docs/engineering-philosophy.md` -- 12 universal principles for code health (compiler-first, type the domain, single source of truth, etc.)
-- `docs/pi-power-setup.md` -- Pi agent power setup: packages (mitsupi, safe-git), multi-agent integration, and the oh-my-pi vs base Pi decision
+The curated knowledge base lives in `docs/` (see `docs/README.md`):
+- `docs/stacks/` -- technology taste by language/framework (pick/avoid, idioms, patterns), plus `services.md`, `infrastructure.md`, `python-ml.md`
+- `docs/knowledge/` -- cross-cutting practice: `ai-tools.md`, `token-efficiency.md`, `browser-tooling.md`, `customer-discovery.md`, `project-memory.md`, prompting guides
+- `docs/engineering-philosophy.md` -- 12 universal code-health principles; `docs/adr/` -- numbered decisions
+- `docs/pi-power-setup.md` -- Pi agent power setup (mitsupi, safe-git, oh-my-pi vs base Pi)

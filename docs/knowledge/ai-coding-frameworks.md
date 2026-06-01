@@ -185,4 +185,4 @@ The most impactful pattern from the Reddit thread:
 - Superpowers: Claude Code plugin (v5.0.7)
 - GSD: https://github.com/gsd-build/get-shit-done | https://github.com/gsd-build/gsd-2
 - OMC: https://github.com/Yeachan-Heo/oh-my-claudecode
-- See also: `prompts/guides/ai-tools.md` (tool landscape), `prompts/guides/prompt-tactics.md` (prompt engineering)
+- See also: `ai-tools.md` (tool landscape), `prompt-tactics.md` (prompt engineering)
