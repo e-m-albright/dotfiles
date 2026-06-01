@@ -63,3 +63,13 @@ class ConnectionInfo(BaseModel):
     @property
     def mosh_command(self) -> str:
         return f"mosh --server={self.mosh_server} {self.user}@{self.host} -- {self.startup_command}"
+
+
+class Session(BaseModel):
+    """A zellij session as reported by `zellij list-sessions`."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    running: bool
+    current: bool
