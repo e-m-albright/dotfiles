@@ -34,3 +34,10 @@ def test_pick_returns_none_when_fzf_cancelled(monkeypatch) -> None:
 
     monkeypatch.setattr(subprocess, "run", lambda *_a, **_k: _Cancelled())
     assert FzfExecLauncher().pick(["mobile"]) is None
+
+
+def test_attach_rejects_empty_command() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="non-empty"):
+        FzfExecLauncher().attach([])

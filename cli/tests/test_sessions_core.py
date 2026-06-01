@@ -48,3 +48,29 @@ def test_service_kill_reports_error_on_failure() -> None:
     runner.script(("zellij", "kill-session", "work"), exit_code=1, stderr="no session")
     step = SessionService(runner=runner).kill("work")
     assert step.level == "error"
+
+
+def test_list_returns_empty_even_if_zellij_exits_nonzero_on_no_sessions() -> None:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("zellij", "list-sessions", "--no-formatting"),
+        exit_code=1,
+        stdout="No active zellij sessions found.\n",
+    )
+    assert SessionService(runner=runner).list() == []
+
+
+def test_list_raises_on_real_failure() -> None:
+    import pytest
+
+    from dotfiles_cli.core.sessions import SessionError
+
+    runner = FakeProcessRunner()
+    runner.script(
+        ("zellij", "list-sessions", "--no-formatting"),
+        exit_code=1,
+        stdout="",
+        stderr="zellij: command broke",
+    )
+    with pytest.raises(SessionError, match="command broke"):
+        SessionService(runner=runner).list()

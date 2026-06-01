@@ -9,11 +9,16 @@ from dotfiles_cli.core.ports import ProcessRunner
 _EMPTY_MARKER = "No active zellij sessions found"
 
 
+class SessionError(RuntimeError):
+    """Raised when a zellij session command fails for a real reason (not just 'no sessions')."""
+
+
 def parse_sessions(output: str) -> list[Session]:
     """Parse `zellij list-sessions --no-formatting` output into Session models."""
     if _EMPTY_MARKER in output:
         return []
     sessions: list[Session] = []
+    # zellij names contain no spaces; "EXITED"/"(current)" only appear in the bracketed suffix.
     for raw in output.splitlines():
         line = raw.strip()
         if not line:
@@ -30,6 +35,7 @@ def parse_sessions(output: str) -> list[Session]:
 
 def attach_command(name: str) -> tuple[str, ...]:
     """The zellij command that attaches to `name`, creating it if absent."""
+    # keep in sync with the other zellij attach-command representation
     return ("zellij", "attach", "--create", name)
 
 
@@ -50,6 +56,8 @@ class SessionService:
 
     def list(self) -> list[Session]:
         result = self._runner.run(("zellij", "list-sessions", "--no-formatting"))
+        if _EMPTY_MARKER not in result.stdout and not result.ok:
+            raise SessionError(result.stderr.strip() or "zellij list-sessions failed")
         return parse_sessions(result.stdout)
 
     def kill(self, name: str) -> StepResult:

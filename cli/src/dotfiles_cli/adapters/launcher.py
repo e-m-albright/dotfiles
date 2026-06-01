@@ -26,4 +26,6 @@ class FzfExecLauncher:
 
     def attach(self, command: Sequence[str]) -> None:
         args = list(command)
+        if not args:
+            raise ValueError("attach: command must be non-empty")
         os.execvp(args[0], args)  # replaces this process; does not return

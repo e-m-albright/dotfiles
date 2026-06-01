@@ -57,7 +57,9 @@ class ConnectionInfo(BaseModel):
     tailnet_ip: str | None
 
     @property
-    def startup_command(self) -> str:
+    def startup_command(
+        self,
+    ) -> str:  # keep in sync with the other zellij attach-command representation
         return f"zellij attach --create {self.session}"
 
     @property
