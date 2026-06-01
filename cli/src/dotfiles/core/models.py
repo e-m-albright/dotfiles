@@ -362,3 +362,32 @@ class SnapshotDiff(BaseModel):
             or self.symlinks_changed
             or self.agent_config_changed
         )
+
+
+# ---------------------------------------------------------------------------
+# Skill-health / verify models
+# ---------------------------------------------------------------------------
+
+
+class McpProbe(BaseModel):
+    """Result of probing one MCP server's reachability."""
+
+    model_config = ConfigDict(frozen=True)
+
+    server: str
+    ok: bool
+    detail: str
+
+
+class VendorVerify(BaseModel):
+    """Per-vendor skill-health: deployment counts, drift, and MCP probes."""
+
+    model_config = ConfigDict(frozen=True)
+
+    vendor: str
+    skills_deployed: int
+    skills_expected: int
+    agents_deployed: int
+    agents_expected: int
+    drift: tuple[str, ...]
+    mcp: tuple[McpProbe, ...]
