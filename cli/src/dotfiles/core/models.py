@@ -170,6 +170,16 @@ class Session(BaseModel):
     current: bool
 
 
+class AgentActivity(BaseModel):
+    """A recently-active agent session, discovered from transcript file mtimes."""
+
+    model_config = ConfigDict(frozen=True)
+
+    vendor: Vendor
+    cwd: str
+    last_active: datetime
+
+
 CheckStatus = Literal["ok", "missing", "warn", "fixed"]
 
 

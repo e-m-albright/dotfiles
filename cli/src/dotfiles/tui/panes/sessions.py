@@ -3,21 +3,36 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, cast
 
 from textual import work
 from textual.app import ComposeResult
 from textual.binding import BindingType
 from textual.containers import Container
-from textual.widgets import Label, ListItem, ListView
+from textual.widgets import Label, ListItem, ListView, Static
 
 from dotfiles.cli.context import AppContext
-from dotfiles.core.models import Session
+from dotfiles.core.agent_sessions import live_agents
+from dotfiles.core.models import AgentActivity, Session
 from dotfiles.core.sessions import SessionError, list_sessions
 from dotfiles.tui.launcher import in_zellij, zellij_handoff_command
 
 if TYPE_CHECKING:
     from dotfiles.tui.app import MissionControlApp
+
+
+def _agents_line(agents: list[AgentActivity], now: datetime) -> str:
+    """One-line summary of live agents, e.g. 'claude · myapp · 2m'."""
+    if not agents:
+        return "[dim]No agents active in the last 15m[/]"
+    parts: list[str] = []
+    for a in agents:
+        mins = max(0, int((now - a.last_active).total_seconds() // 60))
+        name = Path(a.cwd).name or a.cwd or "?"
+        parts.append(f"[green]{a.vendor}[/] {name} [dim]{mins}m[/]")
+    return "  ·  ".join(parts)
 
 
 class SessionsPane(Container):
@@ -36,6 +51,7 @@ class SessionsPane(Container):
         return cast("MissionControlApp", self.app)  # type: ignore[assignment]
 
     def compose(self) -> ComposeResult:
+        yield Static(id="active-agents")
         yield ListView(id="session-list")
 
     def on_mount(self) -> None:
@@ -47,10 +63,15 @@ class SessionsPane(Container):
             sessions = list_sessions(self._ctx.runner)
         except SessionError:
             sessions = []
-        self._app.call_from_thread(self._apply_sessions, sessions)
+        now = datetime.now()
+        agents = live_agents(home=self._ctx.home, now=now)
+        self._app.call_from_thread(self._apply_sessions, sessions, agents, now)
 
-    def _apply_sessions(self, sessions: list[Session]) -> None:
+    def _apply_sessions(
+        self, sessions: list[Session], agents: list[AgentActivity], now: datetime
+    ) -> None:
         self._sessions = sessions
+        self.query_one("#active-agents", Static).update(_agents_line(agents, now))
         view = self.query_one("#session-list", ListView)
         view.clear()
         for s in sessions:
