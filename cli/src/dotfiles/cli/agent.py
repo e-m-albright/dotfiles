@@ -22,7 +22,7 @@ from dotfiles.core.models import (
     PermissionRow,
     VendorSurface,
 )
-from dotfiles.core.skills import SkillValidateService
+from dotfiles.core.skills import validate_skill_files
 
 agent_app = typer.Typer(help="Agentic setup: overview dashboard and skill/agent lint.")
 
@@ -237,8 +237,7 @@ def lint(ctx: typer.Context) -> None:
     app_ctx = ctx.obj
     assert isinstance(app_ctx, AppContext)
 
-    service = SkillValidateService(dotfiles_dir=app_ctx.dotfiles_dir)
-    results = service.validate()
+    results = validate_skill_files(app_ctx.dotfiles_dir)
 
     for v in results:
         _render_validation(v)

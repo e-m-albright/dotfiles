@@ -165,61 +165,52 @@ def validate_file(
 # ---------------------------------------------------------------------------
 
 
-class SkillValidateService:
+def validate_skill_files(dotfiles_dir: Path) -> list[FileValidation]:
     """Validate all skills and agents in the dotfiles repo."""
+    results: list[FileValidation] = []
+    results.extend(_validate_skills(dotfiles_dir))
+    results.extend(_validate_agents(dotfiles_dir))
+    return results
 
-    def __init__(self, *, dotfiles_dir: Path) -> None:
-        self._dotfiles_dir = dotfiles_dir
 
-    def validate(self) -> list[FileValidation]:
-        results: list[FileValidation] = []
-        results.extend(self._validate_skills())
-        results.extend(self._validate_agents())
-        return results
+def _validate_skills(dotfiles_dir: Path) -> list[FileValidation]:
+    skills_root = dotfiles_dir / ".ai" / "skills"
+    if not skills_root.exists() or not skills_root.is_dir():
+        return []
 
-    # ------------------------------------------------------------------
-    # Private
-    # ------------------------------------------------------------------
-
-    def _validate_skills(self) -> list[FileValidation]:
-        skills_root = self._dotfiles_dir / ".ai" / "skills"
-        if not skills_root.exists() or not skills_root.is_dir():
-            return []
-
-        results: list[FileValidation] = []
-        for entry in list_dir(skills_root):
-            if not entry.is_dir():
-                continue
-            skill_md = entry / "SKILL.md"
-            rel_dir = str(entry.relative_to(self._dotfiles_dir)) + "/"
-            if not skill_md.exists():
-                results.append(
-                    FileValidation(
-                        rel_path=rel_dir,
-                        kind="skill",
-                        status="fail",
-                        errors=("missing SKILL.md",),
-                    )
-                )
-                continue
-            text = skill_md.read_text()
-            rel = str(skill_md.relative_to(self._dotfiles_dir))
+    results: list[FileValidation] = []
+    for entry in list_dir(skills_root):
+        if not entry.is_dir():
+            continue
+        skill_md = entry / "SKILL.md"
+        rel_dir = str(entry.relative_to(dotfiles_dir)) + "/"
+        if not skill_md.exists():
             results.append(
-                validate_file(text, kind="skill", expected_name=entry.name, rel_path=rel)
+                FileValidation(
+                    rel_path=rel_dir,
+                    kind="skill",
+                    status="fail",
+                    errors=("missing SKILL.md",),
+                )
             )
-        return results
+            continue
+        text = skill_md.read_text()
+        rel = str(skill_md.relative_to(dotfiles_dir))
+        results.append(validate_file(text, kind="skill", expected_name=entry.name, rel_path=rel))
+    return results
 
-    def _validate_agents(self) -> list[FileValidation]:
-        agents_root = self._dotfiles_dir / ".ai" / "agents"
-        if not agents_root.exists() or not agents_root.is_dir():
-            return []
 
-        results: list[FileValidation] = []
-        for entry in list_dir(agents_root):
-            if entry.is_dir() or entry.suffix != ".md":
-                continue
-            text = entry.read_text()
-            rel = str(entry.relative_to(self._dotfiles_dir))
-            expected = entry.stem
-            results.append(validate_file(text, kind="agent", expected_name=expected, rel_path=rel))
-        return results
+def _validate_agents(dotfiles_dir: Path) -> list[FileValidation]:
+    agents_root = dotfiles_dir / ".ai" / "agents"
+    if not agents_root.exists() or not agents_root.is_dir():
+        return []
+
+    results: list[FileValidation] = []
+    for entry in list_dir(agents_root):
+        if entry.is_dir() or entry.suffix != ".md":
+            continue
+        text = entry.read_text()
+        rel = str(entry.relative_to(dotfiles_dir))
+        expected = entry.stem
+        results.append(validate_file(text, kind="agent", expected_name=expected, rel_path=rel))
+    return results
