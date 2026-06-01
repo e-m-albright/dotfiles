@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.10",
     "pydantic-settings>=2.7",
     "structlog>=24.4",
+    "pyyaml>=6.0.3",
 ]
 
 [project.scripts]
