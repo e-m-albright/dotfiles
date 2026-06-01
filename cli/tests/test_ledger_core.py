@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from dotfiles.core.ledger import append, read
+from dotfiles.core.ledger import append, latest_by_session, prune, read
 from dotfiles.core.models import LedgerEntry
 
 
@@ -38,3 +38,18 @@ def test_read_skips_malformed_lines(tmp_path):
     entries = read(tmp_path)
     assert len(entries) == 1
     assert entries[0].session_id == "s1"
+
+
+def test_latest_by_session_keeps_newest(tmp_path):
+    append(tmp_path, _entry(ts=datetime(2026, 6, 1, 10, 0), task="old"))
+    append(tmp_path, _entry(ts=datetime(2026, 6, 1, 11, 0), task="new"))
+    latest = latest_by_session(read(tmp_path))
+    assert latest["s1"].task == "new"
+
+
+def test_prune_drops_old_entries(tmp_path):
+    append(tmp_path, _entry(ts=datetime(2026, 6, 1, 8, 0), session_id="old"))
+    append(tmp_path, _entry(ts=datetime(2026, 6, 1, 20, 0), session_id="keep"))
+    removed = prune(tmp_path, older_than=datetime(2026, 6, 1, 12, 0))
+    assert removed == 1
+    assert [e.session_id for e in read(tmp_path)] == ["keep"]

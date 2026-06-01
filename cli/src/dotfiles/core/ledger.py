@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from dotfiles.core.models import LedgerEntry
@@ -33,3 +34,24 @@ def read(state_dir: Path) -> list[LedgerEntry]:
         except ValueError:
             continue
     return entries
+
+
+def latest_by_session(entries: list[LedgerEntry]) -> dict[str, LedgerEntry]:
+    """Collapse to the most-recent entry per session_id (the fleet join key)."""
+    latest: dict[str, LedgerEntry] = {}
+    for entry in entries:
+        current = latest.get(entry.session_id)
+        if current is None or entry.ts >= current.ts:
+            latest[entry.session_id] = entry
+    return latest
+
+
+def prune(state_dir: Path, *, older_than: datetime) -> int:
+    """Drop entries older than `older_than`; rewrite the file. Returns count removed."""
+    entries = read(state_dir)
+    kept = [e for e in entries if e.ts >= older_than]
+    removed = len(entries) - len(kept)
+    if removed:
+        path = state_dir / _LEDGER
+        path.write_text("".join(e.model_dump_json() + "\n" for e in kept))
+    return removed
