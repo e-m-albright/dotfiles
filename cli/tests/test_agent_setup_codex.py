@@ -273,6 +273,46 @@ class TestSetupMcp:
 
 
 # ---------------------------------------------------------------------------
+# CODEX.md doc-fallback (project_doc_fallback_filenames)
+# ---------------------------------------------------------------------------
+
+
+class TestDocFallback:
+    def test_fresh_config_has_doc_fallback(self, dotfiles: Path, home: Path) -> None:
+        """On a fresh machine (no config.toml), the key must be present."""
+        _run(dotfiles, home)
+        parsed = tomllib.loads((home / ".codex" / "config.toml").read_text())
+        assert parsed.get("project_doc_fallback_filenames") == ["CODEX.md"]
+
+    def test_existing_config_without_key_gets_it_added(self, dotfiles: Path, home: Path) -> None:
+        codex_home = home / ".codex"
+        codex_home.mkdir(parents=True)
+        (codex_home / "config.toml").write_text('[other]\nfoo = "bar"\n')
+        _run(dotfiles, home)
+        parsed = tomllib.loads((codex_home / "config.toml").read_text())
+        assert parsed.get("project_doc_fallback_filenames") == ["CODEX.md"]
+
+    def test_existing_key_preserved_not_overwritten(self, dotfiles: Path, home: Path) -> None:
+        codex_home = home / ".codex"
+        codex_home.mkdir(parents=True)
+        (codex_home / "config.toml").write_text(
+            'project_doc_fallback_filenames = ["CODEX.md", "README.md"]\n'
+        )
+        _run(dotfiles, home)
+        parsed = tomllib.loads((codex_home / "config.toml").read_text())
+        assert parsed["project_doc_fallback_filenames"] == ["CODEX.md", "README.md"]
+
+    def test_idempotent_on_fresh_config(self, dotfiles: Path, home: Path) -> None:
+        _run(dotfiles, home)
+        first = (home / ".codex" / "config.toml").read_text()
+        _run(dotfiles, home)
+        second = (home / ".codex" / "config.toml").read_text()
+        p1 = tomllib.loads(first)
+        p2 = tomllib.loads(second)
+        assert p1["project_doc_fallback_filenames"] == p2["project_doc_fallback_filenames"]
+
+
+# ---------------------------------------------------------------------------
 # Statusline injection
 # ---------------------------------------------------------------------------
 

@@ -48,6 +48,7 @@ def setup_codex(
     results.extend(_setup_instructions(dotfiles_dir, codex_home))
     results.extend(_setup_default_rules(dotfiles_dir, codex_home))
     results.extend(_setup_mcp(dotfiles_dir, codex_home, home))
+    results.extend(_ensure_doc_fallback(codex_home))
     results.extend(_setup_statusline(dotfiles_dir, codex_home))
     results.extend(_setup_hooks(dotfiles_dir, codex_home))
     results.append(deploy_skills(runner, dotfiles_dir, "codex", which=which))
@@ -161,6 +162,35 @@ def _setup_mcp(dotfiles_dir: Path, codex_home: Path, home: Path) -> list[StepRes
 
     config_toml.write_text(new_text, encoding="utf-8")
     return [StepResult(ok=True, message=f"Configured {len(servers)} MCP servers (Codex)")]
+
+
+_DOC_FALLBACK_LINE = 'project_doc_fallback_filenames = ["CODEX.md"]'
+
+
+def _ensure_doc_fallback(codex_home: Path) -> list[StepResult]:
+    """Ensure ``project_doc_fallback_filenames = ["CODEX.md"]`` is in config.toml.
+
+    Idempotent — adds only if the key is absent; preserves the existing value
+    if the user has customised it. Matches the old codex/setup.sh behaviour
+    which always wrote this line when generating config.toml.
+    """
+    config_toml = codex_home / "config.toml"
+    if not config_toml.is_file():
+        config_toml.write_text(_DOC_FALLBACK_LINE + "\n", encoding="utf-8")
+        return [StepResult(ok=True, message="Set project_doc_fallback_filenames (CODEX.md)")]
+
+    text = config_toml.read_text()
+    try:
+        parsed = tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        parsed = {}
+
+    if "project_doc_fallback_filenames" in parsed:
+        return []  # Already present — idempotent skip
+
+    # Prepend the line so it appears near the top (before MCP blocks)
+    config_toml.write_text(_DOC_FALLBACK_LINE + "\n\n" + text, encoding="utf-8")
+    return [StepResult(ok=True, message="Set project_doc_fallback_filenames (CODEX.md)")]
 
 
 def _setup_statusline(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
