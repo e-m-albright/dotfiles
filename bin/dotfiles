@@ -22,6 +22,7 @@ sub_help () {
     printf "${BLUE}Core commands:${NC}\n"
     printf "   install              Run full dotfiles setup\n"
     printf "   help                 This help message\n"
+    printf "   version              Print version with the gold DOTFILES banner\n"
     printf "   doctor [--fix]       Check all tools are installed (--fix to repair config)\n"
     printf "   update               Update OS, Homebrew, runtimes, and dev tools\n"
     printf "   clean                Clean up Homebrew caches\n"
@@ -222,6 +223,7 @@ _dotfiles() {
     commands=(
         'install:Run full dotfiles setup'
         'help:Show help message'
+        'version:Print version and DOTFILES banner'
         'doctor:Check tools and config (--fix to repair)'
         'update:Update OS, Homebrew, runtimes, and dev tools'
         'clean:Clean caches'
@@ -275,6 +277,8 @@ ns_cursor() {
 
 # Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
 # As later phases land, add their names to this list.
+# INVARIANT: every name here must also appear in sub_help and sub_completions —
+# enforced by cli/tests/test_command_tree.py so the lists can't silently drift.
 PY_CLI_COMMANDS=" version remote session sesh doctor llm brew scaffold snapshot ledger fleet tui "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
