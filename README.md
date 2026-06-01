@@ -455,7 +455,7 @@ dotfiles fleet               # Show live agent sessions across Claude/Codex (+ l
 dotfiles fleet --all         # Include sessions past the live window
 dotfiles fleet --json        # Emit sessions as a JSON array
 dotfiles tui                 # Launch Mission Control TUI (phone command deck)
-dotfiles                     # Bare invocation also launches the TUI
+dotfiles                     # Bare invocation prints help (use 'dotfiles tui' for the dashboard)
 ```
 
 `dotfiles remote setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.

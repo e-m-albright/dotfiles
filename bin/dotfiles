@@ -33,6 +33,12 @@ sub_help () {
     printf "   remote disable [opts]  Turn off macOS Remote Login for phone access\n"
     printf "   session|sesh <cmd>     zellij sessions: ls, attach, new, kill, or bare picker\n"
     printf "\n"
+    printf "${BLUE}Command center:${NC}\n"
+    printf "   tui                    Launch the Mission Control TUI (phone-drivable dashboard)\n"
+    printf "   snapshot [ls|diff]     Capture / list / diff machine-state snapshots\n"
+    printf "   fleet [--all|--json]   Live agent sessions across Claude/Codex (+ ledger)\n"
+    printf "   ledger <cmd>           Agent-activity ledger: log, ls, prune\n"
+    printf "\n"
     printf "${BLUE}Namespaces:${NC}\n"
     printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
     printf "   agent overview       Show active agentic setup (Python dashboard)\n"
@@ -42,6 +48,7 @@ sub_help () {
     printf "                        Load advisor prompt into clipboard, chunked for Gemini saved-info\n"
     printf "\n"
     printf "   agent lint           Validate skill/agent files against conventions\n"
+    printf "   agent verify [--offline]  Check skills/agents deployed + probe MCP servers\n"
     printf "\n"
     printf "   brew install         Sync packages from packages.toml manifest\n"
     printf "   brew stale           Find disabled packages still installed\n"
@@ -225,7 +232,11 @@ _dotfiles() {
         'remote:Phone remote-shell access (setup, disable)'
         'session:zellij sessions (ls, attach, new, kill, picker)'
         'sesh:zellij sessions (alias)'
-        'agent:Agent vendor namespace (overview, lint, setup, gemini-prompt)'
+        'tui:Launch the Mission Control TUI'
+        'snapshot:Machine-state snapshots (ls, diff)'
+        'fleet:Live agent sessions across Claude/Codex'
+        'ledger:Agent-activity ledger (log, ls, prune)'
+        'agent:Agent vendor namespace (overview, lint, setup, verify, gemini-prompt)'
         'brew:Brew namespace (install, stale)'
         'shell:Shell namespace (profile)'
         'cursor:Cursor namespace (plugins)'
