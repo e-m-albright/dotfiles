@@ -24,7 +24,13 @@ def test_app_context_is_constructible_with_fakes() -> None:
     from datetime import UTC, datetime
 
     from dotfiles_cli.core.settings import Settings
-    from tests.fakes import FakeClock, FakeFileSystem, FakeProcessRunner, FakeSessionLauncher
+    from tests.fakes import (
+        FakeClock,
+        FakeFileSystem,
+        FakeHttpClient,
+        FakeProcessRunner,
+        FakeSessionLauncher,
+    )
 
     ctx = AppContext(
         runner=FakeProcessRunner(),
@@ -34,6 +40,7 @@ def test_app_context_is_constructible_with_fakes() -> None:
         interactive=False,
         home=Path("/home/evan"),
         launcher=FakeSessionLauncher(),
+        http=FakeHttpClient(),
         dotfiles_dir=Path("/home/evan/dotfiles"),
     )
     assert ctx.home == Path("/home/evan")

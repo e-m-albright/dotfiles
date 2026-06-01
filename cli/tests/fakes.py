@@ -8,7 +8,7 @@ from typing import Any
 
 from dotfiles_cli.cli.context import AppContext
 from dotfiles_cli.core.models import CommandResult
-from dotfiles_cli.core.settings import Settings
+from dotfiles_cli.core.settings import LlmSettings, Settings
 
 _JsonDict = dict[str, Any]
 
@@ -159,12 +159,14 @@ class FakeSessionLauncher:
 
 def make_fake_context(
     *,
-    runner: "FakeProcessRunner | None" = None,
-    fs: "FakeFileSystem | None" = None,
+    runner: FakeProcessRunner | None = None,
+    fs: FakeFileSystem | None = None,
     interactive: bool = False,
     home: Path | None = None,
-    launcher: "FakeSessionLauncher | None" = None,
+    launcher: FakeSessionLauncher | None = None,
     dotfiles_dir: Path | None = None,
+    http: FakeHttpClient | None = None,
+    llm_settings: LlmSettings | None = None,
 ) -> AppContext:
     """Build an AppContext backed by fakes for CLI tests."""
     return AppContext(
@@ -175,5 +177,7 @@ def make_fake_context(
         interactive=interactive,
         home=home or Path("/home/evan"),
         launcher=launcher or FakeSessionLauncher(),
+        http=http or FakeHttpClient(),
+        llm_settings=llm_settings or LlmSettings(),
         dotfiles_dir=dotfiles_dir or Path("/home/evan/dotfiles"),
     )
