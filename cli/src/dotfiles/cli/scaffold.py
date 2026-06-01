@@ -278,12 +278,15 @@ def _scaffold_files(dotfiles_dir: Path, plan: _Plan) -> list[StepResult]:
     registry = load_registry(dotfiles_dir)
     symlink_tools = tools_for_filter(registry, plan.tools_filter, strategy="symlink")
     setup_tool_symlinks(plan.project_dir, symlink_tools, force=plan.force)
+
+    # Match scaffold.sh order: AGENTS.md is written before root symlinks point
+    # at it (setup_tool_symlinks → write_agents_md → generate_root_symlinks).
+    steps.append(write_agents_md(plan.project_dir, plan.name, force=plan.force))
+
     for root in generate_root_symlinks(
         plan.project_dir, _root_symlink_tools(registry, plan.tools_filter), force=plan.force
     ):
         steps.append(StepResult(level="success", message=f"Linked {root} → AGENTS.md"))
-
-    steps.append(write_agents_md(plan.project_dir, plan.name, force=plan.force))
 
     create_artifacts_dir(plan.project_dir)
     steps.append(StepResult(level="info", message=".ai/artifacts/ ready"))
