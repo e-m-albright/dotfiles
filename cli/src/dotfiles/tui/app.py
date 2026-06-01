@@ -12,6 +12,7 @@ from textual.widgets import Footer, Header
 
 from dotfiles.cli.context import AppContext, build_real_context
 from dotfiles.tui.panes.remote import RemotePane
+from dotfiles.tui.panes.sessions import SessionsPane
 
 _STYLES = Path(__file__).parent / "styles" / "dashboard.tcss"
 
@@ -35,4 +36,5 @@ class MissionControlApp(App[None]):
         yield Header()
         with Vertical():
             yield RemotePane(self._ctx)
+            yield SessionsPane(self._ctx)
         yield Footer()
