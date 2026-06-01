@@ -5,6 +5,7 @@ import sys
 import typer
 
 from dotfiles import __version__
+from dotfiles.banner import gradient_banner
 from dotfiles.cli.agent import agent_app
 from dotfiles.cli.brew import brew_app
 from dotfiles.cli.context import build_real_context
@@ -63,6 +64,7 @@ def tui() -> None:
 @app.command()
 def version() -> None:
     """Print the dotfiles-cli version."""
+    console.print(gradient_banner())
     console.print(__version__)
 
 
