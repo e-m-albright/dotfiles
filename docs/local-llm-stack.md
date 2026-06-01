@@ -143,9 +143,9 @@ When considering a new local model:
    leaderboard](https://aider.chat/docs/leaderboards/), SWE-Bench Verified,
    and Terminal-Bench 2.0. For coding work, Terminal-Bench is the most
    predictive of real agentic behavior.
-6. **Speed bench:** run `dotfiles llm-bench <model>` (see `macos/llm-bench.sh`)
-   for repeatable tok/s + TTFT + reasoning-token check. Target: > 40 tok/s
-   gen for interactive use, > 100 for autocomplete.
+6. **Speed bench:** run `dotfiles llm bench <model>` for repeatable tok/s +
+   TTFT + reasoning-token check. Target: > 40 tok/s gen for interactive use,
+   > 100 for autocomplete.
 7. **Reasoning-mode check:** look at `reasoning_tokens` in the bench output.
    If > 0, factor the thinking tax into your max_tokens budgets.
 
@@ -164,9 +164,9 @@ When considering a new local model:
 ## How to use the bench tool
 
 ```bash
-dotfiles llm-bench list                          # what's loaded
-dotfiles llm-bench bench                         # bench currently-loaded model
-dotfiles llm-bench bench <model-id>              # load + bench specific model
-dotfiles llm-bench estimate <model-id> 262144    # context size estimate
-dotfiles llm-bench compare <a> <b>               # head-to-head two models
+dotfiles llm list                          # what's loaded
+dotfiles llm bench                         # bench currently-loaded model
+dotfiles llm bench <model-id>              # load + bench specific model
+dotfiles llm estimate <model-id> 262144    # context size estimate
+dotfiles llm compare <a> <b>               # head-to-head two models
 ```
