@@ -8,7 +8,9 @@ import random
 import shutil
 import string
 from collections.abc import Callable
-from typing import Any, cast
+from typing import Annotated
+
+from pydantic import BaseModel, BeforeValidator, Field
 
 from dotfiles.core.models import BenchResult
 from dotfiles.core.ports import HttpClient, ProcessRunner
@@ -21,6 +23,58 @@ BENCH_PROMPT = (
 )
 
 _WhichFn = Callable[[str], str | None]
+
+
+# ---------------------------------------------------------------------------
+# LM Studio API boundary models — validate the untyped JSON at the edge so the
+# bench logic works against typed fields instead of `dict[str, Any]` access.
+# Numeric coercers map a present-but-null value back to the zero default.
+# ---------------------------------------------------------------------------
+
+_Float = Annotated[float, BeforeValidator(lambda v: float(v) if v else 0.0)]
+_Int = Annotated[int, BeforeValidator(lambda v: int(v) if v else 0)]
+
+
+class LmsModel(BaseModel):
+    """One entry from GET /api/v0/models."""
+
+    id: str = ""
+    state: str = ""
+
+
+class LmsModelsResponse(BaseModel):
+    data: tuple[LmsModel, ...] = ()
+
+
+class _Stats(BaseModel):
+    tokens_per_second: _Float = 0.0
+    time_to_first_token: _Float = 0.0
+    generation_time: _Float = 0.0
+
+
+class _ReasoningDetails(BaseModel):
+    reasoning_tokens: _Int = 0
+
+
+class _Usage(BaseModel):
+    prompt_tokens: _Int = 0
+    completion_tokens_details: _ReasoningDetails = Field(default_factory=_ReasoningDetails)
+
+
+class _Message(BaseModel):
+    content: str = ""
+
+
+class _Choice(BaseModel):
+    message: _Message = Field(default_factory=_Message)
+
+
+class LmsCompletion(BaseModel):
+    """A /api/v0/chat/completions response (the fields the bench reads)."""
+
+    stats: _Stats = Field(default_factory=_Stats)
+    usage: _Usage = Field(default_factory=_Usage)
+    choices: tuple[_Choice, ...] = ()
 
 
 class LMStudioService:
@@ -50,10 +104,12 @@ class LMStudioService:
 
     def current_loaded_id(self) -> str | None:
         """Return the ID of the first loaded model, or None."""
-        resp: Any = self._http.get_json(f"{self._s.lms_host}/api/v0/models")
-        for item in cast(list[Any], resp.get("data", [])):
-            if item.get("state") == "loaded":
-                return str(item["id"])
+        resp = LmsModelsResponse.model_validate(
+            self._http.get_json(f"{self._s.lms_host}/api/v0/models")
+        )
+        for item in resp.data:
+            if item.state == "loaded":
+                return item.id
         return None
 
     def ensure_loaded(self, model: str) -> None:
@@ -110,59 +166,51 @@ class LMStudioService:
             },
         )
 
-    def _token_gen(self, model: str) -> Any:
-        return self._http.post_json(
-            self._completions_url(),
-            {
-                "model": model,
-                "messages": [{"role": "user", "content": BENCH_PROMPT}],
-                "max_tokens": self._s.tg_tokens,
-                "temperature": 0,
-                "stream": False,
-            },
+    def _token_gen(self, model: str) -> LmsCompletion:
+        return LmsCompletion.model_validate(
+            self._http.post_json(
+                self._completions_url(),
+                {
+                    "model": model,
+                    "messages": [{"role": "user", "content": BENCH_PROMPT}],
+                    "max_tokens": self._s.tg_tokens,
+                    "temperature": 0,
+                    "stream": False,
+                },
+            )
         )
 
-    def _prompt_eval(self, model: str) -> Any:
+    def _prompt_eval(self, model: str) -> LmsCompletion:
         prompt = _random_words(self._s.pp_tokens)
-        return self._http.post_json(
-            self._completions_url(),
-            {
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 1,
-                "temperature": 0,
-                "stream": False,
-            },
+        return LmsCompletion.model_validate(
+            self._http.post_json(
+                self._completions_url(),
+                {
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1,
+                    "temperature": 0,
+                    "stream": False,
+                },
+            )
         )
 
-    def _metrics(self, model: str, tg: Any, pp: Any) -> BenchResult:
-        tg_stats = tg.get("stats", {})
-        pp_stats = pp.get("stats", {})
+    def _metrics(self, model: str, tg: LmsCompletion, pp: LmsCompletion) -> BenchResult:
+        content = tg.choices[0].message.content if tg.choices else ""
 
-        tg_tps: float = tg_stats.get("tokens_per_second", 0) or 0
-        ttft: float = tg_stats.get("time_to_first_token", 0) or 0
-        reasoning: int = (
-            tg.get("usage", {}).get("completion_tokens_details", {}).get("reasoning_tokens", 0) or 0
-        )
-        choices: list[Any] = tg.get("choices") or [{}]
-        content: str = choices[0].get("message", {}).get("content", "") or ""
-        content_len: int = len(content)
-
-        pp_ttft: float = pp_stats.get("time_to_first_token", 0) or 0
-        pp_gen: float = pp_stats.get("generation_time", 0) or 0
-        pp_in: int = pp.get("usage", {}).get("prompt_tokens", 0) or 0
-        pp_wall = max(pp_ttft, pp_gen)
+        pp_in = pp.usage.prompt_tokens
+        pp_wall = max(pp.stats.time_to_first_token, pp.stats.generation_time)
         pp_tps = (pp_in / pp_wall) if pp_wall > 0 and pp_in > 0 else 0.0
 
         return BenchResult(
             model=model,
-            tg_tps=tg_tps,
+            tg_tps=tg.stats.tokens_per_second,
             pp_tps=pp_tps,
             pp_tokens=pp_in,
             pp_wall=pp_wall,
-            ttft=ttft,
-            reasoning_tokens=reasoning,
-            content_len=content_len,
+            ttft=tg.stats.time_to_first_token,
+            reasoning_tokens=tg.usage.completion_tokens_details.reasoning_tokens,
+            content_len=len(content),
         )
 
 

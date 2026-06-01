@@ -53,7 +53,7 @@ def list_models(ctx: typer.Context) -> None:
 @llm_app.command()
 def bench(
     ctx: typer.Context,
-    model: str = typer.Argument(None, help="Model ID to bench (default: currently loaded)."),
+    model: str | None = typer.Argument(None, help="Model ID to bench (default: currently loaded)."),
 ) -> None:
     """Benchmark a model: throughput, TTFT, and reasoning-mode check."""
     app_ctx = app_context(ctx)
