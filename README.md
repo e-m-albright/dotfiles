@@ -443,11 +443,17 @@ dotfiles sesh ls             # list sessions
 dotfiles sesh new <name>     # create + attach
 dotfiles sesh attach <name>  # attach (create if needed)
 dotfiles sesh kill <name>    # kill a session
+dotfiles snapshot            # Capture machine state (brew, runtimes, symlinks, agent config)
+dotfiles snapshot ls         # List saved snapshots, newest first
+dotfiles snapshot diff [A] [B]
+                             # Diff two snapshots; A/B are slug prefixes or 'now'
 ```
 
 `dotfiles remote setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
 
 `dotfiles sesh` (alias: `dotfiles session`) manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote setup` also prints a picker-based Termius startup command that drops straight into the fzf session picker.
+
+`dotfiles snapshot` captures a point-in-time machine state and saves it as JSON under `~/.local/state/dotfiles/snapshots/`. Use `diff now` to compare the latest saved snapshot against the current live state, or pass two slug prefixes to diff any two captures.
 
 Enable tab completion:
 ```bash
