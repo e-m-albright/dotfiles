@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import shutil
 from collections.abc import Callable
+from pathlib import Path
 
-from dotfiles.core.agent_config import McpServerEntry
+from dotfiles.core.agent_config import McpServerEntry, load_mcp_servers
+from dotfiles.core.agent_overview import AgentOverviewService
 from dotfiles.core.models import AgentOverview, McpProbe, VendorVerify
-from dotfiles.core.ports import HttpClient
+from dotfiles.core.ports import HttpClient, ProcessRunner
 
 _VENDORS = ("claude", "cursor", "codex", "gemini")
 
@@ -109,3 +111,38 @@ def build_vendor_verifies(
             )
         )
     return verifies
+
+
+class SkillHealthService:
+    """Wires AgentOverviewService + MCP config into per-vendor skill-health."""
+
+    def __init__(
+        self,
+        *,
+        runner: ProcessRunner,
+        http: HttpClient,
+        dotfiles_dir: Path,
+        home: Path,
+        which: Callable[[str], str | None] = shutil.which,
+    ) -> None:
+        self._runner = runner
+        self._http = http
+        self._dotfiles = dotfiles_dir
+        self._home = home
+        self._which = which
+
+    def verify(self, *, offline: bool = False) -> list[VendorVerify]:
+        overview = AgentOverviewService(
+            runner=self._runner,
+            dotfiles_dir=self._dotfiles,
+            home=self._home,
+            which=self._which,
+        ).overview()
+        mcp_servers = load_mcp_servers(self._dotfiles / "agents" / "shared" / "mcp-servers.json")
+        return build_vendor_verifies(
+            overview,
+            mcp_servers,
+            http=self._http,
+            which=self._which,
+            offline=offline,
+        )

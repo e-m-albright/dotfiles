@@ -9,8 +9,8 @@ from dotfiles.core.models import (
     SkillsSummary,
     VendorVerify,
 )
-from dotfiles.core.skill_health import build_vendor_verifies, probe_mcp
-from tests.fakes import FakeHttpClient
+from dotfiles.core.skill_health import SkillHealthService, build_vendor_verifies, probe_mcp
+from tests.fakes import FakeHttpClient, FakeProcessRunner
 
 
 def test_vendor_verify_holds_counts_drift_and_probes():
@@ -124,3 +124,15 @@ def test_build_vendor_verifies_offline_skips_probes():
     )
     claude = next(v for v in verifies if v.vendor == "claude")
     assert claude.mcp == ()
+
+
+def test_skill_health_service_runs_over_empty_tree(tmp_path):
+    svc = SkillHealthService(
+        runner=FakeProcessRunner(),
+        http=FakeHttpClient(),
+        dotfiles_dir=tmp_path / "d",
+        home=tmp_path / "h",
+        which=lambda c: None,
+    )
+    verifies = svc.verify(offline=True)
+    assert {v.vendor for v in verifies} == {"claude", "cursor", "codex", "gemini"}
