@@ -222,8 +222,6 @@ def installed_casks(runner: ProcessRunner) -> set[str]:
 def stale_packages(
     manifest: PackageManifest,
     runner: ProcessRunner,
-    *,
-    flags_on: set[str],
 ) -> list[str]:
     """Return installed packages that are not declared anywhere in the manifest.
 

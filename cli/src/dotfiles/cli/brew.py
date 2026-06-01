@@ -31,17 +31,12 @@ def _manifest(ctx: typer.Context) -> PackageManifest:
     return PackageManifest.load(toml_path)
 
 
-def _flags_on(*, no_ai: bool, no_productivity: bool, no_social: bool) -> set[str]:
-    import os
-
-    flags: set[str] = set()
-    if not no_ai and os.environ.get("AI", "1") != "0":
-        flags.add("ai")
-    if not no_productivity and os.environ.get("PRODUCTIVITY", "1") != "0":
-        flags.add("productivity")
-    if not no_social and os.environ.get("SOCIAL", "1") != "0":
-        flags.add("social")
-    return flags
+def _flags_on(
+    env_flags: frozenset[str], *, no_ai: bool, no_productivity: bool, no_social: bool
+) -> set[str]:
+    """Intersect the env-enabled feature flags with the per-run --no-* overrides."""
+    disabled = {"ai": no_ai, "productivity": no_productivity, "social": no_social}
+    return {flag for flag in env_flags if not disabled.get(flag, False)}
 
 
 @brew_app.command()
@@ -61,7 +56,9 @@ def install(
     """Install all packages declared in packages.toml (idempotent)."""
     app_ctx = app_context(ctx)
     manifest = _manifest(ctx)
-    flags = _flags_on(no_ai=no_ai, no_productivity=no_productivity, no_social=no_social)
+    flags = _flags_on(
+        app_ctx.feature_flags, no_ai=no_ai, no_productivity=no_productivity, no_social=no_social
+    )
     runner = app_ctx.runner
 
     all_steps: list[StepResult] = []
@@ -116,10 +113,9 @@ def stale(ctx: typer.Context) -> None:
     app_ctx = app_context(ctx)
     manifest = _manifest(ctx)
     runner = app_ctx.runner
-    flags = {"ai", "productivity", "social"}
 
-    stale_list = stale_packages(manifest, runner, flags_on=flags)
-    missing_list = missing_packages(manifest, runner, flags_on=flags)
+    stale_list = stale_packages(manifest, runner)
+    missing_list = missing_packages(manifest, runner, flags_on=set(app_ctx.feature_flags))
 
     console.print("\n[bold blue]Stale packages[/] (installed but not declared)")
     if stale_list:

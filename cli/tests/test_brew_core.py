@@ -305,7 +305,7 @@ def test_stale_packages_installed_not_declared(tmp_path: Path) -> None:
         stdout="git\ncurl\nsome-random-tool\n",
     )
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    stale = stale_packages(manifest, runner, flags_on={"ai", "productivity", "social"})
+    stale = stale_packages(manifest, runner)
     assert "some-random-tool" in stale
     assert "git" not in stale
     assert "curl" not in stale
@@ -321,7 +321,7 @@ def test_stale_disabled_not_stale(tmp_path: Path) -> None:
         stdout="ffmpeg\n",
     )
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    stale = stale_packages(manifest, runner, flags_on={"ai", "productivity", "social"})
+    stale = stale_packages(manifest, runner)
     assert "ffmpeg" not in stale
 
 
@@ -333,7 +333,7 @@ def test_stale_returns_sorted(tmp_path: Path) -> None:
         stdout="zzz-tool\naaa-tool\n",
     )
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    stale = stale_packages(manifest, runner, flags_on=set())
+    stale = stale_packages(manifest, runner)
     assert stale == sorted(stale)
 
 
@@ -342,7 +342,7 @@ def test_stale_empty_when_nothing_extra(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("brew", "list", "--formula", "-1"), stdout="git\ncurl\n")
     runner.script(("brew", "list", "--cask", "-1"), stdout="obsidian\n")
-    stale = stale_packages(manifest, runner, flags_on={"ai", "productivity", "social"})
+    stale = stale_packages(manifest, runner)
     assert stale == []
 
 
@@ -427,5 +427,5 @@ def test_stale_ignores_versioned_keg_of_declared_alias(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("brew", "list", "--formula", "-1"), stdout="openssl@3\ngit\n")
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    stale = stale_packages(manifest, runner, flags_on=set())
+    stale = stale_packages(manifest, runner)
     assert "openssl@3" not in stale

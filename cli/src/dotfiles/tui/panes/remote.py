@@ -24,7 +24,7 @@ class RemotePane(Container):
 
     BORDER_TITLE = "Remote"
     BINDINGS: ClassVar[list[BindingType]] = [
-        Binding("t", "toggle_login", "Toggle Remote Login"),
+        Binding("t", "toggle_login", "Remote Login setup help"),
         Binding("c", "copy_connect", "Copy connect cmd"),
         Binding("k", "kill_sessions", "Kill mosh sessions"),
     ]

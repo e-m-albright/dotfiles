@@ -10,13 +10,6 @@ from pathlib import Path
 
 from dotfiles.core.models import StepResult
 
-# Placeholder strings that appear in the recipe templates.
-_PLACEHOLDERS: dict[str, str] = {
-    "package.json": '"my-sveltekit-app"',
-    "pyproject.toml": 'name = "my-python-app"',
-    "Cargo.toml": 'name = "my-rust-app"',
-}
-
 
 def _replace_in_file(path: Path, old: str, new: str) -> bool:
     """Replace *old* with *new* in *path*.  Returns True if a change was made."""

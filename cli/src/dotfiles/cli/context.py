@@ -33,6 +33,9 @@ class AppContext:
     llm_settings: LlmSettings = field(default_factory=LlmSettings)
     dotfiles_dir: Path = _REPO_ROOT
     state_dir: Path = _REPO_ROOT / ".local-state"  # overridden by build_real_context
+    # Feature flags enabled via the environment (AI/PRODUCTIVITY/SOCIAL); read in
+    # the composition root, never via os.environ inside a command.
+    feature_flags: frozenset[str] = frozenset({"ai", "productivity", "social"})
 
 
 def app_context(ctx: typer.Context) -> AppContext:
@@ -44,6 +47,12 @@ def app_context(ctx: typer.Context) -> AppContext:
     obj = ctx.obj
     assert isinstance(obj, AppContext)
     return obj
+
+
+def _env_feature_flags() -> frozenset[str]:
+    """Flags enabled via env vars (AI/PRODUCTIVITY/SOCIAL); on unless set to "0"."""
+    env_names = {"ai": "AI", "productivity": "PRODUCTIVITY", "social": "SOCIAL"}
+    return frozenset(flag for flag, env in env_names.items() if os.environ.get(env, "1") != "0")
 
 
 def build_real_context(*, interactive: bool) -> AppContext:
@@ -61,4 +70,5 @@ def build_real_context(*, interactive: bool) -> AppContext:
         llm_settings=LlmSettings(),
         dotfiles_dir=dotfiles_dir,
         state_dir=state_root / "dotfiles",
+        feature_flags=_env_feature_flags(),
     )
