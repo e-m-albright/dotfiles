@@ -30,6 +30,7 @@ sub_help () {
     printf "   llm-bench <cmd>      Evaluate local LM Studio models (list|bench|estimate|compare)\n"
     printf "   remote setup [opts]    Set up SSH/Mosh/Zellij access for Termius\n"
     printf "   remote disable [opts]  Turn off macOS Remote Login for phone access\n"
+    printf "   session|sesh <cmd>     zellij sessions: ls, attach, new, kill, or bare picker\n"
     printf "\n"
     printf "${BLUE}Namespaces:${NC}\n"
     printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
@@ -547,6 +548,8 @@ _dotfiles() {
         'completions:Output shell completions'
         'llm-bench:Evaluate local LM Studio models'
         'remote:Phone remote-shell access (setup, disable)'
+        'session:zellij sessions (ls, attach, new, kill, picker)'
+        'sesh:zellij sessions (alias)'
         'agent:Agent vendor namespace (setup, overview)'
         'verify:Verification namespace (vendors, skills)'
         'brew:Brew namespace (install, stale)'
@@ -608,7 +611,7 @@ ns_cursor() {
 
 # Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
 # As later phases land, add their names to this list.
-PY_CLI_COMMANDS=" version remote "
+PY_CLI_COMMANDS=" version remote session sesh "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi

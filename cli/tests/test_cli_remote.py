@@ -23,9 +23,14 @@ def _flat(output: str) -> str:
 
 
 def _mosh_line(output: str) -> str:
-    """Return the single line containing the mosh command; fail if it was wrapped."""
+    """Return the direct-attach mosh command line (first mosh line in output).
+
+    Task 7 added a second mosh line (picker variant) after the first; callers
+    testing the direct-attach command still work because they look for the
+    zellij-attach form which only appears in the first line.
+    """
     lines = [ln for ln in output.splitlines() if ln.startswith("mosh --server=")]
-    assert len(lines) == 1, f"mosh command must be one line, got: {lines!r}"
+    assert len(lines) >= 1, f"expected at least one mosh line, got: {lines!r}"
     return lines[0]
 
 

@@ -421,9 +421,16 @@ dotfiles remote disable --dry-run
                              # Preview turning off macOS Remote Login
 dotfiles remote disable --kill-sessions
                              # Turn off Remote Login and kill active SSH/Mosh sessions
+dotfiles sesh                # fzf-pick a live zellij session and attach
+dotfiles sesh ls             # list sessions
+dotfiles sesh new <name>     # create + attach
+dotfiles sesh attach <name>  # attach (create if needed)
+dotfiles sesh kill <name>    # kill a session
 ```
 
 `dotfiles remote setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
+
+`dotfiles sesh` (alias: `dotfiles session`) manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote setup` also prints a picker-based Termius startup command that drops straight into the fzf session picker.
 
 Enable tab completion:
 ```bash

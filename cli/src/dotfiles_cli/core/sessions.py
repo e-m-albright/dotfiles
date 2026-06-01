@@ -56,9 +56,10 @@ class SessionService:
 
     def list(self) -> list[Session]:
         result = self._runner.run(("zellij", "list-sessions", "--no-formatting"))
-        if _EMPTY_MARKER not in result.stdout and not result.ok:
+        combined = result.stdout + result.stderr
+        if _EMPTY_MARKER not in combined and not result.ok:
             raise SessionError(result.stderr.strip() or "zellij list-sessions failed")
-        return parse_sessions(result.stdout)
+        return parse_sessions(combined)
 
     def kill(self, name: str) -> StepResult:
         result = self._runner.run(("zellij", "kill-session", name))
