@@ -301,3 +301,49 @@ def test_service_agents_dir_absent_no_crash() -> None:
     svc = _make_svc(fs)
     results = svc.validate()
     assert all(r.kind == "skill" for r in results)
+
+
+# ---------------------------------------------------------------------------
+# Fix 1 — trigger-clause regex must honor word boundaries
+# ---------------------------------------------------------------------------
+
+
+def test_use_whenever_does_not_satisfy_trigger() -> None:
+    """'use whenever you like' must NOT count as a trigger clause (word boundary fix)."""
+    text = _skill_text(description="use whenever you like to do something very useful indeed here.")
+    result = validate_file(
+        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+    )
+    assert any("MISSING_TRIGGER" in w for w in result.warnings), (
+        "Expected MISSING_TRIGGER warning for 'use whenever' but got: " + str(result.warnings)
+    )
+
+
+def test_use_when_x_satisfies_trigger() -> None:
+    """'Use when X' must still suppress the MISSING_TRIGGER warning."""
+    text = _skill_text(description="Use when you need to perform this specific action here.")
+    result = validate_file(
+        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+    )
+    assert not any("MISSING_TRIGGER" in w for w in result.warnings), (
+        "Unexpected MISSING_TRIGGER for valid 'Use when': " + str(result.warnings)
+    )
+
+
+# ---------------------------------------------------------------------------
+# Fix 2 — unclosed frontmatter must produce empty body (no body-length warning)
+# ---------------------------------------------------------------------------
+
+
+def test_unclosed_frontmatter_no_body_length_warning() -> None:
+    """A file with unclosed frontmatter and >500 total lines must NOT warn on body length."""
+    fm_lines = "---\nname: my-skill\ndescription: Use when testing unclosed frontmatter here.\n"
+    # 501 extra lines — would trigger body > 500 if mistakenly used as body
+    extra = "\n".join(f"line {i}" for i in range(501))
+    text = fm_lines + extra
+    result = validate_file(
+        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+    )
+    assert not any("body" in w and "500" in w for w in result.warnings), (
+        "Spurious body-length warning for unclosed frontmatter: " + str(result.warnings)
+    )

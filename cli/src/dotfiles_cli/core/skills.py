@@ -26,7 +26,7 @@ _CAPS_RE = re.compile(r"(?<![A-Za-z0-9_])(?:MUST|ALWAYS|NEVER)(?![A-Za-z0-9_])")
 # Name must match this pattern.
 _NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
-_TRIGGER_RE = re.compile(r"(?:use when|trigger when)", re.IGNORECASE)
+_TRIGGER_RE = re.compile(r"(?<!\w)(?:use when|trigger when)(?!\w)", re.IGNORECASE)
 
 _BODY_LIMIT: dict[str, int] = {"skill": 500, "agent": 200}
 _DESC_MAX = 1024
@@ -57,7 +57,7 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], list[str]]:
             break
 
     if fm_end is None:
-        return {}, lines  # unclosed frontmatter; treat as no FM
+        return {}, []  # unclosed frontmatter -> body undefined (matches Bash awk = 0)
 
     fm_lines = lines[1:fm_end]
     body_lines = lines[fm_end + 1 :]
