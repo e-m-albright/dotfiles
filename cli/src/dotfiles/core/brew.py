@@ -196,6 +196,17 @@ def _all_declared_names(manifest: PackageManifest) -> set[str]:
 # ---------------------------------------------------------------------------
 
 
+def _strip_version(name: str) -> str:
+    """Drop a Homebrew version suffix: ``openssl@3`` -> ``openssl``.
+
+    Homebrew lists a versioned keg under its full name (``openssl@3``) even when
+    the manifest declares the unversioned alias (``openssl``). Matching on the
+    stripped base keeps declared/installed comparisons alias-aware, the way the
+    original brew.sh did via ``brew list <name>``.
+    """
+    return name.split("@", 1)[0]
+
+
 def installed_formulae(runner: ProcessRunner) -> set[str]:
     """Return the set of formulae currently installed via Homebrew."""
     result = runner.run(("brew", "list", "--formula", "-1"))
@@ -224,7 +235,11 @@ def stale_packages(
     formulae = installed_formulae(runner)
     casks = installed_casks(runner)
     installed = formulae | casks
-    stale = sorted(installed - declared)
+    # A versioned keg (openssl@3) is not stale when its base name (openssl) is
+    # declared — mirrors the alias-aware match in missing_packages.
+    stale = sorted(
+        name for name in installed if name not in declared and _strip_version(name) not in declared
+    )
     return stale
 
 
@@ -238,8 +253,11 @@ def missing_packages(
     formulae = installed_formulae(runner)
     casks = installed_casks(runner)
     installed = formulae | casks
+    # Treat a versioned keg (openssl@3) as satisfying its declared base (openssl),
+    # so an alias declaration is not re-installed on every run.
+    satisfied = installed | {_strip_version(name) for name in installed}
     wanted = enabled_packages(manifest, flags_on=flags_on)
-    return [(name, kind) for name, kind in wanted if name not in installed]
+    return [(name, kind) for name, kind in wanted if name not in satisfied]
 
 
 # ---------------------------------------------------------------------------

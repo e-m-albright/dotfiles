@@ -389,3 +389,43 @@ def test_missing_empty_when_all_installed(tmp_path: Path) -> None:
     runner.script(("brew", "list", "--cask", "-1"), stdout=installed_str)
     missing = missing_packages(manifest, runner, flags_on={"ai", "productivity", "social"})
     assert missing == []
+
+
+# ---------------------------------------------------------------------------
+# Version-keg alias matching (openssl declared vs openssl@3 installed)
+# ---------------------------------------------------------------------------
+
+_ALIAS_TOML = """\
+[taps]
+items = []
+
+[[section]]
+name = "Core CLI"
+kind = "formula"
+packages = [
+  { name = "openssl", note = "TLS" },
+  { name = "git", note = "VCS" },
+]
+"""
+
+
+def test_missing_ignores_versioned_keg_of_declared_alias(tmp_path: Path) -> None:
+    """A declared alias (openssl) is satisfied by its versioned keg (openssl@3)."""
+    manifest = PackageManifest.load(make_toml(tmp_path, _ALIAS_TOML))
+    runner = FakeProcessRunner()
+    runner.script(("brew", "list", "--formula", "-1"), stdout="openssl@3\ngit\n")
+    runner.script(("brew", "list", "--cask", "-1"), stdout="")
+    missing = missing_packages(manifest, runner, flags_on=set())
+    names = [n for n, _ in missing]
+    # openssl@3 satisfies the declared `openssl` — must not be re-installed.
+    assert "openssl" not in names
+
+
+def test_stale_ignores_versioned_keg_of_declared_alias(tmp_path: Path) -> None:
+    """An installed versioned keg (openssl@3) is not stale when its base is declared."""
+    manifest = PackageManifest.load(make_toml(tmp_path, _ALIAS_TOML))
+    runner = FakeProcessRunner()
+    runner.script(("brew", "list", "--formula", "-1"), stdout="openssl@3\ngit\n")
+    runner.script(("brew", "list", "--cask", "-1"), stdout="")
+    stale = stale_packages(manifest, runner, flags_on=set())
+    assert "openssl@3" not in stale
