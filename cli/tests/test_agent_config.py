@@ -14,10 +14,6 @@ from dotfiles.core.agent_config import (
     load_config,
     load_mcp_servers,
 )
-from tests.fakes import FakeFileSystem
-
-_PATH = Path("/fake/config.json")
-
 
 # ---------------------------------------------------------------------------
 # McpServerEntry
@@ -134,30 +130,25 @@ class TestSettingsWithPermissions:
 
 
 class TestLoadConfig:
-    def test_returns_model_for_valid_file(self) -> None:
-        fs = FakeFileSystem()
-        fs.write_text(_PATH, '{"allow": ["a"], "deny": []}')
-        result = load_config(fs, _PATH, PermissionsBlock)
+    def test_returns_model_for_valid_file(self, tmp_path: Path) -> None:
+        p = tmp_path / "config.json"
+        p.write_text('{"allow": ["a"], "deny": []}')
+        result = load_config(p, PermissionsBlock)
         assert result is not None
         assert len(result.allow) == 1
 
-    def test_returns_none_for_missing_file(self) -> None:
-        fs = FakeFileSystem()
-        assert load_config(fs, _PATH, PermissionsBlock) is None
+    def test_returns_none_for_missing_file(self, tmp_path: Path) -> None:
+        assert load_config(tmp_path / "missing.json", PermissionsBlock) is None
 
-    def test_returns_none_for_invalid_json(self) -> None:
-        fs = FakeFileSystem()
-        fs.write_text(_PATH, "NOT JSON {{{{")
-        assert load_config(fs, _PATH, PermissionsBlock) is None
+    def test_returns_none_for_invalid_json(self, tmp_path: Path) -> None:
+        p = tmp_path / "config.json"
+        p.write_text("NOT JSON {{{{")
+        assert load_config(p, PermissionsBlock) is None
 
-    def test_returns_none_for_wrong_type(self) -> None:
-        fs = FakeFileSystem()
-        # JSON is valid but pydantic can coerce — just ensure we don't crash
-        fs.write_text(_PATH, '"just a string"')
-        # pydantic will raise ValidationError for a model expecting a dict
-        result = load_config(fs, _PATH, PermissionsBlock)
-        # Either None (if pydantic rejects) or a valid model is acceptable;
-        # what matters is no exception escapes.
+    def test_returns_none_for_wrong_type(self, tmp_path: Path) -> None:
+        p = tmp_path / "config.json"
+        p.write_text('"just a string"')
+        result = load_config(p, PermissionsBlock)
         assert result is None or isinstance(result, PermissionsBlock)
 
 
@@ -167,32 +158,31 @@ class TestLoadConfig:
 
 
 class TestLoadMcpServers:
-    def test_returns_parsed_entries(self) -> None:
-        fs = FakeFileSystem()
+    def test_returns_parsed_entries(self, tmp_path: Path) -> None:
+        p = tmp_path / "mcp.json"
         data = {"myserver": {"targets": ["claude", "cursor"]}}
-        fs.write_text(_PATH, json.dumps(data))
-        result = load_mcp_servers(fs, _PATH)
+        p.write_text(json.dumps(data))
+        result = load_mcp_servers(p)
         assert "myserver" in result
         assert result["myserver"].targets == ["claude", "cursor"]
 
-    def test_filters_non_object_entries(self) -> None:
-        fs = FakeFileSystem()
+    def test_filters_non_object_entries(self, tmp_path: Path) -> None:
+        p = tmp_path / "mcp.json"
         data = {"$comment": "ignore", "server": {"targets": ["claude"]}}
-        fs.write_text(_PATH, json.dumps(data))
-        result = load_mcp_servers(fs, _PATH)
+        p.write_text(json.dumps(data))
+        result = load_mcp_servers(p)
         assert list(result.keys()) == ["server"]
 
-    def test_returns_empty_for_missing_file(self) -> None:
-        fs = FakeFileSystem()
-        assert load_mcp_servers(fs, _PATH) == {}
+    def test_returns_empty_for_missing_file(self, tmp_path: Path) -> None:
+        assert load_mcp_servers(tmp_path / "missing.json") == {}
 
-    def test_returns_empty_for_invalid_json(self) -> None:
-        fs = FakeFileSystem()
-        fs.write_text(_PATH, "BAD JSON")
-        assert load_mcp_servers(fs, _PATH) == {}
+    def test_returns_empty_for_invalid_json(self, tmp_path: Path) -> None:
+        p = tmp_path / "mcp.json"
+        p.write_text("BAD JSON")
+        assert load_mcp_servers(p) == {}
 
-    def test_empty_targets_defaults(self) -> None:
-        fs = FakeFileSystem()
-        fs.write_text(_PATH, json.dumps({"srv": {}}))
-        result = load_mcp_servers(fs, _PATH)
+    def test_empty_targets_defaults(self, tmp_path: Path) -> None:
+        p = tmp_path / "mcp.json"
+        p.write_text(json.dumps({"srv": {}}))
+        result = load_mcp_servers(p)
         assert result["srv"].targets == []

@@ -12,12 +12,9 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+from dotfiles.core.fsutil import list_dir
 from dotfiles.core.models import FileValidation, FileValidationStatus
-
-if TYPE_CHECKING:
-    from dotfiles.core.ports import FileSystem
 
 # Compiled once; matches standalone MUST/ALWAYS/NEVER (word-boundary, not
 # adjacent to [A-Za-z0-9_]).
@@ -171,8 +168,7 @@ def validate_file(
 class SkillValidateService:
     """Validate all skills and agents in the dotfiles repo."""
 
-    def __init__(self, *, fs: FileSystem, dotfiles_dir: Path) -> None:
-        self._fs = fs
+    def __init__(self, *, dotfiles_dir: Path) -> None:
         self._dotfiles_dir = dotfiles_dir
 
     def validate(self) -> list[FileValidation]:
@@ -187,16 +183,16 @@ class SkillValidateService:
 
     def _validate_skills(self) -> list[FileValidation]:
         skills_root = self._dotfiles_dir / ".ai" / "skills"
-        if not self._fs.exists(skills_root) or not self._fs.is_dir(skills_root):
+        if not skills_root.exists() or not skills_root.is_dir():
             return []
 
         results: list[FileValidation] = []
-        for entry in sorted(self._fs.iterdir(skills_root), key=lambda p: p.name):
-            if not self._fs.is_dir(entry):
+        for entry in list_dir(skills_root):
+            if not entry.is_dir():
                 continue
             skill_md = entry / "SKILL.md"
             rel_dir = str(entry.relative_to(self._dotfiles_dir)) + "/"
-            if not self._fs.exists(skill_md):
+            if not skill_md.exists():
                 results.append(
                     FileValidation(
                         rel_path=rel_dir,
@@ -206,7 +202,7 @@ class SkillValidateService:
                     )
                 )
                 continue
-            text = self._fs.read_text(skill_md)
+            text = skill_md.read_text()
             rel = str(skill_md.relative_to(self._dotfiles_dir))
             results.append(
                 validate_file(text, kind="skill", expected_name=entry.name, rel_path=rel)
@@ -215,14 +211,14 @@ class SkillValidateService:
 
     def _validate_agents(self) -> list[FileValidation]:
         agents_root = self._dotfiles_dir / ".ai" / "agents"
-        if not self._fs.exists(agents_root) or not self._fs.is_dir(agents_root):
+        if not agents_root.exists() or not agents_root.is_dir():
             return []
 
         results: list[FileValidation] = []
-        for entry in sorted(self._fs.iterdir(agents_root), key=lambda p: p.name):
-            if self._fs.is_dir(entry) or entry.suffix != ".md":
+        for entry in list_dir(agents_root):
+            if entry.is_dir() or entry.suffix != ".md":
                 continue
-            text = self._fs.read_text(entry)
+            text = entry.read_text()
             rel = str(entry.relative_to(self._dotfiles_dir))
             expected = entry.stem
             results.append(validate_file(text, kind="agent", expected_name=expected, rel_path=rel))

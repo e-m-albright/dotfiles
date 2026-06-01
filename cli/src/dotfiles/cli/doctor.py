@@ -42,7 +42,6 @@ def doctor_command(
     app_ctx: AppContext = ctx.obj
     svc = DoctorService(
         runner=app_ctx.runner,
-        fs=app_ctx.fs,
         home=app_ctx.home,
         dotfiles_dir=app_ctx.dotfiles_dir,
         fix=fix,

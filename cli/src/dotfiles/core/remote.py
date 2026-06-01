@@ -1,4 +1,4 @@
-"""Remote-shell setup/disable logic. Pure decisions over the ProcessRunner/FileSystem ports."""
+"""Remote-shell setup/disable logic. Pure decisions over the ProcessRunner port."""
 
 import shutil
 from collections.abc import Callable
@@ -6,7 +6,7 @@ from functools import cached_property
 from pathlib import Path
 
 from dotfiles.core.models import ConnectionInfo, RemoteStatus, StepResult
-from dotfiles.core.ports import FileSystem, ProcessRunner
+from dotfiles.core.ports import ProcessRunner
 
 _KEY_PREFIXES = ("ssh-ed25519 ", "ssh-rsa ", "ecdsa-sha2-")
 
@@ -36,13 +36,11 @@ class RemoteService:
         self,
         *,
         runner: ProcessRunner,
-        fs: FileSystem,
         interactive: bool,
         home: Path,
         which: Callable[[str], str | None] = shutil.which,
     ) -> None:
         self._runner = runner
-        self._fs = fs
         self._interactive = interactive
         self._home = home
         self._which = which
@@ -62,7 +60,7 @@ class RemoteService:
 
     @cached_property
     def _mosh_server(self) -> str:
-        if self._fs.exists(Path("/opt/homebrew/bin/mosh-server")):
+        if Path("/opt/homebrew/bin/mosh-server").exists():
             return "/opt/homebrew/bin/mosh-server"
         return self._which("mosh-server") or "/opt/homebrew/bin/mosh-server"
 
@@ -125,11 +123,11 @@ class RemoteService:
         return StepResult(level="success", message=f"installed {name}")
 
     def _write_key(self, keys: Path, add_key: str) -> StepResult:
-        existing = self._fs.read_text(keys) if self._fs.exists(keys) else ""
+        existing = keys.read_text() if keys.exists() else ""
         if add_key in existing.splitlines():
             return StepResult(level="success", message="Phone public key already present")
         separator = "" if not existing or existing.endswith("\n") else "\n"
-        self._fs.write_text(keys, existing + separator + add_key + "\n")
+        keys.write_text(existing + separator + add_key + "\n")
         return StepResult(level="success", message="Added phone public key")
 
     def _ensure_authorized_key(self, add_key: str | None, *, dry_run: bool) -> list[StepResult]:
@@ -139,11 +137,11 @@ class RemoteService:
         if dry_run:
             out.append(StepResult(level="info", message=f"DRY RUN: ensure {keys} (700/600)"))
         else:
-            self._fs.mkdir(ssh_dir)
-            self._fs.chmod(ssh_dir, 0o700)
-            if not self._fs.exists(keys):
-                self._fs.write_text(keys, "")
-            self._fs.chmod(keys, 0o600)
+            ssh_dir.mkdir(parents=True, exist_ok=True)
+            ssh_dir.chmod(0o700)
+            if not keys.exists():
+                keys.write_text("")
+            keys.chmod(0o600)
             out.append(StepResult(level="success", message="SSH authorized_keys ready"))
 
         if add_key is None:
@@ -184,7 +182,7 @@ class RemoteService:
                 StepResult(level="info", message="DRY RUN: launchctl kickstart sshd"),
             ]
         staging = self._home / ".dotfiles-sshd-remote.conf"
-        self._fs.write_text(staging, _HARDEN_CONTENT)
+        staging.write_text(_HARDEN_CONTENT)
         out = [self._sudo(("mkdir", "-p", _HARDEN_DIR), dry_run=False)]
         out.append(self._sudo(("install", "-m", "644", str(staging), _HARDEN_PATH), dry_run=False))
         out.append(

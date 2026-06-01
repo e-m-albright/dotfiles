@@ -224,7 +224,6 @@ def overview(ctx: typer.Context) -> None:
     assert isinstance(app_ctx, AppContext)
 
     svc = AgentOverviewService(
-        fs=app_ctx.fs,
         runner=app_ctx.runner,
         dotfiles_dir=app_ctx.dotfiles_dir,
         home=app_ctx.home,
@@ -238,7 +237,7 @@ def lint(ctx: typer.Context) -> None:
     app_ctx = ctx.obj
     assert isinstance(app_ctx, AppContext)
 
-    service = SkillValidateService(fs=app_ctx.fs, dotfiles_dir=app_ctx.dotfiles_dir)
+    service = SkillValidateService(dotfiles_dir=app_ctx.dotfiles_dir)
     results = service.validate()
 
     for v in results:
@@ -275,7 +274,6 @@ def gemini_prompt(
     assert isinstance(app_ctx, AppContext)
 
     svc = GeminiChunksService(
-        fs=app_ctx.fs,
         runner=app_ctx.runner,
         chunks_dir=app_ctx.dotfiles_dir / "prompts" / "gemini-chunks",
     )

@@ -17,12 +17,9 @@ from __future__ import annotations
 import shutil
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+from dotfiles.core.fsutil import list_dir
 from dotfiles.core.models import VendorSurface
-
-if TYPE_CHECKING:
-    from dotfiles.core.ports import FileSystem
 
 
 class VendorVerifyService:
@@ -31,12 +28,10 @@ class VendorVerifyService:
     def __init__(
         self,
         *,
-        fs: FileSystem,
         home: Path,
         dotfiles_dir: Path,
         which: Callable[[str], str | None] = shutil.which,
     ) -> None:
-        self._fs = fs
         self._home = home
         self._dotfiles_dir = dotfiles_dir
         self._which = which
@@ -128,12 +123,10 @@ class VendorVerifyService:
     # ------------------------------------------------------------------
 
     def _check(self, vendor: str, label: str, path: Path) -> VendorSurface:
-        fs = self._fs
-
-        if not fs.exists(path):
+        if not path.exists():
             return VendorSurface(vendor=vendor, label=label, status="missing", detail=str(path))
 
-        if fs.is_dir(path):
+        if path.is_dir():
             n_skills = self._count_skill_md(path)
             if n_skills > 0:
                 return VendorSurface(
@@ -143,7 +136,7 @@ class VendorVerifyService:
                     detail=f"{n_skills} skills @ {path}",
                 )
             # count all entries (ls -A equivalent)
-            n_entries = len(fs.iterdir(path))
+            n_entries = len(list_dir(path))
             if n_entries > 0:
                 return VendorSurface(
                     vendor=vendor,
@@ -161,9 +154,8 @@ class VendorVerifyService:
 
     def _count_skill_md(self, path: Path) -> int:
         """Count SKILL.md files at maxdepth 2 (the dir itself + immediate subdirs)."""
-        fs = self._fs
-        children = list(fs.iterdir(path))
+        children = list_dir(path)
         direct = sum(1 for c in children if c.name == "SKILL.md")
-        subdirs = [c for c in children if fs.is_dir(c)]
-        nested = sum(1 for sub in subdirs for gc in fs.iterdir(sub) if gc.name == "SKILL.md")
+        subdirs = [c for c in children if c.is_dir()]
+        nested = sum(1 for sub in subdirs for gc in list_dir(sub) if gc.name == "SKILL.md")
         return direct + nested

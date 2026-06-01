@@ -2,18 +2,17 @@
 
 Each model is tolerant of extra keys (extra="ignore") so new fields in the
 config files don't break parsing.  ``load_config`` is the single entry-point
-for reading a config file from the (injected) filesystem.
+for reading a config file from disk.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import json
+from pathlib import Path
+from typing import cast
 
 import pydantic
 from pydantic import BaseModel, ConfigDict, TypeAdapter
-
-if TYPE_CHECKING:
-    from dotfiles.core.ports import FileSystem
 
 # ---------------------------------------------------------------------------
 # Config file models
@@ -81,37 +80,29 @@ class SettingsWithPermissions(BaseModel):
 
 
 def load_config[M: BaseModel](
-    fs: FileSystem,
-    path: object,  # accepts Path; typed as object so callers don't need a cast
+    path: Path,
     model: type[M],
 ) -> M | None:
-    """Read *path* from *fs* and parse it as *model*.
+    """Read *path* and parse it as *model*.
 
     Returns None if the file is missing, the JSON is invalid, or pydantic
     rejects the payload.
     """
-    from pathlib import Path
-
-    p = path if isinstance(path, Path) else Path(str(path))
     try:
-        if not fs.exists(p):
+        if not path.exists():
             return None
-        text = fs.read_text(p)
+        text = path.read_text()
         return model.model_validate_json(text)
     except (pydantic.ValidationError, ValueError):
         return None
 
 
-def load_mcp_servers(fs: FileSystem, path: object) -> dict[str, McpServerEntry]:
+def load_mcp_servers(path: Path) -> dict[str, McpServerEntry]:
     """Read mcp-servers.json; return only object-valued entries parsed as McpServerEntry."""
-    import json
-    from pathlib import Path
-
-    p = path if isinstance(path, Path) else Path(str(path))
-    if not fs.exists(p):
+    if not path.exists():
         return {}
     try:
-        raw: object = json.loads(fs.read_text(p))
+        raw: object = json.loads(path.read_text())
     except (json.JSONDecodeError, OSError):
         return {}
     if not isinstance(raw, dict):

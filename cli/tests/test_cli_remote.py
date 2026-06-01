@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 from dotfiles.cli.main import app
@@ -52,8 +54,10 @@ def test_remote_setup_session_flag_changes_command() -> None:
     assert "zellij attach --create work" in line
 
 
-def test_remote_setup_bad_key_exits_nonzero() -> None:
-    fake = make_fake_context(runner=_runner_with_status(), interactive=True)
+def test_remote_setup_bad_key_exits_nonzero(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    home.mkdir()
+    fake = make_fake_context(runner=_runner_with_status(), interactive=True, home=home)
     result = runner.invoke(app, ["remote", "setup", "--add-key", "garbage"], obj=fake)
     assert result.exit_code != 0
     assert "does not look like" in result.output.lower() or "invalid" in result.output.lower()

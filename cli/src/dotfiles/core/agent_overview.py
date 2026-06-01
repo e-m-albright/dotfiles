@@ -20,6 +20,7 @@ from dotfiles.core.agent_config import (
     load_config,
     load_mcp_servers,
 )
+from dotfiles.core.fsutil import list_dir
 from dotfiles.core.models import (
     AgentOverview,
     AgentRow,
@@ -33,25 +34,23 @@ from dotfiles.core.models import (
 from dotfiles.core.verify import VendorVerifyService
 
 if TYPE_CHECKING:
-    from dotfiles.core.ports import FileSystem, ProcessRunner
+    from dotfiles.core.ports import ProcessRunner
 
 
 class AgentOverviewService:
     """Produces structured data for the agentic setup overview.
 
-    Parameters mirror the hexagonal pattern: inject fs/runner/paths; no globals.
+    Parameters mirror the hexagonal pattern: inject runner/paths; no globals.
     """
 
     def __init__(
         self,
         *,
-        fs: FileSystem,
         runner: ProcessRunner,
         dotfiles_dir: Path,
         home: Path,
         which: Callable[[str], str | None] = shutil.which,
     ) -> None:
-        self._fs = fs
         self._runner = runner
         self._dotfiles = dotfiles_dir
         self._home = home
@@ -80,7 +79,6 @@ class AgentOverviewService:
     def vendor_surfaces(self) -> list[VendorSurface]:
         """Return vendor surface presence checks, delegating to VendorVerifyService."""
         svc = VendorVerifyService(
-            fs=self._fs,
             home=self._home,
             dotfiles_dir=self._dotfiles,
             which=self._which,
@@ -94,7 +92,7 @@ class AgentOverviewService:
     def section_mcp(self) -> list[McpRow]:
         """Read agents/shared/mcp-servers.json; one McpRow per object-valued entry."""
         shared_mcp = self._dotfiles / "agents" / "shared" / "mcp-servers.json"
-        servers = load_mcp_servers(self._fs, shared_mcp)
+        servers = load_mcp_servers(shared_mcp)
         return [
             McpRow(
                 server=name,
@@ -134,21 +132,21 @@ class AgentOverviewService:
 
     def _claude_hook_events(self, path: Path) -> set[str]:
         """Keys of .hooks dict in claude/hooks.json."""
-        cfg = load_config(self._fs, path, ClaudeHooksConfig)
+        cfg = load_config(path, ClaudeHooksConfig)
         if cfg is None:
             return set()
         return {k for k in cfg.hooks if k}
 
     def _codex_hook_events(self, path: Path) -> set[str]:
         """Keys of .hooks dict in codex/hooks.json."""
-        cfg = load_config(self._fs, path, ClaudeHooksConfig)
+        cfg = load_config(path, ClaudeHooksConfig)
         if cfg is None:
             return set()
         return {k for k in cfg.hooks if k}
 
     def _cursor_hook_events(self, path: Path) -> set[str]:
         """Values of .hooks[].event in cursor/hooks/hooks.json."""
-        cfg = load_config(self._fs, path, CursorHooksConfig)
+        cfg = load_config(path, CursorHooksConfig)
         if cfg is None:
             return set()
         return {h.event for h in cfg.hooks if h.event}
@@ -161,9 +159,9 @@ class AgentOverviewService:
         """Count canonical SKILL.md files; count deployed dirs in claude/shared."""
         skills_root = self._dotfiles / ".ai" / "skills"
         canonical = 0
-        if self._fs.exists(skills_root) and self._fs.is_dir(skills_root):
-            for entry in self._fs.iterdir(skills_root):
-                if self._fs.is_dir(entry) and self._fs.exists(entry / "SKILL.md"):
+        if skills_root.exists() and skills_root.is_dir():
+            for entry in list_dir(skills_root):
+                if entry.is_dir() and (entry / "SKILL.md").exists():
                     canonical += 1
 
         claude_dir = self._home / ".claude" / "skills"
@@ -180,9 +178,9 @@ class AgentOverviewService:
 
     def _count_subdirs(self, path: Path) -> int:
         """Count immediate subdirectory entries under path (0 if not present)."""
-        if not self._fs.exists(path) or not self._fs.is_dir(path):
+        if not path.exists() or not path.is_dir():
             return 0
-        return sum(1 for p in self._fs.iterdir(path) if self._fs.is_dir(p))
+        return sum(1 for p in list_dir(path) if p.is_dir())
 
     # ------------------------------------------------------------------
     # Section 4: Subagents
@@ -191,7 +189,7 @@ class AgentOverviewService:
     def section_agents(self) -> list[AgentRow]:
         """One AgentRow per .ai/agents/*.md, with deployment flags."""
         agents_root = self._dotfiles / ".ai" / "agents"
-        if not self._fs.exists(agents_root) or not self._fs.is_dir(agents_root):
+        if not agents_root.exists() or not agents_root.is_dir():
             return []
 
         claude_agents = self._home / ".claude" / "agents"
@@ -199,16 +197,16 @@ class AgentOverviewService:
         pi_agents = self._home / ".pi" / "agent" / "agents"
 
         rows: list[AgentRow] = []
-        for entry in sorted(self._fs.iterdir(agents_root), key=lambda p: p.name):
-            if self._fs.is_dir(entry) or entry.suffix != ".md":
+        for entry in list_dir(agents_root):
+            if entry.is_dir() or entry.suffix != ".md":
                 continue
             name = entry.stem
             rows.append(
                 AgentRow(
                     name=name,
-                    claude=self._fs.exists(claude_agents / f"{name}.md"),
-                    codex=self._fs.exists(codex_agents / f"{name}.md"),
-                    pi=self._fs.exists(pi_agents / f"{name}.md"),
+                    claude=(claude_agents / f"{name}.md").exists(),
+                    codex=(codex_agents / f"{name}.md").exists(),
+                    pi=(pi_agents / f"{name}.md").exists(),
                 )
             )
         return rows
@@ -230,23 +228,17 @@ class AgentOverviewService:
 
     def _count_files_by_ext(self, path: Path, ext: str) -> int:
         """Count non-directory entries with the given extension under path."""
-        if not self._fs.exists(path) or not self._fs.is_dir(path):
+        if not path.exists() or not path.is_dir():
             return 0
-        return sum(1 for e in self._fs.iterdir(path) if not self._fs.is_dir(e) and e.suffix == ext)
+        return sum(1 for e in list_dir(path) if not e.is_dir() and e.suffix == ext)
 
     def _count_cursor_rules(self, path: Path) -> int:
-        """Count .mdc entries in agents/cursor/rules/.
-
-        The Bash script uses -type l (symlinks only). We count .mdc entries;
-        is_symlink detection is available on the FakeFileSystem but we count all
-        .mdc files — any non-symlink would be a misconfiguration and is still
-        reported faithfully in the count.
-        """
-        if not self._fs.exists(path) or not self._fs.is_dir(path):
+        """Count .mdc entries in agents/cursor/rules/."""
+        if not path.exists() or not path.is_dir():
             return 0
         count = 0
-        for entry in self._fs.iterdir(path):
-            if not self._fs.is_dir(entry) and entry.suffix == ".mdc":
+        for entry in list_dir(path):
+            if not entry.is_dir() and entry.suffix == ".mdc":
                 count += 1
         return count
 
@@ -265,7 +257,7 @@ class AgentOverviewService:
 
     def _perm_claude_deployed(self) -> list[PermissionRow]:
         path = self._home / ".claude" / "settings.json"
-        cfg = load_config(self._fs, path, SettingsWithPermissions)
+        cfg = load_config(path, SettingsWithPermissions)
         if cfg is None:
             return []
         return [
@@ -278,7 +270,7 @@ class AgentOverviewService:
 
     def _perm_claude_source(self) -> list[PermissionRow]:
         path = self._dotfiles / "agents" / "claude" / "permissions.json"
-        cfg = load_config(self._fs, path, PermissionsBlock)
+        cfg = load_config(path, PermissionsBlock)
         if cfg is None:
             return []
         return [
@@ -291,7 +283,7 @@ class AgentOverviewService:
 
     def _perm_cursor(self) -> list[PermissionRow]:
         path = self._dotfiles / "agents" / "cursor" / "cli-config.json"
-        cfg = load_config(self._fs, path, SettingsWithPermissions)
+        cfg = load_config(path, SettingsWithPermissions)
         if cfg is None:
             return []
         return [
@@ -304,10 +296,10 @@ class AgentOverviewService:
 
     def _perm_codex(self) -> list[PermissionRow]:
         path = self._dotfiles / "agents" / "codex" / "default.rules"
-        if not self._fs.exists(path):
+        if not path.exists():
             return []
         try:
-            text = self._fs.read_text(path)
+            text = path.read_text()
         except OSError:
             return []
         n = sum(1 for line in text.splitlines() if line.startswith("prefix_rule"))

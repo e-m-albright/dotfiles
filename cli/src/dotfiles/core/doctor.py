@@ -1,11 +1,12 @@
-"""`dotfiles doctor` checks. Pure over ProcessRunner + FileSystem ports."""
+"""`dotfiles doctor` checks. Pure over ProcessRunner port + direct pathlib."""
 
 import shutil
 from collections.abc import Callable
 from pathlib import Path
 
+from dotfiles.core.fsutil import symlink as _make_symlink
 from dotfiles.core.models import CheckResult
-from dotfiles.core.ports import FileSystem, ProcessRunner
+from dotfiles.core.ports import ProcessRunner
 
 
 class DoctorService:
@@ -15,14 +16,12 @@ class DoctorService:
         self,
         *,
         runner: ProcessRunner,
-        fs: FileSystem,
         home: Path,
         dotfiles_dir: Path,
         fix: bool,
         which: Callable[[str], str | None] = shutil.which,
     ) -> None:
         self._runner = runner
-        self._fs = fs
         self._home = home
         self._dotfiles = dotfiles_dir
         self._fix = fix
@@ -38,16 +37,16 @@ class DoctorService:
 
     def _app(self, section: str, name: str, app_path: Path, hint: str) -> CheckResult:
         """Check a macOS .app bundle."""
-        if self._fs.exists(app_path):
+        if app_path.exists():
             return CheckResult(section=section, name=name, status="ok", detail="installed")
         return CheckResult(section=section, name=name, status="missing", hint=hint)
 
     def _symlink(self, section: str, name: str, src: Path, dest: Path) -> CheckResult:
         """Check (and optionally fix) a symlink from dest -> src."""
-        if self._fs.is_symlink(dest) and str(src) in str(self._fs.readlink(dest)):
+        if dest.is_symlink() and str(src) in str(dest.readlink()):
             return CheckResult(section=section, name=name, status="ok", detail="symlinked")
         if self._fix:
-            self._fs.symlink(src, dest)
+            _make_symlink(src, dest)
             return CheckResult(section=section, name=name, status="fixed", detail="symlinked")
         return CheckResult(section=section, name=name, status="missing", hint="not symlinked")
 
@@ -80,7 +79,7 @@ class DoctorService:
     def _check_essentials(self) -> list[CheckResult]:
         sec = "Essentials"
         tailscale_path = Path("/Applications/Tailscale.app")
-        if self._which("tailscale") is not None or self._fs.exists(tailscale_path):
+        if self._which("tailscale") is not None or tailscale_path.exists():
             return [CheckResult(section=sec, name="Tailscale", status="ok", detail="installed")]
         return [
             CheckResult(
@@ -162,7 +161,7 @@ class DoctorService:
         if self._which("fnm") is None:
             return []
         node_link = Path("/opt/homebrew/bin/node")
-        if self._fs.is_symlink(node_link) and self._fs.exists(node_link):
+        if node_link.is_symlink() and node_link.exists():
             return [
                 CheckResult(
                     section=sec,
@@ -174,9 +173,9 @@ class DoctorService:
         if self._fix and self._which("node") is not None:
             node_bin = Path(self._which("node"))  # type: ignore[arg-type]
             npx_bin_str = self._which("npx")
-            self._fs.symlink(node_bin, node_link)
+            _make_symlink(node_bin, node_link)
             if npx_bin_str is not None:
-                self._fs.symlink(Path(npx_bin_str), Path("/opt/homebrew/bin/npx"))
+                _make_symlink(Path(npx_bin_str), Path("/opt/homebrew/bin/npx"))
             return [CheckResult(section=sec, name="Node symlink", status="fixed", detail="fixed")]
         return [
             CheckResult(
@@ -267,7 +266,7 @@ class DoctorService:
 
         # Git identity (~/.gitconfig.local) — warn if absent
         gitconfig_local = self._home / ".gitconfig.local"
-        if self._fs.exists(gitconfig_local):
+        if gitconfig_local.exists():
             results.append(
                 CheckResult(section=sec, name="Git identity", status="ok", detail="configured")
             )
@@ -280,7 +279,7 @@ class DoctorService:
 
         # Claude instructions (~/.claude/CLAUDE.md) — warn if absent
         claude_md = self._home / ".claude" / "CLAUDE.md"
-        if self._fs.exists(claude_md):
+        if claude_md.exists():
             results.append(
                 CheckResult(section=sec, name="Claude instructions", status="ok", detail="exists")
             )
@@ -303,7 +302,7 @@ class DoctorService:
 
     def _jq_count(self, expr: str, path: Path) -> int:
         """Run jq expr against path; return parsed int or 0 on failure."""
-        if not self._fs.exists(path) or self._which("jq") is None:
+        if not path.exists() or self._which("jq") is None:
             return 0
         result = self._runner.run(("jq", expr, str(path)))
         if result.ok and result.stdout.strip().isdigit():
@@ -313,7 +312,7 @@ class DoctorService:
     def _check_claude_settings(self, sec: str) -> list[CheckResult]:
         """Claude plugins + hooks from ~/.claude/settings.json."""
         settings = self._home / ".claude" / "settings.json"
-        if not self._fs.exists(settings) or self._which("jq") is None:
+        if not settings.exists() or self._which("jq") is None:
             return []
         results: list[CheckResult] = []
 
@@ -362,7 +361,7 @@ class DoctorService:
     def _check_claude_mcp(self, sec: str) -> list[CheckResult]:
         """Claude MCP servers from ~/.claude.json."""
         claude_json = self._home / ".claude.json"
-        if not self._fs.exists(claude_json) or self._which("jq") is None:
+        if not claude_json.exists() or self._which("jq") is None:
             return []
         mcp_count = self._jq_count(".mcpServers // {} | length", claude_json)
         if mcp_count > 0:
@@ -384,7 +383,7 @@ class DoctorService:
         results: list[CheckResult] = []
 
         agents_md = self._home / ".codex" / "AGENTS.md"
-        if self._fs.exists(agents_md):
+        if agents_md.exists():
             results.append(
                 CheckResult(section=sec, name="Codex instructions", status="ok", detail="exists")
             )
@@ -399,7 +398,7 @@ class DoctorService:
             )
 
         hooks_json = self._home / ".codex" / "hooks.json"
-        if self._fs.exists(hooks_json):
+        if hooks_json.exists():
             results.append(
                 CheckResult(section=sec, name="Codex hooks", status="ok", detail="configured")
             )
@@ -411,7 +410,7 @@ class DoctorService:
             )
 
         config_toml = self._home / ".codex" / "config.toml"
-        toml_content = self._fs.read_text(config_toml) if self._fs.exists(config_toml) else ""
+        toml_content = config_toml.read_text() if config_toml.exists() else ""
         if "mcp_servers" in toml_content:
             results.append(
                 CheckResult(section=sec, name="Codex MCP", status="ok", detail="configured")
@@ -428,9 +427,9 @@ class DoctorService:
     def _check_ghostty(self, sec: str) -> list[CheckResult]:
         """Ghostty config or app presence."""
         ghostty_config = self._home / ".config" / "ghostty" / "config"
-        if self._fs.exists(ghostty_config):
+        if ghostty_config.exists():
             return [CheckResult(section=sec, name="Ghostty", status="ok", detail="configured")]
-        if self._fs.exists(Path("/Applications/Ghostty.app")):
+        if Path("/Applications/Ghostty.app").exists():
             return [
                 CheckResult(
                     section=sec,

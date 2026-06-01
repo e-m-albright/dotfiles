@@ -3,7 +3,6 @@
 from pathlib import Path
 
 from dotfiles.core.skills import SkillValidateService, validate_file
-from tests.fakes import FakeFileSystem
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -210,95 +209,80 @@ def test_rel_path_and_kind_propagated() -> None:
 
 
 # ---------------------------------------------------------------------------
-# SkillValidateService — integration tests with FakeFileSystem
+# SkillValidateService — integration tests with real tmp_path
 # ---------------------------------------------------------------------------
 
-_DOTFILES = Path("/home/evan/dotfiles")
-_SKILLS_ROOT = _DOTFILES / ".ai" / "skills"
-_AGENTS_ROOT = _DOTFILES / ".ai" / "agents"
+
+def _make_svc(dotfiles_dir: Path) -> SkillValidateService:
+    return SkillValidateService(dotfiles_dir=dotfiles_dir)
 
 
-def _make_svc(fs: FakeFileSystem) -> SkillValidateService:
-    return SkillValidateService(fs=fs, dotfiles_dir=_DOTFILES)
+def _write_skill(dotfiles_dir: Path, name: str, text: str) -> None:
+    skill_dir = dotfiles_dir / ".ai" / "skills" / name
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    (skill_dir / "SKILL.md").write_text(text)
 
 
-def _write_skill(fs: FakeFileSystem, name: str, text: str) -> None:
-    skill_dir = _SKILLS_ROOT / name
-    fs.mkdir(skill_dir)
-    fs.write_text(skill_dir / "SKILL.md", text)
+def _write_agent(dotfiles_dir: Path, name: str, text: str) -> None:
+    agents_root = dotfiles_dir / ".ai" / "agents"
+    agents_root.mkdir(parents=True, exist_ok=True)
+    (agents_root / f"{name}.md").write_text(text)
 
 
-def _write_agent(fs: FakeFileSystem, name: str, text: str) -> None:
-    fs.write_text(_AGENTS_ROOT / f"{name}.md", text)
-
-
-def test_service_empty_dirs_returns_empty() -> None:
-    fs = FakeFileSystem()
-    svc = _make_svc(fs)
+def test_service_empty_dirs_returns_empty(tmp_path: Path) -> None:
+    svc = _make_svc(tmp_path)
     assert svc.validate() == []
 
 
-def test_service_valid_skill_ok() -> None:
-    fs = FakeFileSystem()
-    fs.mkdir(_SKILLS_ROOT)
-    _write_skill(fs, "my-skill", _skill_text())
-    svc = _make_svc(fs)
+def test_service_valid_skill_ok(tmp_path: Path) -> None:
+    _write_skill(tmp_path, "my-skill", _skill_text())
+    svc = _make_svc(tmp_path)
     results = svc.validate()
     assert len(results) == 1
     assert results[0].status == "ok"
     assert results[0].kind == "skill"
 
 
-def test_service_missing_skill_md_is_fail() -> None:
-    fs = FakeFileSystem()
-    fs.mkdir(_SKILLS_ROOT)
+def test_service_missing_skill_md_is_fail(tmp_path: Path) -> None:
     # dir with no SKILL.md
-    fs.mkdir(_SKILLS_ROOT / "orphan-skill")
-    svc = _make_svc(fs)
+    orphan = tmp_path / ".ai" / "skills" / "orphan-skill"
+    orphan.mkdir(parents=True)
+    svc = _make_svc(tmp_path)
     results = svc.validate()
     assert len(results) == 1
     assert results[0].status == "fail"
     assert any("missing SKILL.md" in e for e in results[0].errors)
 
 
-def test_service_valid_agent_ok() -> None:
-    fs = FakeFileSystem()
-    fs.mkdir(_AGENTS_ROOT)
-    _write_agent(fs, "my-agent", _skill_text(name="my-agent"))
-    svc = _make_svc(fs)
+def test_service_valid_agent_ok(tmp_path: Path) -> None:
+    _write_agent(tmp_path, "my-agent", _skill_text(name="my-agent"))
+    svc = _make_svc(tmp_path)
     results = svc.validate()
     assert len(results) == 1
     assert results[0].status == "ok"
     assert results[0].kind == "agent"
 
 
-def test_service_skills_and_agents_both_iterated() -> None:
-    fs = FakeFileSystem()
-    fs.mkdir(_SKILLS_ROOT)
-    fs.mkdir(_AGENTS_ROOT)
-    _write_skill(fs, "my-skill", _skill_text())
-    _write_agent(fs, "my-agent", _skill_text(name="my-agent"))
-    svc = _make_svc(fs)
+def test_service_skills_and_agents_both_iterated(tmp_path: Path) -> None:
+    _write_skill(tmp_path, "my-skill", _skill_text())
+    _write_agent(tmp_path, "my-agent", _skill_text(name="my-agent"))
+    svc = _make_svc(tmp_path)
     results = svc.validate()
     assert len(results) == 2
     kinds = {r.kind for r in results}
     assert kinds == {"skill", "agent"}
 
 
-def test_service_invalid_skill_propagated() -> None:
-    fs = FakeFileSystem()
-    fs.mkdir(_SKILLS_ROOT)
-    _write_skill(fs, "my-skill", "# no frontmatter")
-    svc = _make_svc(fs)
+def test_service_invalid_skill_propagated(tmp_path: Path) -> None:
+    _write_skill(tmp_path, "my-skill", "# no frontmatter")
+    svc = _make_svc(tmp_path)
     results = svc.validate()
     assert results[0].status == "fail"
 
 
-def test_service_agents_dir_absent_no_crash() -> None:
-    fs = FakeFileSystem()
-    fs.mkdir(_SKILLS_ROOT)
-    _write_skill(fs, "my-skill", _skill_text())
-    svc = _make_svc(fs)
+def test_service_agents_dir_absent_no_crash(tmp_path: Path) -> None:
+    _write_skill(tmp_path, "my-skill", _skill_text())
+    svc = _make_svc(tmp_path)
     results = svc.validate()
     assert all(r.kind == "skill" for r in results)
 

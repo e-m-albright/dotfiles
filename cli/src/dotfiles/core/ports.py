@@ -4,7 +4,6 @@ Concrete implementations live in `dotfiles.adapters`; tests inject fakes.
 """
 
 from collections.abc import Mapping, Sequence
-from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from dotfiles.core.models import CommandResult
@@ -25,31 +24,6 @@ class ProcessRunner(Protocol):
         env: Mapping[str, str] | None = None,
         stdin: str | None = None,
     ) -> CommandResult: ...
-
-
-@runtime_checkable
-class FileSystem(Protocol):
-    """Filesystem reads/writes the core needs (e.g. authorized_keys)."""
-
-    def read_text(self, path: Path) -> str: ...
-
-    def write_text(self, path: Path, content: str) -> None: ...
-
-    def exists(self, path: Path) -> bool: ...
-
-    def mkdir(self, path: Path, *, parents: bool = True) -> None: ...
-
-    def chmod(self, path: Path, mode: int) -> None: ...
-
-    def is_symlink(self, path: Path) -> bool: ...
-
-    def readlink(self, path: Path) -> Path: ...
-
-    def symlink(self, src: Path, dest: Path) -> None: ...
-
-    def is_dir(self, path: Path) -> bool: ...
-
-    def iterdir(self, path: Path) -> list[Path]: ...
 
 
 @runtime_checkable

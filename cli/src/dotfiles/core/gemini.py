@@ -6,12 +6,10 @@ import shutil
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+from dotfiles.core.fsutil import list_dir
 from dotfiles.core.models import GeminiChunk
-
-if TYPE_CHECKING:
-    from dotfiles.core.ports import FileSystem, ProcessRunner
+from dotfiles.core.ports import ProcessRunner
 
 
 class GeminiError(Exception):
@@ -24,13 +22,11 @@ class GeminiChunksService:
     def __init__(
         self,
         *,
-        fs: FileSystem,
         runner: ProcessRunner,
         chunks_dir: Path,
         which: Callable[[str], str | None] = shutil.which,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
-        self._fs = fs
         self._runner = runner
         self._chunks_dir = chunks_dir
         self._which = which
@@ -38,15 +34,15 @@ class GeminiChunksService:
 
     def chunks(self) -> list[GeminiChunk]:
         """Return chunks sorted lexicographically by filename."""
-        if not self._fs.is_dir(self._chunks_dir):
+        if not self._chunks_dir.is_dir():
             raise GeminiError(f"chunk dir not found: {self._chunks_dir}")
         paths = sorted(
-            (p for p in self._fs.iterdir(self._chunks_dir) if p.name.endswith(".md")),
+            (p for p in list_dir(self._chunks_dir) if p.name.endswith(".md")),
             key=lambda p: p.name,
         )
         result: list[GeminiChunk] = []
         for path in paths:
-            content = self._fs.read_text(path)
+            content = path.read_text()
             result.append(
                 GeminiChunk(
                     name=path.name,

@@ -15,7 +15,6 @@ def _service(ctx: typer.Context) -> RemoteService:
     assert isinstance(app_ctx, AppContext)
     return RemoteService(
         runner=app_ctx.runner,
-        fs=app_ctx.fs,
         interactive=app_ctx.interactive,
         home=app_ctx.home,
     )

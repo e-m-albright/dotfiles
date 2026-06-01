@@ -56,61 +56,6 @@ class FakeProcessRunner:
         return result
 
 
-class FakeFileSystem:
-    """In-memory filesystem keyed by Path."""
-
-    def __init__(self) -> None:
-        self._files: dict[Path, str] = {}
-        self._dirs: set[Path] = set()
-        self.modes: dict[Path, int] = {}
-        self.symlinks: dict[Path, Path] = {}
-        self._children: dict[Path, set[Path]] = {}
-
-    def _register_child(self, path: Path) -> None:
-        """Register path as a child of its parent (one level up)."""
-        parent = path.parent
-        if parent != path:  # avoid root registering itself
-            if parent not in self._children:
-                self._children[parent] = set()
-            self._children[parent].add(path)
-
-    def read_text(self, path: Path) -> str:
-        return self._files[path]
-
-    def write_text(self, path: Path, content: str) -> None:
-        self._files[path] = content
-        self._register_child(path)
-
-    def exists(self, path: Path) -> bool:
-        return path in self._files or path in self._dirs or path in self.symlinks
-
-    def mkdir(self, path: Path, *, parents: bool = True) -> None:
-        self._dirs.add(path)
-        self._register_child(path)
-
-    def chmod(self, path: Path, mode: int) -> None:
-        self.modes[path] = mode
-
-    def is_symlink(self, path: Path) -> bool:
-        return path in self.symlinks
-
-    def readlink(self, path: Path) -> Path:
-        return self.symlinks[path]
-
-    def symlink(self, src: Path, dest: Path) -> None:
-        self.symlinks[dest] = src
-        self._files[dest] = ""  # exists() is True for a symlink
-        self._register_child(dest)
-
-    def is_dir(self, path: Path) -> bool:
-        return path in self._dirs
-
-    def iterdir(self, path: Path) -> list[Path]:
-        if path not in self._dirs:
-            return []
-        return list(self._children.get(path, set()))
-
-
 class FakeHttpClient:
     """Records HTTP calls; returns scripted JSON responses, defaulting to {}."""
 
@@ -168,10 +113,20 @@ class FakeSessionLauncher:
         self.attached.append(list(command))
 
 
+def write_tree(base: Path, spec: dict[str, str | None]) -> None:
+    """Create files/dirs under base. value=str writes a file; value=None makes a dir."""
+    for rel, content in spec.items():
+        target = base / rel
+        if content is None:
+            target.mkdir(parents=True, exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content)
+
+
 def make_fake_context(
     *,
     runner: FakeProcessRunner | None = None,
-    fs: FakeFileSystem | None = None,
     interactive: bool = False,
     home: Path | None = None,
     launcher: FakeSessionLauncher | None = None,
@@ -182,7 +137,6 @@ def make_fake_context(
     """Build an AppContext backed by fakes for CLI tests."""
     return AppContext(
         runner=runner or FakeProcessRunner(),
-        fs=fs or FakeFileSystem(),
         settings=Settings(),
         interactive=interactive,
         home=home or Path("/home/evan"),

@@ -1,7 +1,5 @@
-from pathlib import Path
-
-from dotfiles.core.ports import FileSystem, ProcessRunner
-from tests.fakes import FakeFileSystem, FakeProcessRunner
+from dotfiles.core.ports import ProcessRunner
+from tests.fakes import FakeProcessRunner
 
 
 def test_fake_runner_returns_scripted_result_and_records_calls() -> None:
@@ -23,17 +21,6 @@ def test_fake_runner_defaults_to_empty_success() -> None:
     assert result.stdout == ""
 
 
-def test_fake_filesystem_roundtrips() -> None:
-    fs = FakeFileSystem()
-    assert isinstance(fs, FileSystem)
-    p = Path("/home/u/.ssh/authorized_keys")
-    assert fs.exists(p) is False
-    fs.mkdir(p.parent)
-    fs.write_text(p, "ssh-ed25519 AAAA test\n")
-    assert fs.exists(p) is True
-    assert fs.read_text(p) == "ssh-ed25519 AAAA test\n"
-
-
 def test_fake_runner_honors_check_true_on_failure() -> None:
     import subprocess
 
@@ -50,66 +37,6 @@ def test_fake_runner_check_true_ok_when_success() -> None:
     runner.script(("true",), exit_code=0)
     result = runner.run(["true"], check=True)
     assert result.ok is True
-
-
-def test_fake_filesystem_records_chmod() -> None:
-    fs = FakeFileSystem()
-    p = Path("/home/u/.ssh")
-    fs.mkdir(p)
-    fs.chmod(p, 0o700)
-    assert fs.modes[p] == 0o700
-
-
-def test_fake_filesystem_symlink_ops() -> None:
-    fs = FakeFileSystem()
-    src = Path("/src/.zshrc")
-    dest = Path("/home/u/.zshrc")
-    assert fs.is_symlink(dest) is False
-    fs.symlink(src, dest)
-    assert fs.is_symlink(dest) is True
-    assert fs.readlink(dest) == src
-    assert fs.exists(dest) is True
-
-
-def test_fake_filesystem_is_dir_and_iterdir_empty() -> None:
-    fs = FakeFileSystem()
-    d = Path("/home/u/skills")
-    assert fs.is_dir(d) is False
-    fs.mkdir(d)
-    assert fs.is_dir(d) is True
-    assert fs.iterdir(d) == []
-
-
-def test_fake_filesystem_iterdir_yields_written_files() -> None:
-    fs = FakeFileSystem()
-    d = Path("/home/u/skills")
-    fs.mkdir(d)
-    fs.write_text(d / "SKILL.md", "# S")
-    fs.write_text(d / "other.txt", "x")
-    children = fs.iterdir(d)
-    assert set(children) == {d / "SKILL.md", d / "other.txt"}
-
-
-def test_fake_filesystem_iterdir_yields_subdirs() -> None:
-    fs = FakeFileSystem()
-    parent = Path("/home/u/skills")
-    child = Path("/home/u/skills/foo")
-    fs.mkdir(parent)
-    fs.mkdir(child)
-    assert child in fs.iterdir(parent)
-
-
-def test_fake_filesystem_iterdir_nonexistent_returns_empty() -> None:
-    fs = FakeFileSystem()
-    assert fs.iterdir(Path("/does/not/exist")) == []
-
-
-def test_fake_filesystem_is_dir_false_for_file() -> None:
-    fs = FakeFileSystem()
-    p = Path("/home/u/file.txt")
-    fs.write_text(p, "data")
-    assert fs.is_dir(p) is False
-    assert fs.exists(p) is True
 
 
 def test_fake_runner_records_input() -> None:
