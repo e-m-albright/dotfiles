@@ -13,6 +13,7 @@ from dotfiles.cli.llm import llm_app
 from dotfiles.cli.remote import remote_app
 from dotfiles.cli.scaffold import scaffold_command
 from dotfiles.cli.session import session_app
+from dotfiles.cli.snapshot import snapshot_app
 from dotfiles.console import console
 
 app = typer.Typer(
@@ -39,6 +40,7 @@ app.add_typer(brew_app, name="brew")
 app.add_typer(agent_app, name="agent")
 app.command("scaffold")(scaffold_command)
 app.add_typer(llm_app, name="llm")
+app.add_typer(snapshot_app, name="snapshot")
 
 
 @app.command()
