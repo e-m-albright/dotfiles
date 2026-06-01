@@ -58,14 +58,6 @@ def dotfiles(tmp_path: Path) -> Path:
     return tmp_path
 
 
-@pytest.fixture
-def home(tmp_path: Path) -> Path:
-    """A fresh fake home directory."""
-    h = tmp_path / "home"
-    h.mkdir()
-    return h
-
-
 # ---------------------------------------------------------------------------
 # mcp_skip
 # ---------------------------------------------------------------------------

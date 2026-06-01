@@ -14,6 +14,10 @@ def _svc(runner=None, *, fix=False, which=None, home=None, dotfiles_dir=None):
         dotfiles_dir=dotfiles_dir or Path("/nonexistent/dotfiles"),
         fix=fix,
         which=which or (lambda _name: None),
+        # Point system-path checks at nonexistent dirs so tests never depend on
+        # the host's real /Applications or /opt/homebrew.
+        apps_dir=Path("/nonexistent/Applications"),
+        brew_bin=Path("/nonexistent/brew-bin"),
     )
 
 
@@ -162,14 +166,15 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
     (home / ".gitconfig").symlink_to(git_dir / ".gitconfig")
     (home / ".zprofile").symlink_to(shell_dir / ".zprofile")
 
-    # Termius: use a real path inside tmp_path (pass to _app via the service)
-    # The check uses Path("/Applications/Termius.app") — we can't fake that path.
-    # Instead we test via a fake which for "tailscale" (already in _ALL_TOOLS),
-    # and accept Termius shows as "missing" (it's status="missing", is_failure=True).
-    # To avoid that, we create the real app path only if /Applications exists.
-    termius_app = Path("/Applications/Termius.app")
-    if not termius_app.exists() and Path("/Applications").exists():
-        pass  # skip creating it — Termius will show missing
+    # System-path checks resolved under tmp_path (injected), so no host dependence.
+    apps_dir = tmp_path / "Applications"
+    apps_dir.mkdir()
+    (apps_dir / "Termius.app").mkdir()  # _app() only checks the bundle exists
+    brew_bin = tmp_path / "brew-bin"
+    brew_bin.mkdir()
+    real_node = tmp_path / "node-real"
+    real_node.write_text("#!/bin/sh\n")
+    (brew_bin / "node").symlink_to(real_node)  # GUI-app node symlink present
 
     write_tree(
         home,
@@ -191,10 +196,11 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
         dotfiles_dir=dotfiles,
         fix=False,
         which=_fully_equipped_which,
+        apps_dir=apps_dir,
+        brew_bin=brew_bin,
     )
     results = svc.run()
-    # Filter out checks that depend on hardcoded system paths (/Applications/Termius.app,
-    # /opt/homebrew/bin/node, /Applications/Ghostty.app) that we can't create in tests.
-    hardware_checks = {"Termius", "Node symlink", "Ghostty"}
-    failures = [r for r in results if r.is_failure and r.name not in hardware_checks]
+    # Everything (including the app-bundle and node-symlink checks) is now
+    # satisfied under tmp_path, so a fully-equipped machine has zero failures.
+    failures = [r for r in results if r.is_failure]
     assert not failures, f"Unexpected failures: {[(r.name, r.hint) for r in failures]}"

@@ -65,13 +65,6 @@ def dotfiles(tmp_path: Path) -> Path:
     return d
 
 
-@pytest.fixture
-def home(tmp_path: Path) -> Path:
-    h = tmp_path / "home"
-    h.mkdir()
-    return h
-
-
 def _runner() -> FakeProcessRunner:
     return FakeProcessRunner()
 

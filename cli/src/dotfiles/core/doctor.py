@@ -20,12 +20,18 @@ class DoctorService:
         dotfiles_dir: Path,
         fix: bool,
         which: Callable[[str], str | None] = shutil.which,
+        apps_dir: Path = Path("/Applications"),
+        brew_bin: Path = Path("/opt/homebrew/bin"),
     ) -> None:
         self._runner = runner
         self._home = home
         self._dotfiles = dotfiles_dir
         self._fix = fix
         self._which = which
+        # System install locations — injected so the .app / homebrew-symlink
+        # checks are testable under tmp_path instead of the real machine.
+        self._apps_dir = apps_dir
+        self._brew_bin = brew_bin
 
     def _tool(self, section: str, name: str, cmd: str, hint: str) -> CheckResult:
         """Check a CLI tool via shutil.which; detail = first line of --version."""
@@ -78,7 +84,7 @@ class DoctorService:
 
     def _check_essentials(self) -> list[CheckResult]:
         sec = "Essentials"
-        tailscale_path = Path("/Applications/Tailscale.app")
+        tailscale_path = self._apps_dir / "Tailscale.app"
         if self._which("tailscale") is not None or tailscale_path.exists():
             return [CheckResult(section=sec, name="Tailscale", status="ok", detail="installed")]
         return [
@@ -160,7 +166,7 @@ class DoctorService:
         """Node symlink at /opt/homebrew/bin/node — only if fnm present."""
         if self._which("fnm") is None:
             return []
-        node_link = Path("/opt/homebrew/bin/node")
+        node_link = self._brew_bin / "node"
         if node_link.is_symlink() and node_link.exists():
             return [
                 CheckResult(
@@ -175,7 +181,7 @@ class DoctorService:
             npx_bin_str = self._which("npx")
             _make_symlink(node_bin, node_link)
             if npx_bin_str is not None:
-                _make_symlink(Path(npx_bin_str), Path("/opt/homebrew/bin/npx"))
+                _make_symlink(Path(npx_bin_str), self._brew_bin / "npx")
             return [CheckResult(section=sec, name="Node symlink", status="fixed", detail="fixed")]
         return [
             CheckResult(
@@ -241,7 +247,7 @@ class DoctorService:
             self._tool(sec, "Mosh", "mosh", "brew install mosh"),
             self._tool(sec, "Zellij", "zellij", "brew install zellij"),
             self._app(
-                sec, "Termius", Path("/Applications/Termius.app"), "brew install --cask termius"
+                sec, "Termius", self._apps_dir / "Termius.app", "brew install --cask termius"
             ),
         ]
         return results
@@ -429,7 +435,7 @@ class DoctorService:
         ghostty_config = self._home / ".config" / "ghostty" / "config"
         if ghostty_config.exists():
             return [CheckResult(section=sec, name="Ghostty", status="ok", detail="configured")]
-        if Path("/Applications/Ghostty.app").exists():
+        if (self._apps_dir / "Ghostty.app").exists():
             return [
                 CheckResult(
                     section=sec,

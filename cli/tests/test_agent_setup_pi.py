@@ -50,13 +50,6 @@ def dotfiles(tmp_path: Path) -> Path:
     return d
 
 
-@pytest.fixture
-def home(tmp_path: Path) -> Path:
-    h = tmp_path / "home"
-    h.mkdir()
-    return h
-
-
 def _runner_pi_present() -> FakeProcessRunner:
     """Runner that reports both pi packages as NOT installed (empty stdout)."""
     r = FakeProcessRunner()
