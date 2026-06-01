@@ -9,6 +9,7 @@ from dotfiles.cli.agent import agent_app
 from dotfiles.cli.brew import brew_app
 from dotfiles.cli.context import build_real_context
 from dotfiles.cli.doctor import doctor_command
+from dotfiles.cli.fleet import fleet_app
 from dotfiles.cli.ledger import ledger_app
 from dotfiles.cli.llm import llm_app
 from dotfiles.cli.remote import remote_app
@@ -43,6 +44,7 @@ app.command("scaffold")(scaffold_command)
 app.add_typer(llm_app, name="llm")
 app.add_typer(snapshot_app, name="snapshot")
 app.add_typer(ledger_app, name="ledger")
+app.add_typer(fleet_app, name="fleet")
 
 
 @app.command()
