@@ -1,0 +1,34 @@
+---
+description: TypeScript stack selection — Bun, Biome, SvelteKit 2, Drizzle, Tailwind v4, and what to skip. Pairs with languages/typescript.mdc (coding conventions).
+globs: "**/*.{ts,tsx,svelte,astro}"
+alwaysApply: false
+---
+
+# TypeScript Stack
+
+Selection guidance — *what* to reach for. Coding conventions (how to use these) live in `languages/typescript.mdc`.
+
+## Foundation — every project
+
+- Runtime: **Bun** — not Node.js (slower) or Deno (ecosystem gaps).
+- Lint + format: **Biome** — one tool, not ESLint + Prettier (slow, config hell).
+- Task runner: **Just**. Git hooks: **Lefthook**. Styling: **Tailwind CSS v4** (not CSS-in-JS or Sass).
+
+## When needed
+
+- Full-stack app: **SvelteKit 2** — not Next.js (React bloat) or Nuxt (Vue). Content site: **Astro**.
+- UI components: **shadcn-svelte + Bits UI** (not React-only kits). ORM: **Drizzle** (not Prisma — Bun cold-start issues).
+- Database: **PostgreSQL**. Auth: **Better Auth**. Forms: **Superforms + Zod**. Validation: **Zod**.
+- Data fetching: **TanStack Query**. Charts: **LayerChart**. i18n (SvelteKit): **Paraglide JS 2.0**.
+
+## At scale
+
+- Desktop app: **Tauri** (only for native distribution). Client analytics: **DuckDB-WASM**.
+- Observability: **OpenTelemetry** (2+ services). Monorepo build: **Turborepo** (not nx/moon).
+- Dead code: **Knip**. Component dev: **Histoire** (Vite-native). Docs: **Starlight**.
+
+## Don't install
+
+- **Prettier / ESLint** — Biome does both. **Storybook** — Histoire is lighter and Vite-native.
+- **Next.js** — Vercel-coupled, complexity creep.
+</content>

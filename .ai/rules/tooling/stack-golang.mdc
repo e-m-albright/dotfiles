@@ -1,0 +1,31 @@
+---
+description: Go stack selection — chi/v5, sqlc, pgx, slog, golangci-lint, and what to skip. Pairs with languages/golang.mdc (coding conventions).
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Go Stack
+
+Selection guidance — *what* to reach for. Coding conventions (how to use these) live in `languages/golang.mdc`.
+
+## Foundation — every project
+
+- Go **1.25+**. Linter: **golangci-lint** (not individual linters).
+- Task runner: **Just**. Git hooks: **Lefthook**.
+
+## When needed
+
+- HTTP router: **chi/v5** — not gin (heavier) or stdlib mux (limited).
+- DB queries: **sqlc** (type-safe from SQL) — not GORM (magic, slow) or raw SQL. Postgres driver: **pgx/v5** (not lib/pq, unmaintained).
+- Migrations: **golang-migrate**. Config: **envconfig** (not viper). Logging: **slog** (stdlib) — not logrus (archived) or zap.
+- HTTP client: **stdlib net/http**. Testing: **stdlib testing + testcontainers** (table-driven; testify not needed).
+
+## At scale
+
+- Observability: **OpenTelemetry** (2+ services). Docs: **Starlight** (users) or **pkgsite** (API).
+
+## Don't install
+
+- **GORM** (magic ORM — prefer sqlc), **viper** (envconfig is simpler for env config),
+  **logrus** (archived — use slog), **testify** (stdlib testing + table tests suffice).
+</content>

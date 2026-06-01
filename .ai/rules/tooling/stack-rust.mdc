@@ -1,0 +1,36 @@
+---
+description: Rust stack selection — Axum, Tokio, SQLx, serde, tracing, thiserror/anyhow, and what to skip. Pairs with languages/rust.mdc (coding conventions).
+globs: "**/*.rs"
+alwaysApply: false
+---
+
+# Rust Stack
+
+Selection guidance — *what* to reach for. Coding conventions (how to use these) live in `languages/rust.mdc`.
+
+## Foundation — every project
+
+- Toolchain: **stable** (nightly only when a dependency requires it). **clippy** + **rustfmt**.
+- Task runner: **Just**. Git hooks: **Lefthook**.
+
+## When needed
+
+- Web framework: **Axum** — not Actix (macro-heavy) or Rocket. Desktop app: **Tauri 2** (not Electron).
+- Async runtime: **Tokio**. Database: **SQLx** (not Diesel — compile times). Serialization: **serde + serde_json**.
+- Config: **envy**. Errors: **thiserror** (domain) + **anyhow** (app). Logging: **tracing + tracing-subscriber**.
+- HTTP client: **reqwest**. CLI tools: **clap** (structopt merged in).
+
+## Data-heavy projects
+
+- Full-text search: **tantivy** (embedded, no separate service). CSV: **csv**. XML: **quick-xml** (streaming).
+- HTML scraping: **scraper**. SSE streaming: **async-stream**. Vector embeddings: **pgvector** (via sqlx). Validation: **validator**.
+
+## At scale
+
+- Observability: **OpenTelemetry** (via tracing-opentelemetry). Benchmarking: **criterion**. Fuzzing: **cargo-fuzz**.
+
+## Don't install
+
+- **Diesel** (compile times, macros), **Actix** (macro-heavy), **async-std** (smaller ecosystem than Tokio),
+  **structopt** (merged into clap v4), **Elasticsearch / Meilisearch** (use tantivy), **xml-rs** (use quick-xml).
+</content>
