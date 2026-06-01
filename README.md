@@ -468,7 +468,7 @@ dotfiles                     # Bare invocation also launches the TUI
 
 `dotfiles fleet` passively discovers live Claude and Codex sessions from their transcript directories, maps working directories to git worktrees, and overlays the ledger for task context — all without requiring any agent cooperation. Sessions are shown newest-first; use `--all` to include sessions past the 15-minute live window, or `--json` for machine-readable output.
 
-`dotfiles tui` (or bare `dotfiles`) opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` to toggle Remote Login (sudo-aware), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane lists live zellij sessions; press Enter to attach (or switch session if already inside zellij).
+`dotfiles tui` opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. (Bare `dotfiles` with no args prints help.) The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` to toggle Remote Login (sudo-aware), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane lists live zellij sessions; press Enter to attach (or switch session if already inside zellij).
 
 Enable tab completion:
 ```bash

@@ -267,11 +267,6 @@ if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
 
-# Bare `dotfiles` (no args) launches the TUI instead of printing bash help.
-if [[ -z "${1:-}" ]]; then
-    exec uv run --project "$DOTFILES_DIR/cli" dotfiles
-fi
-
 # Surgical route: agent overview, lint, gemini-prompt, setup, and verify are Python; others stay Bash.
 # Bare `agent` (no subcommand) defaults to overview, matching the old dispatcher.
 if [[ "${1:-}" == "agent" ]]; then

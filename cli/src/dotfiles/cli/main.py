@@ -21,7 +21,7 @@ from dotfiles.console import console
 app = typer.Typer(
     name="dotfiles",
     help="Hexagonal CLI for the dotfiles dev environment.",
-    no_args_is_help=False,
+    no_args_is_help=True,
     add_completion=False,
 )
 
@@ -33,13 +33,11 @@ def _launch_tui() -> None:
     MissionControlApp().run()
 
 
-@app.callback(invoke_without_command=True)
+@app.callback()
 def _main(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
-    """Build the composition context; bare `dotfiles` launches the TUI."""
+    """Build the composition context once if a test hasn't injected one."""
     if ctx.obj is None:
         ctx.obj = build_real_context(interactive=sys.stdin.isatty())
-    if ctx.invoked_subcommand is None:
-        _launch_tui()
 
 
 # Command tree.
