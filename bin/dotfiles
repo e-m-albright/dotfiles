@@ -28,8 +28,8 @@ sub_help () {
     printf "   test [--quick]       Run scaffold eval framework\n"
     printf "   completions          Output shell completions (eval to install)\n"
     printf "   llm-bench <cmd>      Evaluate local LM Studio models (list|bench|estimate|compare)\n"
-    printf "   remote-setup [opts] Set up SSH/Mosh/Zellij access for Termius\n"
-    printf "   remote-disable [opts] Turn off macOS Remote Login for phone access\n"
+    printf "   remote setup [opts]    Set up SSH/Mosh/Zellij access for Termius\n"
+    printf "   remote disable [opts]  Turn off macOS Remote Login for phone access\n"
     printf "\n"
     printf "${BLUE}Namespaces:${NC}\n"
     printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
@@ -527,13 +527,6 @@ sub_llm_bench() {
     "$DOTFILES_DIR/macos/llm-bench.sh" "$@"
 }
 
-sub_remote_setup() {
-    "$DOTFILES_DIR/macos/remote-setup.sh" "$@"
-}
-
-sub_remote_disable() {
-    "$DOTFILES_DIR/macos/remote-disable.sh" "$@"
-}
 
 sub_completions() {
     cat << 'EOF'
@@ -553,8 +546,7 @@ _dotfiles() {
         'test:Run scaffold eval framework'
         'completions:Output shell completions'
         'llm-bench:Evaluate local LM Studio models'
-        'remote-setup:Set up SSH/Mosh/Zellij access for Termius'
-        'remote-disable:Turn off macOS Remote Login for phone access'
+        'remote:Phone remote-shell access (setup, disable)'
         'agent:Agent vendor namespace (setup, overview)'
         'verify:Verification namespace (vendors, skills)'
         'brew:Brew namespace (install, stale)'
@@ -614,9 +606,9 @@ ns_cursor() {
     esac
 }
 
-# Python CLI (P1a foundation). Migrated commands are delegated to uv run.
+# Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
 # As later phases land, add their names to this list.
-PY_CLI_COMMANDS=" version "
+PY_CLI_COMMANDS=" version remote "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
@@ -634,8 +626,6 @@ case $COMMAND_NAME in
     test)        shift; sub_test "$@" ;;
     completions) sub_completions ;;
     llm-bench)   shift; sub_llm_bench "$@" ;;
-    remote-setup) shift; sub_remote_setup "$@" ;;
-    remote-disable) shift; sub_remote_disable "$@" ;;
 
     # Namespaces
     agent)  shift; ns_agent "$@" ;;
