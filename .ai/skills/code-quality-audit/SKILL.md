@@ -114,6 +114,8 @@ After fixed + surface criteria, identify 2–5 additional observations specific 
 
 Grade each observation as: **Strength**, **Opportunity**, or **Concern**.
 
+For a structural anti-pattern checklist to drive these observations (god functions, data clumps, AI-generated code smells, domain hygiene), see [Audit criteria](references/audit-criteria.md).
+
 ## Report Format
 
 ```markdown

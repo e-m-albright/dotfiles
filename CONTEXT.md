@@ -5,11 +5,11 @@ Glossary for the agentic-tooling vocabulary used in this dotfiles repo. Distinct
 ## Language
 
 **Skill**:
-A capability triggered by description match, loaded progressively. Lives at `.ai/skills/<name>/SKILL.md` (canonical) and is symlinked into `agents/<vendor>/skills/<name>`. Its frontmatter `description` is the only trigger surface — see `.ai/rules/process/skill-format.mdc`.
+A capability triggered by description match, loaded progressively. Lives at `.ai/skills/<name>/SKILL.md` (canonical) and is symlinked into `agents/<vendor>/skills/<name>`. Its frontmatter `description` is the only trigger surface — see `.ai/skills/skill-creator/references/skill-format.md`.
 _Avoid_: command, prompt.
 
 **Agent** (subagent):
-A worker dispatched via the `Agent` tool with isolated context. Lives at `.ai/agents/<name>.md` (canonical) and is symlinked into `agents/<vendor>/agents/<name>.md`. Different frontmatter format from skills (`tools` is comma-separated; no `allowed-tools`). See `.ai/rules/process/agent-format.mdc`.
+A worker dispatched via the `Agent` tool with isolated context. Lives at `.ai/agents/<name>.md` (canonical) and is symlinked into `agents/<vendor>/agents/<name>.md`. Different frontmatter format from skills (`tools` is comma-separated; no `allowed-tools`). See `.ai/skills/skill-creator/references/agent-format.md`.
 _Avoid_: assistant, helper, model.
 
 **Rule**:

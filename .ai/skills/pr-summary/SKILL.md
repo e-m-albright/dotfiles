@@ -59,3 +59,4 @@ gh pr create --title "title" --body "body"
 - If commits reference Linear issues (e.g., ENG-123), include them in the body
 - Always include a test plan, even if it's just "run existing tests"
 - Ask the user to review the draft before creating if the PR is large (>10 files)
+- For conventions on writing good titles, summaries, test plans, and commits, see [Writing tickets & PRs](references/writing-tickets-prs.md)

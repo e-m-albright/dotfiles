@@ -38,6 +38,6 @@ Vendor-only artifacts (rare) stay as real files inside their vendor dir — e.g.
 ## See also
 
 - `CONTEXT.md` — vocabulary including the canonical-+-symlink layout.
-- `.ai/rules/process/skill-format.mdc` — author-side conventions.
-- `.ai/rules/process/agent-format.mdc` — same for agents.
+- `.ai/skills/skill-creator/references/skill-format.md` — author-side conventions (promoted out of `.ai/rules/process/` 2026-06-01).
+- `.ai/skills/skill-creator/references/agent-format.md` — same for agents (promoted 2026-06-01).
 - `docs/specs/2026-05-07-skills-research.md` (local notes) — Phase 2 + 3 + 4 of the cross-repo skills research, where this pattern was extended to agents.

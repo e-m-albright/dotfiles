@@ -57,7 +57,7 @@ Meanwhile, the public ecosystem converged on a copy-based CLI: **[`vercel-labs/s
 
 - [ADR-0001](0001-canonical-skills-symlinked-into-vendors.md) — the previous pattern (superseded).
 - `docs/specs/2026-05-07-skills-research.md` (local notes) — phased plan; this ADR records the architectural pivot found during Phase 5 review.
-- `.ai/rules/process/skill-format.mdc` — author-side conventions (unchanged).
-- `.ai/rules/process/agent-format.mdc` — same for subagents (unchanged).
+- `.ai/skills/skill-creator/references/skill-format.md` — author-side conventions (promoted out of `.ai/rules/process/` 2026-06-01).
+- `.ai/skills/skill-creator/references/agent-format.md` — same for subagents (promoted 2026-06-01).
 - [vercel-labs/skills](https://github.com/vercel-labs/skills) — the public CLI.
 - [agentskills.io](https://agentskills.io) — skill spec we conform to.

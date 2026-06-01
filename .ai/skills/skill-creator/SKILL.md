@@ -21,7 +21,7 @@ Create new skills and improve existing ones. The high-level loop:
 Your job is to figure out where the user is in the loop and meet them there. They might be at "I want to make a skill for X" — start at the beginning. They might already have a draft — go straight to test/iterate.
 
 This skill is the meta-skill. It complements:
-- **`.ai/rules/process/skill-format.mdc`** — the convention spec for this repo (frontmatter, body, source attribution, tool restrictions).
+- **[Skill format](references/skill-format.md)** — the convention spec for this repo (frontmatter, body, source attribution, tool restrictions). [Agent format](references/agent-format.md) covers subagents.
 - **`bin/dotfiles validate-skills`** — the validator. Run it after every edit to confirm spec compliance.
 - **`docs/skills-sources.md`** — the source-attribution registry. Add a row when porting from upstream.
 
@@ -39,7 +39,7 @@ Confirm with the user:
 
 ### Step 2 — Write the SKILL.md
 
-Use the canonical layout from `skill-format.mdc`:
+Use the canonical layout from `skill-format.mdc` (full conventions: [Skill format](references/skill-format.md); for authoring subagents instead, see [Agent format](references/agent-format.md)):
 
 ```
 skill-name/

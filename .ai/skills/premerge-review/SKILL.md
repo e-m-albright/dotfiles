@@ -3,7 +3,7 @@ name: premerge-review
 description: Pre-merge bug-finding review of a diff, branch, or PR — hunts correctness, security, data-integrity, and operational defects, then classifies each finding fix-first (auto-fix the mechanical, flag the judgment calls). Use when the user says "review this change/diff/branch/PR", "review before merge", "what could break here", "is this safe to ship/merge", or wants a focused single-reviewer pass over a change about to land. NOT for letter-graded health report cards (use code-quality-audit) and NOT for chasing a known failing test (use diagnose/systematic-debugging).
 allowed-tools: Read Grep Glob Bash(git:*) Bash(gh:*) Bash(rg:*) Bash(wc:*)
 metadata:
-  source: Derived from .ai/rules/process/code-review.mdc (the canonical rubric). Keep the two in sync; this skill is the invoked workflow, the rule is ambient guidance.
+  source: The fix-first classification + correctness/security/data/ops criteria (formerly .ai/rules/process/code-review.mdc, now retired) live in references/review-criteria.md.
   note: Named premerge-review (not code-review) to avoid shadowing Claude Code's /code-review plugin command that `ccr` drives.
 ---
 
@@ -52,6 +52,8 @@ Classify every finding before reporting:
 **ASK** (report, don't touch): architectural changes (new abstractions, data flow), security-sensitive changes (auth, validation, secrets), API surface changes (new endpoints, changed contracts), dependency additions/removals, test strategy decisions.
 
 **Default to ASK when uncertain.** Batch ASK findings into the summary; never make a judgment-call change silently.
+
+For the full classification table and worked examples, see [Review criteria](references/review-criteria.md).
 
 ## Correctness (the non-obvious)
 
