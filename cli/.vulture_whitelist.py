@@ -9,3 +9,5 @@ _ = ports.FileSystem.mkdir
 _ = ports.Clock.now
 _ = sessions.SessionLauncher.pick
 _ = sessions.SessionLauncher.attach
+_ = ports.HttpClient.get_json
+_ = ports.HttpClient.post_json

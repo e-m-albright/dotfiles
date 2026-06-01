@@ -58,3 +58,12 @@ class Clock(Protocol):
     """
 
     def now(self) -> datetime: ...
+
+
+@runtime_checkable
+class HttpClient(Protocol):
+    """HTTP client port — mockable seam for LM Studio API calls."""
+
+    def get_json(self, url: str) -> dict: ...  # type: ignore[type-arg]
+
+    def post_json(self, url: str, body: dict) -> dict: ...  # type: ignore[type-arg]

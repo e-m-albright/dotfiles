@@ -104,6 +104,30 @@ class FakeFileSystem:
         return list(self._children.get(path, set()))
 
 
+class FakeHttpClient:
+    """Records HTTP calls; returns scripted JSON responses, defaulting to {}."""
+
+    def __init__(self) -> None:
+        self.gets: list[str] = []
+        self.posts: list[tuple[str, dict]] = []  # type: ignore[type-arg]
+        self._get_scripts: dict[str, dict] = {}  # type: ignore[type-arg]
+        self._post_scripts: dict[str, dict] = {}  # type: ignore[type-arg]
+
+    def script_get(self, url: str, payload: dict) -> None:  # type: ignore[type-arg]
+        self._get_scripts[url] = payload
+
+    def script_post(self, url: str, payload: dict) -> None:  # type: ignore[type-arg]
+        self._post_scripts[url] = payload
+
+    def get_json(self, url: str) -> dict:  # type: ignore[type-arg]
+        self.gets.append(url)
+        return self._get_scripts.get(url, {})
+
+    def post_json(self, url: str, body: dict) -> dict:  # type: ignore[type-arg]
+        self.posts.append((url, body))
+        return self._post_scripts.get(url, {})
+
+
 class FakeClock:
     """Fixed clock."""
 
