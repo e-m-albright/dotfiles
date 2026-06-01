@@ -46,12 +46,12 @@ def bake_rules(dotfiles_dir: Path) -> str:
     if not rule_files:
         return ""
 
-    # Preamble — matches the two printf lines in bake-rules.sh
-    tilde_dir = str(rules_dir).replace(str(Path.home()), "~")
+    # Preamble — source shown relative to the repo (no Path.home() in core).
+    rel_dir = rules_dir.relative_to(dotfiles_dir)
     preamble = (
         "\n# Universal rules (baked from .ai/rules/process/)\n\n"
         f"_These rules govern process, safety, and coding conventions for all AI coding work."
-        f" Source: `{tilde_dir}/*.mdc`._"
+        f" Source: `{rel_dir}/*.mdc`._"
     )
 
     parts: list[str] = [preamble]
