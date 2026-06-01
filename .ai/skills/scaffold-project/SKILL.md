@@ -27,10 +27,10 @@ Add `--force` before the recipe to regenerate AGENTS.md and overwrite existing r
 ## Workflow
 
 1. Parse the user's arguments into recipe, app-type, and project-path
-2. Run the scaffold script:
+2. Run the scaffold command:
 
 ```bash
-~/dotfiles/prompts/scaffold.sh [--force] <recipe> [app-type] <project-path>
+dotfiles scaffold [--force] <recipe> [app-type] <project-path>
 ```
 
 3. Report what was created or updated

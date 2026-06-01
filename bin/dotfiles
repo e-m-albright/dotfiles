@@ -24,8 +24,7 @@ sub_help () {
     printf "   update               Update OS, Homebrew, runtimes, and dev tools\n"
     printf "   clean                Clean up Homebrew caches\n"
     printf "   dock                 Reset macOS Dock layout\n"
-    printf "   scaffold <args>      Scaffold a new project with AI rules\n"
-    printf "   test [--quick]       Run scaffold eval framework\n"
+    printf "   scaffold <recipe> [app-type] <path>  Scaffold a new project with AI rules\n"
     printf "   completions          Output shell completions (eval to install)\n"
     printf "   llm <cmd>            Evaluate local LM Studio models (list|bench|estimate|compare)\n"
     printf "   remote setup [opts]    Set up SSH/Mosh/Zellij access for Termius\n"
@@ -159,14 +158,6 @@ sub_install() {
     . "$DOTFILES_DIR/install.sh"
 }
 
-sub_scaffold() {
-    "$DOTFILES_DIR/prompts/scaffold.sh" "$@"
-}
-
-sub_test() {
-    "$DOTFILES_DIR/tests/test_scaffold.sh" "$@"
-}
-
 sub_shell_profile() {
     printf "${BLUE}%b Profiling shell startup...${NC}\n\n" "$ARROW"
     # Time total startup
@@ -227,7 +218,6 @@ _dotfiles() {
         'clean:Clean caches'
         'dock:Reset macOS Dock'
         'scaffold:Scaffold a new project with AI rules'
-        'test:Run scaffold eval framework'
         'completions:Output shell completions'
         'llm:Evaluate local LM Studio models (list|bench|estimate|compare)'
         'remote:Phone remote-shell access (setup, disable)'
@@ -272,7 +262,7 @@ ns_cursor() {
 
 # Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
 # As later phases land, add their names to this list.
-PY_CLI_COMMANDS=" version remote session sesh doctor llm brew "
+PY_CLI_COMMANDS=" version remote session sesh doctor llm brew scaffold "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
@@ -290,8 +280,6 @@ case $COMMAND_NAME in
     update)      sub_update ;;
     clean)       sub_clean ;;
     dock)        sub_dock ;;
-    scaffold)    shift; sub_scaffold "$@" ;;
-    test)        shift; sub_test "$@" ;;
     completions) sub_completions ;;
     # Namespaces
     agent)  shift; ns_agent "$@" ;;

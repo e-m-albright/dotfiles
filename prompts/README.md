@@ -10,19 +10,19 @@ One script, idempotent -- run it on new or existing projects:
 
 ```bash
 # Create new projects
-~/dotfiles/prompts/scaffold.sh typescript my-app           # SvelteKit (default)
-~/dotfiles/prompts/scaffold.sh typescript astro my-blog    # Astro
-~/dotfiles/prompts/scaffold.sh python my-api               # FastAPI (default)
-~/dotfiles/prompts/scaffold.sh golang my-service           # Chi (default)
-~/dotfiles/prompts/scaffold.sh rust my-service             # Axum (default)
-~/dotfiles/prompts/scaffold.sh rust tauri my-desktop-app   # Tauri
+dotfiles scaffold typescript my-app           # SvelteKit (default)
+dotfiles scaffold typescript astro my-blog    # Astro
+dotfiles scaffold python my-api               # FastAPI (default)
+dotfiles scaffold golang my-service           # Chi (default)
+dotfiles scaffold rust my-service             # Axum (default)
+dotfiles scaffold rust tauri my-desktop-app   # Tauri
 
 # Seed existing projects (use . for current directory)
-~/dotfiles/prompts/scaffold.sh typescript .
-~/dotfiles/prompts/scaffold.sh python ~/code/my-api
+dotfiles scaffold typescript .
+dotfiles scaffold python ~/code/my-api
 
 # Force regenerate everything (including AGENTS.md)
-~/dotfiles/prompts/scaffold.sh --force python .
+dotfiles scaffold --force python .
 ```
 
 Safe to run multiple times -- only adds missing pieces.

@@ -362,7 +362,6 @@ fi
 print_header "📚 Prompts & Recipes"
 print_section "Recipe Book"
 # Make scripts executable
-chmod +x "$DOTFILES_DIR/prompts/scaffold.sh" 2>/dev/null || true
 chmod +x "$DOTFILES_DIR/.agents/generate-permissions.sh" 2>/dev/null || true
 # Remove old 'recipe' symlink if it exists (deprecated)
 rm -f "$DOTFILES_DIR/bin/recipe" 2>/dev/null || true

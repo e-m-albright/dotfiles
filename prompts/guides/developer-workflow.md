@@ -408,15 +408,19 @@ The review also evaluates five dimensions: **Correctness**, **Security**, **API 
 ## Testing the Scaffold
 
 ```bash
-dotfiles test              # Full eval (all 3 tiers)
-dotfiles test --quick      # Static validation + consistency only
+cd cli && just check       # Lint, typecheck, complexity, and the full pytest suite
+cd cli && uv run pytest tests/test_cli_scaffold.py tests/test_scaffold_*.py
 ```
 
-The eval framework (`tests/test_scaffold.sh`) validates our scaffolding at three tiers:
+Scaffold logic lives in `cli/src/dotfiles/core/scaffold/` (one module per concern)
+and the Typer command in `cli/src/dotfiles/cli/scaffold.py`. Tests cover:
 
-1. **Static validation** — Rule files have valid frontmatter, templates parse (TOML, YAML, JSON), referenced tools exist on the system
-2. **Consistency checks** — Rules agree across files (e.g., Python type checker is `ty` everywhere, not `pyright` in some files and `ty` in others), LSP plugins match tool choices
-3. **Scaffold output validation** — Actually runs `scaffold.sh` for every recipe/app-type combo and checks: required files exist, symlinks aren't broken, templates use correct tools, re-runs are idempotent
+1. **Per-module logic** (`tests/test_scaffold_*.py`) — recipe→rule mappings, manifest
+   headers, symlink construction, gitignore idempotency, optional scaffolds, preflight,
+   project rename, template copy — all against `tmp_path`.
+2. **CLI orchestration** (`tests/test_cli_scaffold.py`) — positional disambiguation
+   (app-type vs project-path), `--tools all` via the registry, `--force` overwrite,
+   git init, and flag handling.
 
 Run this after changing any rule, template, or scaffold logic.
 
