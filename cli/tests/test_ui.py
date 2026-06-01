@@ -58,3 +58,25 @@ def test_render_connection_info_warns_when_no_tailscale() -> None:
     assert "Tailscale does not look connected" in out
     assert "evan" in out
     assert "mosh --server=" in out
+
+
+def test_render_connection_info_offers_picker_command() -> None:
+    from io import StringIO
+
+    from dotfiles_cli.cli.ui import render_connection_info
+    from dotfiles_cli.core.models import ConnectionInfo
+
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=False, width=200)
+    info = ConnectionInfo(
+        user="evan",
+        host="mac",
+        session="mobile",
+        mosh_server="/opt/homebrew/bin/mosh-server",
+        tailnet_ip="100.64.0.1",
+    )
+    render_connection_info(console, info)
+    out = buf.getvalue()
+    # direct-attach command AND a picker variant are both offered
+    assert "zellij attach --create mobile" in out
+    assert "dotfiles sesh" in out

@@ -37,3 +37,6 @@ def render_connection_info(console: Console, info: ConnectionInfo) -> None:
     console.print("  Protocol: Mosh")
     console.print("\n[bold]Paste into Termius as the Mosh command:[/]")
     console.print(info.mosh_command, soft_wrap=True)
+    console.print("\n[dim]Or connect and pick a live session:[/]")
+    picker_cmd = info.mosh_command.replace(info.startup_command, "dotfiles sesh")
+    console.print(picker_cmd, soft_wrap=True)
