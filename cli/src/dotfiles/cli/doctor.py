@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from dotfiles.cli.context import AppContext
+from dotfiles.cli.context import app_context
 from dotfiles.console import console
 from dotfiles.core.doctor import DoctorService
 from dotfiles.core.models import CheckResult
@@ -39,7 +39,7 @@ def doctor_command(
     fix: Annotated[bool, typer.Option("--fix", help="Attempt to repair missing config.")] = False,
 ) -> None:
     """Check all tools and configuration are installed."""
-    app_ctx: AppContext = ctx.obj
+    app_ctx = app_context(ctx)
     svc = DoctorService(
         runner=app_ctx.runner,
         home=app_ctx.home,

@@ -7,6 +7,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import typer
+
 from dotfiles.adapters.http import UrllibHttpClient
 from dotfiles.adapters.launcher import FzfExecLauncher
 from dotfiles.adapters.process import SubprocessRunner
@@ -31,6 +33,17 @@ class AppContext:
     llm_settings: LlmSettings = field(default_factory=LlmSettings)
     dotfiles_dir: Path = _REPO_ROOT
     state_dir: Path = _REPO_ROOT / ".local-state"  # overridden by build_real_context
+
+
+def app_context(ctx: typer.Context) -> AppContext:
+    """Return the AppContext stored on the Typer context by the composition root.
+
+    The single accessor every command uses to unwrap ``ctx.obj`` — replaces the
+    per-module ``_ctx`` helpers and the inline ``assert isinstance`` unwraps.
+    """
+    obj = ctx.obj
+    assert isinstance(obj, AppContext)
+    return obj
 
 
 def build_real_context(*, interactive: bool) -> AppContext:

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import typer
 
-from dotfiles.cli.context import AppContext
+from dotfiles.cli.context import AppContext, app_context
 from dotfiles.console import console
 from dotfiles.core.models import Snapshot, SnapshotDiff
 from dotfiles.core.snapshot import (
@@ -19,12 +19,6 @@ from dotfiles.core.snapshot import (
 )
 
 snapshot_app = typer.Typer(help="Capture and diff machine-state snapshots.")
-
-
-def _ctx(ctx: typer.Context) -> AppContext:
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
-    return app_ctx
 
 
 def _capture_now(app_ctx: AppContext) -> Snapshot:
@@ -59,7 +53,7 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
     """With no subcommand, capture a snapshot and persist it."""
     if ctx.invoked_subcommand is not None:
         return
-    app_ctx = _ctx(ctx)
+    app_ctx = app_context(ctx)
     snap = _capture_now(app_ctx)
     path = write_snapshot(app_ctx.state_dir, snap)
     console.print(
@@ -71,7 +65,7 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
 @snapshot_app.command("ls")
 def cmd_ls(ctx: typer.Context) -> None:
     """List saved snapshots, newest first."""
-    snaps = list_snapshots(_ctx(ctx).state_dir)
+    snaps = list_snapshots(app_context(ctx).state_dir)
     if not snaps:
         console.print("No snapshots yet. Run [bold]dotfiles snapshot[/] to capture one.")
         return
@@ -103,7 +97,7 @@ def cmd_diff(
     b: str | None = typer.Argument(None, help="newer snapshot slug-prefix, or 'now'"),
 ) -> None:
     """Diff two snapshots. No args: previous vs latest. `now`: latest vs a live capture."""
-    app_ctx = _ctx(ctx)
+    app_ctx = app_context(ctx)
     snaps = list_snapshots(app_ctx.state_dir)
 
     if a is None and b is None:

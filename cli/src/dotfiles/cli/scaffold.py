@@ -20,7 +20,7 @@ from typing import Annotated
 
 import typer
 
-from dotfiles.cli.context import AppContext
+from dotfiles.cli.context import app_context
 from dotfiles.cli.ui import render_steps
 from dotfiles.console import console
 from dotfiles.core.models import StepResult
@@ -209,7 +209,7 @@ def scaffold_command(
     ] = False,
 ) -> None:
     """Scaffold or update a project with cross-vendor AI rules."""
-    app_ctx: AppContext = ctx.obj
+    app_ctx = app_context(ctx)
 
     # --with-code-health is shorthand for both
     audit = with_audit_pipeline or with_code_health

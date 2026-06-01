@@ -10,7 +10,7 @@ import typer
 from rich.markup import escape
 from rich.table import Table
 
-from dotfiles.cli.context import AppContext
+from dotfiles.cli.context import AppContext, app_context
 from dotfiles.cli.ui import has_errors, render_steps
 from dotfiles.console import console
 from dotfiles.core.agent_overview import AgentOverviewService
@@ -313,8 +313,7 @@ def cmd_verify(
     offline: bool = typer.Option(False, "--offline", help="skip live MCP probes"),
 ) -> None:
     """Verify skills/agents are deployed and MCP servers are reachable."""
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
+    app_ctx = app_context(ctx)
     verifies = SkillHealthService(
         runner=app_ctx.runner,
         http=app_ctx.http,
@@ -333,8 +332,7 @@ def setup(
     clean: bool = _CLEAN_OPT,
 ) -> None:
     """Configure AI vendor tooling (Claude Code, Cursor, Codex, Gemini, Pi)."""
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
+    app_ctx = app_context(ctx)
 
     vendors_to_run: list[_VendorChoice] = [vendor] if vendor is not None else _ALL_VENDORS
 
@@ -355,8 +353,7 @@ def setup(
 @agent_app.command()
 def overview(ctx: typer.Context) -> None:
     """Show the full agentic setup dashboard (MCP, hooks, skills, subagents, rules, permissions)."""
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
+    app_ctx = app_context(ctx)
 
     svc = AgentOverviewService(
         runner=app_ctx.runner,
@@ -369,8 +366,7 @@ def overview(ctx: typer.Context) -> None:
 @agent_app.command()
 def lint(ctx: typer.Context) -> None:
     """Validate .ai/skills/ and .ai/agents/ markdown files (was: verify skills)."""
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
+    app_ctx = app_context(ctx)
 
     results = validate_skill_files(app_ctx.dotfiles_dir)
 
@@ -404,8 +400,7 @@ def gemini_prompt(
     ),
 ) -> None:
     """Load advisor prompt chunks into clipboard for Gemini saved-info."""
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
+    app_ctx = app_context(ctx)
 
     svc = GeminiChunksService(
         runner=app_ctx.runner,

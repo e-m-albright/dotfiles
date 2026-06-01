@@ -3,18 +3,12 @@
 import typer
 from rich.markup import escape
 
-from dotfiles.cli.context import AppContext
+from dotfiles.cli.context import AppContext, app_context
 from dotfiles.console import console
 from dotfiles.core.llm import LMStudioService
 from dotfiles.core.models import BenchResult
 
 llm_app = typer.Typer(help="Evaluate local LM Studio models (list|bench|estimate|compare).")
-
-
-def _ctx(ctx: typer.Context) -> AppContext:
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
-    return app_ctx
 
 
 def _service(app_ctx: AppContext) -> LMStudioService:
@@ -47,7 +41,7 @@ def _render_bench(result: BenchResult) -> None:
 @llm_app.command(name="list")
 def list_models(ctx: typer.Context) -> None:
     """List loaded LM Studio models (lms ps)."""
-    app_ctx = _ctx(ctx)
+    app_ctx = app_context(ctx)
     try:
         output = _service(app_ctx).list_loaded()
     except RuntimeError as exc:
@@ -62,7 +56,7 @@ def bench(
     model: str = typer.Argument(None, help="Model ID to bench (default: currently loaded)."),
 ) -> None:
     """Benchmark a model: throughput, TTFT, and reasoning-mode check."""
-    app_ctx = _ctx(ctx)
+    app_ctx = app_context(ctx)
     try:
         result = _service(app_ctx).bench(model)
     except RuntimeError as exc:
@@ -78,7 +72,7 @@ def estimate(
     ctx_size: int = typer.Argument(262144, help="Context window size (default 262144)."),
 ) -> None:
     """Estimate memory footprint for a model at a given context size."""
-    app_ctx = _ctx(ctx)
+    app_ctx = app_context(ctx)
     try:
         output = _service(app_ctx).estimate(model, ctx_size)
     except RuntimeError as exc:
@@ -96,7 +90,7 @@ def compare(
     model_b: str = typer.Argument(..., help="Second model ID."),
 ) -> None:
     """Head-to-head benchmark: bench MODEL_A then MODEL_B."""
-    app_ctx = _ctx(ctx)
+    app_ctx = app_context(ctx)
     svc = _service(app_ctx)
 
     console.print(f"[blue]Head-to-head: {escape(model_a)} vs {escape(model_b)}[/]")

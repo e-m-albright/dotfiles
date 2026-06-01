@@ -5,7 +5,7 @@ from datetime import datetime
 
 import typer
 
-from dotfiles.cli.context import AppContext
+from dotfiles.cli.context import app_context
 from dotfiles.console import console
 from dotfiles.core.fleet import list_fleet
 
@@ -16,12 +16,6 @@ _LEDGER_ONLY = "cursor/pi: ledger-only (no passive discovery yet)"
 _BIG_WINDOW = 60 * 24 * 365  # minutes; effectively "all" sessions
 
 
-def _ctx(ctx: typer.Context) -> AppContext:
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
-    return app_ctx
-
-
 @fleet_app.callback(invoke_without_command=True)
 def show(
     ctx: typer.Context,
@@ -29,7 +23,7 @@ def show(
     show_all: bool = typer.Option(False, "--all", help="include sessions past the live window"),
 ) -> None:
     """List live agent sessions, newest first."""
-    app_ctx = _ctx(ctx)
+    app_ctx = app_context(ctx)
     threshold = _BIG_WINDOW if show_all else app_ctx.settings.fleet_live_minutes
     sessions = list_fleet(
         app_ctx.runner,

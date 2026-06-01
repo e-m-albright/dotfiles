@@ -2,8 +2,8 @@
 
 import typer
 
-from dotfiles.cli.context import AppContext
-from dotfiles.cli.ui import has_errors, render_connection_info, render_steps
+from dotfiles.cli.context import app_context
+from dotfiles.cli.ui import has_errors, render_and_exit, render_connection_info, render_steps
 from dotfiles.console import console
 from dotfiles.core.remote import InvalidKeyError, RemoteService
 
@@ -11,8 +11,7 @@ remote_app = typer.Typer(help="Set up or disable phone (Termius) remote-shell ac
 
 
 def _service(ctx: typer.Context) -> RemoteService:
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
+    app_ctx = app_context(ctx)
     return RemoteService(
         runner=app_ctx.runner,
         interactive=app_ctx.interactive,
@@ -31,8 +30,7 @@ def setup(
     session: str | None = typer.Option(None, "--session", help="Zellij session name."),
 ) -> None:
     """Set up SSH/Mosh/Zellij access for Termius."""
-    app_ctx = ctx.obj
-    assert isinstance(app_ctx, AppContext)
+    app_ctx = app_context(ctx)
     service = _service(ctx)
     chosen = session or app_ctx.settings.default_session
     try:
@@ -58,6 +56,4 @@ def disable(
 ) -> None:
     """Turn off macOS Remote Login (and optionally kill live sessions)."""
     steps = _service(ctx).disable(dry_run=dry_run, kill_sessions=kill_sessions)
-    render_steps(console, steps)
-    if has_errors(steps):
-        raise typer.Exit(code=1)
+    render_and_exit(console, steps)

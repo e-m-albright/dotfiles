@@ -2,6 +2,7 @@
 
 from collections.abc import Iterable
 
+import typer
 from rich.console import Console
 from rich.markup import escape
 
@@ -25,6 +26,17 @@ def render_steps(console: Console, steps: Iterable[StepResult]) -> None:
 
 def has_errors(steps: Iterable[StepResult]) -> bool:
     return any(step.level == "error" for step in steps)
+
+
+def render_and_exit(console: Console, steps: list[StepResult], *, code: int = 1) -> None:
+    """Render *steps*, then exit non-zero if any step is an error.
+
+    The shared tail for commands that print a result list and fail the process
+    when something went wrong.
+    """
+    render_steps(console, steps)
+    if has_errors(steps):
+        raise typer.Exit(code=code)
 
 
 def render_connection_info(console: Console, info: ConnectionInfo) -> None:

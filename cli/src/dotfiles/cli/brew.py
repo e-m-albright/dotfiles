@@ -6,7 +6,7 @@ from typing import Annotated
 
 import typer
 
-from dotfiles.cli.context import AppContext
+from dotfiles.cli.context import app_context
 from dotfiles.cli.ui import has_errors, render_steps
 from dotfiles.console import console
 from dotfiles.core.brew import (
@@ -26,7 +26,7 @@ brew_app = typer.Typer(help="Manage Homebrew packages from packages.toml.")
 
 
 def _manifest(ctx: typer.Context) -> PackageManifest:
-    app_ctx: AppContext = ctx.obj
+    app_ctx = app_context(ctx)
     toml_path = app_ctx.dotfiles_dir / "macos" / "packages.toml"
     return PackageManifest.load(toml_path)
 
@@ -59,7 +59,7 @@ def install(
     ] = False,
 ) -> None:
     """Install all packages declared in packages.toml (idempotent)."""
-    app_ctx: AppContext = ctx.obj
+    app_ctx = app_context(ctx)
     manifest = _manifest(ctx)
     flags = _flags_on(no_ai=no_ai, no_productivity=no_productivity, no_social=no_social)
     runner = app_ctx.runner
@@ -113,7 +113,7 @@ def install(
 @brew_app.command()
 def stale(ctx: typer.Context) -> None:
     """Report installed packages not declared in packages.toml (stale) and missing ones."""
-    app_ctx: AppContext = ctx.obj
+    app_ctx = app_context(ctx)
     manifest = _manifest(ctx)
     runner = app_ctx.runner
     flags = {"ai", "productivity", "social"}
