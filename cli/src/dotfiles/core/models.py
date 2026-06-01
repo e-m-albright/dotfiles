@@ -6,6 +6,17 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 # ---------------------------------------------------------------------------
+# Vendors — the canonical typed identifiers for every AI tool we configure
+# ---------------------------------------------------------------------------
+
+Vendor = Literal["claude", "cursor", "codex", "gemini", "pi"]
+VENDORS: tuple[Vendor, ...] = ("claude", "cursor", "codex", "gemini", "pi")
+# The vendors the agent-overview dashboard tracks (its row models carry no `pi`
+# column). snapshot and skill-health both iterate exactly this set.
+OVERVIEW_VENDORS: tuple[Vendor, ...] = ("claude", "cursor", "codex", "gemini")
+
+
+# ---------------------------------------------------------------------------
 # Agent overview models
 # ---------------------------------------------------------------------------
 
@@ -186,7 +197,7 @@ class VendorSurface(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    vendor: str
+    vendor: Vendor
     label: str
     status: VendorSurfaceStatus
     detail: str = ""
@@ -292,7 +303,7 @@ class FleetSession(BaseModel):
     worktree: str | None
     last_active: datetime
     task: str | None
-    source: str  # "transcript" | "ledger" | "both"
+    source: Literal["transcript", "ledger", "both"]
 
 
 # ---------------------------------------------------------------------------
@@ -394,7 +405,7 @@ class VendorVerify(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    vendor: str
+    vendor: Vendor
     skills_deployed: int
     skills_expected: int
     agents_deployed: int

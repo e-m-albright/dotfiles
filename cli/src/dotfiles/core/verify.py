@@ -19,7 +19,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from dotfiles.core.fsutil import list_dir
-from dotfiles.core.models import VendorSurface
+from dotfiles.core.models import Vendor, VendorSurface
 
 
 class VendorVerifyService:
@@ -122,7 +122,7 @@ class VendorVerifyService:
     # Core path-check logic (mirrors check_path() in the shell script)
     # ------------------------------------------------------------------
 
-    def _check(self, vendor: str, label: str, path: Path) -> VendorSurface:
+    def _check(self, vendor: Vendor, label: str, path: Path) -> VendorSurface:
         if not path.exists():
             return VendorSurface(vendor=vendor, label=label, status="missing", detail=str(path))
 

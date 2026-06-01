@@ -10,6 +10,7 @@ from pathlib import Path
 
 from dotfiles.core.agent_overview import AgentOverviewService
 from dotfiles.core.models import (
+    OVERVIEW_VENDORS,
     AgentOverview,
     BrewState,
     RuntimeChange,
@@ -17,6 +18,7 @@ from dotfiles.core.models import (
     SnapshotDiff,
     SymlinkChange,
     SymlinkState,
+    Vendor,
 )
 from dotfiles.core.ports import ProcessRunner
 
@@ -80,7 +82,7 @@ def collect_symlinks(*, home: Path, dotfiles_dir: Path) -> tuple[SymlinkState, .
     return tuple(states)
 
 
-def _vendor_tokens(overview: AgentOverview, vendor: str) -> list[str]:
+def _vendor_tokens(overview: AgentOverview, vendor: Vendor) -> list[str]:
     """Stable, sorted tokens describing one vendor's deployed agentic config."""
     tokens: list[str] = []
     for row in overview.mcp:
@@ -102,7 +104,7 @@ def _vendor_tokens(overview: AgentOverview, vendor: str) -> list[str]:
 def agent_config_hashes(overview: AgentOverview) -> dict[str, str]:
     """A stable content hash of each vendor's deployed MCP/hooks/skills/rules."""
     hashes: dict[str, str] = {}
-    for vendor in ("claude", "cursor", "codex", "gemini"):
+    for vendor in OVERVIEW_VENDORS:
         joined = "\n".join(_vendor_tokens(overview, vendor))
         hashes[vendor] = hashlib.sha256(joined.encode()).hexdigest()[:12]
     return hashes

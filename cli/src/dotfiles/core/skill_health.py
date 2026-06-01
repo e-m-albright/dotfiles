@@ -13,10 +13,8 @@ from pathlib import Path
 
 from dotfiles.core.agent_config import McpServerEntry, load_mcp_servers
 from dotfiles.core.agent_overview import AgentOverviewService
-from dotfiles.core.models import AgentOverview, McpProbe, VendorVerify
+from dotfiles.core.models import OVERVIEW_VENDORS, AgentOverview, McpProbe, Vendor, VendorVerify
 from dotfiles.core.ports import HttpClient, ProcessRunner
-
-_VENDORS = ("claude", "cursor", "codex", "gemini")
 
 
 def probe_mcp(
@@ -43,7 +41,7 @@ def probe_mcp(
     return McpProbe(server=server, ok=False, detail="no url or command configured")
 
 
-def _vendor_counts(overview: AgentOverview, vendor: str) -> tuple[int, int, int, int]:
+def _vendor_counts(overview: AgentOverview, vendor: Vendor) -> tuple[int, int, int, int]:
     """Return (skills_deployed, skills_expected, agents_deployed, agents_expected)."""
     canonical = overview.skills.canonical_skills
     if vendor == "claude":
@@ -71,7 +69,7 @@ def _drift(skills_dep: int, skills_exp: int, agents_dep: int, agents_exp: int) -
 
 
 def _vendor_probes(
-    vendor: str,
+    vendor: Vendor,
     mcp_servers: dict[str, McpServerEntry],
     *,
     http: HttpClient,
@@ -97,7 +95,7 @@ def build_vendor_verifies(
 ) -> list[VendorVerify]:
     """Per-vendor skill-health from an AgentOverview + the MCP server config."""
     verifies: list[VendorVerify] = []
-    for vendor in _VENDORS:
+    for vendor in OVERVIEW_VENDORS:
         skills_dep, skills_exp, agents_dep, agents_exp = _vendor_counts(overview, vendor)
         verifies.append(
             VendorVerify(
