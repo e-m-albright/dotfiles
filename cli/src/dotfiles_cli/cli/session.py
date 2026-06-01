@@ -62,6 +62,7 @@ def attach(ctx: typer.Context, name: str) -> None:
 @session_app.command()
 def new(ctx: typer.Context, name: str) -> None:
     """Create a new session and attach to it."""
+    # zellij `attach --create` creates the session if absent, so new == attach-by-name.
     _ctx(ctx).launcher.attach(attach_command(name))
 
 

@@ -68,3 +68,13 @@ def test_ls_reports_zellij_error() -> None:
     result = runner.invoke(app, ["sesh", "ls"], obj=make_fake_context(runner=r))
     assert result.exit_code == 1
     assert "zellij error" in result.output
+
+
+def test_bare_picker_reports_zellij_error() -> None:
+    from tests.fakes import FakeProcessRunner, make_fake_context
+
+    r = FakeProcessRunner()
+    r.script(("zellij", "list-sessions", "--no-formatting"), exit_code=1, stdout="", stderr="boom")
+    result = runner.invoke(app, ["sesh"], obj=make_fake_context(runner=r))
+    assert result.exit_code == 1
+    assert "zellij error" in result.output
