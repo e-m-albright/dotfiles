@@ -83,13 +83,30 @@ class FakeClock:
         return self._fixed
 
 
+class FakeSessionLauncher:
+    """Records pick/attach calls; returns a scripted selection."""
+
+    def __init__(self, selection: str | None = None) -> None:
+        self.selection = selection
+        self.picked: list[list[str]] = []
+        self.attached: list[list[str]] = []
+
+    def pick(self, options: Sequence[str]) -> str | None:
+        self.picked.append(list(options))
+        return self.selection
+
+    def attach(self, command: Sequence[str]) -> None:
+        self.attached.append(list(command))
+
+
 def make_fake_context(
     *,
     runner: "FakeProcessRunner | None" = None,
     fs: "FakeFileSystem | None" = None,
     interactive: bool = False,
     home: Path | None = None,
-):
+    launcher: "FakeSessionLauncher | None" = None,
+) -> AppContext:
     """Build an AppContext backed by fakes for CLI tests."""
     return AppContext(
         runner=runner or FakeProcessRunner(),
@@ -98,4 +115,5 @@ def make_fake_context(
         settings=Settings(),
         interactive=interactive,
         home=home or Path("/home/evan"),
+        launcher=launcher or FakeSessionLauncher(),
     )

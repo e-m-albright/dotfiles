@@ -24,7 +24,7 @@ def test_app_context_is_constructible_with_fakes() -> None:
     from datetime import UTC, datetime
 
     from dotfiles_cli.core.settings import Settings
-    from tests.fakes import FakeClock, FakeFileSystem, FakeProcessRunner
+    from tests.fakes import FakeClock, FakeFileSystem, FakeProcessRunner, FakeSessionLauncher
 
     ctx = AppContext(
         runner=FakeProcessRunner(),
@@ -33,5 +33,14 @@ def test_app_context_is_constructible_with_fakes() -> None:
         settings=Settings(),
         interactive=False,
         home=Path("/home/evan"),
+        launcher=FakeSessionLauncher(),
     )
     assert ctx.home == Path("/home/evan")
+
+
+def test_real_context_has_launcher() -> None:
+    from dotfiles_cli.adapters.launcher import FzfExecLauncher
+    from dotfiles_cli.cli.context import build_real_context
+
+    ctx = build_real_context(interactive=False)
+    assert isinstance(ctx.launcher, FzfExecLauncher)

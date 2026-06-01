@@ -8,8 +8,10 @@ from pathlib import Path
 
 from dotfiles_cli.adapters.clock import SystemClock
 from dotfiles_cli.adapters.filesystem import LocalFileSystem
+from dotfiles_cli.adapters.launcher import FzfExecLauncher
 from dotfiles_cli.adapters.process import SubprocessRunner
 from dotfiles_cli.core.ports import Clock, FileSystem, ProcessRunner
+from dotfiles_cli.core.sessions import SessionLauncher
 from dotfiles_cli.core.settings import Settings
 
 
@@ -23,6 +25,7 @@ class AppContext:
     settings: Settings
     interactive: bool
     home: Path
+    launcher: SessionLauncher
 
 
 def build_real_context(*, interactive: bool) -> AppContext:
@@ -33,4 +36,5 @@ def build_real_context(*, interactive: bool) -> AppContext:
         settings=Settings(),
         interactive=interactive,
         home=Path.home(),
+        launcher=FzfExecLauncher(),
     )
