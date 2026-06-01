@@ -270,6 +270,21 @@ class LedgerEntry(BaseModel):
     status: str
 
 
+class FleetSession(BaseModel):
+    """One live agent session discovered by fleet (passive + ledger overlay)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    vendor: str
+    session_id: str | None
+    cwd: str
+    branch: str | None
+    worktree: str | None
+    last_active: datetime
+    task: str | None
+    source: str  # "transcript" | "ledger" | "both"
+
+
 # ---------------------------------------------------------------------------
 # Snapshot / drift models
 # ---------------------------------------------------------------------------
