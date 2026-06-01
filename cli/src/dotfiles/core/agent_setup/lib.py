@@ -15,6 +15,7 @@ from typing import cast
 
 from dotfiles.core.agent_config import load_mcp_servers
 from dotfiles.core.agent_setup.bake_rules import bake_rules
+from dotfiles.core.fsutil import symlink
 from dotfiles.core.ports import ProcessRunner
 
 # ---------------------------------------------------------------------------
@@ -321,9 +322,7 @@ def _symlink_rule(rule: Path, dest_path: Path) -> StepResult:
     link_name = dest_path.name
     if dest_path.is_symlink() and dest_path.resolve() == rule.resolve():
         return StepResult(ok=True, message=f"Already linked {link_name}")
-    if dest_path.is_symlink() or dest_path.exists():
-        dest_path.unlink()
-    dest_path.symlink_to(rule)
+    symlink(rule, dest_path)
     return StepResult(ok=True, message=f"Symlinked {link_name}")
 
 

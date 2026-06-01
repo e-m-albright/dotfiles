@@ -31,6 +31,7 @@ from dotfiles.core.agent_setup.settings_merger import (
     merge_replace,
     write_json_safely,
 )
+from dotfiles.core.fsutil import symlink
 from dotfiles.core.ports import ProcessRunner
 
 _CURSORIGNORE_HEADER = """\
@@ -134,21 +135,12 @@ def _setup_rules(dotfiles_dir: Path) -> list[StepResult]:
     return [StepResult(ok=True, message="Generated rules/shared-rules.mdc")]
 
 
-def _force_symlink(src: Path, dest: Path) -> None:
-    """Create dest → src symlink, replacing any existing file/link."""
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.is_symlink() or dest.exists():
-        dest.unlink()
-    dest.symlink_to(src)
-
-
 def _setup_cli_config(dotfiles_dir: Path, home: Path) -> list[StepResult]:
     """Symlink agents/cursor/cli-config.json → home/.cursor/cli-config.json."""
     src = dotfiles_dir / "agents" / "cursor" / "cli-config.json"
     if not src.is_file():
         return []
-    dest = home / ".cursor" / "cli-config.json"
-    _force_symlink(src, dest)
+    symlink(src, home / ".cursor" / "cli-config.json")
     return [StepResult(ok=True, message="Deployed cli-config.json")]
 
 
@@ -158,7 +150,7 @@ def _setup_plugin(dotfiles_dir: Path, home: Path) -> list[StepResult]:
     dest = home / ".cursor" / "plugins" / "dotfiles"
     if dest.is_symlink() and dest.resolve() == src.resolve():
         return [StepResult(ok=True, message="Plugin already registered")]
-    _force_symlink(src, dest)
+    symlink(src, dest)
     return [StepResult(ok=True, message="Registered dotfiles plugin (~/.cursor/plugins/dotfiles)")]
 
 

@@ -22,6 +22,7 @@ from dotfiles.core.agent_setup.lib import (
     build_global_instructions,
     deploy_subagents,
 )
+from dotfiles.core.fsutil import prune_broken_symlinks, symlink
 from dotfiles.core.ports import ProcessRunner
 
 _PI_NPM_PKG = "@earendil-works/pi-coding-agent"
@@ -90,13 +91,10 @@ def _setup_config_symlinks(dotfiles_dir: Path, pi_home: Path) -> list[StepResult
     results: list[StepResult] = []
     for name in ("settings.json", "models.json"):
         src = pi_dir / name
-        dest = pi_home / name
         if not src.is_file():
             results.append(StepResult(ok=False, message=f"Source not found: {src}"))
             continue
-        if dest.is_symlink() or dest.exists():
-            dest.unlink()
-        dest.symlink_to(src)
+        symlink(src, pi_home / name)
         results.append(StepResult(ok=True, message=f"Linked Pi {name}"))
     return results
 
@@ -113,20 +111,6 @@ def _setup_instructions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
     ]
 
 
-def _prune_stale_links(directory: Path) -> None:
-    """Remove broken symlinks from *directory*."""
-    for link in directory.iterdir():
-        if link.is_symlink() and not link.exists():
-            link.unlink()
-
-
-def _force_symlink(src: Path, dest: Path) -> None:
-    """Create dest → src symlink, replacing any existing file/link."""
-    if dest.is_symlink() or dest.exists():
-        dest.unlink()
-    dest.symlink_to(src)
-
-
 def _setup_extensions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
     """Symlink agents/pi/extensions/*.ts → pi_home/extensions/; prune stale links."""
     ext_src = dotfiles_dir / "agents" / "pi" / "extensions"
@@ -135,13 +119,13 @@ def _setup_extensions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
 
     ext_dest = pi_home / "extensions"
     ext_dest.mkdir(parents=True, exist_ok=True)
-    _prune_stale_links(ext_dest)
+    prune_broken_symlinks(ext_dest)
 
     results: list[StepResult] = []
     for ts_file in sorted(ext_src.glob("*.ts")):
         if not ts_file.is_file():
             continue
-        _force_symlink(ts_file, ext_dest / ts_file.name)
+        symlink(ts_file, ext_dest / ts_file.name)
         results.append(StepResult(ok=True, message=f"Linked Pi extension {ts_file.name}"))
 
     return results
