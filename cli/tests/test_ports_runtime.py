@@ -1,4 +1,4 @@
-from dotfiles.core.ports import Clock, FileSystem, ProcessRunner
+from dotfiles.core.ports import FileSystem, ProcessRunner
 
 
 def test_ports_are_runtime_checkable_protocols() -> None:
@@ -10,4 +10,3 @@ def test_ports_are_runtime_checkable_protocols() -> None:
     assert isinstance(DummyRunner(), ProcessRunner)
     assert not isinstance(object(), ProcessRunner)
     assert not isinstance(object(), FileSystem)
-    assert not isinstance(object(), Clock)

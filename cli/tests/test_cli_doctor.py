@@ -33,12 +33,9 @@ def test_doctor_fix_prints_agent_setup_hint() -> None:
 
 def test_doctor_all_ok_exits_zero() -> None:
     """When all checks pass, exit code is 0."""
-    from datetime import UTC, datetime
-
     from dotfiles.cli.context import AppContext
     from dotfiles.core.settings import Settings
     from tests.fakes import (
-        FakeClock,
         FakeFileSystem,
         FakeProcessRunner,
         FakeSessionLauncher,
@@ -113,7 +110,6 @@ def test_doctor_all_ok_exits_zero() -> None:
     ctx = AppContext(
         runner=runner_fake,
         fs=fs,
-        clock=FakeClock(datetime(2026, 5, 31, tzinfo=UTC)),
         settings=Settings(),
         interactive=False,
         home=home,

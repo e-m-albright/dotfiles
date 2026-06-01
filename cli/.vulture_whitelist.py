@@ -8,7 +8,6 @@ _ = ports.FileSystem.read_text
 _ = ports.FileSystem.write_text
 _ = ports.FileSystem.exists
 _ = ports.FileSystem.mkdir
-_ = ports.Clock.now
 _ = sessions.SessionLauncher.pick
 _ = sessions.SessionLauncher.attach
 _ = ports.HttpClient.get_json

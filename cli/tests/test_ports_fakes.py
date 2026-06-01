@@ -1,8 +1,7 @@
-from datetime import datetime
 from pathlib import Path
 
-from dotfiles.core.ports import Clock, FileSystem, ProcessRunner
-from tests.fakes import FakeClock, FakeFileSystem, FakeProcessRunner
+from dotfiles.core.ports import FileSystem, ProcessRunner
+from tests.fakes import FakeFileSystem, FakeProcessRunner
 
 
 def test_fake_runner_returns_scripted_result_and_records_calls() -> None:
@@ -59,14 +58,6 @@ def test_fake_filesystem_records_chmod() -> None:
     fs.mkdir(p)
     fs.chmod(p, 0o700)
     assert fs.modes[p] == 0o700
-
-
-def test_fake_clock_is_fixed() -> None:
-    from datetime import UTC
-
-    clock = FakeClock(datetime(2026, 5, 31, 12, 0, 0, tzinfo=UTC))
-    assert isinstance(clock, Clock)
-    assert clock.now() == datetime(2026, 5, 31, 12, 0, 0, tzinfo=UTC)
 
 
 def test_fake_filesystem_symlink_ops() -> None:

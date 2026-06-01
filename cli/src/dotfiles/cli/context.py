@@ -7,12 +7,11 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from dotfiles.adapters.clock import SystemClock
 from dotfiles.adapters.filesystem import LocalFileSystem
 from dotfiles.adapters.http import UrllibHttpClient
 from dotfiles.adapters.launcher import FzfExecLauncher
 from dotfiles.adapters.process import SubprocessRunner
-from dotfiles.core.ports import Clock, FileSystem, HttpClient, ProcessRunner
+from dotfiles.core.ports import FileSystem, HttpClient, ProcessRunner
 from dotfiles.core.sessions import SessionLauncher
 from dotfiles.core.settings import LlmSettings, Settings
 
@@ -26,7 +25,6 @@ class AppContext:
 
     runner: ProcessRunner
     fs: FileSystem
-    clock: Clock
     settings: Settings
     interactive: bool
     home: Path
@@ -41,7 +39,6 @@ def build_real_context(*, interactive: bool) -> AppContext:
     return AppContext(
         runner=SubprocessRunner(),
         fs=LocalFileSystem(),
-        clock=SystemClock(),
         settings=Settings(),
         interactive=interactive,
         home=Path.home(),

@@ -2,7 +2,6 @@
 
 import subprocess
 from collections.abc import Mapping, Sequence
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -153,16 +152,6 @@ class FakeMultiPostHttpClient(FakeHttpClient):
         return {}
 
 
-class FakeClock:
-    """Fixed clock."""
-
-    def __init__(self, fixed: datetime) -> None:
-        self._fixed = fixed
-
-    def now(self) -> datetime:
-        return self._fixed
-
-
 class FakeSessionLauncher:
     """Records pick/attach calls; returns a scripted selection."""
 
@@ -194,7 +183,6 @@ def make_fake_context(
     return AppContext(
         runner=runner or FakeProcessRunner(),
         fs=fs or FakeFileSystem(),
-        clock=FakeClock(datetime(2026, 5, 31, tzinfo=UTC)),
         settings=Settings(),
         interactive=interactive,
         home=home or Path("/home/evan"),

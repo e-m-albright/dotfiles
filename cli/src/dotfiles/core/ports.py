@@ -4,7 +4,6 @@ Concrete implementations live in `dotfiles.adapters`; tests inject fakes.
 """
 
 from collections.abc import Mapping, Sequence
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
@@ -51,17 +50,6 @@ class FileSystem(Protocol):
     def is_dir(self, path: Path) -> bool: ...
 
     def iterdir(self, path: Path) -> list[Path]: ...
-
-
-@runtime_checkable
-class Clock(Protocol):
-    """Time source, so time-dependent behavior stays testable.
-
-    Implementations MUST return timezone-aware datetimes in UTC. Callers convert
-    to local time only at display edges; the core never handles naive datetimes.
-    """
-
-    def now(self) -> datetime: ...
 
 
 @runtime_checkable
