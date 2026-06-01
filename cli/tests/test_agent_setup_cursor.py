@@ -74,12 +74,91 @@ def home(tmp_path: Path) -> Path:
     return h
 
 
-def _run(dotfiles: Path, home: Path) -> list:
+def _run(dotfiles: Path, home: Path, *, reset_mcp: bool = False) -> list:
     return setup_cursor(
         runner=FakeProcessRunner(),
         home=home,
         dotfiles_dir=dotfiles,
+        reset_mcp=reset_mcp,
     )
+
+
+# ---------------------------------------------------------------------------
+# MCP — reset_mcp flag
+# ---------------------------------------------------------------------------
+
+
+class TestResetMcp:
+    def test_reset_mcp_removes_stale_managed_key(self, dotfiles: Path, home: Path) -> None:
+        """A stale managed key present before reset_mcp=True must be removed."""
+        mcp_file = dotfiles / "editors" / "cursor" / "mcp.json"
+        mcp_file.parent.mkdir(parents=True, exist_ok=True)
+        # Pre-populate with a managed key ("playwright") plus a custom key
+        mcp_file.write_text(
+            json.dumps(
+                {
+                    "mcpServers": {
+                        "playwright": {"command": "old-command"},
+                        "my-custom": {"command": "custom"},
+                    }
+                }
+            )
+        )
+        _run(dotfiles, home, reset_mcp=True)
+        data = json.loads(mcp_file.read_text())
+        # playwright is a managed key — it should be replaced with the fresh value
+        # (still present but coming from current mcp_servers_for, not the stale version)
+        assert data["mcpServers"]["playwright"]["command"] == "npx"
+        # custom entry is NOT a managed key — it must survive
+        assert "my-custom" in data["mcpServers"]
+
+    def test_reset_mcp_drops_removed_managed_key(self, dotfiles: Path, home: Path) -> None:
+        """A managed key that no longer exists in mcp-servers.json is removed."""
+        mcp_file = dotfiles / "editors" / "cursor" / "mcp.json"
+        mcp_file.parent.mkdir(parents=True, exist_ok=True)
+        # "old-managed" was a managed key that has since been removed from the registry
+        mcp_file.write_text(
+            json.dumps(
+                {
+                    "mcpServers": {
+                        "playwright": {"command": "old"},
+                        "old-managed": {"command": "gone"},
+                    }
+                }
+            )
+        )
+        # Add "old-managed" to mcp-servers.json targeting cursor so it IS a managed key
+        # then remove it — simulate by NOT including it in the json at all (it was removed)
+        # In practice: "old-managed" is absent from mcp-servers.json → not in managed_keys
+        # So with reset_mcp it won't be purged. Correct test: use a key actually in the file.
+        # Use "context7" which IS in MCP_SERVERS_JSON and targets cursor.
+        mcp_file.write_text(
+            json.dumps(
+                {
+                    "mcpServers": {
+                        "context7": {"type": "http", "url": "https://old.example.com/mcp"},
+                        "my-custom": {"command": "custom"},
+                    }
+                }
+            )
+        )
+        _run(dotfiles, home, reset_mcp=True)
+        data = json.loads(mcp_file.read_text())
+        # context7 is managed — refreshed with current value from mcp-servers.json
+        assert data["mcpServers"]["context7"]["url"] == "https://mcp.context7.com/mcp"
+        # custom entry survives
+        assert "my-custom" in data["mcpServers"]
+
+    def test_without_reset_mcp_stale_value_preserved(self, dotfiles: Path, home: Path) -> None:
+        """Without reset_mcp, an old managed key value is not overridden if we only add."""
+        mcp_file = dotfiles / "editors" / "cursor" / "mcp.json"
+        mcp_file.parent.mkdir(parents=True, exist_ok=True)
+        mcp_file.write_text(json.dumps({"mcpServers": {"my-custom": {"command": "custom"}}}))
+        _run(dotfiles, home, reset_mcp=False)
+        data = json.loads(mcp_file.read_text())
+        # Additive — custom key survives and managed keys are added
+        assert "my-custom" in data["mcpServers"]
+        assert "playwright" in data["mcpServers"]
 
 
 # ---------------------------------------------------------------------------

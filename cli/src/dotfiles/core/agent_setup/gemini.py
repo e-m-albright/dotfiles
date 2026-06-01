@@ -30,6 +30,7 @@ def setup_gemini(
     runner: ProcessRunner,
     home: Path,
     dotfiles_dir: Path,
+    reset_mcp: bool = False,
     which: Callable[[str], str | None] = shutil.which,  # type: ignore[assignment]
 ) -> list[StepResult]:
     """Configure Gemini CLI. Returns a list of StepResult (one per step)."""
@@ -40,7 +41,7 @@ def setup_gemini(
     gemini_home.mkdir(parents=True, exist_ok=True)
 
     results: list[StepResult] = []
-    results.extend(_setup_settings_and_mcp(dotfiles_dir, gemini_home))
+    results.extend(_setup_settings_and_mcp(dotfiles_dir, gemini_home, reset_mcp=reset_mcp))
     results.extend(_setup_instructions(dotfiles_dir, gemini_home))
     return results
 
@@ -50,8 +51,16 @@ def setup_gemini(
 # ---------------------------------------------------------------------------
 
 
-def _setup_settings_and_mcp(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:
-    """Seed settings.json if missing, then merge managed MCP servers."""
+def _setup_settings_and_mcp(
+    dotfiles_dir: Path, gemini_home: Path, *, reset_mcp: bool = False
+) -> list[StepResult]:
+    """Seed settings.json if missing, then merge managed MCP servers.
+
+    When *reset_mcp* is True, purge managed keys (names from
+    ``mcp_servers_for(dotfiles_dir, "gemini")``) from the existing config before
+    merging the current set — faithful to the ``--reset-mcp`` branch in
+    agents/gemini/setup.sh.
+    """
     settings_file = gemini_home / "settings.json"
     seed = dotfiles_dir / "agents" / "gemini" / "settings.json"
 
@@ -68,6 +77,11 @@ def _setup_settings_and_mcp(dotfiles_dir: Path, gemini_home: Path) -> list[StepR
     existing_mcp: dict[str, object] = (
         cast(dict[str, object], raw_mcp) if isinstance(raw_mcp, dict) else {}
     )
+
+    if reset_mcp:
+        # Purge managed keys before merging (remove stale managed entries)
+        managed_keys = set(mcp_servers_for(dotfiles_dir, "gemini").keys())
+        existing_mcp = {k: v for k, v in existing_mcp.items() if k not in managed_keys}
 
     merged_mcp: dict[str, object] = {**existing_mcp, **servers}
     updated = merge_replace(existing, ["mcpServers"], merged_mcp)

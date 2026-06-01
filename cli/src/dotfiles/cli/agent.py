@@ -294,11 +294,11 @@ def _run_vendor(
     if v == _VendorChoice.claude:
         return setup_claude(**kw, clean=clean, reset_mcp=reset_mcp)  # type: ignore[arg-type]
     if v == _VendorChoice.cursor:
-        return setup_cursor(**kw)  # type: ignore[arg-type]
+        return setup_cursor(**kw, reset_mcp=reset_mcp)  # type: ignore[arg-type]
     if v == _VendorChoice.codex:
         return setup_codex(**kw)  # type: ignore[arg-type]
     if v == _VendorChoice.gemini:
-        return setup_gemini(**kw)  # type: ignore[arg-type]
+        return setup_gemini(**kw, reset_mcp=reset_mcp)  # type: ignore[arg-type]
     return setup_pi(**kw)  # type: ignore[arg-type]
 
 

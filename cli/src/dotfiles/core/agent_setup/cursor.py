@@ -57,11 +57,12 @@ def setup_cursor(
     runner: ProcessRunner,
     home: Path,
     dotfiles_dir: Path,
+    reset_mcp: bool = False,
     which: Callable[[str], str | None] = shutil.which,  # type: ignore[assignment]
 ) -> list[StepResult]:
     """Configure Cursor agentic setup. Returns a list of StepResult."""
     results: list[StepResult] = []
-    results.extend(_setup_mcp(dotfiles_dir, home))
+    results.extend(_setup_mcp(dotfiles_dir, home, reset_mcp=reset_mcp))
     results.extend(_setup_rules(dotfiles_dir))
     results.extend(
         symlink_process_rules(dotfiles_dir, dotfiles_dir / "agents" / "cursor" / "rules", ".mdc")
@@ -77,8 +78,14 @@ def setup_cursor(
 # ---------------------------------------------------------------------------
 
 
-def _setup_mcp(dotfiles_dir: Path, home: Path) -> list[StepResult]:
-    """Merge shared MCP servers into editors/cursor/mcp.json (in-repo)."""
+def _setup_mcp(dotfiles_dir: Path, home: Path, *, reset_mcp: bool = False) -> list[StepResult]:
+    """Merge shared MCP servers into editors/cursor/mcp.json (in-repo).
+
+    When *reset_mcp* is True, purge any managed keys (names from
+    ``mcp_servers_for(dotfiles_dir, "cursor")``) from the existing config before
+    merging the current set — faithful to the ``--reset-mcp`` branch in
+    agents/cursor/setup.sh.
+    """
     mcp_file = dotfiles_dir / "editors" / "cursor" / "mcp.json"
     mcp_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -90,6 +97,11 @@ def _setup_mcp(dotfiles_dir: Path, home: Path) -> list[StepResult]:
     existing_mcp: dict[str, object] = (
         cast(dict[str, object], raw_mcp) if isinstance(raw_mcp, dict) else {}
     )
+
+    if reset_mcp:
+        # Purge managed keys before merging (remove stale managed entries)
+        managed_keys = set(mcp_servers_for(dotfiles_dir, "cursor").keys())
+        existing_mcp = {k: v for k, v in existing_mcp.items() if k not in managed_keys}
 
     merged_mcp: dict[str, object] = {**existing_mcp, **servers}
     updated = merge_replace(existing, ["mcpServers"], merged_mcp)
