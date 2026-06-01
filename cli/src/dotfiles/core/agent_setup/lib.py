@@ -264,6 +264,35 @@ def _clean_stale_rule_links(dest_dir: Path, other_suffix: str) -> None:
             stale.unlink()
 
 
+def _is_managed_rule_link(link: Path, src: Path) -> bool:
+    """True if *link* is a symlink we own — i.e. it points directly into *src*.
+
+    Checked via the link target, not its resolved file, so a dangling link to a
+    deleted rule still counts as managed (and therefore prunable).
+    """
+    if not link.is_symlink():
+        return False
+    target = link.readlink()
+    if not target.is_absolute():
+        target = link.parent / target
+    try:
+        return target.parent.resolve() == src.resolve()
+    except OSError:
+        return False
+
+
+def _prune_orphaned_rule_links(dest_dir: Path, src: Path, valid_stems: set[str]) -> None:
+    """Remove managed symlinks whose source rule no longer exists in *src*.
+
+    Without this, retiring a process rule leaves a dangling ``<name>`` symlink in
+    every vendor's rules dir on the next setup — the suffix-migration cleanup only
+    catches the *other* suffix, not same-suffix orphans.
+    """
+    for link in dest_dir.iterdir():
+        if link.stem not in valid_stems and _is_managed_rule_link(link, src):
+            link.unlink()
+
+
 def _symlink_rule(rule: Path, dest_path: Path) -> StepResult:
     """Ensure dest_path → rule symlink exists and is correct. Idempotent."""
     link_name = dest_path.name
@@ -296,8 +325,7 @@ def symlink_process_rules(
     other_suffix = ".mdc" if suffix == ".md" else ".md"
     _clean_stale_rule_links(dest_dir, other_suffix)
 
-    return [
-        _symlink_rule(rule, dest_dir / (rule.stem + suffix))
-        for rule in sorted(src.glob("*.mdc"))
-        if rule.is_file()
-    ]
+    rules = [rule for rule in sorted(src.glob("*.mdc")) if rule.is_file()]
+    _prune_orphaned_rule_links(dest_dir, src, {rule.stem for rule in rules})
+
+    return [_symlink_rule(rule, dest_dir / (rule.stem + suffix)) for rule in rules]

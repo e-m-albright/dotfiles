@@ -374,6 +374,31 @@ class TestSymlinkProcessRules:
         symlink_process_rules(dotfiles, dest, ".md")  # second call should not raise
         assert (dest / "global-process.md").is_symlink()
 
+    def test_prunes_orphaned_link_when_rule_retired(self, tmp_path: Path) -> None:
+        """Retiring a rule must remove its now-dangling same-suffix symlink."""
+        dotfiles = self._make_dotfiles(tmp_path, {"keep.mdc": "x", "retire.mdc": "y"})
+        dest = tmp_path / "dest"
+        symlink_process_rules(dotfiles, dest, ".md")
+        assert (dest / "retire.md").is_symlink()
+
+        # Retire the rule, then re-deploy.
+        (dotfiles / ".ai" / "rules" / "process" / "retire.mdc").unlink()
+        symlink_process_rules(dotfiles, dest, ".md")
+
+        assert (dest / "keep.md").is_symlink()
+        assert not (dest / "retire.md").is_symlink()
+        assert "retire.md" not in {p.name for p in dest.iterdir()}
+
+    def test_prune_leaves_unmanaged_files_alone(self, tmp_path: Path) -> None:
+        """A user's own file in the rules dir must survive pruning."""
+        dotfiles = self._make_dotfiles(tmp_path, {"keep.mdc": "x"})
+        dest = tmp_path / "dest"
+        dest.mkdir()
+        (dest / "my-own.md").write_text("hand-written, not a managed symlink")
+        symlink_process_rules(dotfiles, dest, ".md")
+        assert (dest / "my-own.md").is_file()
+        assert (dest / "keep.md").is_symlink()
+
     def test_creates_dest_dir(self, tmp_path: Path) -> None:
         dotfiles = self._make_dotfiles(tmp_path)
         dest = tmp_path / "new" / "nested" / "rules"
