@@ -48,21 +48,18 @@ class SessionLauncher(Protocol):
     def attach(self, command: Sequence[str]) -> None: ...
 
 
-class SessionService:
-    """Lists and kills zellij sessions via the ProcessRunner port."""
+def list_sessions(runner: ProcessRunner) -> list[Session]:
+    """List running zellij sessions via the ProcessRunner port."""
+    result = runner.run(("zellij", "list-sessions", "--no-formatting"))
+    combined = result.stdout + result.stderr
+    if _EMPTY_MARKER not in combined and not result.ok:
+        raise SessionError(result.stderr.strip() or "zellij list-sessions failed")
+    return parse_sessions(result.stdout)
 
-    def __init__(self, *, runner: ProcessRunner) -> None:
-        self._runner = runner
 
-    def list(self) -> list[Session]:
-        result = self._runner.run(("zellij", "list-sessions", "--no-formatting"))
-        combined = result.stdout + result.stderr
-        if _EMPTY_MARKER not in combined and not result.ok:
-            raise SessionError(result.stderr.strip() or "zellij list-sessions failed")
-        return parse_sessions(result.stdout)
-
-    def kill(self, name: str) -> StepResult:
-        result = self._runner.run(("zellij", "kill-session", name))
-        if result.ok:
-            return StepResult(level="success", message=f"Killed session {name}")
-        return StepResult(level="error", message=f"Could not kill session {name}")
+def kill_session(runner: ProcessRunner, name: str) -> StepResult:
+    """Kill a named zellij session via the ProcessRunner port."""
+    result = runner.run(("zellij", "kill-session", name))
+    if result.ok:
+        return StepResult(level="success", message=f"Killed session {name}")
+    return StepResult(level="error", message=f"Could not kill session {name}")

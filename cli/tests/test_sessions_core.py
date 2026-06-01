@@ -1,5 +1,5 @@
 from dotfiles.core.models import Session
-from dotfiles.core.sessions import SessionService, attach_command, parse_sessions
+from dotfiles.core.sessions import attach_command, kill_session, list_sessions, parse_sessions
 from tests.fakes import FakeProcessRunner
 
 
@@ -32,13 +32,13 @@ def test_service_list_parses_runner_output() -> None:
         ("zellij", "list-sessions", "--no-formatting"),
         stdout="mobile [Created 1h ago]\nwork [Created 5m ago] (current)\n",
     )
-    names = [s.name for s in SessionService(runner=runner).list()]
+    names = [s.name for s in list_sessions(runner)]
     assert names == ["mobile", "work"]
 
 
 def test_service_kill_runs_kill_session_and_reports() -> None:
     runner = FakeProcessRunner()
-    step = SessionService(runner=runner).kill("work")
+    step = kill_session(runner, "work")
     assert ("zellij", "kill-session", "work") in runner.calls
     assert step.level == "success"
 
@@ -46,7 +46,7 @@ def test_service_kill_runs_kill_session_and_reports() -> None:
 def test_service_kill_reports_error_on_failure() -> None:
     runner = FakeProcessRunner()
     runner.script(("zellij", "kill-session", "work"), exit_code=1, stderr="no session")
-    step = SessionService(runner=runner).kill("work")
+    step = kill_session(runner, "work")
     assert step.level == "error"
 
 
@@ -57,7 +57,7 @@ def test_list_returns_empty_even_if_zellij_exits_nonzero_on_no_sessions() -> Non
         exit_code=1,
         stdout="No active zellij sessions found.\n",
     )
-    assert SessionService(runner=runner).list() == []
+    assert list_sessions(runner) == []
 
 
 def test_list_returns_empty_when_marker_is_in_stderr() -> None:
@@ -68,7 +68,7 @@ def test_list_returns_empty_when_marker_is_in_stderr() -> None:
         stdout="",
         stderr="No active zellij sessions found.\n",
     )
-    assert SessionService(runner=runner).list() == []
+    assert list_sessions(runner) == []
 
 
 def test_list_raises_on_real_failure() -> None:
@@ -84,4 +84,4 @@ def test_list_raises_on_real_failure() -> None:
         stderr="zellij: command broke",
     )
     with pytest.raises(SessionError, match="command broke"):
-        SessionService(runner=runner).list()
+        list_sessions(runner)

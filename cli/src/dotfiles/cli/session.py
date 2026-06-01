@@ -5,7 +5,7 @@ import typer
 from dotfiles.cli.context import AppContext
 from dotfiles.cli.ui import has_errors, render_steps
 from dotfiles.console import console
-from dotfiles.core.sessions import SessionError, SessionService, attach_command
+from dotfiles.core.sessions import SessionError, attach_command, kill_session, list_sessions
 
 session_app = typer.Typer(
     help="List/attach/create/kill zellij sessions (same on phone and laptop)."
@@ -25,7 +25,7 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
         return
     app_ctx = _ctx(ctx)
     try:
-        sessions = SessionService(runner=app_ctx.runner).list()
+        sessions = list_sessions(app_ctx.runner)
     except SessionError as exc:
         console.print(f"[red]zellij error:[/] {exc}")
         raise typer.Exit(code=1) from exc
@@ -38,10 +38,10 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
 
 
 @session_app.command("ls")
-def list_sessions(ctx: typer.Context) -> None:
+def cmd_list_sessions(ctx: typer.Context) -> None:
     """List zellij sessions."""
     try:
-        sessions = SessionService(runner=_ctx(ctx).runner).list()
+        sessions = list_sessions(_ctx(ctx).runner)
     except SessionError as exc:
         console.print(f"[red]zellij error:[/] {exc}")
         raise typer.Exit(code=1) from exc
@@ -69,7 +69,7 @@ def new(ctx: typer.Context, name: str) -> None:
 @session_app.command()
 def kill(ctx: typer.Context, name: str) -> None:
     """Kill a running session."""
-    step = SessionService(runner=_ctx(ctx).runner).kill(name)
+    step = kill_session(_ctx(ctx).runner, name)
     render_steps(console, [step])
     if has_errors([step]):
         raise typer.Exit(code=1)
