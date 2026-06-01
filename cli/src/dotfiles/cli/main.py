@@ -11,6 +11,7 @@ from dotfiles.cli.context import build_real_context
 from dotfiles.cli.doctor import doctor_command
 from dotfiles.cli.llm import llm_app
 from dotfiles.cli.remote import remote_app
+from dotfiles.cli.scaffold import scaffold_command
 from dotfiles.cli.session import session_app
 from dotfiles.console import console
 
@@ -29,25 +30,14 @@ def _main(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
         ctx.obj = build_real_context(interactive=sys.stdin.isatty())
 
 
-def _stub(name: str, display: str | None = None) -> typer.Typer:
-    label = display or name
-    sub = typer.Typer(help=f"{name} commands (implemented in a later phase).")
-
-    @sub.callback(invoke_without_command=True)
-    def _root() -> None:  # pragma: no cover  # type: ignore[reportUnusedFunction]
-        console.print(f"[yellow]{label}[/] is not implemented yet.")
-
-    return sub
-
-
-# Command tree (stubs filled in by later phases P1b-P1d).
+# Command tree.
 app.add_typer(remote_app, name="remote")
 app.add_typer(session_app, name="session")
 app.add_typer(session_app, name="sesh")
 app.command("doctor")(doctor_command)
 app.add_typer(brew_app, name="brew")
 app.add_typer(agent_app, name="agent")
-app.add_typer(_stub("scaffold"), name="scaffold")
+app.command("scaffold")(scaffold_command)
 app.add_typer(llm_app, name="llm")
 
 
