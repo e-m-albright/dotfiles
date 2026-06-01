@@ -146,11 +146,6 @@ sub_clean () {
     print_completion "Cleanup finished"
 }
 
-sub_brew_install () {
-    . "$DOTFILES_DIR/macos/brew.sh"
-    printf "${GREEN}%b Success! Brew command finished.${NC}\n" "$ARROW"
-}
-
 sub_dock () {
     . "$DOTFILES_DIR/macos/dock.sh"
     printf "${GREEN}%b Success! MacOS dock command finished.${NC}\n" "$ARROW"
@@ -166,59 +161,6 @@ sub_agent_setup() {
     . "$DOTFILES_DIR/agents/gemini/setup.sh" "$@"
     . "$DOTFILES_DIR/agents/pi/setup.sh" "$@"
     printf "${GREEN}%b Agent setup complete.${NC}\n" "$ARROW"
-}
-
-sub_brew_stale() {
-    printf "${BLUE}%b Checking for stale artifacts...${NC}\n\n" "$ARROW"
-
-    # Check for brew packages that were disabled but might still be installed
-    printf "${BLUE}Disabled brew packages still installed:${NC}\n"
-    local found=false
-    local disabled_pkgs=(
-        "visual-studio-code" "iterm2" "warp" "docker-desktop"
-        "terraform" "signal" "discord" "super-productivity"
-        "ollama" "gemini-cli" "cmux" "graphite" "composer"
-        "codex-app" "linear-linear" "micro"  # removed 2026-05-07 (micro→helix)
-        "wispr-flow"  # disabled 2026-05-29 (→ TypeWhisper, on-device dictation)
-    )
-    for pkg in "${disabled_pkgs[@]}"; do
-        if brew list "$pkg" &>/dev/null 2>&1 || brew list --cask "$pkg" &>/dev/null 2>&1; then
-            printf "  ${YELLOW}○${NC} %-25s ${YELLOW}brew uninstall %s${NC}\n" "$pkg" "$pkg"
-            found=true
-        fi
-    done
-    if ! $found; then
-        printf "  ${GREEN}✓${NC} No stale packages found\n"
-    fi
-
-    # Check for stale symlinks in home directory
-    printf "\n${BLUE}Broken symlinks in ~/:${NC}\n"
-    local broken=false
-    for link in ~/.zshrc ~/.zprofile ~/.zshenv ~/.gitconfig ~/.gitignore_global; do
-        if [[ -L "$link" ]] && [[ ! -e "$link" ]]; then
-            printf "  ${RED}✗${NC} %s → %s (broken)\n" "$link" "$(readlink "$link")"
-            broken=true
-        fi
-    done
-    if ! $broken; then
-        printf "  ${GREEN}✓${NC} All symlinks valid\n"
-    fi
-
-    # Check for old VS Code config remnants
-    printf "\n${BLUE}Old editor configs:${NC}\n"
-    local old=false
-    if [[ -d ~/Library/Application\ Support/Code/User ]] && \
-       [[ -L ~/Library/Application\ Support/Code/User/settings.json ]] && \
-       [[ "$(readlink ~/Library/Application\ Support/Code/User/settings.json 2>/dev/null)" == *"dotfiles"* ]]; then
-        printf "  ${YELLOW}○${NC} VS Code settings still symlinked to dotfiles\n"
-        printf "     ${CYAN}rm ~/Library/Application\\ Support/Code/User/settings.json${NC}\n"
-        old=true
-    fi
-    if ! $old; then
-        printf "  ${GREEN}✓${NC} No stale editor configs\n"
-    fi
-
-    printf "\n"
 }
 
 sub_migrate_agents_sync() {
@@ -325,15 +267,6 @@ ns_agent() {
     esac
 }
 
-ns_brew() {
-    local sub="${1:-install}"; shift || true
-    case "$sub" in
-        install) sub_brew_install "$@" ;;
-        stale)   sub_brew_stale "$@" ;;
-        *) printf "${RED}%b Unknown: brew %s${NC} (try: install, stale)\n" "$ARROW" "$sub" >&2; exit 1 ;;
-    esac
-}
-
 ns_shell() {
     local sub="${1:-profile}"; shift || true
     case "$sub" in
@@ -352,7 +285,7 @@ ns_cursor() {
 
 # Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
 # As later phases land, add their names to this list.
-PY_CLI_COMMANDS=" version remote session sesh doctor llm "
+PY_CLI_COMMANDS=" version remote session sesh doctor llm brew "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
@@ -375,7 +308,6 @@ case $COMMAND_NAME in
     completions) sub_completions ;;
     # Namespaces
     agent)  shift; ns_agent "$@" ;;
-    brew)   shift; ns_brew "$@" ;;
     shell)  shift; ns_shell "$@" ;;
     cursor) shift; ns_cursor "$@" ;;
 
@@ -383,7 +315,6 @@ case $COMMAND_NAME in
     agent-setup)   shift; sub_agent_setup "$@" ;;
     profile-shell) shift; sub_shell_profile "$@" ;;
     cursor-plugins)  shift; sub_cursor_plugins "$@" ;;
-    stale)           shift; sub_brew_stale "$@" ;;
 
     *)
         if declare -f "sub_${COMMAND_NAME}" >/dev/null 2>&1; then
