@@ -28,7 +28,9 @@ from dotfiles.core.models import (
     McpRow,
     PermissionRow,
     VendorSurface,
+    VendorVerify,
 )
+from dotfiles.core.skill_health import SkillHealthService
 from dotfiles.core.skills import validate_skill_files
 
 agent_app = typer.Typer(help="Agentic setup: overview dashboard and skill/agent lint.")
@@ -300,6 +302,36 @@ def _run_vendor(
     if v == _VendorChoice.gemini:
         return setup_gemini(**kw, reset_mcp=reset_mcp)  # type: ignore[arg-type]
     return setup_pi(**kw)  # type: ignore[arg-type]
+
+
+def _render_vendor(v: VendorVerify) -> None:
+    """Print one vendor's verify summary (extracted to keep cmd_verify complexity ≤ 10)."""
+    skills = f"{v.skills_deployed}/{v.skills_expected}" if v.skills_expected else "—"
+    agents = f"{v.agents_deployed}/{v.agents_expected}" if v.agents_expected else "—"
+    console.print(f"[bold]{v.vendor}[/]  skills {skills}  agents {agents}")
+    for d in v.drift:
+        console.print(f"    [yellow]drift:[/] {d}")
+    for probe in v.mcp:
+        mark = "[green]✓[/]" if probe.ok else "[red]✗[/]"
+        console.print(f"    {mark} mcp:{probe.server} [dim]{probe.detail}[/]")
+
+
+@agent_app.command("verify")
+def cmd_verify(
+    ctx: typer.Context,
+    offline: bool = typer.Option(False, "--offline", help="skip live MCP probes"),
+) -> None:
+    """Verify skills/agents are deployed and MCP servers are reachable."""
+    app_ctx = ctx.obj
+    assert isinstance(app_ctx, AppContext)
+    verifies = SkillHealthService(
+        runner=app_ctx.runner,
+        http=app_ctx.http,
+        dotfiles_dir=app_ctx.dotfiles_dir,
+        home=app_ctx.home,
+    ).verify(offline=offline)
+    for v in verifies:
+        _render_vendor(v)
 
 
 @agent_app.command()

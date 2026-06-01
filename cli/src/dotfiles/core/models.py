@@ -1,5 +1,6 @@
 """Domain models. All immutable pydantic models, returned by the core layer."""
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -248,3 +249,145 @@ class AgentOverview(BaseModel):
     rules: RulesSummary
     permissions: tuple[PermissionRow, ...]
     vendor_surfaces: tuple[VendorSurface, ...] = ()
+
+
+# ---------------------------------------------------------------------------
+# Ledger + fleet models
+# ---------------------------------------------------------------------------
+
+
+class LedgerEntry(BaseModel):
+    """One agent-activity record. Written by the hot-path hook, read by fleet."""
+
+    model_config = ConfigDict(frozen=True)
+
+    ts: datetime
+    session_id: str
+    vendor: str
+    cwd: str
+    branch: str | None = None
+    task: str | None = None
+    status: str
+
+
+class FleetSession(BaseModel):
+    """One live agent session discovered by fleet (passive + ledger overlay)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    vendor: str
+    session_id: str | None
+    cwd: str
+    branch: str | None
+    worktree: str | None
+    last_active: datetime
+    task: str | None
+    source: str  # "transcript" | "ledger" | "both"
+
+
+# ---------------------------------------------------------------------------
+# Snapshot / drift models
+# ---------------------------------------------------------------------------
+
+
+class BrewState(BaseModel):
+    """Installed Homebrew top-level packages at capture time."""
+
+    model_config = ConfigDict(frozen=True)
+
+    leaves: tuple[str, ...]
+    casks: tuple[str, ...]
+
+
+class SymlinkState(BaseModel):
+    """One managed symlink and where it points at capture time."""
+
+    model_config = ConfigDict(frozen=True)
+
+    path: str
+    target: str
+    ok: bool
+
+
+class Snapshot(BaseModel):
+    """A point-in-time capture of machine state, persisted as JSON."""
+
+    model_config = ConfigDict(frozen=True)
+
+    taken_at: datetime
+    brew: BrewState
+    runtimes: dict[str, str]
+    symlinks: tuple[SymlinkState, ...]
+    agent_config: dict[str, str]
+
+
+class RuntimeChange(BaseModel):
+    """A runtime whose version differs between two snapshots."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    old: str
+    new: str
+
+
+class SymlinkChange(BaseModel):
+    """A managed symlink whose target or ok-state differs between two snapshots."""
+
+    model_config = ConfigDict(frozen=True)
+
+    path: str
+    old_target: str
+    new_target: str
+    broke: bool
+
+
+class SnapshotDiff(BaseModel):
+    """The drift between two snapshots (old -> new)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    brew_added: tuple[str, ...]
+    brew_removed: tuple[str, ...]
+    runtimes_changed: tuple[RuntimeChange, ...]
+    symlinks_changed: tuple[SymlinkChange, ...]
+    agent_config_changed: tuple[str, ...]
+
+    @property
+    def is_empty(self) -> bool:
+        return not (
+            self.brew_added
+            or self.brew_removed
+            or self.runtimes_changed
+            or self.symlinks_changed
+            or self.agent_config_changed
+        )
+
+
+# ---------------------------------------------------------------------------
+# Skill-health / verify models
+# ---------------------------------------------------------------------------
+
+
+class McpProbe(BaseModel):
+    """Result of probing one MCP server's reachability."""
+
+    model_config = ConfigDict(frozen=True)
+
+    server: str
+    ok: bool
+    detail: str
+
+
+class VendorVerify(BaseModel):
+    """Per-vendor skill-health: deployment counts, drift, and MCP probes."""
+
+    model_config = ConfigDict(frozen=True)
+
+    vendor: str
+    skills_deployed: int
+    skills_expected: int
+    agents_deployed: int
+    agents_expected: int
+    drift: tuple[str, ...]
+    mcp: tuple[McpProbe, ...]

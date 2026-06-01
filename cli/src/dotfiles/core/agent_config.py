@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import cast
 
 import pydantic
-from pydantic import BaseModel, ConfigDict, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 # ---------------------------------------------------------------------------
 # Config file models
@@ -22,9 +22,12 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter
 class McpServerEntry(BaseModel):
     """One entry in agents/shared/mcp-servers.json."""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
     targets: list[str] = []
+    kind: str | None = Field(default=None, alias="type")
+    url: str | None = None
+    command: str | None = None
 
 
 # TypeAdapter for the whole mcp-servers.json dict (object-valued entries only).
