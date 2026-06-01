@@ -311,4 +311,4 @@ class AgentOverviewService:
         except OSError:
             return []
         n = sum(1 for line in text.splitlines() if line.startswith("prefix_rule"))
-        return [PermissionRow(label="Codex (default.rules)", allow=n, deny=0, prefix_rules=n)]
+        return [PermissionRow(label="Codex (default.rules)", allow=0, deny=0, prefix_rules=n)]

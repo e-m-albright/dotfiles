@@ -411,7 +411,7 @@ dotfiles stale               # Find disabled packages still installed
 dotfiles test                # Run scaffold eval framework (--quick for fast)
 dotfiles profile-shell       # Profile shell startup time
 dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
-dotfiles agents              # Show active agentic setup (Claude Code + Cursor)
+dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent-setup        # Configure Claude + Cursor + Codex + Pi (--work/--personal, optional --reset-mcp)
 dotfiles completions         # Output shell completions
 dotfiles remote setup --dry-run

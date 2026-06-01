@@ -386,7 +386,6 @@ case $COMMAND_NAME in
 
     # Backward-compat aliases for hyphenated names (silent — drop in a future cleanup)
     agent-setup)   shift; sub_agent_setup "$@" ;;
-    agents)        exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent overview "$@" ;;
     profile-shell) shift; sub_shell_profile "$@" ;;
     cursor-plugins)  shift; sub_cursor_plugins "$@" ;;
     stale)           shift; sub_brew_stale "$@" ;;

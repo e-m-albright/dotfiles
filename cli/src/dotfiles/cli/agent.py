@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from itertools import groupby
 
 import typer
+from rich.markup import escape
 from rich.table import Table
 
 from dotfiles.cli.context import AppContext
@@ -57,7 +58,7 @@ def _render_surface(surface: VendorSurface) -> None:
         glyph = "[red]✗[/]"
     else:  # skipped
         glyph = "[dim]-[/]"
-    console.print(f"  {glyph} [dim]{surface.label:<25}[/] [dim]{surface.detail}[/]")
+    console.print(f"  {glyph} [dim]{escape(surface.label):<25}[/] [dim]{escape(surface.detail)}[/]")
 
 
 def _render_validation(v: FileValidation) -> None:
@@ -95,7 +96,7 @@ def _render_mcp(rows: Iterable[McpRow]) -> None:
     tbl.add_column("Gemini", justify="center")
     for row in rows_list:
         tbl.add_row(
-            row.server,
+            escape(row.server),
             _BOOL_GLYPH[row.claude],
             _BOOL_GLYPH[row.cursor],
             _BOOL_GLYPH[row.codex],
@@ -118,7 +119,7 @@ def _render_hooks(rows: Iterable[HookRow]) -> None:
     tbl.add_column("Codex", justify="center")
     for row in rows_list:
         tbl.add_row(
-            row.event,
+            escape(row.event),
             _BOOL_GLYPH[row.claude],
             _BOOL_GLYPH[row.cursor],
             _BOOL_GLYPH[row.codex],
@@ -140,7 +141,7 @@ def _render_agents(rows: Iterable[AgentRow]) -> None:
     tbl.add_column("Pi", justify="center")
     for row in rows_list:
         tbl.add_row(
-            row.name,
+            escape(row.name),
             _BOOL_GLYPH[row.claude],
             _BOOL_GLYPH[row.codex],
             _BOOL_GLYPH[row.pi],
@@ -157,9 +158,9 @@ def _render_permissions(rows: Iterable[PermissionRow]) -> None:
         return
     for p in rows_list:
         if p.prefix_rules:
-            console.print(f"  [dim]{p.label}[/]  prefix_rules={p.prefix_rules}")
+            console.print(f"  [dim]{escape(p.label)}[/]  prefix_rules={p.prefix_rules}")
         else:
-            console.print(f"  [dim]{p.label}[/]  allow={p.allow}  deny={p.deny}")
+            console.print(f"  [dim]{escape(p.label)}[/]  allow={p.allow}  deny={p.deny}")
 
 
 def _render_vendor_surfaces(surfaces: Iterable[VendorSurface]) -> None:

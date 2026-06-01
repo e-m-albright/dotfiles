@@ -9,10 +9,10 @@ Show the current state of agentic tool configuration across Claude Code, Cursor,
 
 ## Workflow
 
-1. Run the overview script:
+1. Run the overview command:
 
 ```bash
-~/dotfiles/agents/overview.sh
+dotfiles agent overview
 ```
 
 2. Interpret the output for the user

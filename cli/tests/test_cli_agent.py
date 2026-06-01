@@ -1,5 +1,6 @@
 """Tests for `dotfiles agent` Typer commands (overview + lint)."""
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -136,3 +137,22 @@ def test_agent_lint_empty_dotfiles_exits_zero() -> None:
     ctx = make_fake_context(dotfiles_dir=_DOTFILES)
     result = runner.invoke(app, ["agent", "lint"], obj=ctx)
     assert result.exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# Bracket safety: Rich markup must not eat "[...]" in dynamic content
+# ---------------------------------------------------------------------------
+
+
+def test_agent_overview_bracket_in_mcp_server_name_survives() -> None:
+    """MCP server name containing brackets must appear verbatim in output."""
+    fs = FakeFileSystem()
+    mcp_path = _DOTFILES / "agents" / "shared" / "mcp-servers.json"
+    fs.write_text(
+        mcp_path,
+        json.dumps({"srv[x]": {"command": "npx", "args": [], "targets": ["claude"]}}),
+    )
+    ctx = make_fake_context(fs=fs, dotfiles_dir=_DOTFILES)
+    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "srv[x]" in result.output

@@ -445,7 +445,7 @@ class TestSectionPermissions:
         rows = make_service(fs).section_permissions()
         row = next(r for r in rows if r.label == "Codex (default.rules)")
         assert row.prefix_rules == 2
-        assert row.allow == 2
+        assert row.allow == 0
 
     def test_missing_permissions_key_returns_zero(self) -> None:
         fs = FakeFileSystem()

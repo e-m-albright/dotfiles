@@ -50,7 +50,7 @@ dotfiles update         # Update everything — brew, runtimes, tools, npm globa
 dotfiles stale          # Find disabled packages still installed + broken symlinks
 dotfiles scaffold       # Create a new project with AI rules and templates
 dotfiles agent-setup   # Re-deploy Claude Code config (plugins, hooks, MCP, skills)
-dotfiles agents         # Show active MCP servers, hooks, skills across Claude + Cursor
+dotfiles agent overview # Show active MCP servers, hooks, skills across Claude + Cursor
 dotfiles brew           # Re-run Homebrew setup
 dotfiles dock           # Reset macOS Dock layout
 dotfiles clean          # Prune Homebrew caches (30-day)
@@ -443,5 +443,5 @@ Run this after changing any rule, template, or scaffold logic.
 | Hooks aren't running | `just hooks-install` or `lefthook install` |
 | Type checker not found | `uv sync --dev` (Python) or `bun install` (TS) |
 | Format-on-save not working | Check `dotfiles doctor` — formatter must be installed |
-| MCP server not connecting | Check `dotfiles agents` for status |
+| MCP server not connecting | Check `dotfiles agent overview` for status |
 | Stale packages installed | Run `dotfiles stale` to find them |
