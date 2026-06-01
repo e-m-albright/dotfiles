@@ -7,9 +7,11 @@ from typing import ClassVar
 
 from textual.app import App, ComposeResult
 from textual.binding import BindingType
+from textual.containers import Vertical
 from textual.widgets import Footer, Header
 
 from dotfiles.cli.context import AppContext, build_real_context
+from dotfiles.tui.panes.remote import RemotePane
 
 _STYLES = Path(__file__).parent / "styles" / "dashboard.tcss"
 
@@ -31,4 +33,6 @@ class MissionControlApp(App[None]):
 
     def compose(self) -> ComposeResult:
         yield Header()
+        with Vertical():
+            yield RemotePane(self._ctx)
         yield Footer()
