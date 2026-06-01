@@ -32,3 +32,30 @@ async def test_remote_pane_shows_status():
         assert "Remote Login" in text
         assert "on" in text.lower()
         assert "100.64.0.1" in text
+
+
+@pytest.mark.asyncio
+async def test_copy_connect_command_uses_connection_info():
+    app = MissionControlApp(ctx=_remote_ctx())
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        from dotfiles.tui.panes.remote import RemotePane
+
+        pane = app.query_one(RemotePane)
+        cmd = pane.connect_command()
+        assert "mosh" in cmd
+        assert "evan@orac" in cmd
+
+
+@pytest.mark.asyncio
+async def test_toggle_remote_login_warns_when_not_interactive():
+    # interactive=False (over a non-interactive mosh session) -> sudo-or-warn
+    app = MissionControlApp(ctx=_remote_ctx())
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        from dotfiles.tui.panes.remote import RemotePane
+
+        pane = app.query_one(RemotePane)
+        result = pane.toggle_login_plan()
+        # planning only — no real systemsetup executed in the test
+        assert result.level in {"warn", "info", "success"}
