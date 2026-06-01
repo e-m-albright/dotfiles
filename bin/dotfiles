@@ -225,10 +225,6 @@ sub_migrate_agents_sync() {
     "$DOTFILES_DIR/agents/migrate-agents-sync.sh" "$@"
 }
 
-sub_gemini_prompt() {
-    "$DOTFILES_DIR/prompts/copy-gemini-chunks.sh" "$@"
-}
-
 sub_install() {
     . "$DOTFILES_DIR/install.sh"
 }
@@ -325,7 +321,6 @@ ns_agent() {
     case "$sub" in
         setup)    sub_agent_setup "$@" ;;
         migrate-rules-sync) sub_migrate_agents_sync "$@" ;;
-        gemini-prompt)      sub_gemini_prompt "$@" ;;
         *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, gemini-prompt)\n" "$ARROW" "$sub" >&2; exit 1 ;;
     esac
 }
@@ -362,8 +357,8 @@ if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
 
-# Surgical route: agent overview + agent lint are Python; other agent subcommands stay Bash.
-if [[ "${1:-}" == "agent" && ( "${2:-}" == "overview" || "${2:-}" == "lint" ) ]]; then
+# Surgical route: agent overview, lint, and gemini-prompt are Python; others stay Bash.
+if [[ "${1:-}" == "agent" && ( "${2:-}" == "overview" || "${2:-}" == "lint" || "${2:-}" == "gemini-prompt" ) ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "${2}" "${@:3}"
 fi
 

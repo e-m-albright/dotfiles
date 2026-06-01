@@ -61,6 +61,10 @@ class GeminiChunksService:
         self._require_pbcopy()
         self._runner.run(("pbcopy",), stdin=content)
 
+    def wait(self, seconds: float) -> None:
+        """Sleep for the given duration (injected; used between clipboard copies)."""
+        self._sleep(seconds)
+
     def _require_pbcopy(self) -> None:
         if not self._which("pbcopy"):
             raise GeminiError("pbcopy not available (macOS only)")

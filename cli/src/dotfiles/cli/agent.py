@@ -12,6 +12,7 @@ from rich.table import Table
 from dotfiles.cli.context import AppContext
 from dotfiles.console import console
 from dotfiles.core.agent_overview import AgentOverviewService
+from dotfiles.core.gemini import GeminiChunksService, GeminiError
 from dotfiles.core.models import (
     AgentOverview,
     AgentRow,
@@ -257,3 +258,79 @@ def lint(ctx: typer.Context) -> None:
 
     if n_fail:
         raise typer.Exit(1)
+
+
+@agent_app.command("gemini-prompt")
+def gemini_prompt(
+    ctx: typer.Context,
+    list_chunks: bool = typer.Option(
+        False, "--list", help="Print chunk filenames and sizes, then exit."
+    ),
+    step: bool = typer.Option(
+        False, "--step", help="Interactive: copy each chunk and wait for enter."
+    ),
+) -> None:
+    """Load advisor prompt chunks into clipboard for Gemini saved-info."""
+    app_ctx = ctx.obj
+    assert isinstance(app_ctx, AppContext)
+
+    svc = GeminiChunksService(
+        fs=app_ctx.fs,
+        runner=app_ctx.runner,
+        chunks_dir=app_ctx.dotfiles_dir / "prompts" / "gemini-chunks",
+    )
+
+    try:
+        if list_chunks:
+            _gemini_list(svc)
+        elif step:
+            _gemini_step(svc)
+        else:
+            _gemini_flycut(svc)
+    except GeminiError as exc:
+        console.print(f"[red]error:[/] {escape(str(exc))}")
+        raise typer.Exit(1) from exc
+
+
+def _gemini_list(svc: GeminiChunksService) -> None:
+    chunks = svc.chunks()
+    console.print("[bold blue]Gemini chunks[/] (target: ~1500 chars each)\n")
+    for chunk in chunks:
+        console.print(f"  {chunk.char_count:>4} chars  {escape(chunk.name)}")
+
+
+def _gemini_step(svc: GeminiChunksService) -> None:
+    chunks = svc.chunks()
+    console.print(
+        "[bold blue]Interactive mode[/]: copy each chunk, paste into Gemini Saved Info,"
+        " then press enter."
+    )
+    console.print("Open https://gemini.google.com/saved-info in another window.\n")
+    for chunk in chunks:
+        svc.copy(chunk.content)
+        console.print(f"[green]Copying {escape(chunk.name)}[/] ({chunk.char_count} chars)")
+        typer.prompt(
+            "  paste it as a new Saved Info entry, then press enter for next…",
+            default="",
+            prompt_suffix="",
+        )
+    console.print(f"\n[green]done[/] — all {len(chunks)} chunks copied.")
+
+
+def _gemini_flycut(svc: GeminiChunksService) -> None:
+    chunks = svc.chunks()
+    console.print(
+        f"[bold blue]Loading {len(chunks)} chunks into clipboard history (for Flycut)…[/]"
+    )
+    for chunk in reversed(chunks):
+        svc.copy(chunk.content)
+        console.print(f"  [green]✓[/]  {escape(chunk.name)} ({chunk.char_count} chars)")
+        svc.wait(0.4)
+    console.print(
+        "\nNext:\n"
+        "  1. Open https://gemini.google.com/saved-info\n"
+        "  2. Open Flycut (default shortcut: cmd+shift+V)\n"
+        '  3. For each entry in Flycut history (top is chunk 01), click "Add new"\n'
+        "     in Gemini, paste, and save.\n"
+        "\nIf your Flycut history didn't catch all 7, re-run with --step instead."
+    )
