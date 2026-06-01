@@ -197,6 +197,16 @@ class FileValidation(BaseModel):
     warnings: tuple[str, ...] = ()
 
 
+class GeminiChunk(BaseModel):
+    """One chunk from the Gemini advisor prompt, sized to fit saved-info entries."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    char_count: int
+    content: str
+
+
 ThroughputTier = Literal["autocomplete-grade", "interactive-grade", "tolerable", "painful"]
 
 
