@@ -6,10 +6,13 @@ the CLI surfaces that explicitly rather than dropping them silently.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import cast
 
 from dotfiles.core.models import FleetSession
+from dotfiles.core.ports import ProcessRunner
 
 
 def decode_claude_slug(slug: str) -> str:
@@ -59,3 +62,57 @@ def claude_sessions(*, home: Path, now: datetime, live_threshold: int) -> list[F
             )
         )
     return sessions
+
+
+def _first_cwd(path: Path) -> str:
+    """Read the first JSON line of a session file and return its 'cwd', if any."""
+    try:
+        with path.open() as fh:
+            first = fh.readline()
+        parsed: object = json.loads(first)
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(parsed, dict) or "cwd" not in parsed:
+        return ""
+    return str(cast(object, parsed["cwd"]))
+
+
+def codex_sessions(*, home: Path, now: datetime, live_threshold: int) -> list[FleetSession]:
+    """Discover live Codex sessions from ~/.codex/sessions/**/*.jsonl mtimes."""
+    root = home / ".codex" / "sessions"
+    if not root.is_dir():
+        return []
+    cutoff = now - timedelta(minutes=live_threshold)
+    sessions: list[FleetSession] = []
+    for path in sorted(root.rglob("*.jsonl")):
+        last_active = datetime.fromtimestamp(path.stat().st_mtime)
+        if last_active < cutoff:
+            continue
+        sessions.append(
+            FleetSession(
+                vendor="codex",
+                session_id=path.stem,
+                cwd=_first_cwd(path),
+                branch=None,
+                worktree=None,
+                last_active=last_active,
+                task=None,
+                source="transcript",
+            )
+        )
+    return sessions
+
+
+def worktree_branches(runner: ProcessRunner) -> dict[str, str]:
+    """Map each git worktree path to its branch via `git worktree list --porcelain`."""
+    result = runner.run(("git", "worktree", "list", "--porcelain"))
+    branches: dict[str, str] = {}
+    current: str | None = None
+    for line in result.stdout.splitlines():
+        if line.startswith("worktree "):
+            current = line[len("worktree ") :].strip()
+        elif line.startswith("branch ") and current:
+            branches[current] = line.split("refs/heads/")[-1].strip()
+        elif not line.strip():
+            current = None
+    return branches
