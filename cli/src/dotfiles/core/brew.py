@@ -333,11 +333,14 @@ _RUSTUP_INSTALL = (
 _CARGO_ENV_LINE = '[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"'
 
 
-def install_rust(runner: ProcessRunner) -> list[StepResult]:
+def install_rust(runner: ProcessRunner, *, home: Path) -> list[StepResult]:
     """Install Rust via rustup if not already present.
 
     Idempotency guard: skips if `rustup` or `cargo` is on PATH.
-    Post-install: ensures ~/.zprofile sources ~/.cargo/env.
+    Post-install: ensures <home>/.zprofile sources ~/.cargo/env.
+
+    ``home`` must be injected by the caller (never Path.home() inside core) so
+    that tests can pass a tmp_path and never touch the real home directory.
     """
     check = runner.run(_RUSTUP_CHECK)
     if check.stdout.strip():
@@ -348,7 +351,7 @@ def install_rust(runner: ProcessRunner) -> list[StepResult]:
         return [StepResult(level="error", message=f"rustup installer failed: {res.stderr.strip()}")]
 
     # Idempotent .zprofile patch via pathlib (no runner needed for file I/O)
-    zprofile = Path.home() / ".zprofile"
+    zprofile = home / ".zprofile"
     try:
         existing = zprofile.read_text() if zprofile.exists() else ""
         if ".cargo/env" not in existing:

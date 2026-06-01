@@ -239,13 +239,13 @@ def test_install_packages_respects_flag_gating(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_install_rust_skips_when_present() -> None:
+def test_install_rust_skips_when_present(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(
         ("sh", "-c", "command -v rustup || command -v cargo"),
         stdout="/usr/bin/cargo\n",
     )
-    results = install_rust(runner)
+    results = install_rust(runner, home=tmp_path)
     assert len(results) == 1
     assert results[0].level == "info"
     assert "already installed" in results[0].message
@@ -253,7 +253,7 @@ def test_install_rust_skips_when_present() -> None:
     assert not any("rustup.rs" in " ".join(c) for c in runner.calls)
 
 
-def test_install_rust_runs_installer_when_absent() -> None:
+def test_install_rust_runs_installer_when_absent(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("sh", "-c", "command -v rustup || command -v cargo"), stdout="")
     runner.script(
@@ -264,12 +264,17 @@ def test_install_rust_runs_installer_when_absent() -> None:
         ),
         exit_code=0,
     )
-    results = install_rust(runner)
+    # Create a tmp .zprofile so the append path can write to it
+    zprofile = tmp_path / ".zprofile"
+    zprofile.write_text("")
+    results = install_rust(runner, home=tmp_path)
     assert any("rustup.rs" in " ".join(c) for c in runner.calls)
     assert results[0].level == "success"
+    # The TMP zprofile (not the real one) received the cargo line
+    assert ".cargo/env" in zprofile.read_text()
 
 
-def test_install_rust_error_on_install_failure() -> None:
+def test_install_rust_error_on_install_failure(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("sh", "-c", "command -v rustup || command -v cargo"), stdout="")
     runner.script(
@@ -281,7 +286,7 @@ def test_install_rust_error_on_install_failure() -> None:
         exit_code=1,
         stderr="network error",
     )
-    results = install_rust(runner)
+    results = install_rust(runner, home=tmp_path)
     assert results[0].level == "error"
 
 
