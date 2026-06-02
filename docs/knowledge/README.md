@@ -8,7 +8,7 @@ Durable, opinionated knowledge that isn't tied to one language stack. Reference 
 - [browser-tooling.md](browser-tooling.md) — tiered browser/UI automation tools
 - [customer-discovery.md](customer-discovery.md) — customer-interview methodology (Mom Test)
 - [project-memory.md](project-memory.md) — decision-organization system (ADRs, curated memory)
-- [agent-output.md](agent-output.md) — `.ai/artifacts/` working-files convention
+- [agent-output.md](agent-output.md) — `.agents/` working-files & artifacts convention (plans, research, ADRs)
 - **Prompting**
   - [prompt-construction.md](prompting/prompt-construction.md) — system-prompt construction recipe
   - [prompt-tactics.md](prompting/prompt-tactics.md) — prompt patterns for coding agents

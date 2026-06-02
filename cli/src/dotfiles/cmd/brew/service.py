@@ -494,3 +494,24 @@ def install_npm_globals(
         else:
             results.append(StepResult(level="error", message=f"npm install -g {pkg.name} failed"))
     return results
+
+
+def upgrade(runner: ProcessRunner) -> list[StepResult]:
+    """Update Homebrew and upgrade all installed formulae + casks, then prune caches.
+
+    Homebrew is the only version-pinning surface in this managed setup, so this is
+    the one-shot "bring my packages current" convenience.
+    """
+    results: list[StepResult] = []
+    runner.run(("brew", "update"))
+    results.append(StepResult(level="success", message="Updated Homebrew index"))
+    res = runner.run(("brew", "upgrade"))
+    if res.ok:
+        results.append(StepResult(level="success", message="Upgraded formulae + casks"))
+    else:
+        results.append(
+            StepResult(level="error", message="brew upgrade failed", details=res.stderr.strip())
+        )
+    runner.run(("brew", "cleanup", "--prune=30"))
+    results.append(StepResult(level="info", message="Pruned caches older than 30 days"))
+    return results

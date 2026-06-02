@@ -33,7 +33,7 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 - `macos/packages.toml` is the source of truth for what's installed. `bin/dotfiles doctor` and `dotfiles brew stale` must stay in sync with these lists.
 - `README.md` documents user-facing features. When adding/removing/renaming commands, packages, or config, update the README in the same commit.
 - `ai/agents/shared/rules.md` is the canonical universal rule kernel — one hand-authored doc deployed verbatim to every vendor by `dotfiles agent setup` (Cursor gets a frontmatter wrapper). No baking, no per-rule symlinks. Language/framework opinions are NOT pushed as rules — they live as reference in `docs/stacks/`.
-- `ai/skills/` is the canonical skill library. Edit there; `dotfiles agent setup` deploys to each vendor via the public `npx skills` CLI (claude-code) and a small `cp` loop for subagents (codex). No per-vendor mirror dirs in this repo. Validate with `dotfiles validate-skills`.
+- `ai/skills/` is the canonical skill library. Edit there; `dotfiles agent setup` deploys to each vendor via the public `npx skills` CLI (claude-code) and a small `cp` loop for subagents (codex). No per-vendor mirror dirs in this repo. Validate with `dotfiles agent lint`.
 - **Decisions and curated memory live in this repo, under version control — not in any coding tool's private memory.** Record decisions as ADRs in `docs/adr/` (numbered, committed); keep curated tool/stack notes in `docs/`. Unless something must stay private, prefer the repo so the curated memory is owned by the project, reviewable, and portable across tools.
 
 ## Working in This Repo

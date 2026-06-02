@@ -36,9 +36,10 @@ The installer is idempotent — safe to re-run anytime.
 
 ### CLI development
 
-The `dotfiles` CLI is migrating to a hexagonal Python/Typer app in `cli/`
-(uv-managed). Run dev checks with `just check`. `bin/dotfiles` delegates migrated
-commands to the Python CLI and falls back to the legacy Bash router for the rest.
+Most `dotfiles` subcommands run from a hexagonal Python/Typer app in `cli/`
+(uv-managed). Run dev checks with `just check`. `bin/dotfiles` is a thin shim that
+delegates those subcommands to the Python CLI; a few install/bootstrap commands
+(`install`, `update`, `clean`) remain in the Bash router.
 
 ---
 
@@ -319,6 +320,9 @@ dotfiles brew install
 # Skip optional groups
 dotfiles brew install --no-ai --no-social
 
+# Upgrade all installed packages (brew is the only version-pinning surface)
+dotfiles brew upgrade
+
 # Report stale (installed but not in manifest) and missing packages
 dotfiles brew stale
 ```
@@ -333,6 +337,7 @@ dotfiles doctor --fix        # Repair symlinks and redeploy agent configs
 dotfiles update              # Update OS, Homebrew, runtimes, and dev tools
 dotfiles clean               # Clear Homebrew caches
 dotfiles brew install        # Sync Homebrew packages from packages.toml
+dotfiles brew upgrade        # Upgrade all installed packages (brew is the version surface)
 dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
 dotfiles profile-shell       # Profile shell startup time

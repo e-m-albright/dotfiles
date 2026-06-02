@@ -18,6 +18,7 @@ from dotfiles.cmd.brew.service import (
     missing_packages,
     stale_packages,
 )
+from dotfiles.cmd.brew.service import upgrade as upgrade_packages
 from dotfiles.console import console, has_errors, render_steps
 from dotfiles.result import StepResult
 
@@ -103,6 +104,18 @@ def install(
 
     console.print()
     if has_errors(all_steps):
+        raise typer.Exit(code=1)
+
+
+@brew_app.command()
+def upgrade(ctx: typer.Context) -> None:
+    """Upgrade all installed packages (brew is the only version-pinning surface)."""
+    app_ctx = app_context(ctx)
+    console.print("\n[bold blue]Upgrading Homebrew packages[/]")
+    steps = upgrade_packages(app_ctx.runner)
+    render_steps(console, steps)
+    console.print()
+    if has_errors(steps):
         raise typer.Exit(code=1)
 
 

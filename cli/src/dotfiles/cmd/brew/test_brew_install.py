@@ -16,6 +16,7 @@ from dotfiles.cmd.brew.service import (
     install_packages,
     install_rust,
     install_typewhisper,
+    upgrade,
 )
 from dotfiles.testing.fakes import FakeProcessRunner
 
@@ -439,3 +440,26 @@ def test_install_npm_globals_error_on_failure(tmp_path: Path) -> None:
     results = install_npm_globals(manifest, runner, flags_on={"ai"})
     levels = [r.level for r in results]
     assert "error" in levels
+
+
+# ---------------------------------------------------------------------------
+# upgrade
+# ---------------------------------------------------------------------------
+
+
+def test_upgrade_runs_update_upgrade_and_cleanup() -> None:
+    runner = FakeProcessRunner()
+    steps = upgrade(runner)
+    assert ("brew", "update") in runner.calls
+    assert ("brew", "upgrade") in runner.calls
+    assert ("brew", "cleanup", "--prune=30") in runner.calls
+    assert not any(s.level == "error" for s in steps)
+
+
+def test_upgrade_reports_error_when_upgrade_fails() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("brew", "upgrade"), exit_code=1, stderr="boom")
+    steps = upgrade(runner)
+    errors = [s for s in steps if s.level == "error"]
+    assert len(errors) == 1
+    assert "boom" in (errors[0].details or "")

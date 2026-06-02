@@ -50,6 +50,7 @@ sub_help () {
     printf "   agent verify [--offline]  Check skills/agents deployed + probe MCP servers\n"
     printf "\n"
     printf "   brew install         Sync packages from packages.toml manifest\n"
+    printf "   brew upgrade         Upgrade all installed packages (brew is the version surface)\n"
     printf "   brew stale           Find disabled packages still installed\n"
     printf "\n"
     printf "   shell profile        Profile shell startup time\n"
@@ -233,8 +234,8 @@ _dotfiles() {
         'sesh:zellij sessions (alias)'
         'tui:Launch the Mission Control TUI'
         'snapshot:Machine-state snapshots (ls, diff)'
-        'agent:Agent vendor namespace (overview, lint, setup, verify, web-chat-instructions)'
-        'brew:Brew namespace (install, stale)'
+        'agent:Agent namespace (overview, lint, setup, verify, web-chat-instructions)'
+        'brew:Brew namespace (install, upgrade, stale)'
         'shell:Shell namespace (profile)'
         'cursor:Cursor namespace (plugins)'
     )

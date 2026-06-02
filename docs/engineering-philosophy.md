@@ -88,9 +88,9 @@ When a pattern repeats: first encode it as a convention (file naming, directory 
 
 ## How agents should use this
 
-When you (the agent) are about to write or change code, ask which principles apply. When auditing, grade against these as the universal rubric (see `.ai/skills/review/SKILL.md` for the full grading process).
+When you (the agent) are about to write or change code, ask which principles apply. When auditing, grade against these as the universal rubric (see `ai/skills/review/SKILL.md` for the full grading process).
 
-When projects adopt these principles, the per-language `.ai/rules/` files (Python, Rust, TypeScript, etc.) translate them into language-specific gates and patterns. The principle is universal; the enforcement is local.
+These principles are universal; per-language taste (idioms, pick/avoid, gates) lives as reference in `docs/stacks/`. The principle is universal; the enforcement is local.
 
 ## Calibration
 

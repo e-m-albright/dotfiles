@@ -58,6 +58,31 @@ def test_brew_help_lists_subcommands() -> None:
     assert result.exit_code == 0
     assert "install" in result.output
     assert "stale" in result.output
+    assert "upgrade" in result.output
+
+
+# ---------------------------------------------------------------------------
+# brew upgrade
+# ---------------------------------------------------------------------------
+
+
+def test_brew_upgrade_runs_and_exits_zero(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    result = runner.invoke(app, ["brew", "upgrade"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "Upgrading Homebrew packages" in result.output
+
+
+def test_brew_upgrade_nonzero_exit_on_failure(tmp_path: Path) -> None:
+    macos_dir = tmp_path / "macos"
+    macos_dir.mkdir(parents=True, exist_ok=True)
+    (macos_dir / "packages.toml").write_text(_PACKAGES_TOML)
+
+    runner_fake = FakeProcessRunner()
+    runner_fake.script(("brew", "upgrade"), exit_code=1, stderr="boom")
+    ctx = make_fake_context(runner=runner_fake, home=tmp_path / "home", dotfiles_dir=tmp_path)
+    result = runner.invoke(app, ["brew", "upgrade"], obj=ctx)
+    assert result.exit_code == 1
 
 
 # ---------------------------------------------------------------------------
