@@ -46,15 +46,6 @@ SessionsPane .new-row {
 SessionsPane ListView > .new-row.-highlight { background: #2a2616; }
 SessionsPane ListView:focus > .new-row.-highlight { background: #34301a; }
 
-/* Non-selectable group divider above each batch of session rows. */
-SessionsPane .section-header {
-    background: #0d0d0d;
-    color: #8a6d1f;
-    text-style: bold;
-    padding: 0 1;
-    margin: 1 0 0 0;
-}
-
 /* Chunky, well-separated tap targets: gap + left accent so taps don't collide. */
 SessionsPane .session-row {
     height: 3;
@@ -65,11 +56,6 @@ SessionsPane .session-row {
 }
 SessionsPane .session-row.is-current { border-left: outer #f5d76e; }
 SessionsPane .session-row.is-running { border-left: outer #d4af37; }
-SessionsPane .session-row.is-exited {
-    border-left: outer #5a5536;
-    color: #9a8a55;
-    background: #100f0c;
-}
 
 /* Highlighted/focused row reads as the active tap target. */
 SessionsPane ListView > .session-row.-highlight { background: #24220f; }

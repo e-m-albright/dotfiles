@@ -1,8 +1,8 @@
 """Sessions pane: a touch-first zellij session manager.
 
-Lists sessions (active + resurrectable history), and lets you create, attach,
-switch, resurrect, kill, or delete one — each via a deliberate tap so a misfire
-on a phone can't yank you somewhere or destroy a session.
+Lists live sessions and lets you create, attach/switch, or kill one — each via a
+deliberate tap so a misfire on a phone can't yank you somewhere or kill the wrong
+session. (Detaching is a zellij keybind, `Ctrl o d`, not a list action.)
 """
 
 from __future__ import annotations
@@ -25,8 +25,6 @@ from dotfiles.cmd.session.service import (
     SessionError,
     attach_command,
     attached_client_count,
-    delete_session,
-    group_sessions,
     kill_session,
     layout_name_for,
     list_sessions,
@@ -53,50 +51,39 @@ def _agents_line(agents: list[AgentActivity], now: datetime, clients: int | None
     return prefix + "  ·  ".join(parts)
 
 
-def _section_heading(title: str) -> str:
-    """A dim section divider, e.g. 'ACTIVE' or 'RESURRECTABLE'."""
-    # Glyph-free on purpose: the row markers (●/◌) carry state, and exotic header
-    # glyphs render as tofu in fonts we can't control on the phone.
-    return f"[dim]{title}[/]"
+def live_sessions(sessions: list[Session]) -> list[Session]:
+    """Running sessions only, current first then by name (the TUI manages live ones)."""
+    return sorted((s for s in sessions if s.running), key=lambda s: (not s.current, s.name))
 
 
 def _session_item(s: Session) -> ListItem:
     """A tall, spaced, tappable row for one session (state shown via glyph + accent)."""
     if s.current:
-        glyph, state_cls, desc = "●", "is-current", "attached here · tap for options"
-    elif s.running:
-        glyph, state_cls, desc = "●", "is-running", "running · tap to attach"
+        state_cls, desc = "is-current", "attached here · tap for options"
     else:
-        glyph, state_cls, desc = "◌", "is-exited", "resurrectable · tap to restore"
-    label = Label(f"[bold]{glyph}  {s.name}[/]\n   [dim]{desc}[/]")
+        state_cls, desc = "is-running", "running · tap to attach"
+    label = Label(f"[bold]●  {s.name}[/]\n   [dim]{desc}[/]")
     return ListItem(label, id=f"sess-{s.name}", classes=f"session-row {state_cls}")
 
 
 def session_action_buttons(s: Session) -> list[tuple[str, str, str]]:
     """(label, button-id, variant) for the per-session action sheet.
 
-    Button-ids map to actions: ``attach`` (attach/switch/resurrect), ``kill``
-    (a live session), ``delete`` (purge an exited one), ``cancel``. The session
-    you're attached to offers no destructive action — killing it would tear down
-    this very TUI — so it's view-only.
+    Button-ids map to actions: ``attach`` (attach/switch), ``kill``, ``cancel``.
+    The session you're attached to offers no destructive action — killing it would
+    tear down this very TUI — so it's view-only.
     """
     if s.current:
         return [("Cancel", "cancel", "primary")]
-    if s.running:
-        return [
-            ("Attach", "attach", "success"),
-            ("Kill", "kill", "error"),
-            ("Cancel", "cancel", "primary"),
-        ]
     return [
-        ("Restore", "attach", "success"),
-        ("Delete", "delete", "error"),
+        ("Attach", "attach", "success"),
+        ("Kill", "kill", "error"),
         ("Cancel", "cancel", "primary"),
     ]
 
 
 class SessionsPane(Container):
-    """Cross-device zellij session manager: pick, create, close, resurrect."""
+    """Cross-device zellij session manager: create, attach/switch, kill."""
 
     BORDER_TITLE = "Sessions"
     BINDINGS: ClassVar[list[BindingType]] = [
@@ -138,24 +125,16 @@ class SessionsPane(Container):
         now: datetime,
         clients: int | None = None,
     ) -> None:
-        sections = group_sessions(sessions)
-        # Store in display order so session_names()/tests track what's shown.
-        self._sessions = [s for _, items in sections for s in items]
+        self._sessions = live_sessions(sessions)
         self.query_one("#active-agents", Static).update(_agents_line(agents, now, clients))
         view = self.query_one("#session-list", ListView)
         view.clear()
         # Create is always one tap away, even with zero sessions.
         view.append(ListItem(Label("[b]+  New session[/]"), id=_NEW_ROW_ID, classes="new-row"))
-        if not sections:
-            view.append(
-                ListItem(Label("[dim]no sessions yet[/]"), disabled=True, classes="section-header")
-            )
-        for title, items in sections:
-            view.append(
-                ListItem(Label(_section_heading(title)), disabled=True, classes="section-header")
-            )
-            for s in items:
-                view.append(_session_item(s))
+        if not self._sessions:
+            view.append(ListItem(Label("[dim]no sessions yet[/]"), disabled=True))
+        for s in self._sessions:
+            view.append(_session_item(s))
 
     def session_names(self) -> list[str]:
         return [s.name for s in self._sessions]
@@ -188,10 +167,6 @@ class SessionsPane(Container):
             kill_session(self._ctx.runner, session.name)
             self.notify(f"Killed {session.name}", title="Sessions", severity="warning")
             self.action_reload()
-        elif action == "delete":
-            delete_session(self._ctx.runner, session.name)
-            self.notify(f"Deleted {session.name}", title="Sessions", severity="warning")
-            self.action_reload()
 
     def _on_new_session(self, name: str | None) -> None:
         if not name:
@@ -206,7 +181,7 @@ class SessionsPane(Container):
 
 
 class _SessionActions(ModalScreen[str | None]):
-    """Per-session action sheet: attach/switch, kill, restore, or delete."""
+    """Per-session action sheet: attach/switch or kill."""
 
     def __init__(self, session: Session) -> None:
         super().__init__()
@@ -214,7 +189,7 @@ class _SessionActions(ModalScreen[str | None]):
 
     def compose(self) -> ComposeResult:
         s = self._s
-        state = "attached here" if s.current else ("running" if s.running else "resurrectable")
+        state = "attached here" if s.current else "running"
         with Vertical(id="confirm-box"):
             yield Label(f"[b]{s.name}[/]  [dim]· {state}[/]")
             for label, button_id, variant in session_action_buttons(s):

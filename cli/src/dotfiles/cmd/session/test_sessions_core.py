@@ -4,8 +4,6 @@ from dotfiles.cmd.session.models import Session
 from dotfiles.cmd.session.service import (
     attach_command,
     attached_client_count,
-    delete_session,
-    group_sessions,
     kill_session,
     layout_name_for,
     list_sessions,
@@ -15,47 +13,12 @@ from dotfiles.cmd.session.service import (
 from dotfiles.testing.fakes import FakeProcessRunner
 
 
-def test_delete_session_runs_delete_and_reports() -> None:
-    runner = FakeProcessRunner()
-    step = delete_session(runner, "old")
-    assert ("zellij", "delete-session", "old") in runner.calls
-    assert step.level == "success"
-
-
-def test_delete_session_reports_error_on_failure() -> None:
-    runner = FakeProcessRunner()
-    runner.script(("zellij", "delete-session", "old"), exit_code=1, stderr="nope")
-    assert delete_session(runner, "old").level == "error"
-
-
 def test_valid_session_name_rejects_empty_and_whitespace() -> None:
     assert valid_session_name("api")
     assert valid_session_name("api-server_2")
     assert not valid_session_name("")
     assert not valid_session_name("two words")
     assert not valid_session_name("  ")
-
-
-def test_group_sessions_splits_active_and_resurrectable() -> None:
-    sessions = [
-        Session(name="mobile", running=True, current=False),
-        Session(name="old", running=False, current=False),
-        Session(name="work", running=True, current=True),
-        Session(name="archived", running=False, current=False),
-    ]
-    sections = group_sessions(sessions)
-    assert [title for title, _ in sections] == ["ACTIVE", "RESURRECTABLE"]
-    # Current first within ACTIVE, then by name; exited sorted by name.
-    assert [s.name for s in sections[0][1]] == ["work", "mobile"]
-    assert [s.name for s in sections[1][1]] == ["archived", "old"]
-
-
-def test_group_sessions_omits_empty_groups() -> None:
-    only_active = [Session(name="work", running=True, current=True)]
-    assert [t for t, _ in group_sessions(only_active)] == ["ACTIVE"]
-    only_dead = [Session(name="old", running=False, current=False)]
-    assert [t for t, _ in group_sessions(only_dead)] == ["RESURRECTABLE"]
-    assert group_sessions([]) == []
 
 
 def test_parse_empty() -> None:

@@ -63,8 +63,8 @@ client: Termius connects to the laptop over Mosh and runs everything *there*.
 
 - **Tab 1 "deck"** — already running Mission Control (`dotfiles tui`).
 - **Tab 2 "shell"** — a normal shell.
-- First connect ever builds the deck from the layout; every connect after
-  resurrects your exact last state.
+- First connect ever builds the deck from the layout; after that you re-attach to
+  the same running session, right where you left it.
 
 **Keys** (Zellij defaults — the status bar shows them live):
 
@@ -79,34 +79,23 @@ client: Termius connects to the laptop over Mosh and runs everything *there*.
 **Pick up on the laptop:** `dfs session attach mobile` (or `dfs session` to fuzzy-pick).
 Same session, same panes, same running programs. You can stay attached on both.
 
-## Session lifecycle (and how resurrection actually works)
+## Session lifecycle
 
 Detaching or losing the connection **never** ends a session — it keeps running on
 the laptop. That's the everyday safety net: close Termius, lose signal, walk away,
 and `dfs session attach mobile` later picks up exactly where you left off.
 
-Resurrection is a separate, narrower thing, and it's worth being precise because
-it's easy to assume it's more on-demand than it is:
+The **Mission Control TUI** Sessions pane manages your live sessions: a pinned
+**+ New session** row (or press `n`), and tapping any session opens an action sheet
+to **Attach/switch** or **Kill** it. Every action is a deliberate tap, so a phone
+misfire is harmless.
 
-- Zellij **serializes** every session to disk (`session_serialization true`). When
-  the Zellij **server stops while sessions are serialized — i.e. a reboot** — those
-  sessions reappear as **EXITED / resurrectable**. `dfs session attach <name>` (or
-  Restore in the TUI) brings one back: its panes and the commands that were running,
-  behind a `press ENTER to run` guard so nothing destructive auto-fires.
-- This is mainly a **reboot survivor**, not an on-demand stop/start. There is **no
-  command to gracefully park a single running session into the resurrectable state** —
-  `kill`/`delete` (below) destroy a session, they don't hibernate it.
+One Zellij nuance worth knowing: `kill` destroys a session (it's gone, not
+recoverable). Zellij does serialize sessions to disk and can resurrect them after a
+**reboot** (`dfs session attach <name>` reopens a serialized one), but there's no
+on-demand "stop but keep it" — so treat `kill` as permanent.
 
-So the realistic loop is: reboot the Mac → your sessions are waiting in the
-**RESURRECTABLE** group → tap Restore. Day to day you just detach and re-attach.
-
-In the **Mission Control TUI** the Sessions pane is a manager: a pinned
-**+ New session** row (or press `n`), and tapping any row opens an action sheet —
-Attach/switch a live one, **Kill** it (permanent), or **Restore/Delete** one from
-the **RESURRECTABLE** group. Every action is a deliberate tap, so a phone misfire
-is harmless.
-
-To remove a session for good:
+To remove a session:
 
 ```bash
 dfs session kill <name>        # kill a running session (gone — not resurrectable)

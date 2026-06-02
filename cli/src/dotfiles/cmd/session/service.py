@@ -44,23 +44,6 @@ def layout_name_for(home: Path, name: str) -> str | None:
     return name if (home / ".config" / "zellij" / "layouts" / f"{name}.kdl").is_file() else None
 
 
-def group_sessions(sessions: list[Session]) -> list[tuple[str, list[Session]]]:
-    """Split sessions into display sections: live ones, then resurrectable history.
-
-    `zellij list-sessions` reports both alive and EXITED (serialized) sessions;
-    we surface them as two groups — "ACTIVE" (current first, then by name) and
-    "RESURRECTABLE" (exited, by name). Empty groups are omitted.
-    """
-    active = sorted((s for s in sessions if s.running), key=lambda s: (not s.current, s.name))
-    exited = sorted((s for s in sessions if not s.running), key=lambda s: s.name)
-    sections: list[tuple[str, list[Session]]] = []
-    if active:
-        sections.append(("ACTIVE", active))
-    if exited:
-        sections.append(("RESURRECTABLE", exited))
-    return sections
-
-
 def attach_command(
     name: str, *, exists: bool = False, layout: str | None = None
 ) -> tuple[str, ...]:
@@ -103,14 +86,6 @@ def kill_session(runner: ProcessRunner, name: str) -> StepResult:
     if result.ok:
         return StepResult(level="success", message=f"Killed session {name}")
     return StepResult(level="error", message=f"Could not kill session {name}")
-
-
-def delete_session(runner: ProcessRunner, name: str) -> StepResult:
-    """Purge an exited/serialized session from history (`zellij delete-session`)."""
-    result = runner.run(("zellij", "delete-session", name))
-    if result.ok:
-        return StepResult(level="success", message=f"Deleted session {name}")
-    return StepResult(level="error", message=f"Could not delete session {name}")
 
 
 def valid_session_name(name: str) -> bool:

@@ -49,12 +49,22 @@ def test_session_action_buttons_vary_by_state():
 
     running = Session(name="work", running=True, current=False)
     current = Session(name="mobile", running=True, current=True)
-    exited = Session(name="old", running=False, current=False)
 
     assert [b[1] for b in session_action_buttons(running)] == ["attach", "kill", "cancel"]
     # The session you're in offers no destructive action (would tear down the TUI).
     assert [b[1] for b in session_action_buttons(current)] == ["cancel"]
-    assert [b[1] for b in session_action_buttons(exited)] == ["attach", "delete", "cancel"]
+
+
+def test_live_sessions_keeps_running_current_first():
+    from dotfiles.cmd.session.models import Session
+    from dotfiles.cmd.session.pane import live_sessions
+
+    sessions = [
+        Session(name="mobile", running=True, current=False),
+        Session(name="old", running=False, current=False),  # exited -> dropped
+        Session(name="work", running=True, current=True),
+    ]
+    assert [s.name for s in live_sessions(sessions)] == ["work", "mobile"]
 
 
 def _app_with(stdout: str):
@@ -132,7 +142,7 @@ async def test_selecting_session_row_opens_action_sheet():
 
 @pytest.mark.asyncio
 async def test_kill_action_invokes_kill_session():
-    app, runner = _app_with("work [created]\nold (EXITED - attach to resurrect)\n")
+    app, runner = _app_with("work [created]\n")
     async with app.run_test() as pilot:
         await pilot.pause()
         await pilot.pause()
@@ -141,14 +151,12 @@ async def test_kill_action_invokes_kill_session():
 
         pane = app.query_one(SessionsPane)
         pane._on_action(Session(name="work", running=True, current=False), "kill")
-        pane._on_action(Session(name="old", running=False, current=False), "delete")
         await pilot.pause()
         assert ("zellij", "kill-session", "work") in runner.calls
-        assert ("zellij", "delete-session", "old") in runner.calls
 
 
 @pytest.mark.asyncio
-async def test_sessions_pane_groups_active_and_resurrectable():
+async def test_exited_sessions_are_not_listed():
     runner = FakeProcessRunner()
     runner.script(
         ("zellij", "list-sessions", "--no-formatting"),
@@ -160,14 +168,10 @@ async def test_sessions_pane_groups_active_and_resurrectable():
         await pilot.pause()
         from textual.widgets import ListItem, ListView
 
+        from dotfiles.cmd.session.pane import SessionsPane
+
+        pane = app.query_one(SessionsPane)
+        assert pane.session_names() == ["work"]  # exited "old" filtered out
         view = app.query_one("#session-list", ListView)
-        headers = [i for i in view.query(ListItem) if "section-header" in i.classes]
-        rows = [i for i in view.query(ListItem) if "session-row" in i.classes]
-        # Two group headers (ACTIVE + RESURRECTABLE), one selectable row each.
-        assert len(headers) == 2
-        assert {i.id for i in rows} == {"sess-work", "sess-old"}
-        # The exited row carries the resurrectable accent class and is enabled (tappable).
-        old_row = next(i for i in rows if i.id == "sess-old")
-        assert "is-exited" in old_row.classes
-        # Headers are non-selectable so taps can't misfire on them.
-        assert all(h.disabled for h in headers)
+        rows = {i.id for i in view.query(ListItem) if "session-row" in i.classes}
+        assert rows == {"sess-work"}
