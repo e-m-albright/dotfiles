@@ -62,9 +62,9 @@ editors/cursor/.cursorignore
 
 # -----------------------------------------------------------------------------
 # Ephemeral agent working files (durable artifacts go in docs/)
-# See: .ai/rules/process/artifact-placement.mdc
+# See: docs/knowledge/agent-output.md
 # -----------------------------------------------------------------------------
-.ai/artifacts/
+ai/artifacts/
 
 # -----------------------------------------------------------------------------
 # In-flight specs/plans — kept local, not published. Durable rationale
@@ -84,3 +84,11 @@ tools/*/.venv/
 tools/*/.ruff_cache/
 tools/*/__pycache__/
 tools/*/yt_ingest/__pycache__/
+
+# Python CLI (cli/) build + tool caches
+cli/.venv/
+cli/.ruff_cache/
+cli/.pytest_cache/
+cli/.coverage
+cli/htmlcov/
+cli/**/__pycache__/

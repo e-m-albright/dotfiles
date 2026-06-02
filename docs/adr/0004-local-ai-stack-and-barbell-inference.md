@@ -49,4 +49,4 @@ Findings that shaped the decision:
 - [ADR-0003](0003-vendor-locked-clis-over-aggregators.md) — frontier CLI / subscription decision this builds on
 - `docs/tools-to-evaluate.md` — personal stack rankings (self-hosted / paid-infra / closed / harnesses)
 - `macos/lmstudio.sh` — local model + context config (source of truth for the chosen model/window)
-- `prompts/guides/ai-tools.md`, `prompts/guides/ai-coding-frameworks.md` — landscape notes
+- `docs/knowledge/ai-tools.md`, `docs/knowledge/ai-coding-frameworks.md` — landscape notes

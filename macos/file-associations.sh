@@ -2,7 +2,7 @@
 # Set default apps for common file types via duti.
 # Idempotent — safe to re-run.
 #
-# Sourced by install.sh after brew.sh (which installs duti).
+# Sourced by install.sh after brew install (which installs duti).
 #
 # Why this exists: macOS double-clicking a text, markdown, or source/config
 # file used to open Cursor, which is slow to cold-start. Routing to Zed (Rust,
@@ -19,7 +19,7 @@ if ! declare -f print_step >/dev/null 2>&1; then
 fi
 
 if ! command -v duti >/dev/null 2>&1; then
-    print_warning "duti not installed — skipping file associations (install via brew.sh)"
+    print_warning "duti not installed — skipping file associations (install via packages.toml)"
     return 0 2>/dev/null || exit 0
 fi
 
@@ -31,18 +31,21 @@ read_bundle_id() {
     fi
 }
 
+# Returns 0=already-set (silent), 1=newly-set, 2=failed. Only deltas print a
+# line; callers tally the silent no-ops into one summary so a re-run doesn't
+# dump ~45 "already set" rows.
 set_default() {
     local bundle_id="$1" type="$2" label="$3"
     # `duti -x` lists current default; match the bundle id to detect no-op.
     if duti -x "$type" 2>/dev/null | grep -qx "$bundle_id"; then
-        print_skip "$label: $type → already set"
-        return
+        return 0
     fi
     if duti -s "$bundle_id" "$type" all 2>/dev/null; then
         print_success "$label: $type → $bundle_id"
-    else
-        print_warning "$label: could not set $type → $bundle_id"
+        return 1
     fi
+    print_warning "$label: could not set $type → $bundle_id"
+    return 2
 }
 
 # --- Zed for text, markdown, and source/config files ---
@@ -67,12 +70,16 @@ ZED_EXTENSIONS=(
 )
 ZED_ID="$(read_bundle_id /Applications/Zed.app)"
 if [[ -n "$ZED_ID" ]]; then
+    unchanged=0
     for uti in "${ZED_UTIS[@]}"; do
-        set_default "$ZED_ID" "$uti" "Zed"
+        if set_default "$ZED_ID" "$uti" "Zed"; then unchanged=$((unchanged + 1)); fi
     done
     for ext in "${ZED_EXTENSIONS[@]}"; do
-        set_default "$ZED_ID" ".$ext" "Zed"
+        if set_default "$ZED_ID" ".$ext" "Zed"; then unchanged=$((unchanged + 1)); fi
     done
+    if [[ $unchanged -gt 0 ]]; then
+        print_skip "Zed: $unchanged file types already routed to Zed"
+    fi
 else
     print_warning "Zed not found at /Applications/Zed.app, skipping text-file associations"
 fi
@@ -97,7 +104,7 @@ if [[ ${#need_launch[@]} -gt 0 ]]; then
     print_success "Quick Look plugins installed: ${need_launch[*]}"
     print_info "  if spacebar previews aren't styled, register the extensions:"
     for app in "${need_launch[@]}"; do
-        print_step "    open \"/Applications/$app\"   # launch once, quit, done"
+        print_dim "    open \"/Applications/$app\"   # launch once, quit, done"
     done
-    print_step "    qlmanage -r && qlmanage -r cache    # refresh QL cache"
+    print_dim "    qlmanage -r && qlmanage -r cache    # refresh QL cache"
 fi

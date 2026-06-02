@@ -2,7 +2,7 @@
 
 Single source of truth for upstream attribution. Maps each ported / adapted skill in this repo to its inspiration, pinned to the commit SHA we last reviewed.
 
-When upstream evolves, refresh `last_reviewed_commit` for the repo and re-diff against our copy to harvest refinements. See `.ai/rules/process/skill-format.mdc` for the full attribution convention.
+When upstream evolves, refresh `last_reviewed_commit` for the repo and re-diff against our copy to harvest refinements. See `.ai/skills/skill-creator/references/skill-format.md` for the full attribution convention.
 
 ## Per-skill attribution
 

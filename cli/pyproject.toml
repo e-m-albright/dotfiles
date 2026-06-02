@@ -1,0 +1,72 @@
+[project]
+name = "dotfiles-cli"
+version = "0.1.0"
+description = "Hexagonal Typer CLI + TUI for the dotfiles dev environment"
+requires-python = ">=3.13"
+dependencies = [
+    "typer>=0.15",
+    "rich>=13.9",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "structlog>=24.4",
+    "pyyaml>=6.0.3",
+    "textual>=8.2.7",
+]
+
+[project.scripts]
+dotfiles = "dotfiles.app.main:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pytest-timeout>=2.3",
+    "ruff>=0.9",
+    "pyright>=1.1.390",
+    "vulture>=2.14",
+    "complexipy>=2.0",
+    "pip-audit>=2.7",
+    "hypothesis>=6.122",
+    "dirty-equals>=0.8",
+    "pytest-textual-snapshot>=1.0.0",
+    "pytest-asyncio>=1.4.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dotfiles"]
+# Tests are colocated next to the modules they cover; keep them out of the wheel.
+exclude = ["**/test_*.py", "**/conftest.py", "**/testing", "**/__snapshots__"]
+
+[tool.ruff]
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "PTH", "TID", "PT"]
+# Keep unused-import as a *lint* (the gate still flags genuinely-dead imports),
+# but never let `ruff check --fix` (incl. the format-on-save hook) auto-delete an
+# import the instant it's added, before its first use. Stops the mid-edit churn.
+unfixable = ["F401"]
+
+[tool.pyright]
+include = ["src"]
+# Colocated tests are strict-exempt (ruff + pytest cover them); source stays strict.
+exclude = ["**/test_*.py", "**/conftest.py", "**/testing", "**/__snapshots__"]
+strict = ["src"]
+pythonVersion = "3.13"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+addopts = "--timeout=30 --strict-markers"
+testpaths = ["src/dotfiles"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["dotfiles"]
+branch = true
+omit = ["*/test_*.py", "*/conftest.py", "*/testing/*"]

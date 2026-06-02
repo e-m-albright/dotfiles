@@ -1,11 +1,10 @@
 # Dotfiles
 
-Opinionated Mac setup + project scaffolding for fast, maintainable development.
+Box up an opinionated developer experience as idempotent, repeatable setup.
 
-**Two things happen here:**
+Clone on a fresh Mac, run one install script, and the machine is bootstrapped: Homebrew packages, macOS preferences and Dock, and the curated agentic-coding tooling (rules, skills, MCP) we've blessed — deployed globally across Claude Code, Cursor, Codex, Gemini, and Pi. A tight `dotfiles` CLI keeps it healthy (doctor, snapshot, brew sync) and handles small conveniences (remote SSH, model benchmarks). A small phone-drivable TUI manages long-running agent sessions on the go.
 
-1. **Machine setup** — Run `install.sh` and get a fully configured dev environment
-2. **Project scaffolding** — Seed new or existing projects with cross-vendor AI rules
+**This is** the single source for our developer experience — when we bless a tool, it goes in here and becomes core. **It is not** a project generator or a terminal dashboard. It sets up the computer and gets out of the way. Technology taste (which language, which framework) lives as reviewable reference in [`docs/stacks/`](docs/stacks/README.md) — consulted per-project, never pushed.
 
 ---
 
@@ -35,81 +34,12 @@ dotfiles install
 
 The installer is idempotent — safe to re-run anytime.
 
----
+### CLI development
 
-## Project Scaffolding
-
-Seed new or existing projects with cross-vendor AI rules that work with Claude Code, Cursor, and Gemini CLI.
-
-### Usage
-
-```bash
-# Create new projects
-dotfiles scaffold typescript my-app           # SvelteKit (default)
-dotfiles scaffold typescript astro my-blog    # Astro
-dotfiles scaffold python my-api               # FastAPI (default)
-dotfiles scaffold python cli my-tool          # Typer CLI
-dotfiles scaffold golang my-service           # Chi (default)
-dotfiles scaffold rust my-tool                # Axum (default)
-
-# Seed existing projects (use . for current directory)
-dotfiles scaffold typescript .
-dotfiles scaffold python ~/code/my-api
-
-# Force-update rules in an existing project
-dotfiles scaffold --force python .
-
-# Add extra tool support (default: claude + cursor)
-dotfiles scaffold python my-api --tools copilot,gemini
-dotfiles scaffold --tools all python my-api
-```
-
-Safe to run multiple times — only adds missing pieces. AGENTS.md is generated once, then project-owned (use `--force` to regenerate).
-
-This adds cross-vendor AI rules — lightweight scaffolding that guides AI agents:
-
-```
-my-project/
-├── AGENTS.md                  # Universal entry point (project-owned)
-├── .ai/
-│   ├── rules/*.mdc            # Recipe-specific rules (copied from dotfiles)
-│   └── artifacts/             # Working files (gitignored)
-│       ├── plans/
-│       ├── research/
-│       ├── decisions/         # ADRs (versioned)
-│       └── sessions/
-└── .cursor/rules/             # Cursor symlinks → .ai/rules/ (default)
-    # Plus --tools extras: .github/instructions/, .gemini/rules/, GEMINI.md→, CODEX.md→ (symlinks to AGENTS.md)
-```
-
-**How rules are deployed:**
-- **Universal rules** (process, safety, style) are deployed at the **user level** by `dotfiles agent-setup` / `dotfiles install` — symlinked to dotfiles so they're always current
-- **Recipe rules** (language, framework, stack) are **copied into projects** — project can customize
-- **Tool symlinks** are auto-generated from a registry (`agents/shared/tool-targets.json`)
-- Default tools: claude + cursor. Use `--tools copilot,gemini` or `--tools all` for more.
-
-**Multi-tool rule discovery** — `.ai/rules/` is the single source of truth. `scaffold.sh` creates tool-specific symlinks so each AI tool discovers the same rules in its native directory:
-
-| Tool | Discovery | Directory |
-|------|-----------|-----------|
-| Claude Code | CLAUDE.md → AGENTS.md | (direct) |
-| Cursor | Symlinks | .cursor/rules/ |
-| Codex CLI | CODEX.md → AGENTS.md | (direct, also reads AGENTS.md natively) |
-| Jules | AGENTS.md | (cloud-only, reads from GitHub repo directly) |
-| GitHub Copilot | Symlinks | .github/instructions/ |
-| Gemini CLI | GEMINI.md → AGENTS.md + symlinks | .gemini/rules/ |
-
-### Available Recipes
-
-| Recipe | App Type | Stack | Use Case |
-|--------|----------|-------|----------|
-| `typescript` | `svelte` (default) | Bun + SvelteKit 2 + Svelte 5 | Full-stack apps |
-| `typescript` | `astro` | Bun + Astro | Content sites, blogs |
-| `python` | `fastapi` (default) | UV + FastAPI + SQLAlchemy | APIs, AI services |
-| `python` | `cli` | UV + Typer + Rich | CLI tools, scripts |
-| `golang` | `chi` (default) | Go 1.25+ Chi router + sqlc | APIs, services |
-| `rust` | `axum` (default) | Tokio + Axum + SQLx | APIs, services |
-| `rust` | `tauri` | Tauri 2 + SvelteKit | Desktop apps |
+Most `dotfiles` subcommands run from a hexagonal Python/Typer app in `cli/`
+(uv-managed). Run dev checks with `just check`. `bin/dotfiles` is a thin shim that
+delegates those subcommands to the Python CLI; a few install/bootstrap commands
+(`install`, `update`, `clean`) remain in the Bash router.
 
 ---
 
@@ -138,7 +68,7 @@ my-project/
 - **Zed**: Default editor — set as `$EDITOR` / git editor and the macOS open handler for text, markdown, and source/config files (`.md`, `.txt`, `.yaml`, `.json`, `.toml`, `.py`, `.ts`, etc. — see `macos/file-associations.sh`; GPU-native, boots faster than Cursor for quick edits). Config managed in `editors/zed/` (settings + keymap symlinked). Drives external agents via **ACP** — `claude-acp`, `codex-acp`, `gemini` pre-wired to use **subscription logins, not API keys** (start a thread with `cmd-?`, authenticate in-thread; keybinds `cmd-alt-a`/`-o`/`-g`).
 - **Cursor**: Primary AI-native IDE (VS Code compatible, shared MCP servers, hooks, skills, agents)
 - **LM Studio**: Local LLM runner (MLX/GGUF, OpenAI-compatible server). Model + context window pinned via `macos/lmstudio.sh` (default: `google/gemma-4-e4b` @ 32K) — point Zed/Obsidian/CLIs at `http://localhost:1234/v1`.
-- **TypeWhisper**: On-device voice-to-text (Parakeet ASR + local Gemma cleanup via the LM Studio endpoint above, or Apple Intelligence). Replaced Wispr Flow 2026-05-29 — fully local, no subscription. No Homebrew cask; installed via `macos/brew.sh` post-install from GitHub releases.
+- **TypeWhisper**: On-device voice-to-text (Parakeet ASR + local Gemma cleanup via the LM Studio endpoint above, or Apple Intelligence). Replaced Wispr Flow 2026-05-29 — fully local, no subscription. No Homebrew cask; installed via `dotfiles brew install` post-install from GitHub releases.
 - **Obsidian**: Knowledge base — vault configs + community plugins managed via symlinks
 
   | Plugin | Purpose |
@@ -270,34 +200,33 @@ Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs
 | `google.gemini-code-assist` | disabled | Gemini Code Assist for IDE |
 | `openai.codex` | disabled | Codex IDE extension |
 
-See `prompts/guides/ai-tools.md` for the full landscape and investigation notes.
+See `docs/knowledge/ai-tools.md` for the full landscape and investigation notes.
 
 ### Codex CLI
 
-Setup is automated via `dotfiles agent-setup` (also runs during install):
+Setup is automated via `dotfiles agent setup` (also runs during install):
 
 - **Global instructions**: `~/.codex/AGENTS.md` deployed from shared rules
 - **Config**: `~/.codex/config.toml` with MCP servers and `project_doc_fallback_filenames = ["CODEX.md"]`
-- **Statusline**: `[tui]` theme + status-line text segments installed from `agents/codex/statusline.toml`
+- **Statusline**: `[tui]` theme + status-line text segments installed from `ai/agents/codex/statusline.toml`
 - **Hooks**: Format-on-save (reuses Claude's hook), sensitive file guard, terminal notifications
-- **Skills**: `dotfiles-doctor`, `pr-summary`, `git-worktree-manager`, `dep-audit`, `brew-reconcile`, `migration-writer`
-- **Agents**: `shellcheck-reviewer`
-- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — targets "codex" or "claude"
-- **Command auto-approve**: `~/.codex/rules/default.rules` deployed from `agents/codex/default.rules` (universal allowlist; Codex appends interactive approvals — fold back periodically)
+- **Skills**: deployed from `ai/skills/` via `npx skills`
+- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — targets "codex" or "claude"
+- **Command auto-approve**: `~/.codex/rules/default.rules` deployed from `ai/agents/codex/default.rules` (universal allowlist; Codex appends interactive approvals — fold back periodically)
 
-See `agents/codex/` for all configuration files.
+See `ai/agents/codex/` for all configuration files.
 
 ### Gemini CLI
 
-Setup is automated via `dotfiles agent-setup`:
+Setup is automated via `dotfiles agent setup`:
 
-- **Settings**: `~/.gemini/settings.json` seeded from `agents/gemini/settings.json` (preserves existing auth)
-- **Global instructions**: `~/.gemini/GEMINI.md` baked from `.ai/rules/process/*.mdc` (same source as Codex/Pi)
-- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — servers with `gemini` in `targets`
+- **Settings**: `~/.gemini/settings.json` seeded from `ai/agents/gemini/settings.json` (preserves existing auth)
+- **Global instructions**: `~/.gemini/GEMINI.md` written verbatim from `ai/agents/shared/rules.md` (the same kernel every vendor gets)
+- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — servers with `gemini` in `targets`
 
 Gemini does not yet have skills or subagents surfaces; rules cover the equivalent ground.
 
-See `agents/gemini/` for all configuration files.
+See `ai/agents/gemini/` for all configuration files.
 
 ### External Connections
 
@@ -319,7 +248,7 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Gmail** | claude.ai cloud MCP | yes | — | — | Claude Code only (not reproducible in config) |
 | **Google Calendar** | claude.ai cloud MCP | yes | — | — | Claude Code only (not reproducible in config) |
 
-**Considered** (not yet enabled — add to `agents/shared/mcp-servers.json` when needed):
+**Considered** (not yet enabled — add to `ai/agents/shared/mcp-servers.json` when needed):
 
 | Service | Method | Why consider | Status |
 |---------|--------|-------------|--------|
@@ -328,21 +257,20 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Sentry** | MCP / CLI (`sentry-cli`) | Error tracking, issue triage, release management | Evaluate |
 | **Dagster** | Plugin / MCP | Data pipeline orchestration & observability | Evaluate |
 
-MCP config: `agents/shared/mcp-servers.json` (shared source), deployed to Claude Code and Cursor by their respective setup scripts.
+MCP config: `ai/agents/shared/mcp-servers.json` (shared source), deployed to Claude Code and Cursor by `dotfiles agent setup`.
 
 ### Claude Code
 
-Setup is automated via `dotfiles agent-setup` (also runs during install):
+Setup is automated via `dotfiles agent setup` (also runs during install):
 
-- **Global instructions**: `~/.claude/CLAUDE.md` installed from `agents/claude/global-claude.md` (process guardrails, command style, project file discovery)
-- **Universal rules**: `~/.claude/rules/*.md` symlinked from `.ai/rules/process/` (always current with dotfiles)
-- **Permissions**: `permissions.{allow,deny,defaultMode}` from `agents/claude/permissions.json` (canonical baseline — fold interactive approvals back periodically)
+- **Global instructions**: `~/.claude/CLAUDE.md` written from `ai/agents/shared/rules.md` (the universal kernel — process, safety, voice, command style)
+- - **Permissions**: `permissions.{allow,deny,defaultMode}` from `ai/agents/claude/permissions.json` (canonical baseline — fold interactive approvals back periodically)
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
-- **Skills**: `scaffold-project`, `dotfiles-doctor`
-- **Agents**: `shellcheck-reviewer`
-- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion, Playwright, Chrome DevTools (standalone); Context7 (via plugin)
-- **Browser-tool tiers**: See `prompts/guides/browser-tooling.md` — when to reach for Playwright tests (Tier 1), agent-browser/pinchtab CLIs (Tier 2), Playwright/Chrome DevTools MCPs (Tier 3-4), or Stagehand (Tier 5)
+- **Skills**: deployed from `ai/skills/` via `npx skills`
+- **Agents**: deployed from `ai/subagents/`
+- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion, Playwright, Chrome DevTools (standalone); Context7 (via plugin)
+- **Browser-tool tiers**: See `docs/knowledge/browser-tooling.md` — when to reach for Playwright tests (Tier 1), agent-browser/pinchtab CLIs (Tier 2), Playwright/Chrome DevTools MCPs (Tier 3-4), or Stagehand (Tier 5)
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
 - **Preferences**: Voice mode, terminal bell, acceptEdits mode
 - **Desktop**: MCP servers + preferences (cowork, sidebar, web search)
@@ -358,24 +286,24 @@ Setup is automated via `dotfiles agent-setup` (also runs during install):
 | `gcmw` | `gcmw` | Generate a commit message for staged changes via Claude Sonnet and commit |
 | `gacp` | `gacp`, `gacp "msg"` | Stage everything, commit (generated message or given), and push in one shot |
 
-See `agents/claude/` for all configuration files.
+See `ai/agents/claude/` for all configuration files.
 
 ### Cursor
 
-Setup is automated via `agents/cursor/setup.sh` (also runs during install):
+Setup is automated via `dotfiles agent setup cursor` (also runs during install):
 
-- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`)
+- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`)
 - **Editor config**: `editors/cursor/settings.json` + `editors/cursor/keybindings.json` symlinked into Cursor User config
-- **Universal rules**: Symlinked from `.ai/rules/process/` (always current with dotfiles)
-- **Hooks**: Shared hook definitions deployed from `agents/cursor/hooks/`
+- **Universal rules**: `~/.cursor/rules/shared-rules.mdc` generated from `ai/agents/shared/rules.md` (the one kernel)
+- **Hooks**: Shared hook definitions deployed from `ai/agents/cursor/hooks/`
 - **Skills**: Cursor doesn't have a skills concept; rules cover the equivalent surface
-- **Subagents**: Cursor doesn't dispatch subagents; the `.ai/agents/` collection deploys to Claude Code and Codex only
-- **Rules**: Shared rules from `agents/shared/rules.md`
-- **Marketplace stack**: See `agents/cursor/PLUGINS.md` for core/work plugin recommendations and install commands (`/add-plugin ...`)
+- **Subagents**: Cursor doesn't dispatch subagents; the `ai/subagents/` collection deploys to Claude Code and Codex only
+- **Rules**: Shared rules from `ai/agents/shared/rules.md`
+- **Marketplace stack**: See `ai/agents/cursor/PLUGINS.md` for core/work plugin recommendations and install commands (`/add-plugin ...`)
 
 Note: Cursor Marketplace plugin installs and OAuth flows are manual by design (run in Cursor chat/UI). The setup scripts print an explicit checklist so these steps are hard to miss.
 
-See `agents/cursor/` for all configuration files.
+See `ai/agents/cursor/` for all configuration files.
 
 ---
 
@@ -383,42 +311,72 @@ See `agents/cursor/` for all configuration files.
 
 ### Homebrew
 
-Edit `macos/brew.sh` to customize packages. Organized by category with opt-in toggles. Essentials include Chrome and Tailscale.
+Edit `macos/packages.toml` to customize packages. Organized by category with opt-in feature flags. Essentials include Chrome and Tailscale.
 
 ```bash
-AI=1 PRODUCTIVITY=1 SOCIAL=0 dotfiles brew
+# Sync packages from packages.toml (idempotent)
+dotfiles brew install
+
+# Skip optional groups
+dotfiles brew install --no-ai --no-social
+
+# Upgrade all installed packages (brew is the only version-pinning surface)
+dotfiles brew upgrade
+
+# Report stale (installed but not in manifest) and missing packages
+dotfiles brew stale
 ```
 
 ### The `dotfiles` Command
 
+`dfs` is a shorthand alias for `dotfiles` (same completions) — e.g. `dfs doctor`, `dfs remote status`.
+
 ```bash
 dotfiles help                # Show available commands
 dotfiles install             # Re-run full setup (install.sh)
-dotfiles doctor              # Check all tools are installed (--fix to repair config)
+dotfiles doctor              # Check all tools are installed; exits non-zero when tools are missing
+dotfiles doctor --fix        # Repair symlinks and redeploy agent configs
 dotfiles update              # Update OS, Homebrew, runtimes, and dev tools
 dotfiles clean               # Clear Homebrew caches
-dotfiles brew                # Re-run Homebrew setup
+dotfiles brew install        # Sync Homebrew packages from packages.toml
+dotfiles brew upgrade        # Upgrade all installed packages (brew is the version surface)
+dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
-dotfiles scaffold            # Scaffold a project with AI rules
-dotfiles stale               # Find disabled packages still installed
-dotfiles test                # Run scaffold eval framework (--quick for fast)
 dotfiles profile-shell       # Profile shell startup time
 dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
-dotfiles agents              # Show active agentic setup (Claude Code + Cursor)
-dotfiles agent-setup        # Configure Claude + Cursor + Codex + Pi (--work/--personal, optional --reset-mcp)
+dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
+dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean)
+dotfiles agent verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
 dotfiles completions         # Output shell completions
-dotfiles remote-setup --dry-run
+dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
-dotfiles remote-setup --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
+dotfiles remote on --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
                              # Enable phone access with key-only SSH
-dotfiles remote-disable --dry-run
+dotfiles remote off --dry-run
                              # Preview turning off macOS Remote Login
-dotfiles remote-disable      # Turn off macOS Remote Login
-dotfiles remote-disable --kill-sessions
+dotfiles remote off --kill-sessions
                              # Turn off Remote Login and kill active SSH/Mosh sessions
+dotfiles session             # fzf-pick a live zellij session and attach
+dotfiles session ls          # list sessions
+dotfiles session new <name>  # create + attach
+dotfiles session attach <name>
+                             # attach (create if needed)
+dotfiles session kill <name> # kill a session
+dotfiles snapshot            # Capture machine state (brew, runtimes, symlinks, agent config)
+dotfiles snapshot ls         # List saved snapshots, newest first
+dotfiles snapshot diff [A] [B]
+                             # Diff two snapshots; A/B are slug prefixes or 'now'
+dotfiles tui                 # Launch Mission Control TUI (phone command deck)
+dotfiles                     # Bare invocation prints help (use 'dotfiles tui' for the dashboard)
 ```
 
-`remote-setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `remote-disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
+`dotfiles remote on` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote off` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
+
+`dotfiles session` manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote on` also prints a picker-based Termius startup command that drops straight into the fzf session picker.
+
+`dotfiles snapshot` captures a point-in-time machine state and saves it as JSON under `~/.local/state/dotfiles/snapshots/`. Use `diff now` to compare the latest saved snapshot against the current live state, or pass two slug prefixes to diff any two captures.
+
+`dotfiles tui` opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. (Bare `dotfiles` with no args prints help.) The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` to toggle Remote Login (sudo-aware), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane lists live zellij sessions; press Enter to attach (or switch session if already inside zellij).
 
 Enable tab completion:
 ```bash
@@ -439,44 +397,36 @@ eval "$(dotfiles completions)"
 ```
 dotfiles/
 ├── install.sh              # Main installer (run this)
-├── bin/                    # CLI tools (dotfiles command)
+├── bin/                    # CLI tools (dotfiles command — shim delegates migrated subcommands to cli/)
+├── cli/                    # Python/Typer CLI (uv-managed, hexagonal). Dev gate: `just check`
 ├── shell/                  # Zsh config + theme
 ├── git/                    # Git config + global ignores
 ├── editors/                # Cursor settings + Obsidian vault configs
 ├── terminal/               # Ghostty config
-├── agents/                 # Agentic tool setup
-│   ├── shared/             # Shared config (MCP servers, tool registry, rules, ignore patterns)
-│   ├── claude/             # Claude Code setup (plugins, hooks, skills, universal rules)
-│   ├── codex/              # Codex CLI setup (config.toml, hooks, skills)
-│   └── cursor/             # Cursor plugin (hooks, skills, universal rules)
 ├── macos/                  # Homebrew, Dock, SSH, print utilities
-├── .ai/                    # Cross-vendor AI authoring
-│   ├── rules/              #   canonical rule library
-│   │   ├── process/        #     Universal: safety, style, workflow, artifact placement
-│   │   ├── languages/      #     Language ergonomics: TS, Python, Go, Rust
-│   │   ├── frameworks/     #     Framework patterns: SvelteKit, Astro, FastAPI, etc.
-│   │   └── tooling/        #     Stack decisions: Pick/Avoid tables, services
-│   ├── prompts/            #   Reusable audit/review prompts (versioned)
-│   │   └── audits/         #     Universal: god-functions, abstractions, coupling, duplication
-│   ├── skills/             #   Canonical skill source — agents/<vendor>/skills/<name> are symlinks here
-│   └── artifacts/          #   Ephemeral working files (gitignored)
-├── docs/
-│   ├── engineering-philosophy.md  # 12 universal principles
-│   ├── ides.md             #   IDE/editor tracker — current setup + candidates (Zed, Neovim, Helix, Warp)
-│   ├── tools-to-evaluate.md #  Bookmarked tools/services to investigate
-│   └── specs/              #   In-flight design specs and plans
-└── prompts/                # Project scaffolding
-    ├── scaffold.sh         # Deploy rules + templates to projects
-    ├── guides/             # Reference docs (not deployed to projects)
-    │   └── developer-workflow.md  # How all the tools work together
-    └── */templates/        # Starter files per recipe (.gitignore, justfile, etc.)
+├── ai/                     # All cross-vendor AI assets
+│   ├── agents/             #   Per-vendor deploy config: claude, cursor, codex, gemini, pi, shared
+│   │   └── shared/rules.md #     the universal agent kernel (deployed verbatim to every vendor)
+│   ├── skills/             #   Canonical skill source (deployed via `npx skills`)
+│   ├── subagents/          #   Subagent definitions (deployed via cp loop)
+│   ├── prompts/            #   System-prompt artifacts (advisor/detailed, gemini-chunks) for web chats
+│   ├── audits/             #   Audit prompts run by scheduled bot-audits on a cadence
+│   ├── rules-sync/         #   Cross-harness rule-sync fragment (dotfiles agent migrate-rules-sync)
+│   └── artifacts/          #   Ephemeral agent scratch (gitignored, on demand)
+└── docs/                   # Curated knowledge base (see docs/README.md)
+    ├── engineering-philosophy.md  # 12 universal principles
+    ├── stacks/             #   Technology taste by language/framework (consulted per-project)
+    ├── knowledge/          #   Cross-cutting practice (AI tools, prompting/, discovery, memory)
+    ├── adr/                #   Numbered architecture decisions
+    ├── developer-workflow.md  # How all the tools work together
+    └── specs/              #   In-flight design specs and plans
 ```
 
 ---
 
 ## TODO
 
-- [ ] **Evaluate Raycast** — Could replace both Rectangle (window management) and Flycut (clipboard manager) with a single tool. Already commented out in `macos/brew.sh`. Prioritize trying this.
+- [ ] **Evaluate Raycast** — Could replace both Rectangle (window management) and Flycut (clipboard manager) with a single tool. Already disabled in `macos/packages.toml`. Prioritize trying this.
 
 ---
 
@@ -484,10 +434,10 @@ dotfiles/
 
 **Machine setup:**
 - Idempotent — run anytime, get the same result
-- Opinionated but removable — edit `brew.sh` to customize
+- Opinionated but removable — edit `macos/packages.toml` to customize
 - Fast — parallel installs, skip what's already there
 
-**Project scaffolding:**
-- One pick per category — no "it depends"
-- Agent-first — all configs work with Claude, Cursor, Gemini
-- Start minimal — add tools when you need them, not before
+**Agentic config:**
+- One curated kernel of rules + skills, deployed globally to every vendor — maintained in one place, no per-project linking
+- Taste documented, not pushed — `docs/stacks/` is reference an agent consults per-project; nothing is force-injected
+- Bless a tool and it becomes core; otherwise it stays out of the garden

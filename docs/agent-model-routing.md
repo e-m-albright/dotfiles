@@ -8,7 +8,7 @@ How we choose between Claude Opus, Sonnet, and Haiku for our subagents. This is 
 |----------|---------------------------------------------------------|--------------------------------|
 | **Opus** | Architecture, security review, ambiguous reasoning, multi-step planning, high-stakes code review | _none currently — reserved for future_ |
 | **Sonnet** | Default. Complex tasks needing real reasoning, code review, audits, hypothesis-driven debugging | `security-auditor`, `performance-engineer`, `debugger`, `error-detective`, `legacy-modernizer` |
-| **Haiku** | Deterministic / single-tool / template-driven tasks. Specifically: when a senior engineer would write a 20-line script for it. | `shellcheck-reviewer` |
+| **Haiku** | Deterministic / single-tool / template-driven tasks. Specifically: when a senior engineer would write a 20-line script for it. | `error-detective` |
 | **inherit** | Use the harness's default. Reasonable when the agent's reasoning depth varies wildly. | (case-by-case) |
 
 ## How to choose

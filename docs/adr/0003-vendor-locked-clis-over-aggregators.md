@@ -11,7 +11,7 @@ Over 2026-05-07 → 2026-05-12 we explored consolidating to a single vendor-neut
 - **Pi / oh-my-pi** (`omp`, can1357) — opinionated harness, hash-anchored edits
 - **gemini-cli** (Google), **kimi-cli** (Moonshot) — vendor-locked alternatives
 
-All four were installed, fully wired into `dotfiles agent setup` (skills + subagents + MCP + global instructions + rule baking), and verified via `dotfiles verify vendors`.
+All four were installed, fully wired into `dotfiles agent setup` (skills + subagents + MCP + global instructions + rule baking), and verified via `dotfiles agent overview`.
 
 While exploring "use my Claude subscription through opencode," three structural facts surfaced:
 
@@ -64,7 +64,7 @@ Pick any two:
 - Delete: `agents/{opencode,pi,gemini,kimi}/` from this repo.
 - Drop these targets from `agents/shared/mcp-servers.json`.
 - Simplify `dotfiles agent setup` to invoke only `agents/{claude,cursor,codex}/setup.sh`.
-- Simplify `dotfiles verify vendors` to probe only the three keepers.
+- Simplify `dotfiles agent overview` to probe only the three keepers.
 
 **Keep everything that's vendor-neutral and reusable:**
 
@@ -73,7 +73,7 @@ Pick any two:
 - `agents/shared/bake-rules.sh` — used by Codex's AGENTS.md baking. Claude Code reads `~/.claude/rules/*.md` natively.
 - `agents/shared/validate-skills.sh`, `agents/shared/verify-vendors.sh` — diagnostic tooling.
 - `agents/claude/hooks/git-guardrails.sh` — PreToolUse safety hook.
-- `bin/dotfiles agent setup` / `verify vendors` / `verify skills` — namespaced CLI restructure.
+- `bin/dotfiles agent setup` / `agent overview` / `agent lint` — namespaced CLI restructure.
 - `docs/skills-sources.md` — upstream attribution registry.
 - Project-level scaffold integration (`.cursor/rules/`, `.gemini/rules/`, `.github/instructions/`) via `scaffold.sh` — unrelated to user-level CLI installs; stays as a per-project mechanism.
 

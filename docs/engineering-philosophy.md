@@ -1,6 +1,6 @@
 # Engineering Philosophy
 
-> Universal principles for any codebase. Distilled from a private code-health manifesto. Cross-referenced by `.ai/rules/`, `.ai/prompts/audits/`, and `.ai/skills/code-quality-audit/`.
+> Universal principles for any codebase. Distilled from a private code-health manifesto. Cross-referenced by the agent rule kernel (`ai/agents/shared/rules.md`), `ai/audits/`, and `ai/skills/review/`.
 
 Agentic programming amplifies whatever foundation you build on. Strong foundation compounds velocity: agents reuse clean abstractions, follow typed contracts, produce code that slots into the existing architecture without friction. Weak foundation compounds debt: agents copy-paste patterns, invent parallel registries, produce code that works today and rots tomorrow.
 
@@ -86,11 +86,34 @@ When a pattern repeats: first encode it as a convention (file naming, directory 
 
 ---
 
+## Structural smells (what linters can't catch)
+
+A per-change checklist for the things gates miss. If any fires, the design is asking to be reconsidered:
+
+- **God function** — can you describe what it does without saying "and"? If not, split it.
+- **Data clump** — 3+ primitives that always travel together are a missing struct/model.
+- **Lying signature** — hidden I/O, mutation, or failure not in the type. Make effects visible.
+- **Leaky boundary** — `cast`/`Any`/`as any`/`unwrap` at a module edge. The boundary isn't typed; fix the contract.
+- **Impossible state** — can the type be constructed in a forbidden state? Make illegal states unrepresentable (enums over boolean soup, parse-don't-validate).
+- **Temporal coupling** — methods that must be called in a hidden order. Encode the order in the types.
+- **Humble object** — logic only testable end-to-end. Extract a pure core; leave a thin adapter.
+- **Rule of three** — 1 caller → inline; 2 → wait; 3+ → abstract. Don't abstract on speculation.
+
+### AI-generated code tends toward
+
+These are the failure modes to watch when reviewing agent (or your own) output:
+
+- **Primitive obsession** — strings/dicts where a domain type belongs.
+- **Duplicating instead of reusing** — re-implementing an abstraction that already exists (agents don't always find it).
+- **Speculative flexibility (YAGNI)** — config knobs, hooks, and generality for needs that don't exist yet.
+- **External field names as domain vocabulary** — leaking an API's naming into the core instead of the project's ubiquitous language.
+- **End-to-end-only testability** — logic that can't be unit-tested because it wasn't separated from its effects.
+
 ## How agents should use this
 
-When you (the agent) are about to write or change code, ask which principles apply. When auditing, grade against these as the universal rubric (see `.ai/skills/code-quality-audit/SKILL.md` for the full grading process).
+When you (the agent) are about to write or change code, ask which principles apply. When auditing, grade against these as the universal rubric (see `ai/skills/review/SKILL.md` for the full grading process).
 
-When projects adopt these principles, the per-language `.ai/rules/` files (Python, Rust, TypeScript, etc.) translate them into language-specific gates and patterns. The principle is universal; the enforcement is local.
+These principles are universal; per-language taste (idioms, pick/avoid, gates) lives as reference in `docs/stacks/`. The principle is universal; the enforcement is local.
 
 ## Calibration
 

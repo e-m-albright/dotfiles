@@ -15,264 +15,47 @@ export DOTFILES_DIR EXTRA_DIR
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 
 sub_help () {
+    # Gold-gradient wordmark (banner.py is canonical); never let it break help.
+    uv run --project "$DOTFILES_DIR/cli" python -c "from dotfiles.banner import print_banner; print_banner()" 2>/dev/null || true
     printf "%s Usage: ${YELLOW}%s <command>${NC}\n" "$ARROW" "$BIN_NAME"
     printf "\n"
     printf "${BLUE}Core commands:${NC}\n"
     printf "   install              Run full dotfiles setup\n"
     printf "   help                 This help message\n"
+    printf "   version              Print version with the gold DOTFILES banner\n"
     printf "   doctor [--fix]       Check all tools are installed (--fix to repair config)\n"
     printf "   update               Update OS, Homebrew, runtimes, and dev tools\n"
     printf "   clean                Clean up Homebrew caches\n"
     printf "   dock                 Reset macOS Dock layout\n"
-    printf "   scaffold <args>      Scaffold a new project with AI rules\n"
-    printf "   test [--quick]       Run scaffold eval framework\n"
     printf "   completions          Output shell completions (eval to install)\n"
-    printf "   llm-bench <cmd>      Evaluate local LM Studio models (list|bench|estimate|compare)\n"
-    printf "   remote-setup [opts] Set up SSH/Mosh/Zellij access for Termius\n"
-    printf "   remote-disable [opts] Turn off macOS Remote Login for phone access\n"
+    printf "   benchmark <cmd>      Benchmark local LM Studio models for your hardware (list|bench|estimate|compare)\n"
+    printf "   remote on [opts]       Turn on SSH/Mosh/Zellij access for Termius\n"
+    printf "   remote off [opts]      Turn off macOS Remote Login for phone access\n"
+    printf "   remote status          Show the remote-shell entrypoint state\n"
+    printf "   session <cmd>          zellij sessions: ls, attach, new, kill, or bare picker\n"
+    printf "\n"
+    printf "${BLUE}Command center:${NC}\n"
+    printf "   tui                    Launch the Mission Control TUI (phone-drivable dashboard)\n"
+    printf "   snapshot [ls|diff]     Capture / list / diff machine-state snapshots\n"
     printf "\n"
     printf "${BLUE}Namespaces:${NC}\n"
     printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
-    printf "   agent overview       Show active agentic setup\n"
+    printf "   agent overview       Show active agentic setup (Python dashboard)\n"
     printf "   agent migrate-rules-sync [path]\n"
     printf "                        Adopt cross-harness rule sync in an existing project\n"
-    printf "   agent gemini-prompt [--step|--list]\n"
+    printf "   agent web-chat-instructions [--step|--list]\n"
     printf "                        Load advisor prompt into clipboard, chunked for Gemini saved-info\n"
     printf "\n"
-    printf "   verify vendors       Probe each vendor for installed surfaces\n"
-    printf "   verify skills        Validate skill/agent files against conventions\n"
+    printf "   agent lint           Validate skill/agent files against conventions\n"
+    printf "   agent verify [--offline]  Check skills/agents deployed + probe MCP servers\n"
     printf "\n"
-    printf "   brew install         Run brew.sh (sync packages from manifest)\n"
+    printf "   brew install         Sync packages from packages.toml manifest\n"
+    printf "   brew upgrade         Upgrade all installed packages (brew is the version surface)\n"
     printf "   brew stale           Find disabled packages still installed\n"
     printf "\n"
     printf "   shell profile        Profile shell startup time\n"
     printf "\n"
     printf "   cursor plugins       Show Cursor plugin install checklist\n"
-}
-
-sub_doctor () {
-    local FIX=false
-    if [[ "${1:-}" == "--fix" ]]; then
-        FIX=true
-        shift
-    fi
-
-    printf "${BLUE}%b Checking dotfiles installation...${NC}\n\n" "$ARROW"
-
-    local all_ok=true
-
-    # Check function
-    check_tool() {
-        local name="$1"
-        local cmd="$2"
-        local install_hint="$3"
-
-        if command -v "$cmd" >/dev/null 2>&1; then
-            local version
-            version=$("$cmd" --version 2>/dev/null | head -1 || echo "installed")
-            printf "  ${GREEN}✓${NC} %-20s %s\n" "$name" "$version"
-        else
-            printf "  ${RED}✗${NC} %-20s ${YELLOW}%s${NC}\n" "$name" "$install_hint"
-            all_ok=false
-        fi
-    }
-
-    check_symlink() {
-        local name="$1" src="$2" dest="$3"
-        if [[ -L "$dest" ]] && [[ "$(readlink "$dest")" == *"$src"* ]]; then
-            printf "  ${GREEN}✓${NC} %-25s symlinked\n" "$name"
-        elif [[ "$FIX" == true ]]; then
-            ln -sf "$src" "$dest"
-            printf "  ${GREEN}→${NC} %-25s fixed\n" "$name"
-        else
-            printf "  ${RED}✗${NC} %-25s not symlinked\n" "$name"
-            all_ok=false
-        fi
-    }
-
-    printf "${BLUE}Core Tools${NC}\n"
-    check_tool "Homebrew" "brew" "Run install.sh"
-    check_tool "Git" "git" "brew install git"
-    check_tool "jq" "jq" "brew install jq"
-    check_tool "yq" "yq" "brew install yq"
-
-    printf "\n${BLUE}Essentials${NC}\n"
-    if command -v tailscale >/dev/null 2>&1 || [[ -d "/Applications/Tailscale.app" ]]; then
-        printf "  ${GREEN}✓${NC} %-20s installed\n" "Tailscale"
-    else
-        printf "  ${RED}✗${NC} %-20s ${YELLOW}brew install --cask tailscale-app${NC}\n" "Tailscale"
-        all_ok=false
-    fi
-
-    printf "\n${BLUE}Editors${NC}\n"
-    check_tool "Cursor" "cursor" "brew install --cask cursor"
-    check_tool "Zed" "zed" "brew install --cask zed"
-
-    printf "\n${BLUE}Runtimes${NC}\n"
-    check_tool "Bun" "bun" "curl -fsSL https://bun.sh/install | bash"
-    check_tool "FNM" "fnm" "curl -fsSL https://fnm.vercel.app/install | bash"
-    check_tool "UV" "uv" "curl -LsSf https://astral.sh/uv/install.sh | sh"
-    check_tool "Go" "go" "brew install go"
-
-    # Check Node.js via fnm
-    if command -v fnm >/dev/null 2>&1; then
-        if fnm list 2>/dev/null | grep -q "lts-latest\|v"; then
-            local node_version
-            node_version=$(node --version 2>/dev/null || echo "not active")
-            printf "  ${GREEN}✓${NC} %-20s %s\n" "Node.js" "$node_version"
-        else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: fnm install --lts${NC}\n" "Node.js"
-        fi
-    fi
-
-    # Check Python via uv
-    if command -v python3.14 >/dev/null 2>&1; then
-        printf "  ${GREEN}✓${NC} %-20s %s\n" "Python" "$(python3.14 --version 2>/dev/null)"
-    elif command -v python3 >/dev/null 2>&1; then
-        printf "  ${YELLOW}○${NC} %-20s %s ${YELLOW}(consider: uv python install 3.14)${NC}\n" "Python" "$(python3 --version 2>/dev/null)"
-    else
-        printf "  ${RED}✗${NC} %-20s ${YELLOW}Run: uv python install 3.14${NC}\n" "Python"
-        all_ok=false
-    fi
-
-    # Check node/npx symlinks for GUI apps (Claude Desktop, Cursor)
-    if command -v fnm >/dev/null 2>&1; then
-        if [[ -L /opt/homebrew/bin/node ]] && [[ -x /opt/homebrew/bin/node ]]; then
-            printf "  ${GREEN}✓${NC} %-20s symlinked for GUI apps\n" "Node symlink"
-        elif [[ "$FIX" == true ]] && command -v node >/dev/null 2>&1; then
-            ln -sf "$(command -v node)" /opt/homebrew/bin/node
-            ln -sf "$(command -v npx)" /opt/homebrew/bin/npx
-            printf "  ${GREEN}→${NC} %-20s fixed\n" "Node symlink"
-        else
-            printf "  ${RED}✗${NC} %-20s ${YELLOW}Run: dotfiles install (or --fix)${NC}\n" "Node symlink"
-            all_ok=false
-        fi
-    fi
-
-    printf "\n${BLUE}AI Tools${NC}\n"
-    check_tool "Claude Code" "claude" "curl -fsSL https://claude.ai/install.sh | bash"
-
-    # Check gh mcp-server extension
-    if command -v gh >/dev/null 2>&1; then
-        if gh extension list 2>/dev/null | grep -q "gh-mcp"; then
-            printf "  ${GREEN}✓${NC} %-20s installed\n" "gh-mcp"
-        elif [[ "$FIX" == true ]]; then
-            if gh extension install shuymn/gh-mcp >/dev/null 2>&1; then
-                printf "  ${GREEN}→${NC} %-20s fixed\n" "gh-mcp"
-            else
-                printf "  ${RED}✗${NC} %-20s ${YELLOW}gh auth login, then: gh extension install shuymn/gh-mcp${NC}\n" "gh-mcp"
-                all_ok=false
-            fi
-        else
-            printf "  ${RED}✗${NC} %-20s ${YELLOW}Run: gh extension install shuymn/gh-mcp${NC}\n" "gh-mcp"
-            all_ok=false
-        fi
-    fi
-
-    printf "\n${BLUE}Dev Tools${NC}\n"
-    check_tool "Just" "just" "brew install just"
-    check_tool "Delta" "delta" "brew install git-delta"
-    check_tool "golangci-lint" "golangci-lint" "brew install golangci-lint"
-
-    printf "\n${BLUE}Remote Shell${NC}\n"
-    check_tool "Mosh" "mosh" "brew install mosh"
-    check_tool "Zellij" "zellij" "brew install zellij"
-    if [[ -d "/Applications/Termius.app" ]]; then
-        printf "  ${GREEN}✓${NC} %-20s installed\n" "Termius"
-    else
-        printf "  ${RED}✗${NC} %-20s ${YELLOW}brew install --cask termius${NC}\n" "Termius"
-        all_ok=false
-    fi
-
-    printf "\n${BLUE}Configuration${NC}\n"
-    check_symlink ".zshrc" "$DOTFILES_DIR/shell/.zshrc" ~/.zshrc
-    check_symlink ".gitconfig" "$DOTFILES_DIR/git/.gitconfig" ~/.gitconfig
-    check_symlink ".zprofile" "$DOTFILES_DIR/shell/.zprofile" ~/.zprofile
-
-    if [[ -f ~/.gitconfig.local ]]; then
-        printf "  ${GREEN}✓${NC} %-20s configured\n" "Git identity"
-    else
-        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run install.sh to set up${NC}\n" "Git identity"
-    fi
-
-    if [[ -f ~/.claude/CLAUDE.md ]]; then
-        printf "  ${GREEN}✓${NC} %-20s exists\n" "Claude instructions"
-    else
-        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Claude instructions"
-    fi
-
-    if [[ -f ~/.claude/settings.json ]] && command -v jq >/dev/null 2>&1; then
-        local plugin_count
-        plugin_count=$(jq '.enabledPlugins // {} | length' ~/.claude/settings.json 2>/dev/null || echo "0")
-        if [[ "$plugin_count" -gt 0 ]]; then
-            printf "  ${GREEN}✓${NC} %-20s %s plugins enabled\n" "Claude plugins" "$plugin_count"
-        else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Claude plugins"
-        fi
-
-        local hook_count
-        hook_count=$(jq '.hooks // {} | keys | length' ~/.claude/settings.json 2>/dev/null || echo "0")
-        if [[ "$hook_count" -gt 0 ]]; then
-            printf "  ${GREEN}✓${NC} %-20s %s events configured\n" "Claude hooks" "$hook_count"
-        else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Claude hooks"
-        fi
-    fi
-
-    if [[ -f ~/.claude.json ]] && command -v jq >/dev/null 2>&1; then
-        local mcp_count
-        mcp_count=$(jq '.mcpServers // {} | length' ~/.claude.json 2>/dev/null || echo "0")
-        if [[ "$mcp_count" -gt 0 ]]; then
-            printf "  ${GREEN}✓${NC} %-20s %s servers\n" "Claude MCP" "$mcp_count"
-        else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Claude MCP"
-        fi
-    fi
-
-    if command -v codex >/dev/null 2>&1; then
-        if [[ -f ~/.codex/AGENTS.md ]]; then
-            printf "  ${GREEN}✓${NC} %-20s exists\n" "Codex instructions"
-        else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Codex instructions"
-        fi
-        if [[ -f ~/.codex/hooks.json ]]; then
-            printf "  ${GREEN}✓${NC} %-20s configured\n" "Codex hooks"
-        else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Codex hooks"
-        fi
-        if [[ -f ~/.codex/config.toml ]] && grep -q 'mcp_servers' ~/.codex/config.toml 2>/dev/null; then
-            printf "  ${GREEN}✓${NC} %-20s configured\n" "Codex MCP"
-        else
-            printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run: dotfiles agent-setup${NC}\n" "Codex MCP"
-        fi
-    fi
-
-    if [[ -f ~/.config/ghostty/config ]]; then
-        printf "  ${GREEN}✓${NC} %-20s configured\n" "Ghostty"
-    elif [[ -d "/Applications/Ghostty.app" ]]; then
-        printf "  ${YELLOW}○${NC} %-20s ${YELLOW}Run install.sh to configure${NC}\n" "Ghostty"
-    fi
-
-    # Agent config (fixable)
-    if [[ "$FIX" == true ]]; then
-        printf "\n${BLUE}Redeploying agent configs...${NC}\n"
-        if [[ -f "$DOTFILES_DIR/agents/claude/setup.sh" ]]; then
-            . "$DOTFILES_DIR/agents/claude/setup.sh"
-        fi
-        if [[ -f "$DOTFILES_DIR/agents/cursor/setup.sh" ]]; then
-            . "$DOTFILES_DIR/agents/cursor/setup.sh"
-        fi
-        if [[ -f "$DOTFILES_DIR/agents/codex/setup.sh" ]]; then
-            . "$DOTFILES_DIR/agents/codex/setup.sh"
-        fi
-    fi
-
-    printf "\n"
-    if $all_ok; then
-        printf "${GREEN}%b All checks passed!${NC}\n" "$ARROW"
-    else
-        printf "${YELLOW}%b Some tools are missing. Run install.sh or install individually.${NC}\n" "$ARROW"
-    fi
 }
 
 sub_update () {
@@ -295,8 +78,10 @@ sub_update () {
     if brew upgrade 2>&1; then
         print_success "Homebrew packages up to date"
     fi
-    brew cleanup --prune=30
-    print_dim "Cleaned caches older than 30 days"
+    # Quiet cleanup: drop the "Skipping/Removing" wall, keep the freed summary.
+    local freed
+    freed="$(brew cleanup --prune=30 2>/dev/null | grep -o 'freed approximately.*' || true)"
+    print_dim "Cleaned caches older than 30 days${freed:+ — $freed}"
 
     # --- Node.js (fnm) ---
     if command -v fnm >/dev/null 2>&1; then
@@ -365,15 +150,14 @@ sub_clean () {
     print_header "Cleaning up"
 
     print_section "Homebrew"
-    brew cleanup --prune=30
-    print_success "Cleared caches older than 30 days"
+    # brew cleanup is noisy: per-file "Removing:" lines plus "Warning: Skipping X:
+    # most recent version not installed" (expected — an older bottle whose newest
+    # isn't installed). Drop stderr, surface only the freed-space summary.
+    local freed
+    freed="$(brew cleanup --prune=30 2>/dev/null | grep -o 'freed approximately.*' || true)"
+    print_success "Cleared caches older than 30 days${freed:+ — $freed}"
 
     print_completion "Cleanup finished"
-}
-
-sub_brew_install () {
-    . "$DOTFILES_DIR/macos/brew.sh"
-    printf "${GREEN}%b Success! Brew command finished.${NC}\n" "$ARROW"
 }
 
 sub_dock () {
@@ -381,93 +165,12 @@ sub_dock () {
     printf "${GREEN}%b Success! MacOS dock command finished.${NC}\n" "$ARROW"
 }
 
-sub_agent_setup() {
-    # Primary vendor-locked clients (ADR-0003): Claude Code, Cursor, Codex.
-    # Pi re-added (ADR-0005) as a narrow local-first terminal agent — NOT the
-    # subscription-bridging aggregator ADR-0003 rejected. Local LM Studio + headless.
-    . "$DOTFILES_DIR/agents/claude/setup.sh" "$@"
-    . "$DOTFILES_DIR/agents/cursor/setup.sh" "$@"
-    . "$DOTFILES_DIR/agents/codex/setup.sh" "$@"
-    . "$DOTFILES_DIR/agents/gemini/setup.sh" "$@"
-    . "$DOTFILES_DIR/agents/pi/setup.sh" "$@"
-    printf "${GREEN}%b Agent setup complete.${NC}\n" "$ARROW"
-}
-
-sub_brew_stale() {
-    printf "${BLUE}%b Checking for stale artifacts...${NC}\n\n" "$ARROW"
-
-    # Check for brew packages that were disabled but might still be installed
-    printf "${BLUE}Disabled brew packages still installed:${NC}\n"
-    local found=false
-    local disabled_pkgs=(
-        "visual-studio-code" "iterm2" "warp" "docker-desktop"
-        "terraform" "signal" "discord" "super-productivity"
-        "ollama" "gemini-cli" "cmux" "graphite" "composer"
-        "codex-app" "linear-linear" "micro"  # removed 2026-05-07 (micro→helix)
-        "wispr-flow"  # disabled 2026-05-29 (→ TypeWhisper, on-device dictation)
-    )
-    for pkg in "${disabled_pkgs[@]}"; do
-        if brew list "$pkg" &>/dev/null 2>&1 || brew list --cask "$pkg" &>/dev/null 2>&1; then
-            printf "  ${YELLOW}○${NC} %-25s ${YELLOW}brew uninstall %s${NC}\n" "$pkg" "$pkg"
-            found=true
-        fi
-    done
-    if ! $found; then
-        printf "  ${GREEN}✓${NC} No stale packages found\n"
-    fi
-
-    # Check for stale symlinks in home directory
-    printf "\n${BLUE}Broken symlinks in ~/:${NC}\n"
-    local broken=false
-    for link in ~/.zshrc ~/.zprofile ~/.zshenv ~/.gitconfig ~/.gitignore_global; do
-        if [[ -L "$link" ]] && [[ ! -e "$link" ]]; then
-            printf "  ${RED}✗${NC} %s → %s (broken)\n" "$link" "$(readlink "$link")"
-            broken=true
-        fi
-    done
-    if ! $broken; then
-        printf "  ${GREEN}✓${NC} All symlinks valid\n"
-    fi
-
-    # Check for old VS Code config remnants
-    printf "\n${BLUE}Old editor configs:${NC}\n"
-    local old=false
-    if [[ -d ~/Library/Application\ Support/Code/User ]] && \
-       [[ -L ~/Library/Application\ Support/Code/User/settings.json ]] && \
-       [[ "$(readlink ~/Library/Application\ Support/Code/User/settings.json 2>/dev/null)" == *"dotfiles"* ]]; then
-        printf "  ${YELLOW}○${NC} VS Code settings still symlinked to dotfiles\n"
-        printf "     ${CYAN}rm ~/Library/Application\\ Support/Code/User/settings.json${NC}\n"
-        old=true
-    fi
-    if ! $old; then
-        printf "  ${GREEN}✓${NC} No stale editor configs\n"
-    fi
-
-    printf "\n"
-}
-
-sub_agent_overview() {
-    "$DOTFILES_DIR/agents/overview.sh" "$@"
-}
-
 sub_migrate_agents_sync() {
-    "$DOTFILES_DIR/agents/migrate-agents-sync.sh" "$@"
-}
-
-sub_gemini_prompt() {
-    "$DOTFILES_DIR/prompts/copy-gemini-chunks.sh" "$@"
+    "$DOTFILES_DIR/ai/agents/migrate-agents-sync.sh" "$@"
 }
 
 sub_install() {
     . "$DOTFILES_DIR/install.sh"
-}
-
-sub_scaffold() {
-    "$DOTFILES_DIR/prompts/scaffold.sh" "$@"
-}
-
-sub_test() {
-    "$DOTFILES_DIR/tests/test_scaffold.sh" "$@"
 }
 
 sub_shell_profile() {
@@ -496,7 +199,7 @@ sub_shell_profile() {
 }
 
 sub_cursor_plugins() {
-    local plugins_file="$DOTFILES_DIR/agents/cursor/PLUGINS.md"
+    local plugins_file="$DOTFILES_DIR/ai/agents/cursor/PLUGINS.md"
     printf "${BLUE}%b Cursor plugin checklist${NC}\n\n" "$ARROW"
     printf "Run these in Cursor chat (manual install):\n"
     printf "  /add-plugin superpowers\n"
@@ -515,26 +218,6 @@ sub_cursor_plugins() {
     fi
 }
 
-sub_validate_skills() {
-    "$DOTFILES_DIR/agents/shared/validate-skills.sh" "$@"
-}
-
-sub_verify_vendors() {
-    "$DOTFILES_DIR/agents/shared/verify-vendors.sh" "$@"
-}
-
-sub_llm_bench() {
-    "$DOTFILES_DIR/macos/llm-bench.sh" "$@"
-}
-
-sub_remote_setup() {
-    "$DOTFILES_DIR/macos/remote-setup.sh" "$@"
-}
-
-sub_remote_disable() {
-    "$DOTFILES_DIR/macos/remote-disable.sh" "$@"
-}
-
 sub_completions() {
     cat << 'EOF'
 # Zsh completions for dotfiles command
@@ -545,26 +228,26 @@ _dotfiles() {
     commands=(
         'install:Run full dotfiles setup'
         'help:Show help message'
+        'version:Print version and DOTFILES banner'
         'doctor:Check tools and config (--fix to repair)'
         'update:Update OS, Homebrew, runtimes, and dev tools'
         'clean:Clean caches'
         'dock:Reset macOS Dock'
-        'scaffold:Scaffold a new project with AI rules'
-        'test:Run scaffold eval framework'
         'completions:Output shell completions'
-        'llm-bench:Evaluate local LM Studio models'
-        'remote-setup:Set up SSH/Mosh/Zellij access for Termius'
-        'remote-disable:Turn off macOS Remote Login for phone access'
-        'agent:Agent vendor namespace (setup, overview)'
-        'verify:Verification namespace (vendors, skills)'
-        'brew:Brew namespace (install, stale)'
+        'benchmark:Benchmark local LM Studio models for your hardware'
+        'remote:Phone remote-shell access (setup, disable)'
+        'session:zellij sessions (ls, attach, new, kill, picker)'
+        'tui:Launch the Mission Control TUI'
+        'snapshot:Machine-state snapshots (ls, diff)'
+        'agent:Agent namespace (overview, lint, setup, verify, web-chat-instructions)'
+        'brew:Brew namespace (install, upgrade, stale)'
         'shell:Shell namespace (profile)'
         'cursor:Cursor namespace (plugins)'
     )
     _describe 'command' commands
 }
 
-compdef _dotfiles dotfiles
+compdef _dotfiles dotfiles dfs
 EOF
 }
 
@@ -572,29 +255,8 @@ EOF
 ns_agent() {
     local sub="${1:-overview}"; shift || true
     case "$sub" in
-        setup)    sub_agent_setup "$@" ;;
-        overview) sub_agent_overview "$@" ;;
         migrate-rules-sync) sub_migrate_agents_sync "$@" ;;
-        gemini-prompt)      sub_gemini_prompt "$@" ;;
-        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, overview, migrate-rules-sync, gemini-prompt)\n" "$ARROW" "$sub" >&2; exit 1 ;;
-    esac
-}
-
-ns_verify() {
-    local sub="${1:-}"; shift || true
-    case "$sub" in
-        vendors) sub_verify_vendors "$@" ;;
-        skills)  sub_validate_skills "$@" ;;
-        *) printf "${RED}%b Unknown: verify %s${NC} (try: vendors, skills)\n" "$ARROW" "$sub" >&2; exit 1 ;;
-    esac
-}
-
-ns_brew() {
-    local sub="${1:-install}"; shift || true
-    case "$sub" in
-        install) sub_brew_install "$@" ;;
-        stale)   sub_brew_stale "$@" ;;
-        *) printf "${RED}%b Unknown: brew %s${NC} (try: install, stale)\n" "$ARROW" "$sub" >&2; exit 1 ;;
+        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, web-chat-instructions)\n" "$ARROW" "$sub" >&2; exit 1 ;;
     esac
 }
 
@@ -614,37 +276,42 @@ ns_cursor() {
     esac
 }
 
+# Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
+# As later phases land, add their names to this list.
+# INVARIANT: every name here must also appear in sub_help and sub_completions —
+# enforced by cli/tests/test_command_tree.py so the lists can't silently drift.
+PY_CLI_COMMANDS=" version remote session doctor benchmark brew snapshot tui "
+if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
+    exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+fi
+
+# Surgical route: agent overview, lint, web-chat-instructions, setup, and verify are Python; others stay Bash.
+# Bare `agent` (no subcommand) defaults to overview, matching the old dispatcher.
+if [[ "${1:-}" == "agent" ]]; then
+    agent_sub="${2:-overview}"
+    case "$agent_sub" in
+        overview|lint|web-chat-instructions|setup|verify)
+            exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "$agent_sub" "${@:3}" ;;
+    esac
+fi
+
 case $COMMAND_NAME in
     "" | "-h" | "--help") sub_help ;;
 
     # Top-level
     install)     sub_install ;;
-    doctor)      shift; sub_doctor "$@" ;;
     update)      sub_update ;;
     clean)       sub_clean ;;
     dock)        sub_dock ;;
-    scaffold)    shift; sub_scaffold "$@" ;;
-    test)        shift; sub_test "$@" ;;
     completions) sub_completions ;;
-    llm-bench)   shift; sub_llm_bench "$@" ;;
-    remote-setup) shift; sub_remote_setup "$@" ;;
-    remote-disable) shift; sub_remote_disable "$@" ;;
-
     # Namespaces
     agent)  shift; ns_agent "$@" ;;
-    verify) shift; ns_verify "$@" ;;
-    brew)   shift; ns_brew "$@" ;;
     shell)  shift; ns_shell "$@" ;;
     cursor) shift; ns_cursor "$@" ;;
 
     # Backward-compat aliases for hyphenated names (silent — drop in a future cleanup)
-    agent-setup)     shift; sub_agent_setup "$@" ;;
-    agents)          shift; sub_agent_overview "$@" ;;
-    verify-vendors)  shift; sub_verify_vendors "$@" ;;
-    validate-skills) shift; sub_validate_skills "$@" ;;
-    profile-shell)   shift; sub_shell_profile "$@" ;;
+    profile-shell) shift; sub_shell_profile "$@" ;;
     cursor-plugins)  shift; sub_cursor_plugins "$@" ;;
-    stale)           shift; sub_brew_stale "$@" ;;
 
     *)
         if declare -f "sub_${COMMAND_NAME}" >/dev/null 2>&1; then

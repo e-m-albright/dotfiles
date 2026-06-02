@@ -1,0 +1,277 @@
+# Package manifest for Homebrew setup.
+# Source of truth for `dotfiles brew install` and `dotfiles stale`.
+#
+# Usage (env opt-in flags, default true):
+#   AI=0 PRODUCTIVITY=0 SOCIAL=0 dotfiles brew install
+
+[flags]
+ai = true
+productivity = true
+social = true
+
+[taps]
+list = ["ariga/tap", "infisical/get-cli", "axiomhq/tap"]
+
+# =============================================================================
+# CLI Tools (formulae)
+# =============================================================================
+
+[[section]]
+name = "Core CLI"
+kind = "formula"
+packages = [
+  { name = "git",                  note = "Version control" },
+  { name = "git-lfs",              note = "Git Large File Storage" },
+  { name = "git-delta",            note = "Beautiful git diffs (used by .gitconfig)" },
+  { name = "gh",                   note = "GitHub CLI (PRs, issues, actions)" },
+  { name = "jq",                   note = "JSON processor" },
+  { name = "yq",                   note = "YAML processor (like jq for YAML)" },
+  { name = "wget",                 note = "Web downloader" },
+  { name = "openssl",              note = "TLS/crypto toolkit" },
+  { name = "bash-completion@2",    note = "Bash completion" },
+  { name = "helix",                note = "Postmodern modal terminal editor (Rust, batteries-included LSP/Treesitter — binary is `hx`)" },
+  { name = "fd",                   note = "Fast file finder (yazi: find-by-name / `f`)" },
+  { name = "ripgrep",              note = "Fast content search (yazi: find-in-files / `F`)" },
+  { name = "fzf",                  note = "Fuzzy finder (yazi: interactive fuzzy jump)" },
+  { name = "zoxide",               note = "Smart `cd` with frecency (yazi: `z` jump)" },
+  { name = "yazi",                 note = "Blazing-fast terminal file manager (Rust)" },
+  { name = "poppler",              note = "PDF preview (pdftoppm)" },
+  { name = "resvg",                note = "SVG-to-PNG rasterizer" },
+  { name = "imagemagick",          note = "Image conversion for long-tail formats (.heic, .psd, .tiff)" },
+  { name = "chafa",                note = "Terminal image renderer (yazi inline image previews)" },
+  { name = "sevenzip",             note = "Peek inside archives (.zip, .7z, .rar)" },
+  { name = "ffmpeg",               note = "Video/audio thumbnails", disabled = true, reason = "~300MB+ with deps, rarely needed" },
+  { name = "tmux",                 note = "Terminal multiplexer" },
+  { name = "mosh",                 note = "Roaming SSH-compatible shell for phone connections" },
+  { name = "zellij",               note = "Modern terminal workspace and multiplexer" },
+  { name = "pandoc",               note = "Universal markup converter (md ↔ docx ↔ pdf ↔ html ↔ …)" },
+]
+
+[[section]]
+name = "System CLI"
+kind = "formula"
+packages = [
+  { name = "htop",               note = "System monitoring" },
+  { name = "iftop",              note = "Network traffic monitoring" },
+  { name = "nmap",               note = "Network mapping" },
+  { name = "dockutil",           note = "Dock management" },
+  { name = "terminal-notifier",  note = "macOS notifications from CLI (used by Claude Code hooks)" },
+  { name = "duti",               note = "Set default app for file types (used by file-associations.sh)" },
+]
+
+[[section]]
+name = "Developer Tools"
+kind = "formula"
+packages = [
+  { name = "just",           note = "Command runner (like make, but simpler)" },
+  { name = "lefthook",       note = "Git hooks (language-agnostic, parallel execution)" },
+  { name = "shellcheck",     note = "Static analysis for shell scripts" },
+  { name = "hyperfine",      note = "Command-line benchmarking tool" },
+  { name = "graphite",       note = "Stacked PRs", disabled = true, reason = "removed, not useful enough (requires withgraphite/tap)" },
+  { name = "atlas",          note = "Database schema migration tool (requires ariga/tap)" },
+  { name = "duckdb",         note = "Fast analytical database (SQL for analytics)" },
+  { name = "railway",        note = "Railway.app CLI (deploy, logs, manage projects)" },
+  { name = "opentofu",       note = "Open-source Terraform alternative" },
+  { name = "flyctl",         note = "Fly.io CLI (deploy, manage apps)" },
+  { name = "ngrok",          note = "Secure tunnels to localhost (webhook testing, demos)" },
+  { name = "neonctl",        note = "Neon Postgres CLI (projects, DBs, roles)" },
+  { name = "infisical",      note = "Secrets management CLI (requires infisical/get-cli tap)" },
+  { name = "git-filter-repo", note = "Git history rewriting (secrets scrub)", disabled = true },
+  { name = "libpq",          note = "PostgreSQL client library (psql, pg_dump)" },
+  { name = "sccache",        note = "Shared compilation cache (Rust/C/C++ build speedup)" },
+  { name = "temporal",       note = "Temporal workflow CLI", disabled = true, reason = "Disabled 2026-06-01: experiment; reinstall if revisiting durable workflows" },
+  { name = "pulumi",         note = "IaC in real languages", disabled = true, reason = "Disabled 2026-06-01: experiment; opentofu is the active IaC tool" },
+  { name = "sentry-cli",     note = "Sentry error tracking (releases, source maps, deploys)", disabled = true },
+  { name = "datadog-ci",     note = "Datadog CI test visibility & synthetics", disabled = true },
+]
+
+[[section]]
+name = "Security"
+kind = "formula"
+packages = [
+  { name = "gitleaks",     note = "Secret scanner: hardcoded creds in git history/working tree" },
+  { name = "osv-scanner",  note = "Dependency CVE scanner (Google OSV database)" },
+  { name = "semgrep",      note = "Static analysis / SAST: pattern-based code vulnerability rules" },
+  { name = "trivy",        note = "Vulnerability + misconfig scanner (containers, IaC, filesystems)" },
+]
+
+[[section]]
+name = "Node.js"
+kind = "formula"
+packages = [
+  { name = "fnm", note = "Fast Node Manager (node version switching)" },
+]
+
+[[section]]
+name = "Go"
+kind = "formula"
+packages = [
+  { name = "go",             note = "Go programming language" },
+  { name = "golangci-lint",  note = "Go linter aggregator" },
+]
+
+[[section]]
+name = "Python"
+kind = "formula"
+packages = [
+  { name = "uv",     note = "Python package/installer & the dotfiles CLI runtime. Bootstrap prerequisite (installed before this manifest runs); declared here for documentation + stale-suppression." },
+  { name = "py-spy", note = "Sampling profiler for Python programs" },
+]
+
+# =============================================================================
+# Applications (casks)
+# =============================================================================
+
+[[section]]
+name = "Essentials"
+kind = "cask"
+packages = [
+  { name = "google-chrome",   note = "Web browser" },
+  { name = "tailscale-app",   note = "Mesh VPN for secure laptop access" },
+  { name = "iterm2",          note = "Terminal emulator", disabled = true },
+]
+
+[[section]]
+name = "IDE"
+kind = "cask"
+packages = [
+  { name = "cursor",              note = "Primary: AI-native editor (VS Code compatible)" },
+  { name = "zed",                 note = "Secondary: GPU-native Rust editor with ACP agent panel (eval — see docs/ides.md)" },
+  { name = "visual-studio-code",  note = "Disabled: using Cursor exclusively", disabled = true },
+]
+
+[[section]]
+name = "Productivity"
+kind = "cask"
+flag = "productivity"
+packages = [
+  { name = "rectangle",        note = "Window management" },
+  { name = "flycut",           note = "Clipboard manager", disabled = true },
+  { name = "raycast",          note = "Launcher + actions; can replace Rectangle/Flycut", disabled = true },
+  { name = "warp",             note = "AI terminal", disabled = true },
+  { name = "ghostty",          note = "GPU-accelerated terminal" },
+  { name = "termius",          note = "SSH/SFTP client and host manager" },
+  { name = "caffeine",         note = "Intel-only, requires Rosetta" },
+  { name = "flux-app",         note = "Screen color temperature" },
+  { name = "granola",          note = "AI notepad for meetings" },
+  { name = "wispr-flow",       note = "Disabled 2026-05-29: switched to TypeWhisper (on-device Parakeet ASR + local Gemma / Apple Intelligence cleanup)", disabled = true, reason = "No Homebrew cask exists; installed via special.typewhisper block" },
+  { name = "aqua-voice",       note = "Voice dictation alternative (consider vs Wispr Flow)", disabled = true },
+  { name = "obsidian",         note = "Knowledge base & note-taking (Markdown)" },
+  { name = "qlmarkdown",       note = "Quick Look: rendered .md previews (sbarex)" },
+  { name = "syntax-highlight", note = "Quick Look: syntax highlighting for code, yaml, toml, json, cfg, etc. (sbarex)" },
+]
+
+[[section]]
+name = "Development Apps"
+kind = "cask"
+packages = [
+  { name = "docker-desktop",   note = "Consider OrbStack instead (faster, lower resource usage on macOS)", disabled = true },
+  { name = "orbstack",         note = "Docker Desktop alternative (faster, better macOS integration)" },
+  { name = "axiom",            note = "Axiom observability CLI (requires axiomhq/tap)" },
+  { name = "gcloud-cli",       note = "Google Cloud SDK (cask renamed from google-cloud-sdk; disabled — install per-project if needed)", disabled = true },
+]
+
+[[section]]
+name = "Social Apps"
+kind = "cask"
+flag = "social"
+packages = [
+  { name = "spotify",             note = "" },
+  { name = "slack",               note = "" },
+  { name = "slack-cli",           note = "Slack platform dev CLI (app development, not chat)", disabled = true },
+  { name = "zoom",                note = "" },
+  { name = "discord",             note = "", disabled = true },
+  { name = "whatsapp",            note = "" },
+  { name = "super-productivity",  note = "", disabled = true },
+  { name = "signal",              note = "", disabled = true },
+]
+
+[[section]]
+name = "Fonts"
+kind = "cask"
+packages = [
+  { name = "font-fira-code-nerd-font",        note = "Active terminal font (Ghostty primary)" },
+  { name = "font-jetbrains-mono-nerd-font",   note = "Alternate; Ghostty's default-ish vibe with glyphs", disabled = true },
+  { name = "font-maple-mono-nf",              note = "Editorial-leaning, sharp letterforms", disabled = true },
+  { name = "font-monaspace-nerd-font",        note = "GitHub Monaspace — five variants, texture-healing", disabled = true },
+  { name = "font-mononoki-nerd-font",         note = "Humanist mono with character", disabled = true },
+  { name = "font-symbols-only-nerd-font",     note = "Glyph-only overlay (use as fallback for non-patched primary)", disabled = true },
+]
+
+[[section]]
+name = "AI CLI Tools"
+kind = "auto"
+flag = "ai"
+packages = [
+  { name = "claude-code",          note = "Disabled 2026-05-17: cask tracks `stable` dist-tag (lags by days/weeks); installed via special.claude_code block", disabled = true },
+  { name = "claude",               note = "Claude Desktop (macOS app)" },
+  { name = "conductor",            note = "Claude Code parallelisation (disabled — prefer native subagents)", disabled = true },
+  { name = "codex",                note = "OpenAI Codex CLI (terminal agent) — or: npm i -g @openai/codex" },
+  { name = "codex-app",            note = "Disabled 2026-05-07: CLI-first, no need for desktop", disabled = true },
+  { name = "googleworkspace-cli",  note = "Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin)" },
+  { name = "jules",                note = "Disabled 2026-05-07: cloud-only (jules.google.com), local CLI is just a launcher", disabled = true },
+  { name = "gemini-cli",           note = "Google Gemini CLI (terminal agent)", disabled = true },
+  { name = "antigravity",          note = "Google Antigravity IDE (AI-native editor) — manual install", disabled = true },
+  { name = "copilot",              note = "GitHub Copilot CLI (terminal agent) — or: npm i -g @github/copilot", disabled = true },
+  { name = "cmux",                 note = "Terminal multiplexer for AI agents (nice but not helpful over Ghostty)", disabled = true },
+  { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex + Cursor" },
+  { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex + Cursor" },
+  { name = "opencode",             note = "Vendor-neutral terminal coding agent", disabled = true, reason = "Disabled 2026-06-01: vendor-neutral CLIs rolled back (subscription economics); standardized on Claude Code + Codex + Cursor" },
+  { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server" },
+  { name = "huggingface-cli",      note = "Hugging Face CLI (disabled — install per-project if needed)", disabled = true },
+]
+
+[[section]]
+name = "Special Formulae"
+kind = "formula"
+packages = [
+  { name = "docker-compose",  note = "Docker Compose (formula-only, not cask)" },
+  { name = "ollama",          note = "~30% slower than llama.cpp; redundant", disabled = true, reason = "Disabled 2026-05-28: LM Studio (MLX) is the daily driver" },
+  { name = "llama.cpp",       note = "Useful for raw `llama-bench` / `llama-server`; reinstall when needed", disabled = true, reason = "Disabled 2026-05-28: LM Studio (MLX) is the daily driver" },
+]
+
+# =============================================================================
+# Special installers (not plain brew)
+# =============================================================================
+
+[special.rust]
+method = "rustup"
+url = "https://sh.rustup.rs"
+args = ["-y"]
+zprofile_snippet = '[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"'
+note = "Official installer; preferred over Homebrew for version management"
+
+[special.typewhisper]
+method = "github_dmg"
+flag = "productivity"
+repo = "TypeWhisper/typewhisper-mac"
+app_name = "TypeWhisper.app"
+exclude_asset_patterns = ["daily", "-rc", "plugin"]
+note = "On-device voice-to-text (Parakeet ASR + local Gemma cleanup). Replaced Wispr Flow 2026-05-29. No Homebrew cask."
+
+[special.claude_code]
+method = "curl_install"
+flag = "ai"
+url = "https://claude.ai/install.sh"
+post_install = "claude install latest"
+note = "Tracks `latest`, not the lagging `stable` cask. Migrated off npm global 2026-05-28."
+
+# =============================================================================
+# npm globals (no brew formula available / brew formula is wrong package)
+# =============================================================================
+
+[[npm_package]]
+name = "agent-browser"
+flag = "ai"
+note = "Browser-automation CLI for AI agents (Tier 2 — shell out, no MCP overhead)"
+
+[[npm_package]]
+name = "pinchtab"
+flag = "ai"
+note = "Browser automation CLI for AI agents"
+disabled = true
+reason = "Disabled 2026-06-01: experiment; agent-browser is the active browser-automation CLI"
+
+[[npm_package]]
+name = "wrangler"
+note = "Cloudflare Workers CLI (brew formula `wrangler` is the unrelated Erlang refactor tool, disabled upstream 2025-07-01)"

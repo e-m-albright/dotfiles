@@ -71,13 +71,61 @@ fi
 ################################################################################
 # Set up SSH for Git + Homebrew
 . "$DOTFILES_DIR/macos/ssh.sh"
-# Install brew with packages & casks
-. "$DOTFILES_DIR/macos/brew.sh"
+
+# Homebrew bootstrap — must come before any brew/dotfiles-brew calls
+print_section "Homebrew"
+if ! command -v brew >/dev/null 2>&1; then
+    print_action "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    # Add Homebrew to PATH for this session and persist for future shells.
+    # SC2016: single quotes are intentional — we want the literal string written to .zprofile, not expanded.
+    # shellcheck disable=SC2016
+    if ! grep -q 'eval "$(/opt/homebrew/bin/brew shellenv)"' "$HOME/.zprofile" 2>/dev/null; then
+        # shellcheck disable=SC2016
+        printf '\neval "$(/opt/homebrew/bin/brew shellenv)"\n' >> "$HOME/.zprofile"
+        print_success "Added Homebrew to .zprofile"
+    fi
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+    print_success "Homebrew installed"
+else
+    print_info "Homebrew already installed ($(brew --version | head -1))"
+fi
+
+# Update Homebrew index so formulae/casks are current.
+# (Skipping brew upgrade here — upgrading everything on every setup run is too
+# aggressive; packages are managed declaratively via packages.toml instead.)
+brew update >/dev/null 2>&1
+print_success "Homebrew index updated"
+
+# Ensure uv is present (needed to run the Python CLI for brew install)
+print_section "uv (Python package manager)"
+if ! command -v uv >/dev/null 2>&1; then
+    print_action "Installing uv..."
+    if curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; then
+        # Reload PATH so uv is findable in the same shell session
+        export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+        print_success "uv installed"
+    else
+        print_warn "uv install failed — install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    fi
+else
+    print_info "uv already installed ($(uv --version))"
+fi
+
+# Install brew with packages & casks via Python CLI (packages.toml is source of truth)
+print_section "Homebrew packages"
+if command -v uv >/dev/null 2>&1; then
+    uv run --project "$DOTFILES_DIR/cli" dotfiles brew install
+else
+    print_warn "Skipping brew install — uv not available (install uv and run: dotfiles brew install)"
+fi
+
 # Setup macos dock
 . "$DOTFILES_DIR/macos/dock.sh"
-# Set file-type defaults (Zed for .md/.txt, etc.) — requires duti from brew.sh
+# Set file-type defaults (Zed for .md/.txt, etc.) — requires duti from packages.toml
 . "$DOTFILES_DIR/macos/file-associations.sh"
-# Configure local LLM: download model + pin context window — requires lm-studio from brew.sh
+# Configure local LLM: download model + pin context window — requires lm-studio from packages.toml
 . "$DOTFILES_DIR/macos/lmstudio.sh"
 ################################################################################
 
@@ -87,7 +135,7 @@ print_header "🔧 Languages & Runtimes"
 # -- Go
 print_section "Go"
 if ! command -v go >/dev/null 2>&1; then
-    print_info "Go not found (should be installed via brew.sh)"
+    print_info "Go not found (should be installed via packages.toml)"
 else
     print_info "Go already installed ($(go version | awk '{print $3}'))"
 fi
@@ -112,10 +160,10 @@ if command -v go >/dev/null 2>&1; then
     print_success "Go tools configured"
 fi
 
-# -- Node.js / FNM (Fast Node Manager — installed via brew in brew.sh)
+# -- Node.js / FNM (Fast Node Manager — installed via packages.toml)
 print_section "Node.js / FNM"
 if ! command -v fnm >/dev/null 2>&1; then
-    print_info "FNM not found (should be installed via brew.sh)"
+    print_info "FNM not found (should be installed via packages.toml)"
 else
     print_info "FNM already installed"
 fi
@@ -265,7 +313,7 @@ if command -v cursor >/dev/null 2>&1; then
     fi
 
     # Agentic config (MCP, rules, hooks, plugin registration)
-    . "$DOTFILES_DIR/agents/cursor/setup.sh"
+    "$DOTFILES_DIR/bin/dotfiles" agent setup cursor
 
     print_success "Cursor configured"
 fi
@@ -283,7 +331,7 @@ fi
 if command -v pi >/dev/null 2>&1; then
     print_section "Pi"
     mkdir -p ~/.pi/agent
-    ln -sf "$DOTFILES_DIR/agents/pi/models.json" ~/.pi/agent/models.json 2>/dev/null || true
+    ln -sf "$DOTFILES_DIR/ai/agents/pi/models.json" ~/.pi/agent/models.json 2>/dev/null || true
     print_success "Pi configured (models.json → LM Studio; skills via ~/.agents/skills)"
 fi
 
@@ -310,17 +358,13 @@ else
     print_info "Obsidian vault not found at $OBSIDIAN_VAULT — skipping config"
 fi
 
-# Prompts / Recipe Book
-print_header "📚 Prompts & Recipes"
-print_section "Recipe Book"
+# Prompts
+print_header "📚 Prompts"
 # Make scripts executable
-chmod +x "$DOTFILES_DIR/prompts/scaffold.sh" 2>/dev/null || true
 chmod +x "$DOTFILES_DIR/.agents/generate-permissions.sh" 2>/dev/null || true
 # Remove old 'recipe' symlink if it exists (deprecated)
 rm -f "$DOTFILES_DIR/bin/recipe" 2>/dev/null || true
-print_success "Recipe book configured"
-print_info "  Usage: dotfiles scaffold <recipe> [app-type] <path>"
-print_info "  Example: dotfiles scaffold typescript svelte my-app"
+print_success "Prompt assets ready"
 
 # Claude Code (instructions, plugins, voice, permissions)
 print_header "🤖 Claude Code"
@@ -339,18 +383,19 @@ if command -v gh >/dev/null 2>&1; then
         fi
     fi
 else
-    print_info "gh not found — skipping MCP extension (installed via brew.sh)"
+    print_info "gh not found — skipping MCP extension (installed via packages.toml)"
 fi
 
 print_section "Setup"
-. "$DOTFILES_DIR/agents/claude/setup.sh"
+"$DOTFILES_DIR/bin/dotfiles" agent setup claude
 
 # Agent Permissions (tiered profiles: scout, dev, yolo)
 print_section "Agent Permissions"
 "$DOTFILES_DIR/.agents/generate-permissions.sh" claude || true
 
-# Clear cache
-. "$DOTFILES_DIR/bin/dotfiles" clean
+# Clear cache (execute, don't source — avoids re-evaluating the CLI dispatcher
+# in the installer's shell)
+"$DOTFILES_DIR/bin/dotfiles" clean
 
 mkdir -p ~/code
 
@@ -366,16 +411,16 @@ printf "  ${BOLD}Required:${NC}\n"
 print_todo "Run ${CYAN}claude${NC} to authenticate (plugins auto-configured)"
 print_todo "Run ${CYAN}gh auth login${NC} to authenticate GitHub CLI"
 print_todo "Open Cursor chat and install required plugins:"
-print_step "/add-plugin superpowers"
-print_step "/add-plugin context7-plugin"
+print_dim "    /add-plugin superpowers"
+print_dim "    /add-plugin context7-plugin"
 # Neon plugin disabled 2026-04-09 — revisit when actively using Neon projects
 print_todo "Open Rectangle and grant Accessibility permissions"
 print_todo "Verify git identity: ${CYAN}git config user.name && git config user.email${NC}"
 printf "\n"
 printf "  ${BOLD}Optional:${NC}\n"
-print_todo_optional "Cursor MCP servers are auto-configured — edit ${CYAN}~/dotfiles/agents/cursor/mcp.json${NC} to customize"
-print_todo_optional "When you want dotfiles-managed MCPs reset to profile defaults: ${CYAN}dotfiles agent-setup --reset-mcp${NC}"
-print_todo_optional "Edit ${CYAN}~/dotfiles/agents/claude/plugins.yaml${NC} to customize Claude Code plugins"
+print_todo_optional "Cursor MCP servers are auto-configured — edit ${CYAN}~/dotfiles/ai/agents/cursor/mcp.json${NC} to customize"
+print_todo_optional "When you want dotfiles-managed MCPs reset to profile defaults: ${CYAN}dotfiles agent setup --reset-mcp${NC}"
+print_todo_optional "Edit ${CYAN}~/dotfiles/ai/agents/claude/plugins.yaml${NC} to customize Claude Code plugins"
 printf "\n"
 printf "  Run ${CYAN}dotfiles doctor${NC} to verify everything is set up correctly.\n"
 printf "\n"

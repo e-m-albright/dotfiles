@@ -28,10 +28,12 @@ pre-commit:
         for f in {staged_files}; do
           jq '.' "$f" >/dev/null 2>&1 || echo "Invalid JSON: $f"
         done
-    ai-usage:
-      glob:
-        - ".ai/rules/**/*.{md,mdc}"
-        - ".ai/skills/**/*.{md,mdc}"
-        - ".ai/prompts/**/*.{md,mdc}"
-        - "AGENTS.md"
-      run: python3 prompts/scaffolds/audit-pipeline/scripts/audit/ai_usage.py
+    cli-check:
+      glob: "cli/**/*.py"
+      run: just lint-fast
+
+pre-push:
+  commands:
+    cli-full-check:
+      glob: "cli/**/*.py"
+      run: just check

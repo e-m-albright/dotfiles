@@ -85,6 +85,7 @@ yz() {
     yazi "$@" --cwd-file="$tmp"
     local cwd
     IFS= read -r cwd <"$tmp"
+    # shellcheck disable=SC2164  # cd is &&-guarded; a failure should not exit the shell
     [[ -n "$cwd" && "$cwd" != "$PWD" ]] && builtin cd -- "$cwd"
     rm -f -- "$tmp"
 }
@@ -304,6 +305,7 @@ fi
 # fzf — fuzzy finder keybindings (Ctrl-T files, Ctrl-R history, Alt-C cd)
 # Sourced before zoxide so `zi` (interactive jump) can use fzf as its picker.
 if command -v fzf &>/dev/null; then
+    # shellcheck disable=SC1090  # process substitution; nothing to statically follow
     source <(fzf --zsh)
 fi
 

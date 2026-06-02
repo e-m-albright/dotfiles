@@ -2,6 +2,8 @@
 
 Bookmarked tools and services worth investigating.
 
+> **Graduated into `docs/stacks/` (2026-06):** several categories that were "evaluate" now have committed picks. Supply-chain & secrets → [`stacks/security.md`](stacks/security.md) (gitleaks, OSV-Scanner, cargo-deny/pip-audit/govulncheck, Renovate, Socket). Durable execution & realtime sync → [`stacks/services.md`](stacks/services.md) (DBOS, Temporal, River, Inngest; ElectricSQL). Eval-in-CI → [`knowledge/ai-tools.md`](knowledge/ai-tools.md) (promptfoo, pydantic-evals, DeepEval alongside Langfuse/Logfire). Test/perf tooling → language READMEs (cargo-nextest, insta, Polyfactory, schemathesis, mutmut, CodSpeed). Dev-env → [`stacks/infrastructure.md`](stacks/infrastructure.md) (mise, Caddy, Bruno, Hurl, git-cliff, Mermaid). The enforcement layer (ratchets, CI structure, affectedness) → [`knowledge/engineering-gates.md`](knowledge/engineering-gates.md). Items below remain genuinely unadopted / watch-only.
+
 ## Security / Static Analysis
 
 - **[Semgrep](https://semgrep.dev)** -- Pattern-based SAST/SCA/secrets platform unifying static analysis with AI reasoning to detect IDORs, broken authz, and other logic-level vulnerabilities. Lightweight grep-like custom rule syntax plus reachability analysis (vendor claims 98% false-positive reduction). OSS Community Edition (free, self-hostable) plus SaaS AppSec Platform. Evaluate when you want fast SAST/secrets coverage with custom rules in CI without standing up a heavy platform.
@@ -266,7 +268,7 @@ There is **no fully-managed vendor-agnostic agent cron.** Choices: (a) **vendor 
 Personal vibes-check on the current player set (2026-05). Opinions, not benchmarks — refine as we get hands-on.
 
 - **Cloudflare** -- Generally a strong platform that keeps getting better (Workers, D1, R2, Pages, Queues all maturing). Some questions on the team, but the product trajectory is solid.
-- **Vercel** -- Probably still a decent solution for Next.js-native frontends. Terrible place to scale (pricing traps, vendor lock-in — already flagged in `prompts/guides/services.md` "When NOT to Use"). Some questions on the team. Very AI-forward / tech-forward, so they'll keep shipping interesting things.
+- **Vercel** -- Probably still a decent solution for Next.js-native frontends. Terrible place to scale (pricing traps, vendor lock-in — already flagged in `docs/stacks/services.md` "When NOT to Use"). Some questions on the team. Very AI-forward / tech-forward, so they'll keep shipping interesting things.
 - **Render** -- Dark horse. Worth a real evaluation: product quality, principles/values, pricing structure. Currently filed as "budget option for simple services" in services.md but probably deserves more attention.
 - **Railway** -- Seems pretty good. Possibly a little too dumbed down — TBD whether that's a feature or a ceiling. Pricing structure matters; worth scrutinizing same as Render.
 - **Supabase** -- Not really a full cloud provider — they're Postgres-plus-extras (auth, storage, realtime, edge functions). Useful piece of a stack, not a primary host.
