@@ -2,12 +2,12 @@
   "hooks": [
     {
       "event": "afterFileEdit",
-      "command": "~/dotfiles/agents/cursor/hooks/format-on-save-shim.sh",
+      "command": "~/dotfiles/ai/agents/cursor/hooks/format-on-save-shim.sh",
       "matcher": "*.sh|*.ts|*.tsx|*.js|*.jsx|*.py|*.rs|*.go|*.json"
     },
     {
       "event": "beforeShellExecution",
-      "command": "~/dotfiles/agents/cursor/hooks/guard-destructive.sh",
+      "command": "~/dotfiles/ai/agents/cursor/hooks/guard-destructive.sh",
       "matcher": "*"
     }
   ]

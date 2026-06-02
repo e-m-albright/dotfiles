@@ -1,12 +1,12 @@
 # Agent Format
 
-Conventions for authoring subagents in `.ai/agents/` (canonical) and `agents/<vendor>/agents/` (vendor symlinks). Subagents are dispatched via the `Agent` tool; they have isolated context and a focused task scope.
+Conventions for authoring subagents in `ai/subagents/` (canonical). Subagents are dispatched via the `Agent` tool; they have isolated context and a focused task scope.
 
 ## Frontmatter
 
 **Required:**
 - `name` — must equal filename (without `.md`). `[a-z0-9-]` only.
-- `description` — what the agent does + when to use it. Includes literal `Use when …` trigger clause per the same convention as skills (see `skill-format.mdc`).
+- `description` — what the agent does + when to use it. Includes literal `Use when …` trigger clause per the same convention as skills (see `skill-format.md`).
 
 **Optional:**
 - `tools` — **comma-separated** list (different from skills' space-separated `allowed-tools`). Restricts what the subagent can call. Use for read-only review/audit agents.
@@ -76,13 +76,14 @@ If the agent is ported / adapted from upstream, add at end of body:
 
 And add a row to `docs/skills-sources.md` (Agents section).
 
-## Canonical + symlink layout
+## Canonical + deploy layout
 
-New agents follow the same convention as skills:
+New subagents follow the same source-of-truth convention as skills:
 
-- Canonical file: `.ai/agents/<name>.md`
-- Vendor symlinks: `agents/{claude,cursor,codex}/agents/<name>.md` → `../../../.ai/agents/<name>.md`
+- Canonical file: `ai/subagents/<name>.md` (single file, no per-agent mirrors in the repo).
+- Deployed by `dotfiles agent setup` (a small `cp` loop) into each agent's worker dir:
+  `~/.claude/agents/`, `~/.codex/agents/`, `~/.pi/agent/agents/`.
 
-Editing the canonical updates all vendors. (Legacy: `shellcheck-reviewer.md` is still triplicated as real files — separate cleanup.)
+Edit the canonical file, then re-run `dotfiles agent setup` to redeploy to every agent.
 
-_Promoted from `.ai/rules/process/agent-format.mdc` into this skill's references._
+_Promoted from the retired `.ai/rules/process/agent-format.mdc` into this skill's references._

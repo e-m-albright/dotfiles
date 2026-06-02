@@ -17,7 +17,7 @@ block() {
     {
         printf 'BLOCK: %s\n' "$reason"
         printf 'Command: %s\n' "$CMD"
-        printf '\nThis is blocked by ~/dotfiles/agents/claude/hooks/git-guardrails.sh.\n'
+        printf '\nThis is blocked by ~/dotfiles/ai/agents/claude/hooks/git-guardrails.sh.\n'
         printf 'If genuinely needed, the user must authorize this specific command explicitly.\n'
         printf 'Reference: ~/dotfiles/CLAUDE.md "Never run destructive git operations".\n'
     } >&2

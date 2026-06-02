@@ -1,6 +1,6 @@
 # Skill Format
 
-Conventions for authoring and maintaining skills in `.ai/skills/`. Aligns with [Anthropic's official skill spec](https://agentskills.io/specification) with project-specific additions for source attribution and tool restrictions.
+Conventions for authoring and maintaining skills in `ai/skills/`. Aligns with [Anthropic's official skill spec](https://agentskills.io/specification) with project-specific additions for source attribution and tool restrictions.
 
 ## Frontmatter
 
@@ -94,13 +94,13 @@ When updating an already-ported skill: bump `source_commit` + `ported_at`, appen
 ## Lifecycle (deferred to Phase 5)
 
 When we adopt Matt Pocock's bucketing pattern, skills will move under:
-- `.ai/skills/engineering/<name>/` — daily code work
-- `.ai/skills/productivity/<name>/` — workflow, non-code
-- `.ai/skills/misc/<name>/` — rare utilities
-- `.ai/skills/personal/<name>/` — never in plugin manifest
-- `.ai/skills/in-progress/<name>/` — drafts, never in plugin manifest
-- `.ai/skills/deprecated/<name>/` — retired, never in plugin manifest
+- `ai/skills/engineering/<name>/` — daily code work
+- `ai/skills/productivity/<name>/` — workflow, non-code
+- `ai/skills/misc/<name>/` — rare utilities
+- `ai/skills/personal/<name>/` — never in plugin manifest
+- `ai/skills/in-progress/<name>/` — drafts, never in plugin manifest
+- `ai/skills/deprecated/<name>/` — retired, never in plugin manifest
 
-Currently flat under `.ai/skills/`. Migration deferred until enough skills exist for the structure to earn its cost. See the local `docs/specs/2026-05-07-skills-research.md` notes (Phase 5).
+Currently flat under `ai/skills/`. Migration deferred until enough skills exist for the structure to earn its cost. See the local `docs/specs/2026-05-07-skills-research.md` notes (Phase 5).
 
 _Promoted from `.ai/rules/process/skill-format.mdc` into this skill's references._

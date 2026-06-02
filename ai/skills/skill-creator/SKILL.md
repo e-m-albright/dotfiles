@@ -5,7 +5,7 @@ metadata:
   source_url: https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md
   source_commit: d211d437443a7b2496a3dad9575e7dddd724c585
   ported_at: 2026-05-07
-  adaptations: Streamlined from 485 lines to ~230. Stripped sections requiring Anthropic's eval-runner infrastructure (run_loop.py, aggregate_benchmark.py, eval-viewer/, blind-comparison agents, packaging). Stripped Claude.ai/Cowork-specific sections. Kept the meta-knowledge (anatomy, progressive disclosure, writing patterns, style). Added pointers to our `validate-skills.sh` and `skill-format.mdc`.
+  adaptations: Streamlined from 485 lines to ~230. Stripped sections requiring Anthropic's eval-runner infrastructure (run_loop.py, aggregate_benchmark.py, eval-viewer/, blind-comparison agents, packaging). Stripped Claude.ai/Cowork-specific sections. Kept the meta-knowledge (anatomy, progressive disclosure, writing patterns, style). Added pointers to our `dotfiles agent lint` validator and `skill-format.md`.
 ---
 
 # Skill Creator
@@ -22,7 +22,7 @@ Your job is to figure out where the user is in the loop and meet them there. The
 
 This skill is the meta-skill. It complements:
 - **[Skill format](references/skill-format.md)** — the convention spec for this repo (frontmatter, body, source attribution, tool restrictions). [Agent format](references/agent-format.md) covers subagents.
-- **`bin/dotfiles validate-skills`** — the validator. Run it after every edit to confirm spec compliance.
+- **`dotfiles agent lint`** — the validator. Run it after every edit to confirm spec compliance.
 - **`docs/skills-sources.md`** — the source-attribution registry. Add a row when porting from upstream.
 
 ## Creating a skill
@@ -172,7 +172,7 @@ Alternatively, just describe each test case to yourself and see what Claude with
 
 4. **Look for repeated work.** If 3 test runs all produced similar helper scripts, bundle that script in `scripts/`. Write it once; tell the skill to call it.
 
-5. **Validate after every edit.** Run `bin/dotfiles validate-skills` to confirm the skill stays spec-compliant (frontmatter, "Use when" trigger, body length, caps count).
+5. **Validate after every edit.** Run `dotfiles agent lint` to confirm the skill stays spec-compliant (frontmatter, "Use when" trigger, body length, caps count).
 
 ### The iteration loop
 
@@ -198,4 +198,4 @@ Implication: trigger eval queries should be **substantive enough that Claude wou
 If you're adapting an upstream skill, add `metadata.source_*` to the frontmatter, a `## Sources` footer at end of body, and a row in `docs/skills-sources.md`. See `skill-format.mdc` § Source attribution for the convention.
 
 ## Sources
-- Adapted from [anthropics/skills/skill-creator](https://github.com/anthropics/skills/blob/d211d43/skills/skill-creator/SKILL.md) (ported 2026-05-07, Apache-2.0). Streamlined to ~230 lines; stripped Anthropic's eval-runner infrastructure and Claude.ai/Cowork sections; pointed at our `validate-skills.sh` and `skill-format.mdc`.
+- Adapted from [anthropics/skills/skill-creator](https://github.com/anthropics/skills/blob/d211d43/skills/skill-creator/SKILL.md) (ported 2026-05-07, Apache-2.0). Streamlined to ~230 lines; stripped Anthropic's eval-runner infrastructure and Claude.ai/Cowork sections; pointed at our `dotfiles agent lint` validator and `skill-format.md`.
