@@ -50,7 +50,7 @@ def test_valid_skill_is_ok() -> None:
         _VALID_SKILL,
         kind="skill",
         expected_name="my-skill",
-        rel_path=".ai/skills/my-skill/SKILL.md",
+        rel_path="ai/skills/my-skill/SKILL.md",
     )
     assert result.status == "ok"
     assert result.errors == ()
@@ -60,7 +60,7 @@ def test_valid_skill_is_ok() -> None:
 
 def test_valid_agent_is_ok() -> None:
     result = validate_file(
-        _VALID_AGENT, kind="agent", expected_name="my-agent", rel_path=".ai/agents/my-agent.md"
+        _VALID_AGENT, kind="agent", expected_name="my-agent", rel_path="ai/subagents/my-agent.md"
     )
     assert result.status == "ok"
 
@@ -68,7 +68,7 @@ def test_valid_agent_is_ok() -> None:
 def test_missing_frontmatter_is_fail() -> None:
     text = "# No frontmatter\n\nJust body text.\n"
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert result.status == "fail"
     assert any("missing frontmatter" in e for e in result.errors)
@@ -77,7 +77,7 @@ def test_missing_frontmatter_is_fail() -> None:
 def test_name_mismatch_is_fail() -> None:
     text = _skill_text(name="wrong-name")
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert result.status == "fail"
     assert any("wrong-name" in e and "my-skill" in e for e in result.errors)
@@ -87,7 +87,7 @@ def test_bad_name_regex_is_fail() -> None:
     # Leading hyphen violates the pattern
     text = _skill_text(name="-bad-name")
     result = validate_file(
-        text, kind="skill", expected_name="-bad-name", rel_path=".ai/skills/-bad-name/SKILL.md"
+        text, kind="skill", expected_name="-bad-name", rel_path="ai/skills/-bad-name/SKILL.md"
     )
     assert result.status == "fail"
     assert any("violates" in e for e in result.errors)
@@ -96,7 +96,7 @@ def test_bad_name_regex_is_fail() -> None:
 def test_bad_name_with_uppercase_is_fail() -> None:
     text = _skill_text(name="MySkill")
     result = validate_file(
-        text, kind="skill", expected_name="MySkill", rel_path=".ai/skills/MySkill/SKILL.md"
+        text, kind="skill", expected_name="MySkill", rel_path="ai/skills/MySkill/SKILL.md"
     )
     assert result.status == "fail"
     assert any("violates" in e for e in result.errors)
@@ -105,7 +105,7 @@ def test_bad_name_with_uppercase_is_fail() -> None:
 def test_missing_description_is_fail() -> None:
     text = "---\nname: my-skill\n---\n\n# Body\n"
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert result.status == "fail"
     assert any("missing description" in e for e in result.errors)
@@ -116,7 +116,7 @@ def test_long_body_is_warn() -> None:
     long_body = "\n".join(f"line {i}" for i in range(501))
     text = _skill_text(body=long_body)
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert result.status == "warn"
     assert any("body" in w and "500" in w for w in result.warnings)
@@ -126,7 +126,7 @@ def test_agent_body_limit_is_200() -> None:
     long_body = "\n".join(f"line {i}" for i in range(201))
     text = _skill_text(body=long_body)
     result = validate_file(
-        text, kind="agent", expected_name="my-skill", rel_path=".ai/agents/my-skill.md"
+        text, kind="agent", expected_name="my-skill", rel_path="ai/subagents/my-skill.md"
     )
     assert result.status == "warn"
     assert any("200" in w for w in result.warnings)
@@ -135,7 +135,7 @@ def test_agent_body_limit_is_200() -> None:
 def test_no_trigger_clause_is_warn() -> None:
     text = _skill_text(description="A description without the magic words at all.")
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert result.status == "warn"
     assert any("MISSING_TRIGGER" in w for w in result.warnings)
@@ -144,7 +144,7 @@ def test_no_trigger_clause_is_warn() -> None:
 def test_trigger_when_also_accepted() -> None:
     text = _skill_text(description="Trigger when you see this pattern in the codebase.")
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     # No MISSING_TRIGGER warning
     assert not any("MISSING_TRIGGER" in w for w in result.warnings)
@@ -155,7 +155,7 @@ def test_too_many_caps_is_warn() -> None:
     body = " ".join(["MUST"] * 16) + "\n"
     text = _skill_text(body=body)
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert result.status == "warn"
     assert any("OVER_CONSTRAINED" in w for w in result.warnings)
@@ -165,7 +165,7 @@ def test_exactly_15_caps_not_warned() -> None:
     body = " ".join(["MUST"] * 15) + "\n"
     text = _skill_text(body=body)
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert not any("OVER_CONSTRAINED" in w for w in result.warnings)
 
@@ -175,7 +175,7 @@ def test_caps_inside_identifier_not_counted() -> None:
     body = "MUSTACHE ALWAYS_ON NEVERMORE\n"
     text = _skill_text(body=body)
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert not any("OVER_CONSTRAINED" in w for w in result.warnings)
 
@@ -184,7 +184,7 @@ def test_short_description_is_warn() -> None:
     # Less than 20 chars, but has trigger clause
     text = _skill_text(description="Use when x.")  # 11 chars
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert result.status == "warn"
     assert any("EMPTY_DESCRIPTION" in w for w in result.warnings)
@@ -194,7 +194,7 @@ def test_description_over_1024_is_fail() -> None:
     long_desc = "Use when " + "x" * 1020  # definitely > 1024
     text = _skill_text(description=long_desc)
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert result.status == "fail"
     assert any("1024" in e for e in result.errors)
@@ -214,13 +214,13 @@ def test_rel_path_and_kind_propagated() -> None:
 
 
 def _write_skill(dotfiles_dir: Path, name: str, text: str) -> None:
-    skill_dir = dotfiles_dir / ".ai" / "skills" / name
+    skill_dir = dotfiles_dir / "ai" / "skills" / name
     skill_dir.mkdir(parents=True, exist_ok=True)
     (skill_dir / "SKILL.md").write_text(text)
 
 
 def _write_agent(dotfiles_dir: Path, name: str, text: str) -> None:
-    agents_root = dotfiles_dir / ".ai" / "agents"
+    agents_root = dotfiles_dir / "ai" / "subagents"
     agents_root.mkdir(parents=True, exist_ok=True)
     (agents_root / f"{name}.md").write_text(text)
 
@@ -239,7 +239,7 @@ def test_service_valid_skill_ok(tmp_path: Path) -> None:
 
 def test_service_missing_skill_md_is_fail(tmp_path: Path) -> None:
     # dir with no SKILL.md
-    orphan = tmp_path / ".ai" / "skills" / "orphan-skill"
+    orphan = tmp_path / "ai" / "skills" / "orphan-skill"
     orphan.mkdir(parents=True)
     results = validate_skill_files(tmp_path)
     assert len(results) == 1
@@ -285,7 +285,7 @@ def test_use_whenever_does_not_satisfy_trigger() -> None:
     """'use whenever you like' must NOT count as a trigger clause (word boundary fix)."""
     text = _skill_text(description="use whenever you like to do something very useful indeed here.")
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert any("MISSING_TRIGGER" in w for w in result.warnings), (
         "Expected MISSING_TRIGGER warning for 'use whenever' but got: " + str(result.warnings)
@@ -296,7 +296,7 @@ def test_use_when_x_satisfies_trigger() -> None:
     """'Use when X' must still suppress the MISSING_TRIGGER warning."""
     text = _skill_text(description="Use when you need to perform this specific action here.")
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert not any("MISSING_TRIGGER" in w for w in result.warnings), (
         "Unexpected MISSING_TRIGGER for valid 'Use when': " + str(result.warnings)
@@ -315,7 +315,7 @@ def test_unclosed_frontmatter_no_body_length_warning() -> None:
     extra = "\n".join(f"line {i}" for i in range(501))
     text = fm_lines + extra
     result = validate_file(
-        text, kind="skill", expected_name="my-skill", rel_path=".ai/skills/my-skill/SKILL.md"
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert not any("body" in w and "500" in w for w in result.warnings), (
         "Spurious body-length warning for unclosed frontmatter: " + str(result.warnings)

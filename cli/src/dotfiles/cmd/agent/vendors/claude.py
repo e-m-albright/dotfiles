@@ -109,7 +109,7 @@ def _setup_instructions(dotfiles_dir: Path, claude_home: Path) -> list[StepResul
 
 def _setup_marketplaces(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     """Merge extraKnownMarketplaces from marketplaces.json → settings.json."""
-    src = dotfiles_dir / "agents" / "claude" / "marketplaces.json"
+    src = dotfiles_dir / "ai" / "agents" / "claude" / "marketplaces.json"
     if not src.is_file():
         return []
     marketplaces = load_json_or(src, {})
@@ -148,7 +148,7 @@ def _parse_plugins_yaml(plugins_yaml: Path) -> _JsonDict:
 
 def _setup_plugins(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     """Replace enabledPlugins in settings.json from plugins.yaml."""
-    src = dotfiles_dir / "agents" / "claude" / "plugins.yaml"
+    src = dotfiles_dir / "ai" / "agents" / "claude" / "plugins.yaml"
     if not src.is_file():
         return []
     plugins = _parse_plugins_yaml(src)
@@ -160,7 +160,7 @@ def _setup_plugins(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
 
 def _setup_permissions(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     """Replace permissions.{allow,deny,defaultMode} from permissions.json."""
-    src = dotfiles_dir / "agents" / "claude" / "permissions.json"
+    src = dotfiles_dir / "ai" / "agents" / "claude" / "permissions.json"
     if not src.is_file():
         return []
     perms_src = load_json_or(src, {})
@@ -252,7 +252,7 @@ def _setup_desktop(dotfiles_dir: Path, home: Path, *, reset_mcp: bool) -> list[S
     results: list[StepResult] = []
     existing = load_json_or(desktop_config, {})
 
-    mcp_json = dotfiles_dir / "agents" / "shared" / "mcp-servers.json"
+    mcp_json = dotfiles_dir / "ai" / "agents" / "shared" / "mcp-servers.json"
     if mcp_json.is_file():
         servers, managed_keys = _desktop_servers(dotfiles_dir, home, reset_mcp=reset_mcp)
         existing_mcp = cast(_JsonDict, existing.get("mcpServers") or {})
@@ -266,7 +266,7 @@ def _setup_desktop(dotfiles_dir: Path, home: Path, *, reset_mcp: bool) -> list[S
             )
         )
 
-    prefs_src = dotfiles_dir / "agents" / "claude" / "desktop-preferences.json"
+    prefs_src = dotfiles_dir / "ai" / "agents" / "claude" / "desktop-preferences.json"
     if prefs_src.is_file():
         prefs_file = load_json_or(prefs_src, {})
         prefs = cast(_JsonDict, prefs_file.get("preferences") or {})
@@ -284,7 +284,7 @@ def _setup_desktop(dotfiles_dir: Path, home: Path, *, reset_mcp: bool) -> list[S
 
 def _setup_hooks(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     """Replace .hooks in settings.json from hooks.json."""
-    src = dotfiles_dir / "agents" / "claude" / "hooks.json"
+    src = dotfiles_dir / "ai" / "agents" / "claude" / "hooks.json"
     if not src.is_file():
         return []
     hooks_file = load_json_or(src, {})
@@ -298,7 +298,7 @@ def _setup_hooks(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
 
 def _setup_statusline(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     """Set .statusLine to {type: command, command: <path to statusline.sh>}."""
-    src = dotfiles_dir / "agents" / "claude" / "statusline.sh"
+    src = dotfiles_dir / "ai" / "agents" / "claude" / "statusline.sh"
     if not src.is_file():
         return []
     src.chmod(src.stat().st_mode | 0o111)  # chmod +x
@@ -351,7 +351,7 @@ def _setup_skills(
     """deploy_skills(claude-code) + install external skills from external-skills.txt."""
     results: list[StepResult] = [deploy_skills(runner, dotfiles_dir, "claude-code", which=which)]
 
-    ext_file = dotfiles_dir / "agents" / "claude" / "external-skills.txt"
+    ext_file = dotfiles_dir / "ai" / "agents" / "claude" / "external-skills.txt"
     if not ext_file.is_file() or which("npx") is None:
         return results
 
@@ -393,7 +393,7 @@ def _setup_clean(dotfiles_dir: Path, home: Path, claude_home: Path) -> list[Step
 
 
 def _expected_plugin_ids(dotfiles_dir: Path) -> set[str]:
-    plugins_yaml = dotfiles_dir / "agents" / "claude" / "plugins.yaml"
+    plugins_yaml = dotfiles_dir / "ai" / "agents" / "claude" / "plugins.yaml"
     if not plugins_yaml.is_file():
         return set()
     return set(_parse_plugins_yaml(plugins_yaml).keys())
@@ -411,7 +411,7 @@ def _clean_plugins(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
 
 
 def _expected_marketplace_ids(dotfiles_dir: Path) -> set[str]:
-    src = dotfiles_dir / "agents" / "claude" / "marketplaces.json"
+    src = dotfiles_dir / "ai" / "agents" / "claude" / "marketplaces.json"
     return set(load_json_or(src, {}).keys())
 
 

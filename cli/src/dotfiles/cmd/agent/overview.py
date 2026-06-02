@@ -91,7 +91,7 @@ class AgentOverviewService:
 
     def section_mcp(self) -> list[McpRow]:
         """Read agents/shared/mcp-servers.json; one McpRow per object-valued entry."""
-        shared_mcp = self._dotfiles / "agents" / "shared" / "mcp-servers.json"
+        shared_mcp = self._dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
         servers = load_mcp_servers(shared_mcp)
         return [
             McpRow(
@@ -110,7 +110,7 @@ class AgentOverviewService:
 
     def section_hooks(self) -> list[HookRow]:
         """Union of hook events across claude/cursor/codex; one HookRow per event."""
-        agents_dir = self._dotfiles / "agents"
+        agents_dir = self._dotfiles / "ai" / "agents"
         claude_path = agents_dir / "claude" / "hooks.json"
         cursor_path = agents_dir / "cursor" / "hooks" / "hooks.json"
         codex_path = agents_dir / "codex" / "hooks.json"
@@ -157,7 +157,7 @@ class AgentOverviewService:
 
     def section_skills(self) -> SkillsSummary:
         """Count canonical SKILL.md files; count deployed dirs in claude/shared."""
-        skills_root = self._dotfiles / ".ai" / "skills"
+        skills_root = self._dotfiles / "ai" / "skills"
         canonical = 0
         if skills_root.exists() and skills_root.is_dir():
             for entry in list_dir(skills_root):
@@ -188,7 +188,7 @@ class AgentOverviewService:
 
     def section_agents(self) -> list[AgentRow]:
         """One AgentRow per .ai/agents/*.md, with deployment flags."""
-        agents_root = self._dotfiles / ".ai" / "agents"
+        agents_root = self._dotfiles / "ai" / "subagents"
         if not agents_root.exists() or not agents_root.is_dir():
             return []
 
@@ -217,9 +217,11 @@ class AgentOverviewService:
 
     def section_rules(self) -> RulesSummary:
         """Count canonical .mdc rules; count deployed in claude/cursor."""
-        canonical = self._count_files_by_ext(self._dotfiles / ".ai" / "rules" / "process", ".mdc")
+        canonical = self._count_files_by_ext(self._dotfiles / "ai" / "rules" / "process", ".mdc")
         claude_deployed = self._count_files_by_ext(self._home / ".claude" / "rules", ".md")
-        cursor_deployed = self._count_cursor_rules(self._dotfiles / "agents" / "cursor" / "rules")
+        cursor_deployed = self._count_cursor_rules(
+            self._dotfiles / "ai" / "agents" / "cursor" / "rules"
+        )
         return RulesSummary(
             canonical_rules=canonical,
             claude_deployed=claude_deployed,
@@ -269,7 +271,7 @@ class AgentOverviewService:
         ]
 
     def _perm_claude_source(self) -> list[PermissionRow]:
-        path = self._dotfiles / "agents" / "claude" / "permissions.json"
+        path = self._dotfiles / "ai" / "agents" / "claude" / "permissions.json"
         cfg = load_config(path, PermissionsBlock)
         if cfg is None:
             return []
@@ -282,7 +284,7 @@ class AgentOverviewService:
         ]
 
     def _perm_cursor(self) -> list[PermissionRow]:
-        path = self._dotfiles / "agents" / "cursor" / "cli-config.json"
+        path = self._dotfiles / "ai" / "agents" / "cursor" / "cli-config.json"
         cfg = load_config(path, SettingsWithPermissions)
         if cfg is None:
             return []
@@ -295,7 +297,7 @@ class AgentOverviewService:
         ]
 
     def _perm_codex(self) -> list[PermissionRow]:
-        path = self._dotfiles / "agents" / "codex" / "default.rules"
+        path = self._dotfiles / "ai" / "agents" / "codex" / "default.rules"
         if not path.exists():
             return []
         try:

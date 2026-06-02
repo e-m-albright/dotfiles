@@ -72,7 +72,7 @@ class VendorVerifyService:
             self._check("cursor", "skills (legacy)", h / ".cursor" / "skills"),
             self._check("cursor", "skills-cursor", h / ".cursor" / "skills-cursor"),
             self._check("cursor", "MCP config", h / ".cursor" / "mcp.json"),
-            self._check("cursor", "rules (project)", d / "agents" / "cursor" / "rules"),
+            self._check("cursor", "rules (project)", d / "ai" / "agents" / "cursor" / "rules"),
         ]
 
     def _codex_surfaces(self) -> list[VendorSurface]:

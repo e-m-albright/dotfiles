@@ -1,8 +1,8 @@
 """Skill and agent file validation service.
 
 Mirrors the behavior of agents/shared/validate-skills.sh:
-- Iterates .ai/skills/*/ dirs → each must have SKILL.md; validates with kind="skill"
-- Iterates .ai/agents/*.md → validates each with kind="agent"
+- Iterates ai/skills/*/ dirs → each must have SKILL.md; validates with kind="skill"
+- Iterates ai/subagents/*.md → validates each with kind="agent"
 - Reports FileValidation per file; summary available from the list.
 
 Exit semantics: any status=="fail" → non-zero exit (caller's responsibility).
@@ -174,7 +174,7 @@ def validate_skill_files(dotfiles_dir: Path) -> list[FileValidation]:
 
 
 def _validate_skills(dotfiles_dir: Path) -> list[FileValidation]:
-    skills_root = dotfiles_dir / ".ai" / "skills"
+    skills_root = dotfiles_dir / "ai" / "skills"
     if not skills_root.exists() or not skills_root.is_dir():
         return []
 
@@ -201,7 +201,7 @@ def _validate_skills(dotfiles_dir: Path) -> list[FileValidation]:
 
 
 def _validate_agents(dotfiles_dir: Path) -> list[FileValidation]:
-    agents_root = dotfiles_dir / ".ai" / "agents"
+    agents_root = dotfiles_dir / "ai" / "subagents"
     if not agents_root.exists() or not agents_root.is_dir():
         return []
 

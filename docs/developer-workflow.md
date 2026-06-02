@@ -268,7 +268,7 @@ Key decisions: Stable toolchain, Axum, Tokio, SQLx.
 
 ## Hooks & Automation
 
-### Claude Code Hooks (in `agents/claude/hooks.json`)
+### Claude Code Hooks (in `ai/agents/claude/hooks.json`)
 
 | Event | What Happens |
 |-------|-------------|
@@ -323,7 +323,7 @@ dotfiles doctor        # Catch drift early
 
 ### Writing Custom Skills
 
-Skills live in `agents/claude/skills/` and get deployed to `~/.claude/skills/`. Format:
+Skills live in `ai/skills/` and get deployed to `~/.claude/skills/`. Format:
 
 ```markdown
 ---
@@ -342,13 +342,13 @@ Use `/write-skill` (from superpowers) to create new skills with TDD — it watch
 
 ### Editing the rule kernel
 
-The universal agent rules are one hand-authored doc: `agents/shared/rules.md`. Edit it, run `dotfiles agent setup`, and it's written verbatim to every vendor's instruction file (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.pi/agent/AGENTS.md`, and a Cursor `shared-rules.mdc` wrapper). No baking, no per-rule symlinks.
+The universal agent rules are one hand-authored doc: `ai/agents/shared/rules.md`. Edit it, run `dotfiles agent setup`, and it's written verbatim to every vendor's instruction file (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.pi/agent/AGENTS.md`, and a Cursor `shared-rules.mdc` wrapper). No baking, no per-rule symlinks.
 
 Stack-specific taste is reference, not a pushed rule — it lives in `docs/stacks/`. Per-project rules belong in that project's `AGENTS.md` (use `dotfiles agent migrate-rules-sync`).
 
 ### Adding MCP Servers
 
-Edit `agents/shared/mcp-servers.json` and specify targets:
+Edit `ai/agents/shared/mcp-servers.json` and specify targets:
 
 ```json
 {
@@ -364,13 +364,13 @@ Then run `dotfiles agent setup` to deploy.
 
 ### Modifying Hooks
 
-Edit `agents/claude/hooks.json` directly, then run `dotfiles agent setup`.
+Edit `ai/agents/claude/hooks.json` directly, then run `dotfiles agent setup`.
 
 ---
 
 ## Code Review: Fix-First
 
-Our review criteria (`.ai/skills/review/references/bug-hunt-criteria.md`) use a **fix-first classification** inspired by gstack. Every review finding gets classified before reporting:
+Our review criteria (`ai/skills/review/references/bug-hunt-criteria.md`) use a **fix-first classification** inspired by gstack. Every review finding gets classified before reporting:
 
 | Classification | Action | Example |
 |---------------|--------|---------|

@@ -110,17 +110,17 @@ def dotfiles(tmp_path: Path) -> Path:
     write_tree(
         d,
         {
-            "agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
-            "agents/shared/rules.md": CORE_RULES_MD,
-            "agents/claude/plugins.yaml": PLUGINS_YAML,
-            "agents/claude/marketplaces.json": MARKETPLACES_JSON,
-            "agents/claude/permissions.json": PERMISSIONS_JSON,
-            "agents/claude/hooks.json": HOOKS_JSON,
-            "agents/claude/desktop-preferences.json": DESKTOP_PREFS_JSON,
-            "agents/claude/external-skills.txt": EXTERNAL_SKILLS_TXT,
-            "agents/claude/statusline.sh": "#!/usr/bin/env bash\necho ok\n",
-            ".ai/skills/.keep": "",
-            ".ai/agents/myagent.md": "# MyAgent\n",
+            "ai/agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
+            "ai/agents/shared/rules.md": CORE_RULES_MD,
+            "ai/agents/claude/plugins.yaml": PLUGINS_YAML,
+            "ai/agents/claude/marketplaces.json": MARKETPLACES_JSON,
+            "ai/agents/claude/permissions.json": PERMISSIONS_JSON,
+            "ai/agents/claude/hooks.json": HOOKS_JSON,
+            "ai/agents/claude/desktop-preferences.json": DESKTOP_PREFS_JSON,
+            "ai/agents/claude/external-skills.txt": EXTERNAL_SKILLS_TXT,
+            "ai/agents/claude/statusline.sh": "#!/usr/bin/env bash\necho ok\n",
+            "ai/skills/.keep": "",
+            "ai/subagents/myagent.md": "# MyAgent\n",
         },
     )
     return d
@@ -411,7 +411,7 @@ class TestSetupStatusline:
 
     def test_statusline_sh_is_executable(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
-        sh = dotfiles / "agents" / "claude" / "statusline.sh"
+        sh = dotfiles / "ai" / "agents" / "claude" / "statusline.sh"
         assert sh.stat().st_mode & stat.S_IXUSR
 
 

@@ -67,7 +67,7 @@ def _setup_settings_and_mcp(
     agents/gemini/setup.sh.
     """
     settings_file = gemini_home / "settings.json"
-    seed = dotfiles_dir / "agents" / "gemini" / "settings.json"
+    seed = dotfiles_dir / "ai" / "agents" / "gemini" / "settings.json"
 
     if not settings_file.exists() and seed.is_file():
         import shutil as _shutil

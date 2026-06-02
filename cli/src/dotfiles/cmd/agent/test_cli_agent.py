@@ -21,7 +21,7 @@ _VALID_SKILL_TEXT = (
 
 def _dotfiles_with_valid_skill(base: Path) -> Path:
     dotfiles = base / "dotfiles"
-    skills_root = dotfiles / ".ai" / "skills"
+    skills_root = dotfiles / "ai" / "skills"
     skill_dir = skills_root / "my-skill"
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(_VALID_SKILL_TEXT)
@@ -30,7 +30,7 @@ def _dotfiles_with_valid_skill(base: Path) -> Path:
 
 def _dotfiles_with_invalid_skill(base: Path) -> Path:
     dotfiles = base / "dotfiles"
-    skills_root = dotfiles / ".ai" / "skills"
+    skills_root = dotfiles / "ai" / "skills"
     skill_dir = skills_root / "my-skill"
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text("# no frontmatter\n")
@@ -208,7 +208,7 @@ def test_gemini_prompt_missing_chunks_dir_exits_one(tmp_path: Path) -> None:
 def test_agent_overview_bracket_in_mcp_server_name_survives(tmp_path: Path) -> None:
     """MCP server name containing brackets must appear verbatim in output."""
     dotfiles = tmp_path / "dotfiles"
-    mcp_path = dotfiles / "agents" / "shared" / "mcp-servers.json"
+    mcp_path = dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
     mcp_path.parent.mkdir(parents=True)
     mcp_path.write_text(
         json.dumps({"srv[x]": {"command": "npx", "args": [], "targets": ["claude"]}})

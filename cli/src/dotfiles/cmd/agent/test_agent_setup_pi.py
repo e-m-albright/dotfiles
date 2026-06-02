@@ -38,13 +38,13 @@ def dotfiles(tmp_path: Path) -> Path:
     write_tree(
         d,
         {
-            "agents/shared/rules.md": RULES_MD,
-            "agents/pi/settings.json": SETTINGS_JSON,
-            "agents/pi/models.json": MODELS_JSON,
-            "agents/pi/extensions/git-status.ts": "// git status extension",
-            "agents/pi/extensions/safe-git.ts": "// safe git extension",
-            ".ai/rules/process/global-process.mdc": PROCESS_RULE,
-            ".ai/agents/debugger.md": "# Debugger",
+            "ai/agents/shared/rules.md": RULES_MD,
+            "ai/agents/pi/settings.json": SETTINGS_JSON,
+            "ai/agents/pi/models.json": MODELS_JSON,
+            "ai/agents/pi/extensions/git-status.ts": "// git status extension",
+            "ai/agents/pi/extensions/safe-git.ts": "// safe git extension",
+            "ai/rules/process/global-process.mdc": PROCESS_RULE,
+            "ai/subagents/debugger.md": "# Debugger",
         },
     )
     return d
@@ -164,7 +164,7 @@ class TestConfigSymlinks:
         self._run(dotfiles, home)
         for name in ("settings.json", "models.json"):
             link = home / ".pi" / "agent" / name
-            assert link.resolve() == (dotfiles / "agents" / "pi" / name).resolve()
+            assert link.resolve() == (dotfiles / "ai" / "agents" / "pi" / name).resolve()
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +229,7 @@ class TestExtensions:
         ext_dir = home / ".pi" / "agent" / "extensions"
         for name in ("git-status.ts", "safe-git.ts"):
             assert (ext_dir / name).resolve() == (
-                dotfiles / "agents" / "pi" / "extensions" / name
+                dotfiles / "ai" / "agents" / "pi" / "extensions" / name
             ).resolve()
 
     def test_stale_symlinks_pruned(self, dotfiles: Path, home: Path) -> None:

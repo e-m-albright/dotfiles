@@ -114,11 +114,11 @@ def _setup_mcp(dotfiles_dir: Path, home: Path, *, reset_mcp: bool = False) -> li
 
 def _setup_rules(dotfiles_dir: Path) -> list[StepResult]:
     """Generate agents/cursor/rules/shared-rules.mdc with YAML frontmatter."""
-    shared_rules = dotfiles_dir / "agents" / "shared" / "rules.md"
+    shared_rules = dotfiles_dir / "ai" / "agents" / "shared" / "rules.md"
     if not shared_rules.is_file():
         return []
 
-    rules_dir = dotfiles_dir / "agents" / "cursor" / "rules"
+    rules_dir = dotfiles_dir / "ai" / "agents" / "cursor" / "rules"
     rules_dir.mkdir(parents=True, exist_ok=True)
 
     rules_content = shared_rules.read_text()
@@ -137,7 +137,7 @@ def _setup_rules(dotfiles_dir: Path) -> list[StepResult]:
 
 def _setup_cli_config(dotfiles_dir: Path, home: Path) -> list[StepResult]:
     """Symlink agents/cursor/cli-config.json → home/.cursor/cli-config.json."""
-    src = dotfiles_dir / "agents" / "cursor" / "cli-config.json"
+    src = dotfiles_dir / "ai" / "agents" / "cursor" / "cli-config.json"
     if not src.is_file():
         return []
     symlink(src, home / ".cursor" / "cli-config.json")
@@ -146,7 +146,7 @@ def _setup_cli_config(dotfiles_dir: Path, home: Path) -> list[StepResult]:
 
 def _setup_plugin(dotfiles_dir: Path, home: Path) -> list[StepResult]:
     """Symlink agents/cursor → home/.cursor/plugins/dotfiles."""
-    src = dotfiles_dir / "agents" / "cursor"
+    src = dotfiles_dir / "ai" / "agents" / "cursor"
     dest = home / ".cursor" / "plugins" / "dotfiles"
     if dest.is_symlink() and dest.resolve() == src.resolve():
         return [StepResult(level="success", message="Plugin already registered")]
@@ -160,7 +160,7 @@ def _setup_plugin(dotfiles_dir: Path, home: Path) -> list[StepResult]:
 
 def _setup_cursorignore(dotfiles_dir: Path) -> list[StepResult]:
     """Generate editors/cursor/.cursorignore from shared ignore-patterns."""
-    ignore_src = dotfiles_dir / "agents" / "shared" / "ignore-patterns"
+    ignore_src = dotfiles_dir / "ai" / "agents" / "shared" / "ignore-patterns"
     if not ignore_src.is_file():
         return []
 

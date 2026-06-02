@@ -87,7 +87,7 @@ def _setup_default_rules(dotfiles_dir: Path, codex_home: Path) -> list[StepResul
     Refuses to overwrite if the live file has more lines than the source
     (user has appended interactively-approved rules) — matches the .sh guard.
     """
-    src = dotfiles_dir / "agents" / "codex" / "default.rules"
+    src = dotfiles_dir / "ai" / "agents" / "codex" / "default.rules"
     if not src.is_file():
         return []
 
@@ -186,7 +186,7 @@ def _setup_statusline(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
     replacing any pre-existing theme= or status_line= values. Preserves all
     other sections. Faithful to the awk script: if [tui] is absent, appends it.
     """
-    statusline_src = dotfiles_dir / "agents" / "codex" / "statusline.toml"
+    statusline_src = dotfiles_dir / "ai" / "agents" / "codex" / "statusline.toml"
     if not statusline_src.is_file():
         return []
 
@@ -293,7 +293,7 @@ def _render_tui_keys(keys: dict[str, object]) -> list[str]:
 
 def _setup_hooks(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
     """Copy agents/codex/hooks.json → ~/.codex/hooks.json."""
-    src = dotfiles_dir / "agents" / "codex" / "hooks.json"
+    src = dotfiles_dir / "ai" / "agents" / "codex" / "hooks.json"
     if not src.is_file():
         return []
     shutil.copy2(src, codex_home / "hooks.json")

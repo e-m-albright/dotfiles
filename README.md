@@ -207,25 +207,25 @@ Setup is automated via `dotfiles agent setup` (also runs during install):
 
 - **Global instructions**: `~/.codex/AGENTS.md` deployed from shared rules
 - **Config**: `~/.codex/config.toml` with MCP servers and `project_doc_fallback_filenames = ["CODEX.md"]`
-- **Statusline**: `[tui]` theme + status-line text segments installed from `agents/codex/statusline.toml`
+- **Statusline**: `[tui]` theme + status-line text segments installed from `ai/agents/codex/statusline.toml`
 - **Hooks**: Format-on-save (reuses Claude's hook), sensitive file guard, terminal notifications
-- **Skills**: deployed from `.ai/skills/` via `npx skills`
-- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — targets "codex" or "claude"
-- **Command auto-approve**: `~/.codex/rules/default.rules` deployed from `agents/codex/default.rules` (universal allowlist; Codex appends interactive approvals — fold back periodically)
+- **Skills**: deployed from `ai/skills/` via `npx skills`
+- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — targets "codex" or "claude"
+- **Command auto-approve**: `~/.codex/rules/default.rules` deployed from `ai/agents/codex/default.rules` (universal allowlist; Codex appends interactive approvals — fold back periodically)
 
-See `agents/codex/` for all configuration files.
+See `ai/agents/codex/` for all configuration files.
 
 ### Gemini CLI
 
 Setup is automated via `dotfiles agent setup`:
 
-- **Settings**: `~/.gemini/settings.json` seeded from `agents/gemini/settings.json` (preserves existing auth)
-- **Global instructions**: `~/.gemini/GEMINI.md` written verbatim from `agents/shared/rules.md` (the same kernel every vendor gets)
-- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — servers with `gemini` in `targets`
+- **Settings**: `~/.gemini/settings.json` seeded from `ai/agents/gemini/settings.json` (preserves existing auth)
+- **Global instructions**: `~/.gemini/GEMINI.md` written verbatim from `ai/agents/shared/rules.md` (the same kernel every vendor gets)
+- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — servers with `gemini` in `targets`
 
 Gemini does not yet have skills or subagents surfaces; rules cover the equivalent ground.
 
-See `agents/gemini/` for all configuration files.
+See `ai/agents/gemini/` for all configuration files.
 
 ### External Connections
 
@@ -247,7 +247,7 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Gmail** | claude.ai cloud MCP | yes | — | — | Claude Code only (not reproducible in config) |
 | **Google Calendar** | claude.ai cloud MCP | yes | — | — | Claude Code only (not reproducible in config) |
 
-**Considered** (not yet enabled — add to `agents/shared/mcp-servers.json` when needed):
+**Considered** (not yet enabled — add to `ai/agents/shared/mcp-servers.json` when needed):
 
 | Service | Method | Why consider | Status |
 |---------|--------|-------------|--------|
@@ -256,19 +256,19 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Sentry** | MCP / CLI (`sentry-cli`) | Error tracking, issue triage, release management | Evaluate |
 | **Dagster** | Plugin / MCP | Data pipeline orchestration & observability | Evaluate |
 
-MCP config: `agents/shared/mcp-servers.json` (shared source), deployed to Claude Code and Cursor by `dotfiles agent setup`.
+MCP config: `ai/agents/shared/mcp-servers.json` (shared source), deployed to Claude Code and Cursor by `dotfiles agent setup`.
 
 ### Claude Code
 
 Setup is automated via `dotfiles agent setup` (also runs during install):
 
-- **Global instructions**: `~/.claude/CLAUDE.md` written from `agents/shared/rules.md` (the universal kernel — process, safety, voice, command style)
-- - **Permissions**: `permissions.{allow,deny,defaultMode}` from `agents/claude/permissions.json` (canonical baseline — fold interactive approvals back periodically)
+- **Global instructions**: `~/.claude/CLAUDE.md` written from `ai/agents/shared/rules.md` (the universal kernel — process, safety, voice, command style)
+- - **Permissions**: `permissions.{allow,deny,defaultMode}` from `ai/agents/claude/permissions.json` (canonical baseline — fold interactive approvals back periodically)
 - **Plugins**: 19 plugins (LSP, workflows, tooling, quality, integrations)
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
-- **Skills**: deployed from `.ai/skills/` via `npx skills`
-- **Agents**: deployed from `.ai/agents/`
-- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion, Playwright, Chrome DevTools (standalone); Context7 (via plugin)
+- **Skills**: deployed from `ai/skills/` via `npx skills`
+- **Agents**: deployed from `ai/subagents/`
+- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion, Playwright, Chrome DevTools (standalone); Context7 (via plugin)
 - **Browser-tool tiers**: See `docs/knowledge/browser-tooling.md` — when to reach for Playwright tests (Tier 1), agent-browser/pinchtab CLIs (Tier 2), Playwright/Chrome DevTools MCPs (Tier 3-4), or Stagehand (Tier 5)
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
 - **Preferences**: Voice mode, terminal bell, acceptEdits mode
@@ -285,24 +285,24 @@ Setup is automated via `dotfiles agent setup` (also runs during install):
 | `gcmw` | `gcmw` | Generate a commit message for staged changes via Claude Sonnet and commit |
 | `gacp` | `gacp`, `gacp "msg"` | Stage everything, commit (generated message or given), and push in one shot |
 
-See `agents/claude/` for all configuration files.
+See `ai/agents/claude/` for all configuration files.
 
 ### Cursor
 
 Setup is automated via `dotfiles agent setup cursor` (also runs during install):
 
-- **MCP servers**: From shared source (`agents/shared/mcp-servers.json`)
+- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`)
 - **Editor config**: `editors/cursor/settings.json` + `editors/cursor/keybindings.json` symlinked into Cursor User config
-- **Universal rules**: `~/.cursor/rules/shared-rules.mdc` generated from `agents/shared/rules.md` (the one kernel)
-- **Hooks**: Shared hook definitions deployed from `agents/cursor/hooks/`
+- **Universal rules**: `~/.cursor/rules/shared-rules.mdc` generated from `ai/agents/shared/rules.md` (the one kernel)
+- **Hooks**: Shared hook definitions deployed from `ai/agents/cursor/hooks/`
 - **Skills**: Cursor doesn't have a skills concept; rules cover the equivalent surface
-- **Subagents**: Cursor doesn't dispatch subagents; the `.ai/agents/` collection deploys to Claude Code and Codex only
-- **Rules**: Shared rules from `agents/shared/rules.md`
-- **Marketplace stack**: See `agents/cursor/PLUGINS.md` for core/work plugin recommendations and install commands (`/add-plugin ...`)
+- **Subagents**: Cursor doesn't dispatch subagents; the `ai/subagents/` collection deploys to Claude Code and Codex only
+- **Rules**: Shared rules from `ai/agents/shared/rules.md`
+- **Marketplace stack**: See `ai/agents/cursor/PLUGINS.md` for core/work plugin recommendations and install commands (`/add-plugin ...`)
 
 Note: Cursor Marketplace plugin installs and OAuth flows are manual by design (run in Cursor chat/UI). The setup scripts print an explicit checklist so these steps are hard to miss.
 
-See `agents/cursor/` for all configuration files.
+See `ai/agents/cursor/` for all configuration files.
 
 ---
 
@@ -395,22 +395,14 @@ dotfiles/
 ├── git/                    # Git config + global ignores
 ├── editors/                # Cursor settings + Obsidian vault configs
 ├── terminal/               # Ghostty config
-├── agents/                 # Agentic tool setup
-│   ├── shared/             # Shared config (MCP servers, tool registry, rules, ignore patterns)
-│   ├── claude/             # Claude Code setup (plugins, hooks, skills, universal rules)
-│   ├── codex/              # Codex CLI setup (config.toml, hooks, skills)
-│   └── cursor/             # Cursor plugin (hooks, skills, universal rules)
 ├── macos/                  # Homebrew, Dock, SSH, print utilities
-├── .ai/                    # Cross-vendor AI authoring
-│   ├── rules/              #   canonical rule library
-│   │   ├── process/        #     Universal: safety, style, workflow, artifact placement
-│   │   ├── languages/      #     Language ergonomics: TS, Python, Go, Rust
-│   │   ├── frameworks/     #     Framework patterns: SvelteKit, Astro, FastAPI, etc.
-│   │   └── tooling/        #     Stack decisions: Pick/Avoid tables, services
-│   ├── prompts/            #   Reusable audit/review prompts (versioned)
-│   │   └── audits/         #     Universal: god-functions, abstractions, coupling, duplication
-│   ├── skills/             #   Canonical skill source — agents/<vendor>/skills/<name> are symlinks here
-│   └── artifacts/          #   Ephemeral working files (gitignored)
+├── ai/                     # All cross-vendor AI assets
+│   ├── agents/             #   Per-vendor deploy config: claude, cursor, codex, gemini, pi, shared
+│   │   └── shared/rules.md #     the universal agent kernel (deployed verbatim to every vendor)
+│   ├── skills/             #   Canonical skill source (deployed via `npx skills`)
+│   ├── subagents/          #   Subagent definitions (deployed via cp loop)
+│   ├── prompts/audits/     #   Reusable audit/review prompts
+│   └── artifacts/          #   Ephemeral agent scratch (gitignored, on demand)
 ├── docs/                   # Curated knowledge base (see docs/README.md)
 │   ├── engineering-philosophy.md  # 12 universal principles
 │   ├── stacks/             #   Technology taste by language/framework (consulted per-project)

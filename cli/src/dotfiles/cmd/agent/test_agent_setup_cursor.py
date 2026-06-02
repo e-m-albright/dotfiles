@@ -57,11 +57,11 @@ def dotfiles(tmp_path: Path) -> Path:
     write_tree(
         d,
         {
-            "agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
-            "agents/shared/rules.md": RULES_MD,
-            "agents/shared/ignore-patterns": IGNORE_PATTERNS,
-            "agents/cursor/cli-config.json": CLI_CONFIG_JSON,
-            ".ai/rules/process/global-process.mdc": PROCESS_RULE,
+            "ai/agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
+            "ai/agents/shared/rules.md": RULES_MD,
+            "ai/agents/shared/ignore-patterns": IGNORE_PATTERNS,
+            "ai/agents/cursor/cli-config.json": CLI_CONFIG_JSON,
+            "ai/rules/process/global-process.mdc": PROCESS_RULE,
         },
     )
     return d
@@ -210,22 +210,22 @@ class TestMcp:
 class TestSharedRules:
     def test_creates_shared_rules_mdc(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
-        assert (dotfiles / "agents" / "cursor" / "rules" / "shared-rules.mdc").is_file()
+        assert (dotfiles / "ai" / "agents" / "cursor" / "rules" / "shared-rules.mdc").is_file()
 
     def test_shared_rules_has_yaml_frontmatter(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
-        content = (dotfiles / "agents" / "cursor" / "rules" / "shared-rules.mdc").read_text()
+        content = (dotfiles / "ai" / "agents" / "cursor" / "rules" / "shared-rules.mdc").read_text()
         assert content.startswith("---\n")
         assert "alwaysApply: true" in content
 
     def test_shared_rules_contains_rules_md(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
-        content = (dotfiles / "agents" / "cursor" / "rules" / "shared-rules.mdc").read_text()
+        content = (dotfiles / "ai" / "agents" / "cursor" / "rules" / "shared-rules.mdc").read_text()
         assert "Shared Agentic Rules" in content
 
     def test_shared_rules_description_in_frontmatter(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
-        content = (dotfiles / "agents" / "cursor" / "rules" / "shared-rules.mdc").read_text()
+        content = (dotfiles / "ai" / "agents" / "cursor" / "rules" / "shared-rules.mdc").read_text()
         assert "description:" in content
         assert "guardrails" in content
 
@@ -244,7 +244,9 @@ class TestCliConfig:
     def test_cli_config_points_into_dotfiles(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
         link = home / ".cursor" / "cli-config.json"
-        assert link.resolve() == (dotfiles / "agents" / "cursor" / "cli-config.json").resolve()
+        assert (
+            link.resolve() == (dotfiles / "ai" / "agents" / "cursor" / "cli-config.json").resolve()
+        )
 
     def test_cli_config_content_readable(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
@@ -255,8 +257,8 @@ class TestCliConfig:
         write_tree(
             d,
             {
-                "agents/shared/rules.md": RULES_MD,
-                ".ai/rules/process/global-process.mdc": PROCESS_RULE,
+                "ai/agents/shared/rules.md": RULES_MD,
+                "ai/rules/process/global-process.mdc": PROCESS_RULE,
             },
         )
         results = setup_cursor(runner=FakeProcessRunner(), home=home, dotfiles_dir=d)
@@ -278,7 +280,7 @@ class TestPlugin:
     def test_plugin_points_to_agents_cursor(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
         link = home / ".cursor" / "plugins" / "dotfiles"
-        assert link.resolve() == (dotfiles / "agents" / "cursor").resolve()
+        assert link.resolve() == (dotfiles / "ai" / "agents" / "cursor").resolve()
 
     def test_plugin_already_registered_is_idempotent(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
@@ -320,7 +322,7 @@ class TestCursorignore:
 
     def test_cursorignore_skipped_when_no_ignore_patterns(self, home: Path, tmp_path: Path) -> None:
         d = tmp_path / "nodotfiles2"
-        write_tree(d, {"agents/shared/rules.md": RULES_MD})
+        write_tree(d, {"ai/agents/shared/rules.md": RULES_MD})
         setup_cursor(runner=FakeProcessRunner(), home=home, dotfiles_dir=d)
         assert not (d / "editors" / "cursor" / ".cursorignore").exists()
 

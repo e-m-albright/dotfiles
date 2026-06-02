@@ -50,7 +50,7 @@ def dotfiles(tmp_path: Path) -> Path:
     write_tree(
         tmp_path,
         {
-            "agents/shared/mcp-servers.json": MCP_JSON,
+            "ai/agents/shared/mcp-servers.json": MCP_JSON,
         },
     )
     return tmp_path
@@ -166,8 +166,8 @@ class TestDeploySubagents:
         write_tree(
             dotfiles,
             {
-                ".ai/agents/debugger.md": "# Debugger",
-                ".ai/agents/reviewer.md": "# Reviewer",
+                "ai/subagents/debugger.md": "# Debugger",
+                "ai/subagents/reviewer.md": "# Reviewer",
             },
         )
         dest = tmp_path / "dest"
@@ -180,7 +180,7 @@ class TestDeploySubagents:
 
     def test_creates_dest_dir(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        write_tree(dotfiles, {".ai/agents/a.md": "x"})
+        write_tree(dotfiles, {"ai/subagents/a.md": "x"})
         dest = tmp_path / "new" / "nested" / "dest"
         deploy_subagents(dotfiles, dest)
         assert dest.is_dir()
@@ -197,8 +197,8 @@ class TestDeploySubagents:
         write_tree(
             dotfiles,
             {
-                ".ai/agents/agent.md": "# Agent",
-                ".ai/agents/ignore.txt": "not an agent",
+                "ai/subagents/agent.md": "# Agent",
+                "ai/subagents/ignore.txt": "not an agent",
             },
         )
         dest = tmp_path / "dest"
@@ -219,7 +219,7 @@ class TestDeploySkills:
         write_tree(
             dotfiles,
             {
-                ".ai/skills/my-skill/SKILL.md": "# My Skill",
+                "ai/skills/my-skill/SKILL.md": "# My Skill",
             },
         )
         return dotfiles
@@ -235,7 +235,7 @@ class TestDeploySkills:
         assert cmd[0] == "npx"
         assert cmd[1] == "skills"
         assert cmd[2] == "add"
-        assert str(dotfiles / ".ai" / "skills") in cmd
+        assert str(dotfiles / "ai" / "skills") in cmd
         assert "-a" in cmd
         assert "claude-code" in cmd
         assert "-g" in cmd
@@ -268,7 +268,7 @@ class TestDeploySkills:
                 "npx",
                 "skills",
                 "add",
-                str(dotfiles / ".ai" / "skills"),
+                str(dotfiles / "ai" / "skills"),
                 "-s",
                 "*",
                 "-a",
@@ -338,7 +338,7 @@ class TestMergeManagedMcp:
 
 class TestBuildGlobalInstructions:
     def _dotfiles(self, tmp_path: Path) -> Path:
-        write_tree(tmp_path, {"agents/shared/rules.md": "CORE RULES BODY"})
+        write_tree(tmp_path, {"ai/agents/shared/rules.md": "CORE RULES BODY"})
         return tmp_path
 
     def test_none_when_rules_md_absent(self, tmp_path: Path) -> None:

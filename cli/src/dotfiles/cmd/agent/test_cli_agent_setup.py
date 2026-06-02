@@ -33,7 +33,7 @@ def _make_dotfiles(base: Path) -> Path:
     write_tree(
         d,
         {
-            "agents/shared/mcp-servers.json": _SHARED_MCP,
+            "ai/agents/shared/mcp-servers.json": _SHARED_MCP,
         },
     )
     return d
@@ -139,11 +139,11 @@ def test_agent_setup_uses_provided_runner(tmp_path: Path) -> None:
     write_tree(
         dotfiles,
         {
-            "agents/codex/default.rules": "# rules\n",
-            "agents/codex/hooks.json": json.dumps({}),
-            "agents/codex/statusline.toml": "",
-            ".ai/skills/": None,
-            ".ai/agents/": None,
+            "ai/agents/codex/default.rules": "# rules\n",
+            "ai/agents/codex/hooks.json": json.dumps({}),
+            "ai/agents/codex/statusline.toml": "",
+            "ai/skills/": None,
+            "ai/subagents/": None,
         },
     )
     proc = FakeProcessRunner()

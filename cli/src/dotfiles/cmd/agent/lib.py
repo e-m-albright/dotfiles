@@ -67,7 +67,7 @@ def mcp_servers_for(
     """
     import json as _json
 
-    json_path = dotfiles_dir / "agents" / "shared" / "mcp-servers.json"
+    json_path = dotfiles_dir / "ai" / "agents" / "shared" / "mcp-servers.json"
     if not json_path.exists():
         return {}
     try:
@@ -109,7 +109,7 @@ def all_mcp_server_names(dotfiles_dir: Path) -> set[str]:
     """
     import json as _json
 
-    json_path = dotfiles_dir / "agents" / "shared" / "mcp-servers.json"
+    json_path = dotfiles_dir / "ai" / "agents" / "shared" / "mcp-servers.json"
     if not json_path.exists():
         return set()
     try:
@@ -161,7 +161,7 @@ def build_global_instructions(
     are appended (Codex uses this for its Codex-specific block). No composition,
     no baking — what you read in rules.md is what each tool gets.
     """
-    kernel = dotfiles_dir / "agents" / "shared" / "rules.md"
+    kernel = dotfiles_dir / "ai" / "agents" / "shared" / "rules.md"
     if not kernel.is_file():
         return None
     parts: list[str] = [kernel.read_text(), *extra_sections]
@@ -174,12 +174,12 @@ def build_global_instructions(
 
 
 def deploy_subagents(dotfiles_dir: Path, dest_dir: Path) -> list[StepResult]:
-    """Copy ``dotfiles_dir/.ai/agents/*.md`` into ``dest_dir``.
+    """Copy ``dotfiles_dir/ai/subagents/*.md`` into ``dest_dir``.
 
     Returns a list of StepResult (one per file copied, or one error).
     Mirrors ``deploy_subagents()`` from lib.sh.
     """
-    src = dotfiles_dir / ".ai" / "agents"
+    src = dotfiles_dir / "ai" / "subagents"
     if not src.is_dir():
         return []
 
@@ -207,7 +207,7 @@ def deploy_skills(
     *,
     which: Callable[[str], str | None] = shutil.which,  # type: ignore[assignment]
 ) -> StepResult:
-    """Run ``npx skills add`` to deploy ``.ai/skills`` for *vendor*.
+    """Run ``npx skills add`` to deploy ``ai/skills`` for *vendor*.
 
     The ``-g``/``--copy`` flags are load-bearing (required by the skills CLI).
     Mirrors ``deploy_skills()`` from lib.sh.
@@ -215,7 +215,7 @@ def deploy_skills(
     ``which`` is injected so tests can simulate npx being absent without
     touching the real filesystem.
     """
-    src = dotfiles_dir / ".ai" / "skills"
+    src = dotfiles_dir / "ai" / "skills"
     if not src.is_dir():
         return StepResult(
             level="error", message="Skills source directory not found", details=str(src)

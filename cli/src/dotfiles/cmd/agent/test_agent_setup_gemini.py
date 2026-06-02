@@ -56,10 +56,10 @@ def dotfiles(tmp_path: Path) -> Path:
     write_tree(
         d,
         {
-            "agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
-            "agents/shared/rules.md": RULES_MD,
-            "agents/gemini/settings.json": GEMINI_SEED_SETTINGS,
-            ".ai/rules/process/global-process.mdc": PROCESS_RULE,
+            "ai/agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
+            "ai/agents/shared/rules.md": RULES_MD,
+            "ai/agents/gemini/settings.json": GEMINI_SEED_SETTINGS,
+            "ai/rules/process/global-process.mdc": PROCESS_RULE,
         },
     )
     return d
@@ -197,9 +197,9 @@ class TestGeminiPresent:
         write_tree(
             d,
             {
-                "agents/shared/rules.md": RULES_MD,
-                "agents/gemini/settings.json": GEMINI_SEED_SETTINGS,
-                ".ai/rules/process/global-process.mdc": PROCESS_RULE,
+                "ai/agents/shared/rules.md": RULES_MD,
+                "ai/agents/gemini/settings.json": GEMINI_SEED_SETTINGS,
+                "ai/rules/process/global-process.mdc": PROCESS_RULE,
             },
         )
         results = setup_gemini(

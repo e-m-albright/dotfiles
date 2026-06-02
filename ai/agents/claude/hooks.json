@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/dotfiles/agents/claude/hooks/git-guardrails.sh",
+            "command": "~/dotfiles/ai/agents/claude/hooks/git-guardrails.sh",
             "timeout": 5
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/dotfiles/agents/claude/hooks/format-on-save.sh",
+            "command": "~/dotfiles/ai/agents/claude/hooks/format-on-save.sh",
             "timeout": 30
           }
         ]

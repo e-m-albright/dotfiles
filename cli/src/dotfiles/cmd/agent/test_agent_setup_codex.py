@@ -84,14 +84,14 @@ def dotfiles(tmp_path: Path) -> Path:
     write_tree(
         d,
         {
-            "agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
-            "agents/shared/rules.md": RULES_MD,
-            "agents/codex/default.rules": DEFAULT_RULES,
-            "agents/codex/statusline.toml": STATUSLINE_TOML,
-            "agents/codex/hooks.json": HOOKS_JSON,
-            ".ai/rules/process/global-process.mdc": PROCESS_RULE,
-            ".ai/skills/.keep": "",  # skills dir must exist for deploy_skills
-            ".ai/agents/myagent.md": "# MyAgent\n",
+            "ai/agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
+            "ai/agents/shared/rules.md": RULES_MD,
+            "ai/agents/codex/default.rules": DEFAULT_RULES,
+            "ai/agents/codex/statusline.toml": STATUSLINE_TOML,
+            "ai/agents/codex/hooks.json": HOOKS_JSON,
+            "ai/rules/process/global-process.mdc": PROCESS_RULE,
+            "ai/skills/.keep": "",  # skills dir must exist for deploy_skills
+            "ai/subagents/myagent.md": "# MyAgent\n",
         },
     )
     return d

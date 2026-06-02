@@ -87,7 +87,7 @@ def _ensure_pi_installed(
 
 def _setup_config_symlinks(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
     """Symlink settings.json + models.json from dotfiles into pi_home."""
-    pi_dir = dotfiles_dir / "agents" / "pi"
+    pi_dir = dotfiles_dir / "ai" / "agents" / "pi"
     results: list[StepResult] = []
     for name in ("settings.json", "models.json"):
         src = pi_dir / name
@@ -115,7 +115,7 @@ def _setup_instructions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
 
 def _setup_extensions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
     """Symlink agents/pi/extensions/*.ts → pi_home/extensions/; prune stale links."""
-    ext_src = dotfiles_dir / "agents" / "pi" / "extensions"
+    ext_src = dotfiles_dir / "ai" / "agents" / "pi" / "extensions"
     if not ext_src.is_dir():
         return []
 

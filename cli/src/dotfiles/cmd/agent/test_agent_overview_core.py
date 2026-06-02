@@ -38,44 +38,44 @@ def make_service_with_which(
 
 
 def seed_mcp(dotfiles: Path, servers: dict) -> None:
-    path = dotfiles / "agents" / "shared" / "mcp-servers.json"
+    path = dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(servers))
 
 
 def seed_claude_hooks(dotfiles: Path, hooks_dict: dict) -> None:
-    path = dotfiles / "agents" / "claude" / "hooks.json"
+    path = dotfiles / "ai" / "agents" / "claude" / "hooks.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"hooks": hooks_dict}))
 
 
 def seed_cursor_hooks(dotfiles: Path, events: list[str]) -> None:
-    path = dotfiles / "agents" / "cursor" / "hooks" / "hooks.json"
+    path = dotfiles / "ai" / "agents" / "cursor" / "hooks" / "hooks.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     hooks = [{"event": e, "command": "cmd"} for e in events]
     path.write_text(json.dumps({"hooks": hooks}))
 
 
 def seed_codex_hooks(dotfiles: Path, hooks_dict: dict) -> None:
-    path = dotfiles / "agents" / "codex" / "hooks.json"
+    path = dotfiles / "ai" / "agents" / "codex" / "hooks.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"hooks": hooks_dict}))
 
 
 def seed_skill(dotfiles: Path, name: str) -> None:
-    skill_dir = dotfiles / ".ai" / "skills" / name
+    skill_dir = dotfiles / "ai" / "skills" / name
     skill_dir.mkdir(parents=True, exist_ok=True)
     (skill_dir / "SKILL.md").write_text(f"# {name}")
 
 
 def seed_agent(dotfiles: Path, name: str) -> None:
-    agents_root = dotfiles / ".ai" / "agents"
+    agents_root = dotfiles / "ai" / "subagents"
     agents_root.mkdir(parents=True, exist_ok=True)
     (agents_root / f"{name}.md").write_text(f"# {name}")
 
 
 def seed_rule(dotfiles: Path, name: str) -> None:
-    rules_root = dotfiles / ".ai" / "rules" / "process"
+    rules_root = dotfiles / "ai" / "rules" / "process"
     rules_root.mkdir(parents=True, exist_ok=True)
     (rules_root / f"{name}.mdc").write_text(f"# {name}")
 
@@ -138,7 +138,7 @@ class TestSectionMcp:
 
     def test_invalid_json_returns_empty(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        path = dotfiles / "agents" / "shared" / "mcp-servers.json"
+        path = dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("NOT JSON")
         assert make_service(dotfiles, tmp_path / "home").section_mcp() == []
@@ -200,7 +200,7 @@ class TestSectionHooks:
 
     def test_invalid_json_graceful(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        path = dotfiles / "agents" / "claude" / "hooks.json"
+        path = dotfiles / "ai" / "agents" / "claude" / "hooks.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("BAD")
         assert make_service(dotfiles, tmp_path / "home").section_hooks() == []
@@ -227,7 +227,7 @@ class TestSectionSkills:
 
     def test_dir_without_skill_md_not_counted(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        empty_dir = dotfiles / ".ai" / "skills" / "empty-skill"
+        empty_dir = dotfiles / "ai" / "skills" / "empty-skill"
         empty_dir.mkdir(parents=True)
         summary = make_service(dotfiles, tmp_path / "home").section_skills()
         assert summary.canonical_skills == 0
@@ -310,14 +310,14 @@ class TestSectionAgents:
 
     def test_directories_in_agents_dir_skipped(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        sub = dotfiles / ".ai" / "agents" / "not-an-agent"
+        sub = dotfiles / "ai" / "subagents" / "not-an-agent"
         sub.mkdir(parents=True)
         rows = make_service(dotfiles, tmp_path / "home").section_agents()
         assert rows == []
 
     def test_non_md_files_skipped(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        agents_root = dotfiles / ".ai" / "agents"
+        agents_root = dotfiles / "ai" / "subagents"
         agents_root.mkdir(parents=True)
         (agents_root / "README.txt").write_text("ignore me")
         rows = make_service(dotfiles, tmp_path / "home").section_agents()
@@ -353,7 +353,7 @@ class TestSectionRules:
 
     def test_non_mdc_not_counted_as_canonical(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        rules_root = dotfiles / ".ai" / "rules" / "process"
+        rules_root = dotfiles / "ai" / "rules" / "process"
         rules_root.mkdir(parents=True)
         (rules_root / "README.md").write_text("docs")
         summary = make_service(dotfiles, tmp_path / "home").section_rules()
@@ -370,13 +370,13 @@ class TestSectionRules:
 
     def test_cursor_deployed_counts_mdc_entries(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        cursor_rules = dotfiles / "agents" / "cursor" / "rules"
+        cursor_rules = dotfiles / "ai" / "agents" / "cursor" / "rules"
         cursor_rules.mkdir(parents=True)
         # Create real symlinks pointing to source files
-        src1 = dotfiles / ".ai" / "rules" / "process" / "safety.mdc"
+        src1 = dotfiles / "ai" / "rules" / "process" / "safety.mdc"
         src1.parent.mkdir(parents=True, exist_ok=True)
         src1.write_text("# safety")
-        src2 = dotfiles / ".ai" / "rules" / "process" / "style.mdc"
+        src2 = dotfiles / "ai" / "rules" / "process" / "style.mdc"
         src2.write_text("# style")
         (cursor_rules / "safety.mdc").symlink_to(src1)
         (cursor_rules / "style.mdc").symlink_to(src2)
@@ -385,7 +385,7 @@ class TestSectionRules:
 
     def test_non_mdc_in_cursor_rules_not_counted(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        cursor_rules = dotfiles / "agents" / "cursor" / "rules"
+        cursor_rules = dotfiles / "ai" / "agents" / "cursor" / "rules"
         cursor_rules.mkdir(parents=True)
         (cursor_rules / "README.md").write_text("docs")
         summary = make_service(dotfiles, tmp_path / "home").section_rules()
@@ -415,7 +415,7 @@ class TestSectionPermissions:
 
     def test_claude_source_permissions(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        path = dotfiles / "agents" / "claude" / "permissions.json"
+        path = dotfiles / "ai" / "agents" / "claude" / "permissions.json"
         path.parent.mkdir(parents=True)
         path.write_text(json.dumps({"allow": ["a", "b"], "deny": []}))
         rows = make_service(dotfiles, tmp_path / "home").section_permissions()
@@ -425,7 +425,7 @@ class TestSectionPermissions:
 
     def test_cursor_cli_config(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        path = dotfiles / "agents" / "cursor" / "cli-config.json"
+        path = dotfiles / "ai" / "agents" / "cursor" / "cli-config.json"
         path.parent.mkdir(parents=True)
         data = {"permissions": {"allow": ["Shell(git)"], "deny": ["Shell(rm -rf /)"]}}
         path.write_text(json.dumps(data))
@@ -436,7 +436,7 @@ class TestSectionPermissions:
 
     def test_codex_default_rules_prefix_count(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        path = dotfiles / "agents" / "codex" / "default.rules"
+        path = dotfiles / "ai" / "agents" / "codex" / "default.rules"
         path.parent.mkdir(parents=True)
         path.write_text("prefix_rule allow stuff\nnot a prefix rule\nprefix_rule deny thing\n")
         rows = make_service(dotfiles, tmp_path / "home").section_permissions()
@@ -460,13 +460,13 @@ class TestSectionPermissions:
         settings = home / ".claude" / "settings.json"
         settings.parent.mkdir(parents=True)
         settings.write_text(json.dumps({"permissions": {"allow": ["x"], "deny": []}}))
-        perm = dotfiles / "agents" / "claude" / "permissions.json"
+        perm = dotfiles / "ai" / "agents" / "claude" / "permissions.json"
         perm.parent.mkdir(parents=True)
         perm.write_text(json.dumps({"allow": [], "deny": ["y"]}))
-        cursor = dotfiles / "agents" / "cursor" / "cli-config.json"
+        cursor = dotfiles / "ai" / "agents" / "cursor" / "cli-config.json"
         cursor.parent.mkdir(parents=True)
         cursor.write_text(json.dumps({"permissions": {"allow": ["z"], "deny": []}}))
-        rules = dotfiles / "agents" / "codex" / "default.rules"
+        rules = dotfiles / "ai" / "agents" / "codex" / "default.rules"
         rules.parent.mkdir(parents=True)
         rules.write_text("prefix_rule foo\n")
         rows = make_service(dotfiles, home).section_permissions()

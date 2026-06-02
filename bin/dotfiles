@@ -159,7 +159,7 @@ sub_dock () {
 }
 
 sub_migrate_agents_sync() {
-    "$DOTFILES_DIR/agents/migrate-agents-sync.sh" "$@"
+    "$DOTFILES_DIR/ai/agents/migrate-agents-sync.sh" "$@"
 }
 
 sub_install() {
@@ -192,7 +192,7 @@ sub_shell_profile() {
 }
 
 sub_cursor_plugins() {
-    local plugins_file="$DOTFILES_DIR/agents/cursor/PLUGINS.md"
+    local plugins_file="$DOTFILES_DIR/ai/agents/cursor/PLUGINS.md"
     printf "${BLUE}%b Cursor plugin checklist${NC}\n\n" "$ARROW"
     printf "Run these in Cursor chat (manual install):\n"
     printf "  /add-plugin superpowers\n"

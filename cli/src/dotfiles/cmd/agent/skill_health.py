@@ -137,7 +137,9 @@ class SkillHealthService:
             home=self._home,
             which=self._which,
         ).overview()
-        mcp_servers = load_mcp_servers(self._dotfiles / "agents" / "shared" / "mcp-servers.json")
+        mcp_servers = load_mcp_servers(
+            self._dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
+        )
         return build_vendor_verifies(
             overview,
             mcp_servers,
