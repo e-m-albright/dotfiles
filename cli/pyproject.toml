@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-dotfiles = "dotfiles.cli.main:app"
+dotfiles = "dotfiles.app.main:app"
 
 [dependency-groups]
 dev = [
@@ -38,10 +38,12 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dotfiles"]
+# Tests are colocated next to the modules they cover; keep them out of the wheel.
+exclude = ["**/test_*.py", "**/conftest.py", "**/testing", "**/__snapshots__"]
 
 [tool.ruff]
 line-length = 100
-src = ["src", "tests"]
+src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "PTH", "TID", "PT"]
@@ -51,7 +53,9 @@ select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "PTH", "TID", 
 unfixable = ["F401"]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src"]
+# Colocated tests are strict-exempt (ruff + pytest cover them); source stays strict.
+exclude = ["**/test_*.py", "**/conftest.py", "**/testing", "**/__snapshots__"]
 strict = ["src"]
 pythonVersion = "3.13"
 venvPath = "."
@@ -59,9 +63,10 @@ venv = ".venv"
 
 [tool.pytest.ini_options]
 addopts = "--timeout=30 --strict-markers"
-testpaths = ["tests"]
+testpaths = ["src/dotfiles"]
 asyncio_mode = "auto"
 
 [tool.coverage.run]
 source = ["dotfiles"]
 branch = true
+omit = ["*/test_*.py", "*/conftest.py", "*/testing/*"]

@@ -1,7 +1,7 @@
 # Referenced dynamically via Protocol structural typing / Typer registration.
-from tests.fakes import FakeProcessRunner
-
-from dotfiles.core import ports, sessions
+from dotfiles.adapters import ports
+from dotfiles.cmd.session import service as sessions
+from dotfiles.testing.fakes import FakeProcessRunner
 
 _ = ports.ProcessRunner.run
 _ = sessions.SessionLauncher.pick

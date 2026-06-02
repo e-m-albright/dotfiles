@@ -331,7 +331,7 @@ fi
 if command -v pi >/dev/null 2>&1; then
     print_section "Pi"
     mkdir -p ~/.pi/agent
-    ln -sf "$DOTFILES_DIR/agents/pi/models.json" ~/.pi/agent/models.json 2>/dev/null || true
+    ln -sf "$DOTFILES_DIR/ai/agents/pi/models.json" ~/.pi/agent/models.json 2>/dev/null || true
     print_success "Pi configured (models.json → LM Studio; skills via ~/.agents/skills)"
 fi
 
@@ -411,16 +411,16 @@ printf "  ${BOLD}Required:${NC}\n"
 print_todo "Run ${CYAN}claude${NC} to authenticate (plugins auto-configured)"
 print_todo "Run ${CYAN}gh auth login${NC} to authenticate GitHub CLI"
 print_todo "Open Cursor chat and install required plugins:"
-print_step "/add-plugin superpowers"
-print_step "/add-plugin context7-plugin"
+print_dim "    /add-plugin superpowers"
+print_dim "    /add-plugin context7-plugin"
 # Neon plugin disabled 2026-04-09 — revisit when actively using Neon projects
 print_todo "Open Rectangle and grant Accessibility permissions"
 print_todo "Verify git identity: ${CYAN}git config user.name && git config user.email${NC}"
 printf "\n"
 printf "  ${BOLD}Optional:${NC}\n"
-print_todo_optional "Cursor MCP servers are auto-configured — edit ${CYAN}~/dotfiles/agents/cursor/mcp.json${NC} to customize"
+print_todo_optional "Cursor MCP servers are auto-configured — edit ${CYAN}~/dotfiles/ai/agents/cursor/mcp.json${NC} to customize"
 print_todo_optional "When you want dotfiles-managed MCPs reset to profile defaults: ${CYAN}dotfiles agent setup --reset-mcp${NC}"
-print_todo_optional "Edit ${CYAN}~/dotfiles/agents/claude/plugins.yaml${NC} to customize Claude Code plugins"
+print_todo_optional "Edit ${CYAN}~/dotfiles/ai/agents/claude/plugins.yaml${NC} to customize Claude Code plugins"
 printf "\n"
 printf "  Run ${CYAN}dotfiles doctor${NC} to verify everything is set up correctly.\n"
 printf "\n"

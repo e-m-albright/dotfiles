@@ -62,9 +62,9 @@ editors/cursor/.cursorignore
 
 # -----------------------------------------------------------------------------
 # Ephemeral agent working files (durable artifacts go in docs/)
-# See: .ai/rules/process/artifact-placement.mdc
+# See: docs/knowledge/agent-output.md
 # -----------------------------------------------------------------------------
-.ai/artifacts/
+ai/artifacts/
 
 # -----------------------------------------------------------------------------
 # In-flight specs/plans — kept local, not published. Durable rationale

@@ -28,10 +28,11 @@ sub_help () {
     printf "   clean                Clean up Homebrew caches\n"
     printf "   dock                 Reset macOS Dock layout\n"
     printf "   completions          Output shell completions (eval to install)\n"
-    printf "   llm <cmd>            Evaluate local LM Studio models (list|bench|estimate|compare)\n"
-    printf "   remote setup [opts]    Set up SSH/Mosh/Zellij access for Termius\n"
-    printf "   remote disable [opts]  Turn off macOS Remote Login for phone access\n"
-    printf "   session|sesh <cmd>     zellij sessions: ls, attach, new, kill, or bare picker\n"
+    printf "   benchmark <cmd>      Benchmark local LM Studio models for your hardware (list|bench|estimate|compare)\n"
+    printf "   remote on [opts]       Turn on SSH/Mosh/Zellij access for Termius\n"
+    printf "   remote off [opts]      Turn off macOS Remote Login for phone access\n"
+    printf "   remote status          Show the remote-shell entrypoint state\n"
+    printf "   session <cmd>          zellij sessions: ls, attach, new, kill, or bare picker\n"
     printf "\n"
     printf "${BLUE}Command center:${NC}\n"
     printf "   tui                    Launch the Mission Control TUI (phone-drivable dashboard)\n"
@@ -49,6 +50,7 @@ sub_help () {
     printf "   agent verify [--offline]  Check skills/agents deployed + probe MCP servers\n"
     printf "\n"
     printf "   brew install         Sync packages from packages.toml manifest\n"
+    printf "   brew upgrade         Upgrade all installed packages (brew is the version surface)\n"
     printf "   brew stale           Find disabled packages still installed\n"
     printf "\n"
     printf "   shell profile        Profile shell startup time\n"
@@ -76,8 +78,10 @@ sub_update () {
     if brew upgrade 2>&1; then
         print_success "Homebrew packages up to date"
     fi
-    brew cleanup --prune=30
-    print_dim "Cleaned caches older than 30 days"
+    # Quiet cleanup: drop the "Skipping/Removing" wall, keep the freed summary.
+    local freed
+    freed="$(brew cleanup --prune=30 2>/dev/null | grep -o 'freed approximately.*' || true)"
+    print_dim "Cleaned caches older than 30 days${freed:+ — $freed}"
 
     # --- Node.js (fnm) ---
     if command -v fnm >/dev/null 2>&1; then
@@ -146,8 +150,12 @@ sub_clean () {
     print_header "Cleaning up"
 
     print_section "Homebrew"
-    brew cleanup --prune=30
-    print_success "Cleared caches older than 30 days"
+    # brew cleanup is noisy: per-file "Removing:" lines plus "Warning: Skipping X:
+    # most recent version not installed" (expected — an older bottle whose newest
+    # isn't installed). Drop stderr, surface only the freed-space summary.
+    local freed
+    freed="$(brew cleanup --prune=30 2>/dev/null | grep -o 'freed approximately.*' || true)"
+    print_success "Cleared caches older than 30 days${freed:+ — $freed}"
 
     print_completion "Cleanup finished"
 }
@@ -158,7 +166,7 @@ sub_dock () {
 }
 
 sub_migrate_agents_sync() {
-    "$DOTFILES_DIR/agents/migrate-agents-sync.sh" "$@"
+    "$DOTFILES_DIR/ai/agents/migrate-agents-sync.sh" "$@"
 }
 
 sub_install() {
@@ -191,7 +199,7 @@ sub_shell_profile() {
 }
 
 sub_cursor_plugins() {
-    local plugins_file="$DOTFILES_DIR/agents/cursor/PLUGINS.md"
+    local plugins_file="$DOTFILES_DIR/ai/agents/cursor/PLUGINS.md"
     printf "${BLUE}%b Cursor plugin checklist${NC}\n\n" "$ARROW"
     printf "Run these in Cursor chat (manual install):\n"
     printf "  /add-plugin superpowers\n"
@@ -226,21 +234,20 @@ _dotfiles() {
         'clean:Clean caches'
         'dock:Reset macOS Dock'
         'completions:Output shell completions'
-        'llm:Evaluate local LM Studio models (list|bench|estimate|compare)'
+        'benchmark:Benchmark local LM Studio models for your hardware'
         'remote:Phone remote-shell access (setup, disable)'
         'session:zellij sessions (ls, attach, new, kill, picker)'
-        'sesh:zellij sessions (alias)'
         'tui:Launch the Mission Control TUI'
         'snapshot:Machine-state snapshots (ls, diff)'
-        'agent:Agent vendor namespace (overview, lint, setup, verify, web-chat-instructions)'
-        'brew:Brew namespace (install, stale)'
+        'agent:Agent namespace (overview, lint, setup, verify, web-chat-instructions)'
+        'brew:Brew namespace (install, upgrade, stale)'
         'shell:Shell namespace (profile)'
         'cursor:Cursor namespace (plugins)'
     )
     _describe 'command' commands
 }
 
-compdef _dotfiles dotfiles
+compdef _dotfiles dotfiles dfs
 EOF
 }
 
@@ -273,7 +280,7 @@ ns_cursor() {
 # As later phases land, add their names to this list.
 # INVARIANT: every name here must also appear in sub_help and sub_completions —
 # enforced by cli/tests/test_command_tree.py so the lists can't silently drift.
-PY_CLI_COMMANDS=" version remote session sesh doctor llm brew snapshot tui "
+PY_CLI_COMMANDS=" version remote session doctor benchmark brew snapshot tui "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
