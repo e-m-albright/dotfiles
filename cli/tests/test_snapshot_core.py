@@ -3,18 +3,9 @@
 from datetime import datetime
 from pathlib import Path
 
-from dotfiles.core.models import (
-    AgentOverview,
-    BrewState,
-    HookRow,
-    McpRow,
-    RulesSummary,
-    RuntimeChange,
-    SkillsSummary,
-    Snapshot,
-    SymlinkState,
-)
-from dotfiles.core.snapshot import (
+from dotfiles.cmd.agent.models import AgentOverview, HookRow, McpRow, RulesSummary, SkillsSummary
+from dotfiles.cmd.snapshot.models import BrewState, RuntimeChange, Snapshot, SymlinkState
+from dotfiles.cmd.snapshot.service import (
     agent_config_hashes,
     capture,
     collect_brew,
@@ -25,7 +16,7 @@ from dotfiles.core.snapshot import (
     load_snapshot,
     write_snapshot,
 )
-from tests.fakes import FakeProcessRunner, write_tree
+from dotfiles.testing.fakes import FakeProcessRunner, write_tree
 
 
 def test_snapshot_round_trips_through_json():

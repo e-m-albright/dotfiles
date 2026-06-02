@@ -28,9 +28,10 @@ sub_help () {
     printf "   clean                Clean up Homebrew caches\n"
     printf "   dock                 Reset macOS Dock layout\n"
     printf "   completions          Output shell completions (eval to install)\n"
-    printf "   llm <cmd>            Evaluate local LM Studio models (list|bench|estimate|compare)\n"
-    printf "   remote setup [opts]    Set up SSH/Mosh/Zellij access for Termius\n"
-    printf "   remote disable [opts]  Turn off macOS Remote Login for phone access\n"
+    printf "   benchmark <cmd>      Benchmark local LM Studio models for your hardware (list|bench|estimate|compare)\n"
+    printf "   remote on [opts]       Turn on SSH/Mosh/Zellij access for Termius\n"
+    printf "   remote off [opts]      Turn off macOS Remote Login for phone access\n"
+    printf "   remote status          Show the remote-shell entrypoint state\n"
     printf "   session|sesh <cmd>     zellij sessions: ls, attach, new, kill, or bare picker\n"
     printf "\n"
     printf "${BLUE}Command center:${NC}\n"
@@ -226,7 +227,7 @@ _dotfiles() {
         'clean:Clean caches'
         'dock:Reset macOS Dock'
         'completions:Output shell completions'
-        'llm:Evaluate local LM Studio models (list|bench|estimate|compare)'
+        'benchmark:Benchmark local LM Studio models for your hardware'
         'remote:Phone remote-shell access (setup, disable)'
         'session:zellij sessions (ls, attach, new, kill, picker)'
         'sesh:zellij sessions (alias)'
@@ -273,7 +274,7 @@ ns_cursor() {
 # As later phases land, add their names to this list.
 # INVARIANT: every name here must also appear in sub_help and sub_completions —
 # enforced by cli/tests/test_command_tree.py so the lists can't silently drift.
-PY_CLI_COMMANDS=" version remote session sesh doctor llm brew snapshot tui "
+PY_CLI_COMMANDS=" version remote session sesh doctor benchmark brew snapshot tui "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi

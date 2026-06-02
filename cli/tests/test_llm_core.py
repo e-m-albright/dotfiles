@@ -2,12 +2,17 @@
 
 import pytest
 
-from dotfiles.core.llm import BENCH_PROMPT, LMStudioService, _is_estimate_line, _random_words
-from dotfiles.core.settings import LlmSettings
-from tests.fakes import FakeHttpClient, FakeMultiPostHttpClient, FakeProcessRunner
-from tests.llm_payloads import models_payload as _models_payload
-from tests.llm_payloads import pp_payload as _pp_payload
-from tests.llm_payloads import tg_payload as _tg_payload
+from dotfiles.cmd.benchmark.service import (
+    BENCH_PROMPT,
+    LMStudioService,
+    _is_estimate_line,
+    _random_words,
+)
+from dotfiles.settings import LlmSettings
+from dotfiles.testing.fakes import FakeHttpClient, FakeMultiPostHttpClient, FakeProcessRunner
+from dotfiles.testing.llm_payloads import models_payload as _models_payload
+from dotfiles.testing.llm_payloads import pp_payload as _pp_payload
+from dotfiles.testing.llm_payloads import tg_payload as _tg_payload
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers

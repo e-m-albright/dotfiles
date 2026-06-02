@@ -2,8 +2,8 @@ from io import StringIO
 
 from rich.console import Console
 
-from dotfiles.cli.ui import render_steps
-from dotfiles.core.models import StepResult
+from dotfiles.console import render_steps
+from dotfiles.result import StepResult
 
 
 def test_render_steps_writes_each_message_with_a_glyph() -> None:
@@ -40,7 +40,7 @@ def test_render_steps_escapes_rich_markup_in_message() -> None:
 
 
 def test_has_errors() -> None:
-    from dotfiles.cli.ui import has_errors
+    from dotfiles.console import has_errors
 
     assert has_errors([StepResult(level="error", message="x")]) is True
     assert has_errors([StepResult(level="warn", message="x")]) is False
@@ -50,8 +50,8 @@ def test_has_errors() -> None:
 def test_render_connection_info_warns_when_no_tailscale() -> None:
     from io import StringIO
 
-    from dotfiles.cli.ui import render_connection_info
-    from dotfiles.core.models import ConnectionInfo
+    from dotfiles.cmd.remote.cli import render_connection_info
+    from dotfiles.cmd.remote.models import ConnectionInfo
 
     buf = StringIO()
     console = Console(file=buf, force_terminal=False, width=200)
@@ -72,8 +72,8 @@ def test_render_connection_info_warns_when_no_tailscale() -> None:
 def test_render_connection_info_offers_picker_command() -> None:
     from io import StringIO
 
-    from dotfiles.cli.ui import render_connection_info
-    from dotfiles.core.models import ConnectionInfo
+    from dotfiles.cmd.remote.cli import render_connection_info
+    from dotfiles.cmd.remote.models import ConnectionInfo
 
     buf = StringIO()
     console = Console(file=buf, force_terminal=False, width=200)

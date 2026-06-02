@@ -1,8 +1,8 @@
 from pathlib import Path
 
+from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.adapters.process import SubprocessRunner
-from dotfiles.cli.context import AppContext, build_real_context
-from dotfiles.core.ports import ProcessRunner
+from dotfiles.app.context import AppContext, build_real_context
 
 
 def test_build_real_context_wires_real_adapters() -> None:
@@ -15,8 +15,8 @@ def test_build_real_context_wires_real_adapters() -> None:
 
 
 def test_app_context_is_constructible_with_fakes() -> None:
-    from dotfiles.core.settings import Settings
-    from tests.fakes import (
+    from dotfiles.settings import Settings
+    from dotfiles.testing.fakes import (
         FakeHttpClient,
         FakeProcessRunner,
         FakeSessionLauncher,
@@ -36,7 +36,7 @@ def test_app_context_is_constructible_with_fakes() -> None:
 
 def test_real_context_has_launcher() -> None:
     from dotfiles.adapters.launcher import FzfExecLauncher
-    from dotfiles.cli.context import build_real_context
+    from dotfiles.app.context import build_real_context
 
     ctx = build_real_context(interactive=False)
     assert isinstance(ctx.launcher, FzfExecLauncher)

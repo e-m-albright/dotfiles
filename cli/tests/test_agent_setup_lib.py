@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.agent_setup.lib import (
+from dotfiles.cmd.agent.lib import (
     build_global_instructions,
     deploy_skills,
     deploy_subagents,
@@ -18,7 +18,7 @@ from dotfiles.core.agent_setup.lib import (
     mcp_skip,
     merge_managed_mcp,
 )
-from tests.fakes import FakeProcessRunner, write_tree
+from dotfiles.testing.fakes import FakeProcessRunner, write_tree
 
 # ---------------------------------------------------------------------------
 # Fixtures

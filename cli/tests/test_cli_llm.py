@@ -2,16 +2,16 @@
 
 from typer.testing import CliRunner
 
-from dotfiles.cli.main import app
-from tests.fakes import (
+from dotfiles.app.main import app
+from dotfiles.testing.fakes import (
     FakeHttpClient,
     FakeMultiPostHttpClient,
     FakeProcessRunner,
     make_fake_context,
 )
-from tests.llm_payloads import models_payload as _models_payload
-from tests.llm_payloads import pp_payload as _pp_payload
-from tests.llm_payloads import tg_payload as _tg_payload
+from dotfiles.testing.llm_payloads import models_payload as _models_payload
+from dotfiles.testing.llm_payloads import pp_payload as _pp_payload
+from dotfiles.testing.llm_payloads import tg_payload as _tg_payload
 
 runner = CliRunner()
 
@@ -47,27 +47,27 @@ def _bench_http(
 
 
 def test_llm_help_exits_zero() -> None:
-    result = runner.invoke(app, ["llm", "--help"])
+    result = runner.invoke(app, ["benchmark", "--help"])
     assert result.exit_code == 0, result.output
 
 
 def test_llm_help_lists_list_subcommand() -> None:
-    result = runner.invoke(app, ["llm", "--help"])
+    result = runner.invoke(app, ["benchmark", "--help"])
     assert "list" in result.output
 
 
 def test_llm_help_lists_bench_subcommand() -> None:
-    result = runner.invoke(app, ["llm", "--help"])
+    result = runner.invoke(app, ["benchmark", "--help"])
     assert "bench" in result.output
 
 
 def test_llm_help_lists_estimate_subcommand() -> None:
-    result = runner.invoke(app, ["llm", "--help"])
+    result = runner.invoke(app, ["benchmark", "--help"])
     assert "estimate" in result.output
 
 
 def test_llm_help_lists_compare_subcommand() -> None:
-    result = runner.invoke(app, ["llm", "--help"])
+    result = runner.invoke(app, ["benchmark", "--help"])
     assert "compare" in result.output
 
 
@@ -81,7 +81,7 @@ def test_llm_list_prints_lms_ps_output() -> None:
     proc = FakeProcessRunner()
     proc.script(("lms", "ps"), stdout="my-model  loaded\n")
     ctx = make_fake_context(runner=proc)
-    result = runner.invoke(app, ["llm", "list"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "list"], obj=ctx)
     # lms is installed, so we expect the scripted output to be printed
     assert result.exit_code == 0, result.output
     assert "my-model" in result.output
@@ -91,7 +91,7 @@ def test_llm_list_exit_zero() -> None:
     proc = FakeProcessRunner()
     proc.script(("lms", "ps"), stdout="model-a  loaded\n")
     ctx = make_fake_context(runner=proc)
-    result = runner.invoke(app, ["llm", "list"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "list"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
@@ -103,14 +103,14 @@ def test_llm_list_exit_zero() -> None:
 def test_llm_bench_exits_zero() -> None:
     http = _bench_http(model_id="test-model", tps=55.0)
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench", "test-model"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
 def test_llm_bench_output_contains_throughput() -> None:
     http = _bench_http(model_id="test-model", tps=55.0)
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench", "test-model"], obj=ctx)
     assert "Throughput" in result.output
 
 
@@ -118,21 +118,21 @@ def test_llm_bench_output_contains_tier_label() -> None:
     """tg tps=55 → interactive-grade tier."""
     http = _bench_http(model_id="test-model", tps=55.0)
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench", "test-model"], obj=ctx)
     assert "interactive-grade" in result.output
 
 
 def test_llm_bench_output_contains_tps_value() -> None:
     http = _bench_http(model_id="test-model", tps=72.5)
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench", "test-model"], obj=ctx)
     assert "72.50" in result.output
 
 
 def test_llm_bench_output_contains_ttft() -> None:
     http = _bench_http(model_id="test-model", ttft=0.123)
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench", "test-model"], obj=ctx)
     assert "TTFT" in result.output
     assert "0.123" in result.output
 
@@ -140,7 +140,7 @@ def test_llm_bench_output_contains_ttft() -> None:
 def test_llm_bench_reasoning_tokens_shown() -> None:
     http = _bench_http(model_id="test-model", reasoning=0)
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench", "test-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench", "test-model"], obj=ctx)
     assert "Reasoning tokens" in result.output
 
 
@@ -148,14 +148,14 @@ def test_llm_bench_thinking_model_detected() -> None:
     """reasoning_tokens > 0 → output contains THINKING MODEL."""
     http = _bench_http(model_id="think-model", reasoning=512)
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench", "think-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench", "think-model"], obj=ctx)
     assert "THINKING MODEL" in result.output
 
 
 def test_llm_bench_non_reasoning_model_no_thinking_label() -> None:
     http = _bench_http(model_id="plain-model", reasoning=0)
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench", "plain-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench", "plain-model"], obj=ctx)
     assert "THINKING MODEL" not in result.output
 
 
@@ -163,7 +163,7 @@ def test_llm_bench_no_model_arg_uses_loaded() -> None:
     """bench without model ID uses the currently loaded model via /api/v0/models."""
     http = _bench_http(model_id="auto-model", tps=45.0)
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench"], obj=ctx)
     assert result.exit_code == 0, result.output
     assert "Throughput" in result.output
 
@@ -172,7 +172,7 @@ def test_llm_bench_no_model_no_loaded_exits_one() -> None:
     http = FakeHttpClient()
     http.script_get(MODELS_URL, {"data": []})
     ctx = make_fake_context(http=http)
-    result = runner.invoke(app, ["llm", "bench"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "bench"], obj=ctx)
     assert result.exit_code == 1
 
 
@@ -188,7 +188,7 @@ def test_llm_estimate_exits_zero() -> None:
         stdout="Estimated memory usage: 12 GB\n",
     )
     ctx = make_fake_context(runner=proc)
-    result = runner.invoke(app, ["llm", "estimate", "big-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "estimate", "big-model"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
@@ -199,7 +199,7 @@ def test_llm_estimate_output_contains_estimate_line() -> None:
         stdout="Estimated memory usage: 12 GB\nSome other line\n",
     )
     ctx = make_fake_context(runner=proc)
-    result = runner.invoke(app, ["llm", "estimate", "big-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "estimate", "big-model"], obj=ctx)
     assert "Estimated memory usage" in result.output
 
 
@@ -210,7 +210,7 @@ def test_llm_estimate_prints_ceiling_note() -> None:
         stdout="Estimated memory usage: 12 GB\n",
     )
     ctx = make_fake_context(runner=proc)
-    result = runner.invoke(app, ["llm", "estimate", "big-model"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "estimate", "big-model"], obj=ctx)
     assert "40 GB" in result.output
 
 
@@ -238,7 +238,7 @@ def test_llm_compare_exits_zero() -> None:
     proc.script(("lms", "load", "model-b", "-c", "32768", "-y"), stdout="")
 
     ctx = make_fake_context(runner=proc, http=http)
-    result = runner.invoke(app, ["llm", "compare", "model-a", "model-b"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "compare", "model-a", "model-b"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
@@ -257,7 +257,7 @@ def test_llm_compare_output_contains_head_to_head() -> None:
     proc.script(("lms", "load", "model-b", "-c", "32768", "-y"), stdout="")
 
     ctx = make_fake_context(runner=proc, http=http)
-    result = runner.invoke(app, ["llm", "compare", "model-a", "model-b"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "compare", "model-a", "model-b"], obj=ctx)
     assert "Head-to-head" in result.output
 
 
@@ -276,7 +276,7 @@ def test_llm_compare_output_contains_both_throughput_blocks() -> None:
     proc.script(("lms", "load", "model-b", "-c", "32768", "-y"), stdout="")
 
     ctx = make_fake_context(runner=proc, http=http)
-    result = runner.invoke(app, ["llm", "compare", "model-a", "model-b"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "compare", "model-a", "model-b"], obj=ctx)
     assert result.output.count("Throughput") == 2
 
 
@@ -289,6 +289,6 @@ def test_llm_output_with_brackets_not_eaten_by_rich_markup() -> None:
         stdout="Memory estimate: 12.5 GB [max]\n",
     )
     ctx = make_fake_context(runner=proc)
-    result = runner.invoke(app, ["llm", "estimate", "qwen[Q4_K_M]"], obj=ctx)
+    result = runner.invoke(app, ["benchmark", "estimate", "qwen[Q4_K_M]"], obj=ctx)
     assert result.exit_code == 0, result.output
     assert "[max]" in result.output

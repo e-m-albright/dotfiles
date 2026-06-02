@@ -1,6 +1,6 @@
 """state_dir resolution in the composition root."""
 
-from dotfiles.cli.context import build_real_context
+from dotfiles.app.context import build_real_context
 
 
 def test_state_dir_defaults_under_local_state(monkeypatch):

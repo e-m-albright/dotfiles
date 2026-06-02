@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from dotfiles.adapters.http import HttpError, UrllibHttpClient
-from dotfiles.core.ports import HttpClient
-from tests.fakes import FakeHttpClient
+from dotfiles.adapters.ports import HttpClient
+from dotfiles.testing.fakes import FakeHttpClient
 
 # ---------------------------------------------------------------------------
 # Protocol conformance

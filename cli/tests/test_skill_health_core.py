@@ -1,7 +1,7 @@
 """Skill-health: deployment counts, drift, and MCP reachability probes."""
 
-from dotfiles.core.agent_config import McpServerEntry
-from dotfiles.core.models import (
+from dotfiles.cmd.agent.config import McpServerEntry
+from dotfiles.cmd.agent.models import (
     AgentOverview,
     AgentRow,
     McpProbe,
@@ -9,8 +9,8 @@ from dotfiles.core.models import (
     SkillsSummary,
     VendorVerify,
 )
-from dotfiles.core.skill_health import SkillHealthService, build_vendor_verifies, probe_mcp
-from tests.fakes import FakeHttpClient, FakeProcessRunner
+from dotfiles.cmd.agent.skill_health import SkillHealthService, build_vendor_verifies, probe_mcp
+from dotfiles.testing.fakes import FakeHttpClient, FakeProcessRunner
 
 
 def test_vendor_verify_holds_counts_drift_and_probes():

@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.agent_setup.pi import setup_pi
-from tests.fakes import FakeProcessRunner, write_tree
+from dotfiles.cmd.agent.vendors.pi import setup_pi
+from dotfiles.testing.fakes import FakeProcessRunner, write_tree
 
 # ---------------------------------------------------------------------------
 # Fixtures

@@ -11,10 +11,10 @@ from textual.binding import BindingType
 from textual.containers import Vertical
 from textual.widgets import Footer, Static
 
+from dotfiles.app.context import AppContext, build_real_context
 from dotfiles.banner import COMPACT_LINES, gradient_banner
-from dotfiles.cli.context import AppContext, build_real_context
-from dotfiles.tui.panes.remote import RemotePane
-from dotfiles.tui.panes.sessions import SessionsPane
+from dotfiles.cmd.remote.pane import RemotePane
+from dotfiles.cmd.session.pane import SessionsPane
 
 _STYLES = Path(__file__).parent / "styles" / "dashboard.tcss"
 

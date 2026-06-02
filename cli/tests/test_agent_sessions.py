@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from dotfiles.core.agent_sessions import decode_claude_slug, live_agents
+from dotfiles.cmd.session.agent_sessions import decode_claude_slug, live_agents
 
 
 def test_decode_claude_slug() -> None:

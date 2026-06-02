@@ -6,9 +6,9 @@ from rich.console import Console
 from typer.testing import CliRunner
 
 from dotfiles import __version__
+from dotfiles.app.main import app
 from dotfiles.banner import BLOCK_LINES, COMPACT_LINES, gradient_banner, print_banner
-from dotfiles.cli.main import app
-from tests.fakes import make_fake_context
+from dotfiles.testing.fakes import make_fake_context
 
 runner = CliRunner()
 

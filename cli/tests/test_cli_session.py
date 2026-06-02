@@ -1,7 +1,7 @@
 from typer.testing import CliRunner
 
-from dotfiles.cli.main import app
-from tests.fakes import FakeProcessRunner, FakeSessionLauncher, make_fake_context
+from dotfiles.app.main import app
+from dotfiles.testing.fakes import FakeProcessRunner, FakeSessionLauncher, make_fake_context
 
 runner = CliRunner()
 
@@ -61,7 +61,7 @@ def test_bare_picker_cancelled_does_nothing() -> None:
 
 
 def test_ls_reports_zellij_error() -> None:
-    from tests.fakes import FakeProcessRunner, make_fake_context
+    from dotfiles.testing.fakes import FakeProcessRunner, make_fake_context
 
     r = FakeProcessRunner()
     r.script(("zellij", "list-sessions", "--no-formatting"), exit_code=1, stdout="", stderr="boom")
@@ -71,7 +71,7 @@ def test_ls_reports_zellij_error() -> None:
 
 
 def test_bare_picker_reports_zellij_error() -> None:
-    from tests.fakes import FakeProcessRunner, make_fake_context
+    from dotfiles.testing.fakes import FakeProcessRunner, make_fake_context
 
     r = FakeProcessRunner()
     r.script(("zellij", "list-sessions", "--no-formatting"), exit_code=1, stdout="", stderr="boom")

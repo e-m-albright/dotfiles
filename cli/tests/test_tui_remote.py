@@ -2,9 +2,9 @@
 
 import pytest
 
-from dotfiles.cli.context import AppContext
+from dotfiles.app.context import AppContext
+from dotfiles.testing.fakes import FakeProcessRunner, make_fake_context
 from dotfiles.tui.app import MissionControlApp
-from tests.fakes import FakeProcessRunner, make_fake_context
 
 
 def _remote_ctx() -> AppContext:
@@ -25,7 +25,7 @@ async def test_remote_pane_shows_status():
         # let the status worker finish and repaint
         await app.workers.wait_for_complete()
         await pilot.pause()
-        from dotfiles.tui.panes.remote import RemotePane
+        from dotfiles.cmd.remote.pane import RemotePane
 
         pane = app.query_one(RemotePane)
         text = pane.render_status_line()
@@ -39,7 +39,7 @@ async def test_copy_connect_command_uses_connection_info():
     app = MissionControlApp(ctx=_remote_ctx())
     async with app.run_test() as pilot:
         await pilot.pause()
-        from dotfiles.tui.panes.remote import RemotePane
+        from dotfiles.cmd.remote.pane import RemotePane
 
         pane = app.query_one(RemotePane)
         cmd = pane.connect_command()
@@ -53,7 +53,7 @@ async def test_toggle_remote_login_warns_when_not_interactive():
     app = MissionControlApp(ctx=_remote_ctx())
     async with app.run_test() as pilot:
         await pilot.pause()
-        from dotfiles.tui.panes.remote import RemotePane
+        from dotfiles.cmd.remote.pane import RemotePane
 
         pane = app.query_one(RemotePane)
         result = pane.toggle_login_plan()
@@ -80,7 +80,7 @@ async def test_kill_sessions_confirm_path_runs_pkill_not_disable():
     app = MissionControlApp(ctx=ctx)
     async with app.run_test() as pilot:
         await pilot.pause()
-        from dotfiles.tui.panes.remote import RemotePane
+        from dotfiles.cmd.remote.pane import RemotePane
 
         pane = app.query_one(RemotePane)
         # Directly invoke the confirmed callback (True = user confirmed)
@@ -104,7 +104,7 @@ async def test_kill_sessions_cancel_path_does_not_run_pkill():
     app = MissionControlApp(ctx=ctx)
     async with app.run_test() as pilot:
         await pilot.pause()
-        from dotfiles.tui.panes.remote import RemotePane
+        from dotfiles.cmd.remote.pane import RemotePane
 
         pane = app.query_one(RemotePane)
 

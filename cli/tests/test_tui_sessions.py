@@ -2,9 +2,9 @@
 
 import pytest
 
+from dotfiles.testing.fakes import FakeProcessRunner, make_fake_context
 from dotfiles.tui.app import MissionControlApp
 from dotfiles.tui.launcher import zellij_handoff_command
-from tests.fakes import FakeProcessRunner, make_fake_context
 
 
 def test_zellij_handoff_attaches_when_not_in_zellij():
@@ -36,7 +36,7 @@ async def test_sessions_pane_lists_sessions():
     async with app.run_test() as pilot:
         await pilot.pause()
         await pilot.pause()
-        from dotfiles.tui.panes.sessions import SessionsPane
+        from dotfiles.cmd.session.pane import SessionsPane
 
         pane = app.query_one(SessionsPane)
         assert pane.session_names() == ["mobile", "work"]

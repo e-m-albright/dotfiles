@@ -4,8 +4,8 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from dotfiles.cli.main import app
-from tests.fakes import make_fake_context
+from dotfiles.app.main import app
+from dotfiles.testing.fakes import make_fake_context
 
 runner = CliRunner()
 

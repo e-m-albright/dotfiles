@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-dotfiles = "dotfiles.cli.main:app"
+dotfiles = "dotfiles.app.main:app"
 
 [dependency-groups]
 dev = [

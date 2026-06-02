@@ -2,9 +2,9 @@
 
 from pathlib import Path
 
-from dotfiles.core.doctor import DoctorService
-from dotfiles.core.models import CheckResult
-from tests.fakes import FakeProcessRunner, write_tree
+from dotfiles.cmd.doctor.models import CheckResult
+from dotfiles.cmd.doctor.service import DoctorService
+from dotfiles.testing.fakes import FakeProcessRunner, write_tree
 
 
 def _svc(runner=None, *, fix=False, which=None, home=None, dotfiles_dir=None):

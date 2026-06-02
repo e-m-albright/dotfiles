@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.brew import (
+from dotfiles.cmd.brew.service import (
     _TW_DMG_PATH,
     _TW_FETCH_URL,
     PackageManifest,
@@ -17,7 +17,7 @@ from dotfiles.core.brew import (
     install_rust,
     install_typewhisper,
 )
-from tests.fakes import FakeProcessRunner
+from dotfiles.testing.fakes import FakeProcessRunner
 
 # ---------------------------------------------------------------------------
 # Minimal TOML fixture

@@ -11,12 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.agent_setup.settings_merger import (
+from dotfiles.cmd.agent.settings_merger import (
     load_json_or,
     merge_replace,
     write_json_safely,
 )
-from dotfiles.core.agent_setup.toml_writer import (
+from dotfiles.cmd.agent.toml_writer import (
     render_mcp_toml,
     upsert_section,
 )

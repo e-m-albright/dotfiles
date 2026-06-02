@@ -1,5 +1,5 @@
+from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.adapters.process import SubprocessRunner
-from dotfiles.core.ports import ProcessRunner
 
 
 def test_subprocess_runner_satisfies_port() -> None:

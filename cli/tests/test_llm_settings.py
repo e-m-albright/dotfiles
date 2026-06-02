@@ -2,8 +2,8 @@
 
 import pytest
 
-from dotfiles.core.models import BenchResult
-from dotfiles.core.settings import LlmSettings
+from dotfiles.cmd.benchmark.models import BenchResult
+from dotfiles.settings import LlmSettings
 
 # ---------------------------------------------------------------------------
 # LlmSettings — defaults and env reading

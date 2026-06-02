@@ -1,4 +1,5 @@
-from dotfiles.core.models import ConnectionInfo, RemoteStatus, StepResult
+from dotfiles.cmd.remote.models import ConnectionInfo, RemoteStatus
+from dotfiles.result import StepResult
 
 
 def test_step_result_levels() -> None:

@@ -10,8 +10,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from dotfiles.core.agent_config import load_config, load_mcp_servers
-from dotfiles.core.logging import configure_logging
+from dotfiles.cmd.agent.config import load_config, load_mcp_servers
+from dotfiles.logging import configure_logging
 
 
 def test_malformed_mcp_config_logs_warning(tmp_path: Path, caplog: object) -> None:

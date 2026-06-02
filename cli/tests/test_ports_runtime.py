@@ -1,4 +1,4 @@
-from dotfiles.core.ports import ProcessRunner
+from dotfiles.adapters.ports import ProcessRunner
 
 
 def test_ports_are_runtime_checkable_protocols() -> None:

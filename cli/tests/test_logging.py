@@ -1,6 +1,6 @@
 import logging
 
-from dotfiles.core.logging import configure_logging, get_logger
+from dotfiles.logging import configure_logging, get_logger
 
 
 def test_configure_sets_level(caplog) -> None:

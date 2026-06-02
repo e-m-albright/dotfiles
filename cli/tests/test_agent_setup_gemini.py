@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.agent_setup.gemini import setup_gemini
-from tests.fakes import FakeProcessRunner, write_tree
+from dotfiles.cmd.agent.vendors.gemini import setup_gemini
+from dotfiles.testing.fakes import FakeProcessRunner, write_tree
 
 # ---------------------------------------------------------------------------
 # Fixtures

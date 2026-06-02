@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.gemini import GeminiChunksService, GeminiError
-from tests.fakes import FakeProcessRunner
+from dotfiles.cmd.agent.web_chat import GeminiChunksService, GeminiError
+from dotfiles.testing.fakes import FakeProcessRunner
 
 
 def _make_chunks_dir(tmp_path: Path, *chunks: tuple[str, str]) -> Path:

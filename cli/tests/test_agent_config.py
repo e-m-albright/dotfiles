@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from dotfiles.core.agent_config import (
+from dotfiles.cmd.agent.config import (
     ClaudeHooksConfig,
     CursorHooksConfig,
     McpServerEntry,

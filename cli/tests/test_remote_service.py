@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from dotfiles.core.remote import RemoteService, is_ssh_public_key
-from tests.fakes import FakeProcessRunner
+from dotfiles.cmd.remote.service import RemoteService, is_ssh_public_key
+from dotfiles.testing.fakes import FakeProcessRunner
 
 
 def _service(runner: FakeProcessRunner, home: Path, *, interactive: bool = False) -> RemoteService:
@@ -103,7 +103,7 @@ def test_setup_adds_key_idempotently_and_enables_remote_login(tmp_path: Path) ->
 def test_setup_rejects_bad_key(tmp_path: Path) -> None:
     import pytest
 
-    from dotfiles.core.remote import InvalidKeyError
+    from dotfiles.cmd.remote.service import InvalidKeyError
 
     service = RemoteService(runner=_base_runner(), interactive=True, home=tmp_path)
     with pytest.raises(InvalidKeyError):

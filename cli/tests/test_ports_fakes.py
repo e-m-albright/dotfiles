@@ -1,5 +1,5 @@
-from dotfiles.core.ports import ProcessRunner
-from tests.fakes import FakeProcessRunner
+from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.testing.fakes import FakeProcessRunner
 
 
 def test_fake_runner_returns_scripted_result_and_records_calls() -> None:

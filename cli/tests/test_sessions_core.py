@@ -1,6 +1,6 @@
-from dotfiles.core.models import Session
-from dotfiles.core.sessions import attach_command, kill_session, list_sessions, parse_sessions
-from tests.fakes import FakeProcessRunner
+from dotfiles.cmd.session.models import Session
+from dotfiles.cmd.session.service import attach_command, kill_session, list_sessions, parse_sessions
+from dotfiles.testing.fakes import FakeProcessRunner
 
 
 def test_parse_empty() -> None:
@@ -74,7 +74,7 @@ def test_list_returns_empty_when_marker_is_in_stderr() -> None:
 def test_list_raises_on_real_failure() -> None:
     import pytest
 
-    from dotfiles.core.sessions import SessionError
+    from dotfiles.cmd.session.service import SessionError
 
     runner = FakeProcessRunner()
     runner.script(

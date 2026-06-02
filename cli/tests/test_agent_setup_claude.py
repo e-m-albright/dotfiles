@@ -13,12 +13,12 @@ from typing import Any
 
 import pytest
 
-from dotfiles.core.agent_setup.claude import (
+from dotfiles.cmd.agent.vendors.claude import (
     _clean_mcp_permissions,
     _rewrite_http_to_mcp_remote,
     setup_claude,
 )
-from tests.fakes import FakeProcessRunner, write_tree
+from dotfiles.testing.fakes import FakeProcessRunner, write_tree
 
 _JsonDict = dict[str, Any]
 

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from dotfiles.core.verify import VendorVerifyService
+from dotfiles.cmd.agent.verify import VendorVerifyService
 
 
 def _make_svc(

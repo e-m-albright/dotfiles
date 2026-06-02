@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from dotfiles.core.skills import validate_file, validate_skill_files
+from dotfiles.cmd.agent.skills import validate_file, validate_skill_files
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers

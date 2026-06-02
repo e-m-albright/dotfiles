@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.agent_setup.cursor import setup_cursor
-from tests.fakes import FakeProcessRunner, write_tree
+from dotfiles.cmd.agent.vendors.cursor import setup_cursor
+from dotfiles.testing.fakes import FakeProcessRunner, write_tree
 
 # ---------------------------------------------------------------------------
 # Fixtures

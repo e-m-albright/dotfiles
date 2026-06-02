@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.agent_overview import AgentOverviewService
-from dotfiles.core.models import AgentOverview, VendorSurface
-from tests.fakes import FakeProcessRunner
+from dotfiles.cmd.agent.models import AgentOverview, VendorSurface
+from dotfiles.cmd.agent.overview import AgentOverviewService
+from dotfiles.testing.fakes import FakeProcessRunner
 
 
 def make_service(dotfiles: Path, home: Path) -> AgentOverviewService:

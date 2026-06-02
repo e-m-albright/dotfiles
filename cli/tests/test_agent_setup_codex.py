@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.agent_setup.codex import setup_codex
-from tests.fakes import FakeProcessRunner, write_tree
+from dotfiles.cmd.agent.vendors.codex import setup_codex
+from dotfiles.testing.fakes import FakeProcessRunner, write_tree
 
 # ---------------------------------------------------------------------------
 # Shared fixtures

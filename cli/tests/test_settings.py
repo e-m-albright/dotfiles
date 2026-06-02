@@ -1,6 +1,6 @@
 import pytest
 
-from dotfiles.core.settings import Settings
+from dotfiles.settings import Settings
 
 
 def test_defaults_when_no_env(monkeypatch: pytest.MonkeyPatch) -> None:

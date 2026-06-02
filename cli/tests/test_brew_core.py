@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.core.brew import (
+from dotfiles.cmd.brew.service import (
     PackageManifest,
     enabled_packages,
     installed_casks,
@@ -12,7 +12,7 @@ from dotfiles.core.brew import (
     missing_packages,
     stale_packages,
 )
-from tests.fakes import FakeProcessRunner
+from dotfiles.testing.fakes import FakeProcessRunner
 
 # ---------------------------------------------------------------------------
 # Minimal TOML fixture helpers

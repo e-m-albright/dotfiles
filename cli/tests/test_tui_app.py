@@ -3,9 +3,9 @@
 import pytest
 from typer.testing import CliRunner
 
-from dotfiles.cli.main import app as cli_app
+from dotfiles.app.main import app as cli_app
+from dotfiles.testing.fakes import make_fake_context
 from dotfiles.tui.app import MissionControlApp
-from tests.fakes import make_fake_context
 
 runner = CliRunner()
 
@@ -28,7 +28,7 @@ def test_help_still_works_and_lists_tui():
 
 def test_tui_command_is_registered(monkeypatch):
     launched: list[bool] = []
-    monkeypatch.setattr("dotfiles.cli.main._launch_tui", lambda: launched.append(True))
+    monkeypatch.setattr("dotfiles.app.main._launch_tui", lambda: launched.append(True))
     result = runner.invoke(cli_app, ["tui"])
     assert result.exit_code == 0
     assert launched == [True]
