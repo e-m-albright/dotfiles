@@ -2,6 +2,8 @@
 
 Bookmarked tools and services worth investigating.
 
+> **Graduated into `docs/stacks/` (2026-06):** several categories that were "evaluate" now have committed picks. Supply-chain & secrets → [`stacks/security.md`](stacks/security.md) (gitleaks, OSV-Scanner, cargo-deny/pip-audit/govulncheck, Renovate, Socket). Durable execution & realtime sync → [`stacks/services.md`](stacks/services.md) (DBOS, Temporal, River, Inngest; ElectricSQL). Eval-in-CI → [`knowledge/ai-tools.md`](knowledge/ai-tools.md) (promptfoo, pydantic-evals, DeepEval alongside Langfuse/Logfire). Test/perf tooling → language READMEs (cargo-nextest, insta, Polyfactory, schemathesis, mutmut, CodSpeed). Dev-env → [`stacks/infrastructure.md`](stacks/infrastructure.md) (mise, Caddy, Bruno, Hurl, git-cliff, Mermaid). The enforcement layer (ratchets, CI structure, affectedness) → [`knowledge/engineering-gates.md`](knowledge/engineering-gates.md). Items below remain genuinely unadopted / watch-only.
+
 ## Security / Static Analysis
 
 - **[Semgrep](https://semgrep.dev)** -- Pattern-based SAST/SCA/secrets platform unifying static analysis with AI reasoning to detect IDORs, broken authz, and other logic-level vulnerabilities. Lightweight grep-like custom rule syntax plus reachability analysis (vendor claims 98% false-positive reduction). OSS Community Edition (free, self-hostable) plus SaaS AppSec Platform. Evaluate when you want fast SAST/secrets coverage with custom rules in CI without standing up a heavy platform.

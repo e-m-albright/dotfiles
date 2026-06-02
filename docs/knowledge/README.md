@@ -7,6 +7,7 @@ Durable, opinionated knowledge that isn't tied to one language stack. Reference 
 - [token-efficiency.md](token-efficiency.md) — token efficiency, task decomposition, model routing
 - [browser-tooling.md](browser-tooling.md) — tiered browser/UI automation tools
 - [customer-discovery.md](customer-discovery.md) — customer-interview methodology (Mom Test)
+- [engineering-gates.md](engineering-gates.md) — enforcing code health mechanically (ratchets, CI structure, affectedness, audit gates)
 - [project-memory.md](project-memory.md) — decision-organization system (ADRs, curated memory)
 - [agent-output.md](agent-output.md) — `.ai/artifacts/` working-files convention
 - **Prompting**

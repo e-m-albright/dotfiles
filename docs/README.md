@@ -2,7 +2,7 @@
 
 This is the repository's owned, reviewable memory: how we think about engineering, which technologies we currently favor, and the decisions behind them. An AI agent working in any project should consult this to *derive* good per-project choices — none of it is auto-pushed into projects.
 
-- [engineering-philosophy.md](engineering-philosophy.md) — the universal principles (the lens for everything else)
+- [engineering-philosophy.md](engineering-philosophy.md) — the universal principles (the lens for everything else); enforcement mechanics in [knowledge/engineering-gates.md](knowledge/engineering-gates.md)
 - [stacks/](stacks/README.md) — current technology taste by language/framework (pick/avoid, idioms, patterns)
 - [knowledge/](knowledge/README.md) — cross-cutting practice & tooling (AI tools, prompting, discovery, memory)
 - [adr/](adr/) — numbered architecture decisions

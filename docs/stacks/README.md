@@ -21,5 +21,6 @@ Each language is a directory: `README.md` (selection + idioms + patterns) and a 
 
 ## Cross-cutting
 
-- [services.md](services.md) — hosting / db / auth / payments / observability picks (self-host-first)
-- [infrastructure.md](infrastructure.md) — Docker, Pulumi, observability
+- [services.md](services.md) — hosting / db / auth / payments / queues / durable execution / realtime / observability picks (self-host-first)
+- [infrastructure.md](infrastructure.md) — Docker, IaC, dev-env tooling, observability topology + footguns, build discipline
+- [security.md](security.md) — supply-chain & secrets (gitleaks, dependency auditing, secrets management)

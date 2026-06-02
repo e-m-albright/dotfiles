@@ -241,8 +241,12 @@ What language?
 | Tool | Best For | Notes |
 |------|----------|-------|
 | **Langfuse** | All-in-one tracing + eval. Our default. | Open-source (MIT), self-hostable, framework-agnostic. Best starting point. |
-| **Braintrust** | Prompt experimentation + CI/CD evals | End-to-end: traces become eval cases in one click, GitHub Actions integration. Best for systematic prompt improvement. |
 | **Logfire** | Python/Pydantic-native observability | Built by the Pydantic team. Auto-traces Pydantic validations and PydanticAI agents. Best DX if your AI stack is PydanticAI. |
+| **promptfoo** | Eval-as-a-test-suite in CI | OSS (MIT), self-hostable, language-agnostic (tests prompts/endpoints, not code). The engineering-discipline core: declarative YAML evals + LLM-as-judge + red-team, gated on every PR. *(Note: OpenAI-owned since 03/2026; MIT so fork-able.)* |
+| **pydantic-evals** | PydanticAI-native evals | The natural eval framework for a PydanticAI stack — datasets + LLM-judge scoring, Logfire-integrated. Pairs with Logfire for the lowest-friction Python-native observe+eval loop. |
+| **DeepEval** | pytest-native evals (Python) | Evals as assertions inside your existing pytest suite (G-Eval, RAG metrics, agent/tool-use). Reach for it when you want gates in the test command devs already run. |
+| **Braintrust** | Prompt experimentation + CI/CD evals | End-to-end, PM-friendly. Closed-source; self-host is enterprise-only — fails the self-host-first bar as a new adoption. |
+| **Ragas** | RAG-specific metrics | Faithfulness/context-precision/recall. A metrics library, not a harness — layer under promptfoo/DeepEval when you ship retrieval. |
 
 ### Full Comparison
 
@@ -289,7 +293,7 @@ from braintrust import init_logger
 logger = init_logger(project="my-project")
 ```
 
-> **Start with Langfuse** unless you're pure PydanticAI (Logfire) or need eval CI/CD in GitHub Actions (Braintrust). All three can coexist — Langfuse for tracing, Braintrust for evals, Logfire for Pydantic debugging.
+> **Two axes, two defaults.** Observability: **Langfuse** (or **Logfire** if you're pure PydanticAI). Eval-in-CI (the discipline that separates serious AI products from vibes): **promptfoo** as the PR gate, plus **DeepEval** for pytest-native Python gates or **pydantic-evals** for a PydanticAI stack. Minimum viable setup: Langfuse/Logfire to observe + a small curated "golden set" + promptfoo failing the build on regression. Add Ragas when you ship RAG.
 
 ---
 

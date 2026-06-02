@@ -261,6 +261,40 @@ services:
 
 ---
 
+## Durable Execution / Workflows
+
+> **For multi-step workflows that must survive a crash and resume from the last completed step** — strictly stronger than a queue (which only retries the whole job). The 2026 split is *library-on-Postgres* vs *server-you-operate*; for a Postgres-centric solo/small stack the former wins.
+
+| Category | Primary Pick | Alternative | Notes |
+|----------|-------------|-------------|-------|
+| **Lightweight (library)** | DBOS | — | Postgres-only, runs *inside* your app process (Python/TS/Go). The "lightweight Temporal" — durability with zero new infra. Best default. |
+| **Go background jobs** | River | asynq | Postgres-backed, transactional enqueue. A queue, not full durable execution. |
+| **TS event-driven** | Inngest | Trigger.dev | Inngest: light self-host (single binary). Trigger.dev: more of a platform (registry + object storage). |
+| **Heavy-duty** | Temporal | Restate (watch) | Cross-language, mission-critical scale. The cluster (Cassandra/ES) is real ops burden — reach for it only when correctness-at-scale demands it. |
+
+### When to Use What
+
+- **DBOS**: Default. A library, not a server — `pip install`/`npm i`, point at existing Postgres, decorate workflow/step functions. Matches the "Postgres as the only dependency" ethos. Free OSS core; only the ops console is paid.
+- **Temporal**: When you genuinely need multi-DC, millions of concurrent workflows, or cross-service orchestration. Self-hosting the cluster is exactly the ops burden most projects should avoid; even Temporal concedes Cloud beats self-host economically below tens of millions of actions/month.
+- **Plain Postgres + cron / Arq / River / QStash**: When the real need is "run on a schedule" or "a few retryable jobs." Durable execution only pays off once you have genuinely multi-step workflows with side effects you must not re-run.
+
+---
+
+## Realtime / Local-First Sync
+
+> **For offline-first or live-multiplayer UIs.** A "solution looking for a problem" trap — don't adopt speculatively. Add only when there's a concrete offline/realtime requirement.
+
+| Need | Pick | Notes |
+|------|------|-------|
+| Read-sync on your own Postgres | **ElectricSQL** | Postgres → client SQLite via declarative "shapes"; OSS, self-hostable. Best fit for a Postgres-centric SvelteKit shop. |
+| Mobile/offline, production-tested | PowerSync | You own writes/conflict resolution via your API. |
+| Collaborative text/rich-doc editing | Yjs | CRDT library — the right tool for collaborative editing, not structured-data sync. |
+| General-purpose sync (watch) | Rocicorp Zero | Ambitious; still alpha — watch, don't build on yet. |
+
+Convex / Liveblocks / PartyKit trade self-host-first for hosted DX — fine for speed, but a platform dependency.
+
+---
+
 ## Payments
 
 | Category | Primary Pick | Notes |

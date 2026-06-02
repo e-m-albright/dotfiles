@@ -11,12 +11,14 @@
 | Package manager | **uv** | pip (slow), Poetry (complex) |
 | Python version | **3.14** | older versions |
 | Lint + format | **Ruff** (one tool) | Black + isort + flake8 (three tools) |
-| Type checker | **ty** (Astral) | mypy (slower), Pyright (Node dependency) |
+| Type checker | **ty** (Astral) — advisory; **Pyright strict** blocking | mypy (slower) |
 | Task runner | **Just** | Make (arcane) |
 | Git hooks | **Lefthook** | Husky, pre-commit |
 | Logging | **structlog** | stdlib `logging`, Loguru |
 
 Ruff target stays `py313` until Ruff supports 3.14.
+
+**Type checker, in practice:** `ty` is the direction (Rust-fast, Astral-made) but is pre-1.0. Until it reaches 1.0 with strict-mode parity (notably overload/generic inference), run **Pyright strict as the blocking gate** and `ty` advisory alongside. Flip ty to blocking once it clears that bar. Pyright's Node dependency is the price of a mature strict checker today.
 
 ### Phase 2 — when needed
 
@@ -28,12 +30,16 @@ Ruff target stays `py313` until Ruff supports 3.14.
 | Async Postgres driver | **asyncpg** | psycopg2 (sync) |
 | Validation | **Pydantic v2** | marshmallow, attrs |
 | Background jobs | **Arq** | Celery (complex, sync-first) |
+| Durable workflows | **DBOS** (library, Postgres-only) | hand-rolled retry/checkpoint loops |
+| Retries | **stamina** | tenacity (older API), hand-rolled backoff |
 | CLI tools | **Typer + Rich** | Click (verbose), argparse |
 | HTTP client | **httpx** (async) | requests (sync-only) |
 | AI agents | **PydanticAI** | LangChain (bloated) |
-| Structured LLM output | **Instructor** | — |
+| Structured LLM output | **Instructor** (or PydanticAI's native `output_type`) | — |
 | MCP server | **FastMCP** | raw MCP SDK (verbose) |
 | Full-stack app | **Reflex** | Streamlit (limited), Dash (verbose) |
+
+**Jobs vs. durable workflows:** reach for **Arq** for simple background jobs (one-shot, retryable). When a *multi-step* workflow must survive a crash and resume from the last completed step (and not re-run side effects), that's durable execution — **DBOS** is the lightweight default (a library that checkpoints to your existing Postgres, no new infra); **Temporal** is the heavy-duty escape hatch when correctness-at-scale genuinely demands a cluster. See [services.md](../services.md#durable-execution--workflows).
 
 ### Phase 3 — at scale
 
@@ -47,16 +53,32 @@ Ruff target stays `py313` until Ruff supports 3.14.
 | Notebooks | **Marimo** | reactive, git-friendly (.py files); not Jupyter (reproducibility issues) |
 | Docs | **MkDocs + Material** | not Sphinx (complex) |
 
+### Testing toolkit
+
+The test runner is **pytest**. Round it out with:
+
+| Need | Pick | Notes |
+|------|------|-------|
+| Test data factories | **Polyfactory** | Type-hint-driven; pydantic validators still run, so it can't emit invalid data. Beats hand-written fixtures and factory_boy |
+| HTTP mocking | **respx** | Mock httpx at the transport layer |
+| Snapshot testing | **inline-snapshot** (or **syrupy**) | For large dict/JSON output; regenerate-without-reading-the-diff is rubber-stamping |
+| Clock control | **time-machine** | Freeze/travel time deterministically — fixes flaky time-dependent tests without widening thresholds |
+| Property testing | **Hypothesis** | (also in Phase 3) edge-case coverage |
+| API fuzzing | **schemathesis** | OpenAPI-driven property/fuzz testing — near-free defect-finding if you have a spec |
+| Mutation testing | **mutmut** | Periodic audit of test *quality* on critical modules — not an always-on gate |
+| Parallel / coverage | **pytest-xdist**, **pytest-cov**, **pytest-benchmark** | `-n auto --dist loadfile`; gate bench regressions in CI with **CodSpeed** |
+
 ### Don't install
 
 | Tool | Why skip |
 |------|----------|
-| mypy / Pyright | ty is faster; Pyright also pulls in Node |
+| mypy | ty/Pyright cover it; mypy is slower |
 | Black / isort | Ruff does both |
 | Loguru | structlog is the one logger |
 | SQLModel | maintenance mode |
 | Alembic | Atlas wins on DX |
-| Beartype | Pydantic validates at runtime |
+
+> **Beartype** is *not* an anti-pick: Pydantic validates at trusted boundaries, but **beartype** adds cheap runtime type enforcement on *internal* boundaries Pydantic doesn't reach (plain functions, dataclasses). Reach for it via a `@validate_types`-style decorator on hot internal interfaces when you want runtime teeth to back the static checker.
 
 ### Performance swaps (hot paths)
 

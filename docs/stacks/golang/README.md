@@ -26,14 +26,22 @@ Selection guidance is *what* to reach for; idioms and patterns below cover *how*
 | Config           | **envconfig**                          | viper (complex, YAML)                        |
 | Logging          | **slog** (stdlib)                      | logrus (archived), zap (complex)             |
 | HTTP client      | **stdlib `net/http`**                  | resty (unnecessary abstraction)              |
+| Background jobs  | **River** (Postgres-backed, transactional enqueue) | asynq (needs Redis), hand-rolled cron |
+| Server-rendered HTML | **templ** (type-safe templates) + HTMX | `html/template` (stringly-typed, runtime errors) |
 | Testing          | **stdlib `testing` + testcontainers-go** (table-driven) | testify (assertions, not needed)   |
+| Supply chain     | **govulncheck** (call-graph reachability) | see [security.md](../security.md) |
 
 ### At scale
 
 | Need          | Pick                              | Notes                          |
 |---------------|-----------------------------------|--------------------------------|
-| Observability | **OpenTelemetry**                 | When 2+ services               |
+| Observability | **OpenTelemetry**                 | When 2+ services; OTLP export  |
 | Docs          | **Starlight (Astro)** or **pkgsite** | Users vs. API audience      |
+
+### Background jobs & server-rendered HTML
+
+- **River** is the best-in-class Go job queue: Postgres-backed (no Redis dependency), transactional enqueue (jobs commit with your data — no dual-write race), cron/scheduled jobs, web UI. By the pgx author. Pick it over asynq unless you already run Redis and need its throughput profile. River is a *queue*, not durable execution — for crash-resumable multi-step workflows reach for Temporal/DBOS (see [services.md](../services.md#durable-execution--workflows)).
+- **templ** compiles `.templ` files to type-checked Go (errors at compile time, not runtime). It's the canonical 2026 pairing with **HTMX** for server-rendered HTML without an SPA. Costs a `templ generate` codegen step in the build. Irrelevant if your Go services are pure JSON APIs.
 
 ### Don't install
 

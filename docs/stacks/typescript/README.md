@@ -31,6 +31,10 @@ Selection is *what* to reach for. Idioms below are *how* to use them. Detect the
 | Data fetching | **TanStack Query** | SWR (React-only) |
 | Charts | **LayerChart** | Recharts (React-only), Chart.js (limited) |
 | i18n (SvelteKit) | **Paraglide JS 2.0** | i18next (runtime overhead) |
+| Unit testing | **Vitest** (+ `@testing-library/svelte`) | Jest (slow), bun test for pure-logic suites |
+| E2E testing | **Playwright** (+ `@axe-core/playwright` for a11y) | Cypress (heavier) |
+| LLM client | **Vercel AI SDK** (`ai` + `@ai-sdk/svelte`) | provider-locked SDKs — AI SDK is provider-agnostic with first-class streaming |
+| Typed API contract | **SvelteKit remote functions** in-app; **oRPC** for external clients | tRPC (use only if you need it; oRPC also emits OpenAPI) |
 
 ### Phase 3 — at scale
 
@@ -38,9 +42,11 @@ Selection is *what* to reach for. Idioms below are *how* to use them. Detect the
 |------|------|-------|
 | Desktop app | **Tauri** | Only when you need native distribution |
 | Client analytics | **DuckDB-WASM** | Heavy client-side data processing |
-| Observability | **OpenTelemetry** | When 2+ services call each other |
+| Observability | **OpenTelemetry** | When 2+ services call each other; OTLP export (browser + node SDKs) |
 | Monorepo build | **Turborepo** | Simplest, Vercel-maintained. Over nx (plugin-heavy), moon (Rust-based) |
 | Dead code | **Knip** | Finds unused exports, deps, files |
+| Code health (advisory) | **fallow** | Knip-superset: complexity/CRAP, semantic dup, architecture-layer import enforcement, regression-gated. Optional deep tier |
+| Supply chain | **bun audit** / `pnpm audit --audit-level=high` | See [security.md](../security.md) |
 | Component dev | **Histoire** | Vite-native; lighter than Storybook |
 | Docs site | **Starlight** (Astro) | Best docs DX in the ecosystem |
 
@@ -60,6 +66,11 @@ Bun >=1.0, Svelte >=5.0, SvelteKit >=2.0, Astro >=4.0, Tailwind >=4.0, Biome >=1
 
 - **Bun** is the runtime unless compatibility forces Node.
 - Detect the lockfile (`bun.lock`, `pnpm-lock.yaml`, …) and use the matching package manager. Never switch managers in an existing project.
+- **In practice, Bun's edges still bite.** A common, honest production shape is **build with Bun, run on Node** (`bun install` + `bun run build`, then `node build/index.js` on `adapter-node`), and **pnpm** where a dependency's Bun support isn't there yet. Treat "Bun everywhere" as the goal, not a rule to force.
+
+### Posture: thin frontend over polyglot backends
+
+When the data/auth/jobs layer lives in backend services (Rust/Python/Go), the SvelteKit app is a **thin SSR proxy + session manager**, not a data owner: `hooks.server.ts` proxies `/api/*` to the backend, all loads are server-side (`+page.server.ts`), an httpOnly session cookie and an `X-Request-ID` ride every proxied request. In that posture, **Drizzle / Better Auth / Superforms / Paraglide may not live in the web tier at all** — the backend owns the schema, auth, and validation. The Phase-2 picks above assume full-stack-in-Svelte; drop the ones the backend already owns.
 
 ### Formatting & linting
 

@@ -449,11 +449,22 @@ jobs:
 | Need | Tool | Notes |
 |------|------|-------|
 | Task runner | Just | Simple, cross-platform. Alternative: Task (taskfile.dev) for YAML fans. |
+| Pin per-project tool versions | **mise** | Polyglot version manager (Go/Node/Rust/terraform/etc.) + env + tasks. Sits *under* uv/Bun (which own their language); earns its place once a repo spans 2+ languages or needs a non-Python/JS tool pinned. Subsumes asdf/nvm/pyenv/direnv. |
 | Local dev with dependencies | docker-compose | Postgres, Redis, etc. |
+| Reverse proxy + auto-HTTPS | **Caddy** | 3-line config, automatic Let's Encrypt, auto-renew. Over Traefik (needs dynamic container discovery) / nginx (needs fine tuning) for a solo dev. |
+| Expose local dev | **cloudflared** | Tunnel onto your own domain (dev→prod parity, free WAF). ngrok for throwaway/webhook-debugging; Tailscale Funnel if already meshed. |
+| API client (collections-as-code) | **Bruno** | Git-native `.bru` files in-repo, offline, no SaaS lock-in. Postman/Insomnia replacement. |
+| API smoke tests in CI | **Hurl** | Plain-text `.hurl` files, single binary, JUnit output. Black-box endpoint assertions, not business-logic coverage. |
+| Changelog / releases | **git-cliff** | Conventional-commits → changelog, single binary, language-agnostic. changesets only for a multi-package TS monorepo. |
+| Diagrams in docs | **Mermaid** | Renders natively in GitHub/PRs, no build step; agents write it fluently. D2 only for big architecture diagrams where you'll own a render step. |
 | Deploy to cloud | Dockerfile | Production container |
-| Multi-environment infra | Pulumi | Dev, staging, prod |
+| Multi-environment infra | Pulumi | Dev, staging, prod — but see the CLI-scripted counterpoint below |
 | Database schema management | Atlas / Drizzle Kit | Depends on language |
-| CI/CD | GitHub Actions | Or Railway/Vercel auto-deploy |
+| CI/CD | GitHub Actions | Or Railway/Vercel auto-deploy. **CI should call task-runner recipes, not hold logic** — see [knowledge/engineering-gates.md](../knowledge/engineering-gates.md) |
+
+### When CLI-scripted provisioning beats full IaC
+
+Pulumi/SST/Terraform earn their keep with multi-environment fleets and large resource graphs. But for a **single operator with a handful of long-lived cloud resources**, a full IaC tool can be more ceremony than payoff. A legitimate alternative: an **idempotent Bash `setup.sh` orchestrating the vendor CLIs** (your host's CLI, your DB provider's CLI, your secrets CLI), where every "create" is guarded to skip existing resources and any values it provisions are written back into the secrets manager. Pair it with **change-detection deploys** (skip a service whose source paths didn't change since its deployed revision) and **health-gated ordering** (deploy a dependency, wait for healthy, then its clients). The vendor CLIs *are* the real API; for small polyglot apps this can be simpler and more debuggable than a state-file abstraction over them.
 
 ### Task Runners: Just vs Task
 
@@ -617,3 +628,35 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
 ```
+
+### Production topology: OTEL Collector → backend
+
+Once you have 2+ services, don't export from each app SDK straight to a vendor. Run **one OpenTelemetry Collector** (its own small service) that every app sends OTLP to; it batches, filters, transforms, and fans out to the backend (**Axiom** for logs/traces with a generous free tier, or Grafana Cloud). Rust (`tracing` → OTLP/gRPC), Python (`structlog` → OTLP/gRPC), and the web tier (`@opentelemetry` browser + node → OTLP/HTTP) all point at the internal collector. Default `OTEL_ENABLED=false` locally.
+
+Why the collector and not direct export:
+
+- **Disk-backed queue** (`file_storage` extension on a volume) buffers spans during a deploy and replays them once the new instance is healthy — no telemetry gap across rollouts.
+- **Per-signal datasets** — keep metrics in a separate dataset from traces/logs so metric cardinality can't blow up the operational-events store.
+- **Attribute-cardinality packing** — columnar backends (Axiom et al.) flatten every unique attribute key into a column and cap at ~256 fields/dataset. A `transform` processor that packs non-semconv custom attributes into a single nested `map` column (keeping only `gen_ai.*`/`http.*`/`db.*`/`exception.*` flat) keeps you under the cap.
+
+### Observability footguns (each fails silently in the layer it lives in)
+
+- **Telemetry export must be async/fail-fast on hot paths.** A blocking exporter (e.g. one holding Python's GIL) on an async service starves the event loop → liveness probe fails → the platform proxy returns 503 to *all* callers, killing unrelated work. A blocking exporter whose endpoint is unreachable can burn most of a request's latency budget on retries. If a tracing SDK can't be made non-blocking on the hot path, keep it off in prod.
+- **Exclude health/liveness endpoints from spans.** Probe traffic otherwise becomes your dominant telemetry volume and amplifies any exporter problem. Filter by *multiple* attributes (span name, `http.target`, `http.url`) — instrumentation populates them inconsistently, so matching only one misses.
+- **OTLP gRPC metadata keys must be lowercase.** An uppercase `Authorization` header is silently rejected — observability goes dark with no error anywhere.
+
+### Fly.io operational notes
+
+If you deploy to Fly (the services.md "containers / global edge" pick):
+
+- **Safe always-on combo is `auto_stop_machines = "off"` + `auto_start_machines = true`.** The forbidden pairing is `auto_stop="off"` + `auto_start=false` — it leaves stopped machines stuck stopped. With autostart on, the first health-check after a rolling deploy wakes the swapped machine (green deploy, not a 503).
+- **A persistent volume forces `strategy = "rolling"`, not `bluegreen`** — a Fly volume attaches to one machine at a time, so a green machine fails with `volume already claimed`. Move state to object storage to regain blue-green.
+- **Use `[[vm]]` (double bracket).** Singular `[vm]` is silently ignored — verify VM sizing post-deploy rather than trusting the toml.
+- **Internal-only services still need `auto_start`/`min_machines_running`** — internal callers traverse the same proxy as public traffic.
+
+### Build discipline
+
+- **Rust images: cargo-chef + mold.** `cargo-chef` caches the dependency-compile layer; `mold` is a fast linker. Together they cut Rust image rebuilds dramatically. Build with `SQLX_OFFLINE=true` against committed `.sqlx/` metadata so the image build never needs a live DB; regenerate `.sqlx/` when SQL changes, and treat applied migrations as immutable (never edit them — checksum mismatch).
+- **Python images: `uv sync --frozen --no-dev`**, uv binary copied from its official image.
+- **SvelteKit: build with Bun, run on Node** — `oven/bun:1` for `bun install --frozen-lockfile` + `bun run build`, then `node:22-slim` running `node build/index.js`.
+- **Pin toolchains exactly** (`rust-toolchain.toml`, `mise` versions) so CI and local agree on lint behavior; bump deliberately via PR.

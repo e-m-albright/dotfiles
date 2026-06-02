@@ -42,14 +42,28 @@
 | SSE streaming | **async-stream** | — | Ergonomic `stream!` macro for Axum SSE responses |
 | Vector embeddings | **pgvector** (via sqlx) | Qdrant, Pinecone | Keeps embeddings in PostgreSQL, no extra service |
 | Validation | **validator** | — | Derive-based struct validation |
+| Columnar analytics | **arrow + parquet + datafusion** | — | In-process OLAP/columnar in Rust — the Polars/DuckDB equivalent on the Rust side |
+
+### Testing & quality
+
+| Need | Pick | Avoid | Notes |
+|------|------|-------|-------|
+| Test runner | **cargo-nextest** | bare `cargo test` | ~1.5–3× faster, per-test isolation, flaky-retry. Keep a `cargo test --doc` step — nextest doesn't run doctests |
+| Snapshot testing | **insta** (+ `cargo insta review`) | hand-rolled string asserts | For structured output: JSON responses, diagnostics, parser ASTs. Not for scalar asserts |
+| Coverage | **cargo-llvm-cov** | tarpaulin (Linux-x86_64 only) | Source-based, cross-platform — works on macOS |
+| Property testing | **proptest** | — | Generates inputs to falsify invariants |
+| HTTP mocking | **wiremock** | — | Mock external HTTP in integration tests |
+| Mutation testing | **cargo-mutants** | — | Periodic audit of test quality on critical modules — not an always-on gate |
+| Supply chain | **cargo-deny** | cargo-audit alone | Advisories + license allowlist + bans + sources. See [security.md](../security.md) |
 
 ### Phase 3 — At Scale
 
 | Need | Pick | Notes |
 |------|------|-------|
-| Observability | **OpenTelemetry** | Via tracing-opentelemetry |
-| Benchmarking | **criterion** | For performance-critical code |
-| Fuzzing | **cargo-fuzz** | For security-critical parsers |
+| Observability | **OpenTelemetry** | Via tracing-opentelemetry; OTLP export to a collector (see [infrastructure.md](../infrastructure.md)) |
+| Benchmarking | **criterion** | For performance-critical code; gate regressions in CI with **CodSpeed** |
+| Fuzzing | **cargo-fuzz** or **bolero** | bolero unifies property + fuzz testing under one harness; cargo-fuzz for libFuzzer-style coverage-guided fuzzing |
+| Docker build | **cargo-chef + mold** | chef caches the dependency layer; mold is a fast linker — together they cut Rust image rebuilds dramatically (see [infrastructure.md](../infrastructure.md)) |
 | User docs | **Starlight (Astro)** | rustdoc for API docs |
 
 ## Idioms
