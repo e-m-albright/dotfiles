@@ -18,7 +18,7 @@
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SCAFFOLD_DIR="$DOTFILES_DIR/prompts/scaffolds/agent-rules-sync"
+SCAFFOLD_DIR="$DOTFILES_DIR/ai/rules-sync"
 
 # Colours (only if stdout is a terminal)
 if [[ -t 1 ]]; then

@@ -12,11 +12,12 @@ This is a personal dotfiles and development environment configuration repo. It b
 - `ai/agents/claude/` -- Claude Code plugins, MCP servers, hooks, universal rule deployment
 - `ai/agents/cursor/` -- Cursor MCP servers, rules, hooks, universal rule deployment
 - `ai/agents/shared/` -- Shared agentic config: `rules.md` (the universal agent kernel deployed to every vendor), MCP servers, ignore patterns
-- `ai/prompts/` -- Reusable, versioned audit/review prompts (universal, language-agnostic templates)
 - `ai/skills/` -- Canonical skill source (universal). Deployed to each vendor's user-level dir at setup time via the public `npx skills` CLI (`vercel-labs/skills`) which copies real files into `~/.claude/skills/`, `~/.agents/skills/` (Codex), etc. No per-vendor mirror dirs in this repo.
 - `ai/subagents/` -- Canonical subagent source (single `.md` files). Deployed via a small `cp` loop since `npx skills` only handles SKILL.md-shaped skills.
+- `ai/prompts/` -- System-prompt artifacts (advisor/detailed system prompts, `gemini-chunks/`) loaded by `dotfiles agent web-chat-instructions`
+- `ai/audits/` -- Audit prompts run by scheduled bot-audits on a cadence (also usable ad hoc)
+- `ai/rules-sync/` -- Cross-harness rule-sync fragment used by `dotfiles agent migrate-rules-sync`
 - `ai/artifacts/` -- **gitignored**, created on demand for ephemeral agent working files (durable output goes in `docs/`)
-- `prompts/` -- Prompt-construction assets (system prompts, advisor personas) + the `scaffolds/agent-rules-sync` fragment used by `dotfiles agent migrate-rules-sync`
 
 ## This Repo
 

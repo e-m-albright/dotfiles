@@ -39,7 +39,7 @@ def _dotfiles_with_invalid_skill(base: Path) -> Path:
 
 def _dotfiles_with_chunks(base: Path, *chunks: tuple[str, str]) -> Path:
     dotfiles = base / "dotfiles"
-    chunks_dir = dotfiles / "prompts" / "gemini-chunks"
+    chunks_dir = dotfiles / "ai" / "prompts" / "gemini-chunks"
     chunks_dir.mkdir(parents=True)
     for name, content in chunks:
         (chunks_dir / name).write_text(content)

@@ -1,6 +1,6 @@
 # Engineering Philosophy
 
-> Universal principles for any codebase. Distilled from a private code-health manifesto. Cross-referenced by `.ai/rules/`, `.ai/prompts/audits/`, and `.ai/skills/review/`.
+> Universal principles for any codebase. Distilled from a private code-health manifesto. Cross-referenced by the agent rule kernel (`ai/agents/shared/rules.md`), `ai/audits/`, and `ai/skills/review/`.
 
 Agentic programming amplifies whatever foundation you build on. Strong foundation compounds velocity: agents reuse clean abstractions, follow typed contracts, produce code that slots into the existing architecture without friction. Weak foundation compounds debt: agents copy-paste patterns, invent parallel registries, produce code that works today and rots tomorrow.
 

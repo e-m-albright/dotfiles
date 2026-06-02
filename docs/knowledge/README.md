@@ -10,6 +10,6 @@ Durable, opinionated knowledge that isn't tied to one language stack. Reference 
 - [project-memory.md](project-memory.md) — decision-organization system (ADRs, curated memory)
 - [agent-output.md](agent-output.md) — `.ai/artifacts/` working-files convention
 - **Prompting**
-  - [prompt-construction.md](prompt-construction.md) — system-prompt construction recipe
-  - [prompt-tactics.md](prompt-tactics.md) — prompt patterns for coding agents
-  - [advisory-personas.md](advisory-personas.md) — expert advisory system prompts
+  - [prompt-construction.md](prompting/prompt-construction.md) — system-prompt construction recipe
+  - [prompt-tactics.md](prompting/prompt-tactics.md) — prompt patterns for coding agents
+  - [advisory-personas.md](prompting/advisory-personas.md) — expert advisory system prompts

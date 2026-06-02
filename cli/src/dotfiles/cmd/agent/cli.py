@@ -403,7 +403,7 @@ def web_chat_instructions(
 
     svc = GeminiChunksService(
         runner=app_ctx.runner,
-        chunks_dir=app_ctx.dotfiles_dir / "prompts" / "gemini-chunks",
+        chunks_dir=app_ctx.dotfiles_dir / "ai" / "prompts" / "gemini-chunks",
     )
 
     try:

@@ -401,17 +401,17 @@ dotfiles/
 │   │   └── shared/rules.md #     the universal agent kernel (deployed verbatim to every vendor)
 │   ├── skills/             #   Canonical skill source (deployed via `npx skills`)
 │   ├── subagents/          #   Subagent definitions (deployed via cp loop)
-│   ├── prompts/audits/     #   Reusable audit/review prompts
+│   ├── prompts/            #   System-prompt artifacts (advisor/detailed, gemini-chunks) for web chats
+│   ├── audits/             #   Audit prompts run by scheduled bot-audits on a cadence
+│   ├── rules-sync/         #   Cross-harness rule-sync fragment (dotfiles agent migrate-rules-sync)
 │   └── artifacts/          #   Ephemeral agent scratch (gitignored, on demand)
-├── docs/                   # Curated knowledge base (see docs/README.md)
-│   ├── engineering-philosophy.md  # 12 universal principles
-│   ├── stacks/             #   Technology taste by language/framework (consulted per-project)
-│   ├── knowledge/          #   Cross-cutting practice (AI tools, prompting, discovery, memory)
-│   ├── adr/                #   Numbered architecture decisions
-│   ├── developer-workflow.md  # How all the tools work together
-│   └── specs/              #   In-flight design specs and plans
-└── prompts/                # Prompt-construction assets (system prompts, advisor personas)
-    └── scaffolds/agent-rules-sync/  # cross-harness rule-sync fragment (dotfiles agent migrate-rules-sync)
+└── docs/                   # Curated knowledge base (see docs/README.md)
+    ├── engineering-philosophy.md  # 12 universal principles
+    ├── stacks/             #   Technology taste by language/framework (consulted per-project)
+    ├── knowledge/          #   Cross-cutting practice (AI tools, prompting/, discovery, memory)
+    ├── adr/                #   Numbered architecture decisions
+    ├── developer-workflow.md  # How all the tools work together
+    └── specs/              #   In-flight design specs and plans
 ```
 
 ---
