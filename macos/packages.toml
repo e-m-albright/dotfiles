@@ -75,8 +75,19 @@ packages = [
   { name = "infisical",      note = "Secrets management CLI (requires infisical/get-cli tap)" },
   { name = "git-filter-repo", note = "Git history rewriting (secrets scrub)", disabled = true },
   { name = "libpq",          note = "PostgreSQL client library (psql, pg_dump)" },
+  { name = "sccache",        note = "Shared compilation cache (Rust/C/C++ build speedup)" },
+  { name = "temporal",       note = "Temporal workflow CLI", disabled = true, reason = "Disabled 2026-06-01: experiment; reinstall if revisiting durable workflows" },
+  { name = "pulumi",         note = "IaC in real languages", disabled = true, reason = "Disabled 2026-06-01: experiment; opentofu is the active IaC tool" },
   { name = "sentry-cli",     note = "Sentry error tracking (releases, source maps, deploys)", disabled = true },
   { name = "datadog-ci",     note = "Datadog CI test visibility & synthetics", disabled = true },
+]
+
+[[section]]
+name = "Security"
+kind = "formula"
+packages = [
+  { name = "gitleaks",     note = "Scan git history/working tree for hardcoded secrets" },
+  { name = "osv-scanner",  note = "Google OSV vulnerability scanner (deps → known CVEs)" },
 ]
 
 [[section]]
@@ -98,6 +109,7 @@ packages = [
 name = "Python"
 kind = "formula"
 packages = [
+  { name = "uv",     note = "Python package/installer & the dotfiles CLI runtime. Bootstrap prerequisite (installed before this manifest runs); declared here for documentation + stale-suppression." },
   { name = "py-spy", note = "Sampling profiler for Python programs" },
 ]
 
@@ -151,7 +163,7 @@ packages = [
   { name = "docker-desktop",   note = "Consider OrbStack instead (faster, lower resource usage on macOS)", disabled = true },
   { name = "orbstack",         note = "Docker Desktop alternative (faster, better macOS integration)" },
   { name = "axiom",            note = "Axiom observability CLI (requires axiomhq/tap)" },
-  { name = "google-cloud-sdk", note = "Google Cloud SDK (disabled — install per-project if needed)", disabled = true },
+  { name = "gcloud-cli",       note = "Google Cloud SDK (cask renamed from google-cloud-sdk; disabled — install per-project if needed)", disabled = true },
 ]
 
 [[section]]
@@ -197,6 +209,8 @@ packages = [
   { name = "antigravity",          note = "Google Antigravity IDE (AI-native editor) — manual install", disabled = true },
   { name = "copilot",              note = "GitHub Copilot CLI (terminal agent) — or: npm i -g @github/copilot", disabled = true },
   { name = "cmux",                 note = "Terminal multiplexer for AI agents (nice but not helpful over Ghostty)", disabled = true },
+  { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex + Cursor" },
+  { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex + Cursor" },
   { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server" },
   { name = "huggingface-cli",      note = "Hugging Face CLI (disabled — install per-project if needed)", disabled = true },
 ]
@@ -249,6 +263,8 @@ note = "Browser-automation CLI for AI agents (Tier 2 — shell out, no MCP overh
 name = "pinchtab"
 flag = "ai"
 note = "Browser automation CLI for AI agents"
+disabled = true
+reason = "Disabled 2026-06-01: experiment; agent-browser is the active browser-automation CLI"
 
 [[npm_package]]
 name = "wrangler"

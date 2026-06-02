@@ -37,8 +37,9 @@ def _make_ctx(tmp_path: Path) -> object:
     (macos_dir / "packages.toml").write_text(_PACKAGES_TOML)
 
     runner_fake = FakeProcessRunner()
-    # brew list commands return empty (nothing installed)
+    # brew list/leaves commands return empty (nothing installed)
     runner_fake.script(("brew", "list", "--formula", "-1"), stdout="")
+    runner_fake.script(("brew", "leaves", "--installed-on-request"), stdout="")
     runner_fake.script(("brew", "list", "--cask", "-1"), stdout="")
 
     return make_fake_context(
@@ -117,6 +118,7 @@ def test_brew_stale_reports_stale(tmp_path: Path) -> None:
     (macos_dir / "packages.toml").write_text(_PACKAGES_TOML)
 
     runner_fake = FakeProcessRunner()
+    runner_fake.script(("brew", "leaves", "--installed-on-request"), stdout="git\nextra-tool\n")
     runner_fake.script(("brew", "list", "--formula", "-1"), stdout="git\nextra-tool\n")
     runner_fake.script(("brew", "list", "--cask", "-1"), stdout="")
 

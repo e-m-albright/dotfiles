@@ -10,6 +10,7 @@ from dotfiles.cmd.brew.service import (
     installed_casks,
     installed_formulae,
     missing_packages,
+    requested_formulae,
     stale_packages,
 )
 from dotfiles.testing.fakes import FakeProcessRunner
@@ -292,6 +293,16 @@ def test_installed_casks_parses_output() -> None:
     assert installed_casks(runner) == {"obsidian", "ghostty"}
 
 
+def test_requested_formulae_strips_tap_prefix() -> None:
+    """brew leaves yields tap-qualified names; declared-matching needs short names."""
+    runner = FakeProcessRunner()
+    runner.script(
+        ("brew", "leaves", "--installed-on-request"),
+        stdout="git\nariga/tap/atlas\ninfisical/get-cli/infisical\n",
+    )
+    assert requested_formulae(runner) == {"git", "atlas", "infisical"}
+
+
 # ---------------------------------------------------------------------------
 # stale_packages
 # ---------------------------------------------------------------------------
@@ -301,7 +312,7 @@ def test_stale_packages_installed_not_declared(tmp_path: Path) -> None:
     manifest = PackageManifest.load(make_toml(tmp_path))
     runner = FakeProcessRunner()
     runner.script(
-        ("brew", "list", "--formula", "-1"),
+        ("brew", "leaves", "--installed-on-request"),
         stdout="git\ncurl\nsome-random-tool\n",
     )
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
@@ -317,7 +328,7 @@ def test_stale_disabled_not_stale(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     # ffmpeg is disabled in our fixture TOML but IS declared
     runner.script(
-        ("brew", "list", "--formula", "-1"),
+        ("brew", "leaves", "--installed-on-request"),
         stdout="ffmpeg\n",
     )
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
@@ -329,7 +340,7 @@ def test_stale_returns_sorted(tmp_path: Path) -> None:
     manifest = PackageManifest.load(make_toml(tmp_path))
     runner = FakeProcessRunner()
     runner.script(
-        ("brew", "list", "--formula", "-1"),
+        ("brew", "leaves", "--installed-on-request"),
         stdout="zzz-tool\naaa-tool\n",
     )
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
@@ -340,7 +351,7 @@ def test_stale_returns_sorted(tmp_path: Path) -> None:
 def test_stale_empty_when_nothing_extra(tmp_path: Path) -> None:
     manifest = PackageManifest.load(make_toml(tmp_path))
     runner = FakeProcessRunner()
-    runner.script(("brew", "list", "--formula", "-1"), stdout="git\ncurl\n")
+    runner.script(("brew", "leaves", "--installed-on-request"), stdout="git\ncurl\n")
     runner.script(("brew", "list", "--cask", "-1"), stdout="obsidian\n")
     stale = stale_packages(manifest, runner)
     assert stale == []

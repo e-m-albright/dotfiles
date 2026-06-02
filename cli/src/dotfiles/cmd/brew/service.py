@@ -83,6 +83,8 @@ class NpmPackage(BaseModel):
     name: str
     flag: str | None = None
     note: str = ""
+    disabled: bool = False
+    reason: str = ""
 
 
 class Flags(BaseModel):
@@ -219,18 +221,35 @@ def installed_casks(runner: ProcessRunner) -> set[str]:
     return {line for line in result.stdout.splitlines() if line.strip()}
 
 
+def requested_formulae(runner: ProcessRunner) -> set[str]:
+    """Return top-level formulae the user explicitly asked Homebrew to install.
+
+    ``brew leaves --installed-on-request`` excludes transitive dependencies
+    (libpng, freetype, harfbuzz, graphite2, pydantic-as-a-semgrep-dep, …). Those
+    are Homebrew's bookkeeping, not packages you chose, so they must never be
+    reported as "stale" — ``brew autoremove`` reclaims them when their parents go.
+    """
+    # `brew leaves` returns tap-qualified names for tapped formulae
+    # (ariga/tap/atlas), while packages.toml declares the short name (atlas).
+    # Strip the tap prefix so declared-matching stays aligned with installed_*.
+    result = runner.run(("brew", "leaves", "--installed-on-request"))
+    return {line.rsplit("/", 1)[-1] for line in result.stdout.splitlines() if line.strip()}
+
+
 def stale_packages(
     manifest: PackageManifest,
     runner: ProcessRunner,
 ) -> list[str]:
     """Return installed packages that are not declared anywhere in the manifest.
 
-    "Stale" means installed on this machine but not mentioned at all in
-    packages.toml (not even as disabled). A disabled package is intentionally
-    absent from the install set but is still declared — so it is NOT stale.
+    "Stale" means a top-level (explicitly requested) package installed on this
+    machine but not mentioned at all in packages.toml (not even as disabled).
+    Transitive dependencies are excluded — see requested_formulae(). A disabled
+    package is declared, so it is NOT stale.
     """
     declared = _all_declared_names(manifest)
-    formulae = installed_formulae(runner)
+    # Only consider top-level (requested) formulae — never transitive deps.
+    formulae = requested_formulae(runner)
     casks = installed_casks(runner)
     installed = formulae | casks
     # A versioned keg (openssl@3) is not stale when its base name (openssl) is
@@ -480,7 +499,7 @@ def install_npm_globals(
     """
     results: list[StepResult] = []
     for pkg in manifest.npm_packages:
-        if not _flag_active(pkg.flag, flags_on):
+        if pkg.disabled or not _flag_active(pkg.flag, flags_on):
             continue
         check = runner.run(("sh", "-c", f"command -v {pkg.name}"))
         if check.stdout.strip() or check.exit_code == 0:

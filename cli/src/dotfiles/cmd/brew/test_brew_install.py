@@ -65,6 +65,13 @@ note = "Cloudflare Workers CLI"
 name = "agent-browser"
 flag = "ai"
 note = "Browser automation"
+
+[[npm_package]]
+name = "pinchtab"
+flag = "ai"
+note = "Browser automation (retired)"
+disabled = true
+reason = "experiment"
 """
 
 
@@ -403,6 +410,19 @@ def test_install_npm_globals_skips_present(tmp_path: Path) -> None:
     npm_calls = [c for c in runner.calls if c[0] == "npm"]
     assert npm_calls == []
     assert all(r.level == "info" for r in results)
+
+
+def test_install_npm_globals_skips_disabled(tmp_path: Path) -> None:
+    """A disabled npm package is never installed, even when missing + flag is on."""
+    manifest = load(tmp_path)
+    runner = FakeProcessRunner()
+    runner.script(("sh", "-c", "command -v wrangler"), stdout="", exit_code=1)
+    runner.script(("sh", "-c", "command -v agent-browser"), stdout="", exit_code=1)
+
+    install_npm_globals(manifest, runner, flags_on={"ai"})
+    # pinchtab is disabled — it must not be probed or installed
+    assert ("sh", "-c", "command -v pinchtab") not in runner.calls
+    assert ("npm", "install", "-g", "pinchtab") not in runner.calls
 
 
 def test_install_npm_globals_installs_missing(tmp_path: Path) -> None:

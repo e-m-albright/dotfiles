@@ -23,43 +23,56 @@ defaults write com.apple.dock show-recents -bool false
 defaults write com.apple.dock tilesize -int 72
 print_success "Auto-hide enabled (no delay, fast animation, no recents)"
 
-# Apps to add to dock
+# Desired dock, in left-to-right order. This list is DECLARATIVE: the dock is
+# pruned to exactly these apps (anything else in the apps section is removed).
+# Deliberately omitted (launched via terminal/Raycast, or live in the menu bar):
+# Cursor, Termius, Tailscale, TypeWhisper, LM Studio, Slack.
 apps=(
     "/Applications/Google Chrome.app"
     "/Applications/Obsidian.app"
-    "/Applications/Claude.app"
     "/Applications/Spotify.app"
-    "/Applications/Slack.app"
-    # "/Applications/Discord.app"
-    # "/Applications/Granola.app"
-    "/Applications/Linear.app"
-    # "/Applications/Visual Studio Code.app"
-    "/Applications/Cursor.app"
-    # "/Applications/Warp.app"
+    "/Applications/Zed.app"
+    "/Applications/Claude.app"
     "/Applications/Ghostty.app"
-    # "/Applications/Raycast.app"
-    # "/Applications/OrbStack.app"
 )
 
-# Track if any changes were made (to avoid unnecessary Dock restart)
-dock_changed=false
-
-# Add applications (idempotent - only adds if not already present)
+# Resolve desired labels (basename without .app) for installed apps only.
+desired_labels=()
 print_section "Applications"
 for app in "${apps[@]}"; do
     if [ -e "$app" ]; then
-        # Check if app is already in dock
-        if dockutil --list | grep -q "$(basename "$app" .app)"; then
-            print_info "$(basename "$app") already in dock"
-        else
-            dockutil --no-restart --add "$app" >/dev/null 2>&1
-            print_success "Added $(basename "$app")"
-            dock_changed=true
-        fi
+        desired_labels+=("$(basename "$app" .app)")
     else
         print_warn "$app not found (skipping)"
     fi
 done
+
+# Current apps-section labels, in dock order.
+current_labels=()
+while IFS=$'\t' read -r label _ section _; do
+    [ "$section" = "persistentApps" ] && current_labels+=("$label")
+done < <(dockutil --list)
+
+# Compare desired vs current (order-sensitive). Rebuild only on drift.
+desired_joined="$(printf '%s\n' "${desired_labels[@]}")"
+current_joined="$(printf '%s\n' "${current_labels[@]}")"
+
+dock_changed=false
+if [ "$desired_joined" = "$current_joined" ]; then
+    print_info "Dock already matches desired set (${#desired_labels[@]} apps)"
+else
+    # Remove every current app, then re-add the desired set in order. This
+    # guarantees both contents and ordering converge, and prunes extras.
+    for label in "${current_labels[@]}"; do
+        dockutil --no-restart --remove "$label" >/dev/null 2>&1 || true
+    done
+    for app in "${apps[@]}"; do
+        [ -e "$app" ] || continue
+        dockutil --no-restart --add "$app" >/dev/null 2>&1
+        print_success "$(basename "$app" .app)"
+    done
+    dock_changed=true
+fi
 
 # Add special folders (idempotent)
 print_section "Folders"
