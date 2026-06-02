@@ -55,7 +55,7 @@ Subagents in `.ai/agents/` (canonical, symlinked into `agents/{claude,cursor,cod
 
 **When re-reviewing an upstream repo (no specific port in mind):**
 1. Update the "Reference repos" row's `last_reviewed_commit` and `Reviewed on`.
-2. Note in the spec doc (`docs/specs/2026-05-07-skills-research.md` or successor) anything new worth porting.
+2. Note in a local spec scratch file (under `docs/specs/`, gitignored) anything new worth porting.
 
 ## Future: regenerate from frontmatter
 

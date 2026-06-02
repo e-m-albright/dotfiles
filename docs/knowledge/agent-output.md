@@ -1,15 +1,15 @@
 # Working Files & Agent Artifacts
 
-## Directory: `.agents/`
+## Directory: `ai/.agents/`
 
-Working files, plans, research, and decisions go in `.agents/` at the project root. This keeps the main codebase clean while preserving useful context. The `.agents/` convention works across Claude Code, Cursor, Gemini, ChatGPT, and other AI tools.
+Working files, plans, and research go in `ai/.agents/` (not the repo root). This keeps the main codebase clean while preserving useful context. Durable decisions belong in curated `docs/` guides; `docs/adr/` is gitignored if tools recreate ADRs there.
 
 > **See also**: `PROJECT_MEMORY.md` for the full two-layer decision organization system.
 
 ### Structure
 
 ```
-.agents/
+ai/.agents/
 ├── decisions/                # Architecture Decision Records (versioned)
 │   ├── 0001-database-choice.md
 │   ├── 0002-api-design.md
@@ -31,12 +31,12 @@ Working files, plans, research, and decisions go in `.agents/` at the project ro
 
 ### Rules
 
-1. **Keep the main tree clean** — Working files go in `.agents/`, not scattered around
+1. **Keep the main tree clean** — Working files go in `ai/.agents/`, not scattered around
 2. **Date-prefix files** — Use `YYYY-MM-DD-description.md` for chronological sorting
 3. **Clean up when done** — Delete scratch files after they're incorporated or abandoned
 4. **Version plans** — Create new version files rather than editing approved plans
 5. **Include attribution** — Note who contributed what for context
-6. **Decisions are versioned** — `.agents/decisions/` is committed to git; everything else is gitignored
+6. **Durable decisions graduate to `docs/`** — `ai/.agents/decisions/` and `docs/adr/` are gitignored scratch space
 
 ### Attribution Tags
 
@@ -55,33 +55,34 @@ Attribution provides context for future readers (human or AI):
 
 | Content Type | Location | Persistence |
 |-------------|----------|-------------|
-| Implementation plan | `.agents/plans/` | Gitignored (or version if useful) |
-| API research | `.agents/research/` | Gitignored (or version if useful) |
-| Key prompts | `.agents/prompts/` | Gitignored (or version if useful) |
-| Code experiments | `.agents/` | Delete when done |
-| Debug notes | `.agents/` | Delete when done |
-| Conversation logs | `.agents/sessions/` | Gitignored |
-| **Architecture decisions** | `.agents/decisions/` | **Versioned** (committed to git) |
-| **Decision timeline** | `.agents/decisions/CHANGELOG.md` | **Versioned** (committed to git) |
+| Implementation plan | `ai/.agents/plans/` | Gitignored (or version if useful) |
+| API research | `ai/.agents/research/` | Gitignored (or version if useful) |
+| Key prompts | `ai/.agents/prompts/` | Gitignored (or version if useful) |
+| Code experiments | `ai/.agents/` | Delete when done |
+| Debug notes | `ai/.agents/` | Delete when done |
+| Conversation logs | `ai/.agents/sessions/` | Gitignored |
+| **Architecture decisions (draft)** | `ai/.agents/decisions/` or `docs/adr/` | Gitignored; promote rationale into `docs/` when settled |
+| **Decision timeline** | `ai/.agents/decisions/CHANGELOG.md` | Gitignored |
 
 ### .gitignore Entry
 
 ```gitignore
-# Working files (ephemeral by default)
-.agents/
-
-# Keep decisions versioned
-!.agents/decisions/
+ai/.agents/plans/
+ai/.agents/research/
+ai/.agents/sessions/
+ai/.agents/prompts/
+ai/.agents/decisions/
+docs/adr/
 ```
 
 ### What Gets Auto-Discovered
 
-Claude Code automatically loads `AGENTS.md` at project root. It does NOT auto-discover `.agents/`. Reference it in `AGENTS.md` if you want AI to know about decisions and working files:
+Claude Code automatically loads `AGENTS.md` at project root. It does NOT auto-discover `ai/.agents/`. Reference it in `AGENTS.md` if you want AI to know about decisions and working files:
 
 ```markdown
 ## Project Organization
-- Working files: `.agents/`
-- Decision history: `.agents/decisions/`
+- Working files: `ai/.agents/`
+- Decision history: `ai/.agents/decisions/`
 ```
 
 ### Plan File Format
@@ -115,8 +116,8 @@ How will we implement this?
 - Question that needs human input ⚠️ ASSUMED
 
 ## Related
-- ADR: .agents/decisions/000X-related.md
-- Previous plan: .agents/plans/YYYY-MM-DD-previous.md
+- ADR: ai/.agents/decisions/000X-related.md
+- Previous plan: ai/.agents/plans/YYYY-MM-DD-previous.md
 ```
 
 ### Research File Format
@@ -152,7 +153,7 @@ What are we trying to learn?
 
 ### Auto-Index
 
-If you version `.agents/`, maintain a README:
+If you version `ai/.agents/`, maintain a README:
 
 ```markdown
 # Working Files
@@ -204,5 +205,5 @@ See ADR-000X for the decision.
 | Directory | Purpose | Versioned | Auto-Discovered |
 |-----------|---------|-----------|-----------------|
 | `AGENTS.md` | Project instructions + context | Yes | Yes (Claude, Cursor, etc.) |
-| `.agents/decisions/` | Architecture decisions & ADRs | Yes | No (reference in AGENTS.md) |
-| `.agents/` (other) | Working files | No (gitignored) | No |
+| `docs/` (curated guides) | Durable decisions & stack taste | Yes | Via links in AGENTS.md |
+| `ai/.agents/` (subdirs) | Working files & draft ADRs | No (gitignored) | No |

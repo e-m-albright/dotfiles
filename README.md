@@ -184,7 +184,7 @@ Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs
 | **Claude Desktop** | Anthropic | active | Claude macOS app |
 | **Cursor** | Cursor | active | AI-native editor with shared MCP servers, hooks, skills, agents |
 | **Codex CLI** | OpenAI | active | Terminal coding agent (open-source, o4-mini default) |
-| **Pi** | earendil-works | active | Local-first lightweight terminal agent (shares `~/.agents/skills`); packages `pi-superpowers-plus` + `mitsupi`, vendored `safe-git` guardrail. See ADR-0005/0006 + [docs/pi-power-setup.md](docs/pi-power-setup.md) |
+| **Pi** | earendil-works | active | Local-first lightweight terminal agent (shares `~/.agents/skills`); packages `pi-superpowers-plus` + `mitsupi`, vendored `safe-git` guardrail. See [docs/pi-power-setup.md](docs/pi-power-setup.md) |
 | **Copilot CLI** | GitHub | disabled | Terminal coding agent (fleet mode, cloud delegation) |
 | **Codex Desktop** | OpenAI | disabled | macOS app for parallel coding agents |
 | **GWS CLI** | Google | active | Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin) |
@@ -343,10 +343,11 @@ dotfiles brew upgrade        # Upgrade all installed packages (brew is the versi
 dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
 dotfiles profile-shell       # Profile shell startup time
-dotfiles cursor-plugins      # Print Cursor Marketplace plugin install checklist
 dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean)
 dotfiles agent verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
+dotfiles agent cursor-plugins
+                             # Print Cursor Marketplace plugin install checklist (manual /add-plugin)
 dotfiles completions         # Output shell completions
 dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
@@ -398,7 +399,7 @@ eval "$(dotfiles completions)"
 dotfiles/
 ├── install.sh              # Main installer (run this)
 ├── bin/                    # CLI tools (dotfiles command — shim delegates migrated subcommands to cli/)
-├── cli/                    # Python/Typer CLI (uv-managed, hexagonal). Dev gate: `just check`
+├── cli/                    # Python/Typer CLI (uv-managed, hexagonal). Dev gate: `just check`; `just scrub` drops caches + agent markdown
 ├── shell/                  # Zsh config + theme
 ├── git/                    # Git config + global ignores
 ├── editors/                # Cursor settings + Obsidian vault configs

@@ -361,7 +361,7 @@ fi
 # Prompts
 print_header "📚 Prompts"
 # Make scripts executable
-chmod +x "$DOTFILES_DIR/.agents/generate-permissions.sh" 2>/dev/null || true
+chmod +x "$DOTFILES_DIR/ai/.agents/generate-permissions.sh" 2>/dev/null || true
 # Remove old 'recipe' symlink if it exists (deprecated)
 rm -f "$DOTFILES_DIR/bin/recipe" 2>/dev/null || true
 print_success "Prompt assets ready"
@@ -391,7 +391,7 @@ print_section "Setup"
 
 # Agent Permissions (tiered profiles: scout, dev, yolo)
 print_section "Agent Permissions"
-"$DOTFILES_DIR/.agents/generate-permissions.sh" claude || true
+"$DOTFILES_DIR/ai/.agents/generate-permissions.sh" claude || true
 
 # Clear cache (execute, don't source — avoids re-evaluating the CLI dispatcher
 # in the installer's shell)

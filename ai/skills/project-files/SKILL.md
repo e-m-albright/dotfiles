@@ -92,13 +92,14 @@ coverage/
 
 # AI tools
 .agents/
-!.agents/decisions/
+ai/.agents/plans/
+ai/.agents/research/
 .cursor/rules/
 ```
 
 **Key rules:**
 - Always gitignore `.env` but keep `.env.example`
-- Gitignore `.agents/` but keep `decisions/`
+- Gitignore `.agents/` at repo root; in dotfiles, use `ai/.agents/` subdirs for ephemeral work
 - Commit `.ai/rules/` (all rules are copied, not symlinked)
 - Gitignore `.cursor/rules/` (auto-generated symlinks to `.ai/rules/`)
 

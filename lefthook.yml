@@ -30,7 +30,7 @@ pre-commit:
         done
     cli-check:
       glob: "cli/**/*.py"
-      run: just lint-fast
+      run: just check --fast
 
 pre-push:
   commands:

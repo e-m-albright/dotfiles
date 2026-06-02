@@ -61,7 +61,7 @@
       }
     },
     "dock": "left",
-    "play_sound_when_agent_done": true,
+    "play_sound_when_agent_done": "always",
     "default_model": {
       "enable_thinking": false,
       "provider": "lmstudio",

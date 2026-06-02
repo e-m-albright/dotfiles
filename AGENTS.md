@@ -17,6 +17,7 @@ This is a personal dotfiles and development environment configuration repo. It b
 - `ai/prompts/` -- System-prompt artifacts (advisor/detailed system prompts, `gemini-chunks/`) loaded by `dotfiles agent web-chat-instructions`
 - `ai/audits/` -- Audit prompts run by scheduled bot-audits on a cadence (also usable ad hoc)
 - `ai/rules-sync/` -- Cross-harness rule-sync fragment used by `dotfiles agent migrate-rules-sync`
+- `ai/.agents/` -- Permission profiles (`generate-permissions.sh`, `safe-commands.yaml`); ephemeral plans/research gitignored under subdirs
 - `ai/artifacts/` -- **gitignored**, created on demand for ephemeral agent working files (durable output goes in `docs/`)
 
 ## This Repo
@@ -34,7 +35,7 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 - `README.md` documents user-facing features. When adding/removing/renaming commands, packages, or config, update the README in the same commit.
 - `ai/agents/shared/rules.md` is the canonical universal rule kernel — one hand-authored doc deployed verbatim to every vendor by `dotfiles agent setup` (Cursor gets a frontmatter wrapper). No baking, no per-rule symlinks. Language/framework opinions are NOT pushed as rules — they live as reference in `docs/stacks/`.
 - `ai/skills/` is the canonical skill library. Edit there; `dotfiles agent setup` deploys to each vendor via the public `npx skills` CLI (claude-code) and a small `cp` loop for subagents (codex). No per-vendor mirror dirs in this repo. Validate with `dotfiles agent lint`.
-- **Decisions and curated memory live in this repo, under version control — not in any coding tool's private memory.** Record decisions as ADRs in `docs/adr/` (numbered, committed); keep curated tool/stack notes in `docs/`. Unless something must stay private, prefer the repo so the curated memory is owned by the project, reviewable, and portable across tools.
+- **Decisions and curated memory live in this repo, under version control — not in any coding tool's private memory.** Record durable decisions in curated `docs/` guides; `docs/adr/` is gitignored scratch space if tools recreate it. Permission profiles and safe-command tiers live in `ai/.agents/`. Unless something must stay private, prefer the repo so the curated memory is owned by the project, reviewable, and portable across tools.
 
 ## Working in This Repo
 
@@ -63,5 +64,5 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 The curated knowledge base lives in `docs/` (see `docs/README.md`):
 - `docs/stacks/` -- technology taste by language/framework (pick/avoid, idioms, patterns), plus `services.md`, `infrastructure.md`, `python/ml.md`
 - `docs/knowledge/` -- cross-cutting practice: `ai-tools.md`, `token-efficiency.md`, `browser-tooling.md`, `customer-discovery.md`, `project-memory.md`, prompting guides
-- `docs/engineering-philosophy.md` -- 12 universal code-health principles; `docs/adr/` -- numbered decisions
+- `docs/engineering-philosophy.md` -- 12 universal code-health principles
 - `docs/pi-power-setup.md` -- Pi agent power setup (mitsupi, safe-git, oh-my-pi vs base Pi)

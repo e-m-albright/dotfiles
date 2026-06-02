@@ -7,11 +7,26 @@
 # -----------------------------------------------------------------------------
 .claude/
 .cursor/hooks/state/
+.crush/
+cli/.complexipy_cache/
 
 # -----------------------------------------------------------------------------
-# Superpowers (external plugin, not part of dotfiles)
+# Agent-generated markdown (scrub with `just scrub --artifacts`)
 # -----------------------------------------------------------------------------
+docs/adr/
+docs/specs/
+docs/plans/
 docs/superpowers/
+
+# -----------------------------------------------------------------------------
+# Repo-local agent tooling (canonical: ai/.agents/)
+# -----------------------------------------------------------------------------
+.agents/
+ai/.agents/plans/
+ai/.agents/research/
+ai/.agents/sessions/
+ai/.agents/prompts/
+ai/.agents/decisions/
 
 # -----------------------------------------------------------------------------
 # Obsidian (canonical copy lives in editors/obsidian/)
@@ -65,13 +80,6 @@ editors/cursor/.cursorignore
 # See: docs/knowledge/agent-output.md
 # -----------------------------------------------------------------------------
 ai/artifacts/
-
-# -----------------------------------------------------------------------------
-# In-flight specs/plans — kept local, not published. Durable rationale
-# graduates into docs/ (ADRs, guides); the working spec stays on disk only.
-# -----------------------------------------------------------------------------
-docs/specs/
-docs/plans/
 
 # -----------------------------------------------------------------------------
 # Vendor CLI cwd state (created when running gemini/codex/pi from within dotfiles)

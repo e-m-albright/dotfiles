@@ -1,7 +1,6 @@
 # dotfiles-cli
 
-Hexagonal Typer CLI (and, later, Textual TUI) for the dotfiles dev environment.
-Design spec: `../docs/specs/2026-05-31-dotfiles-cli-tui-design.md`.
+CLI for the dotfiles dev environment.
 
 Run from repo root: `dotfiles <command>` (via `bin/dotfiles` shim → `uv run`).
-Dev tasks: `just check` (lint + types + tests).
+Dev tasks: `just` (grouped help); `just check` (full gate); `just check --fast` (pre-commit, no tests); `just fmt --check`; `just scrub --artifacts` / `just scrub --caches`.

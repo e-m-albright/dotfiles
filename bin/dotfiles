@@ -19,43 +19,40 @@ sub_help () {
     uv run --project "$DOTFILES_DIR/cli" python -c "from dotfiles.banner import print_banner; print_banner()" 2>/dev/null || true
     printf "%s Usage: ${YELLOW}%s <command>${NC}\n" "$ARROW" "$BIN_NAME"
     printf "\n"
-    printf "${BLUE}Core commands:${NC}\n"
-    printf "   install              Run full dotfiles setup\n"
     printf "   help                 This help message\n"
     printf "   version              Print version with the gold DOTFILES banner\n"
-    printf "   doctor [--fix]       Check all tools are installed (--fix to repair config)\n"
+    printf "\n"
+    printf "${BLUE}Machine${NC} — setup, maintenance, and machine-state\n"
+    printf "   install              Run full dotfiles setup\n"
     printf "   update               Update OS, Homebrew, runtimes, and dev tools\n"
+    printf "   doctor [--fix]       Check all tools are installed (--fix to repair config)\n"
+    printf "   brew install [opts]  Sync packages from packages.toml (--dry-run, --no-ai/-productivity/-social)\n"
+    printf "   brew upgrade         Upgrade all installed packages (brew is the version surface)\n"
+    printf "   brew stale           Find installed packages not declared in packages.toml\n"
     printf "   clean                Clean up Homebrew caches\n"
     printf "   dock                 Reset macOS Dock layout\n"
+    printf "   snapshot [ls|diff]   Capture / list / diff machine-state snapshots\n"
+    printf "   profile-shell        Profile shell startup time\n"
     printf "   completions          Output shell completions (eval to install)\n"
-    printf "   benchmark <cmd>      Benchmark local LM Studio models for your hardware (list|bench|estimate|compare)\n"
-    printf "   remote on [opts]       Turn on SSH/Mosh/Zellij access for Termius\n"
-    printf "   remote off [opts]      Turn off macOS Remote Login for phone access\n"
+    printf "\n"
+    printf "${BLUE}Control${NC} — drive this Mac locally or from your phone\n"
+    printf "   tui                    Launch the Mission Control TUI (phone-drivable dashboard)\n"
+    printf "   remote on [opts]       SSH/Mosh/Zellij access for Termius (--add-key, --harden-ssh, --session, --dry-run)\n"
+    printf "   remote off [opts]      Turn off macOS Remote Login (--kill-sessions, --dry-run)\n"
     printf "   remote status          Show the remote-shell entrypoint state\n"
     printf "   session <cmd>          zellij sessions: ls, attach, new, kill, or bare picker\n"
     printf "\n"
-    printf "${BLUE}Command center:${NC}\n"
-    printf "   tui                    Launch the Mission Control TUI (phone-drivable dashboard)\n"
-    printf "   snapshot [ls|diff]     Capture / list / diff machine-state snapshots\n"
-    printf "\n"
-    printf "${BLUE}Namespaces:${NC}\n"
-    printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp to reset managed MCPs)\n"
+    printf "${BLUE}AI${NC} — agentic tooling and local models\n"
+    printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp, --clean)\n"
     printf "   agent overview       Show active agentic setup (Python dashboard)\n"
-    printf "   agent migrate-rules-sync [path]\n"
-    printf "                        Adopt cross-harness rule sync in an existing project\n"
-    printf "   agent web-chat-instructions [--step|--list]\n"
-    printf "                        Load advisor prompt into clipboard, chunked for Gemini saved-info\n"
-    printf "\n"
     printf "   agent lint           Validate skill/agent files against conventions\n"
     printf "   agent verify [--offline]  Check skills/agents deployed + probe MCP servers\n"
-    printf "\n"
-    printf "   brew install         Sync packages from packages.toml manifest\n"
-    printf "   brew upgrade         Upgrade all installed packages (brew is the version surface)\n"
-    printf "   brew stale           Find disabled packages still installed\n"
-    printf "\n"
-    printf "   shell profile        Profile shell startup time\n"
-    printf "\n"
-    printf "   cursor plugins       Show Cursor plugin install checklist\n"
+    printf "   agent web-chat-instructions [--step|--list]\n"
+    printf "                        Load advisor prompt into clipboard, chunked for Gemini saved-info\n"
+    printf "   agent migrate-rules-sync [path]\n"
+    printf "                        Adopt cross-harness rule sync (--force, --keep-dead-symlinks)\n"
+    printf "   agent cursor-plugins Show Cursor plugin install checklist (manual /add-plugin list)\n"
+    printf "   benchmark <cmd>      Benchmark local LM Studio models (list|bench|estimate|compare)\n"
 }
 
 sub_update () {
@@ -241,8 +238,7 @@ _dotfiles() {
         'snapshot:Machine-state snapshots (ls, diff)'
         'agent:Agent namespace (overview, lint, setup, verify, web-chat-instructions)'
         'brew:Brew namespace (install, upgrade, stale)'
-        'shell:Shell namespace (profile)'
-        'cursor:Cursor namespace (plugins)'
+        'profile-shell:Profile shell startup time'
     )
     _describe 'command' commands
 }
@@ -256,7 +252,8 @@ ns_agent() {
     local sub="${1:-overview}"; shift || true
     case "$sub" in
         migrate-rules-sync) sub_migrate_agents_sync "$@" ;;
-        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, web-chat-instructions)\n" "$ARROW" "$sub" >&2; exit 1 ;;
+        cursor-plugins) sub_cursor_plugins "$@" ;;
+        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, verify, web-chat-instructions, migrate-rules-sync, cursor-plugins)\n" "$ARROW" "$sub" >&2; exit 1 ;;
     esac
 }
 
@@ -306,12 +303,15 @@ case $COMMAND_NAME in
     completions) sub_completions ;;
     # Namespaces
     agent)  shift; ns_agent "$@" ;;
+
+    # profile-shell is a canonical flat command (Machine group in sub_help)
+    profile-shell) shift; sub_shell_profile "$@" ;;
+
+    # Silent back-compat: cursor-plugins is now `agent cursor-plugins`;
+    # shell/cursor were the old single-item namespaces (shell profile / cursor plugins)
+    cursor-plugins)  shift; sub_cursor_plugins "$@" ;;
     shell)  shift; ns_shell "$@" ;;
     cursor) shift; ns_cursor "$@" ;;
-
-    # Backward-compat aliases for hyphenated names (silent — drop in a future cleanup)
-    profile-shell) shift; sub_shell_profile "$@" ;;
-    cursor-plugins)  shift; sub_cursor_plugins "$@" ;;
 
     *)
         if declare -f "sub_${COMMAND_NAME}" >/dev/null 2>&1; then

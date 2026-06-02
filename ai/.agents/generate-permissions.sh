@@ -19,7 +19,7 @@
 set -eo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DOTFILES_DIR="$(dirname "$SCRIPT_DIR")"
+DOTFILES_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 YAML_FILE="$SCRIPT_DIR/safe-commands.yaml"
 PROFILES_DIR="$HOME/.claude/profiles"
 
