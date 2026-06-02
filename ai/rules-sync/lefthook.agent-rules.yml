@@ -3,7 +3,7 @@
 #
 # Refuses commits that change .ai/rules/, AGENTS.md, .cursor/rules/, or the
 # sync script without re-running the sync. Prevents the "I edited a rule but
-# forgot to re-bake AGENTS.md" drift that causes Claude/Codex/Gemini to load
+# forgot to re-render AGENTS.md" drift that causes Claude/Codex/Gemini to load
 # stale rules.
 
 pre-commit:

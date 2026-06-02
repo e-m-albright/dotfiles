@@ -18,7 +18,7 @@ Docs: [pi.dev/docs](https://pi.dev/docs/latest) · monorepo [badlogic/pi-mono](h
 Pi inherits our shared config for free — no Pi-specific duplication:
 
 - **Skills**: Pi natively reads `~/.agents/skills/` (the Codex dir our `npx skills` pipeline populates). Every `ai/skills/` skill — including `review` — shows up in Pi after `dotfiles agent global setup`.
-- **Context**: Pi loads `AGENTS.md` the same way Codex does; `bake-rules.sh` is the single source.
+- **Context**: Pi loads `AGENTS.md` the same way Codex does; the shared `rules.md` kernel is the single source, inlined by `dotfiles agent global setup`.
 - **Subagents**: map to `~/.pi/agent/agents/*.md` via the shared deployer.
 
 Keep using `~/.agents/skills` + `AGENTS.md` as the canonical sources — that's what makes the fleet behave consistently.

@@ -145,7 +145,7 @@ def merge_managed_mcp(
 
 
 # ---------------------------------------------------------------------------
-# Global instruction file (shared rules.md + baked process rules)
+# Global instruction file (shared rules.md + rendered process rules)
 # ---------------------------------------------------------------------------
 
 

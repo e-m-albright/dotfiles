@@ -15,7 +15,7 @@ The fix is to materialize rules into each harness's native loader path:
 | Codex CLI | `AGENTS.md` (native) | All rule bodies inlined |
 | Gemini CLI | `GEMINI.md` → symlinked to `AGENTS.md` | All rule bodies inlined |
 
-`sync-agent-rules.sh` keeps both targets current. Pre-commit drift guard refuses stale bakes.
+`sync-agent-rules.sh` keeps both targets current. Pre-commit drift guard refuses stale renders.
 
 ## What gets installed
 
@@ -38,7 +38,7 @@ The fix is to materialize rules into each harness's native loader path:
 If your project uses `just`, add:
 
 ```just
-# Sync .ai/rules/*.mdc → .cursor/rules + bake into AGENTS.md
+# Sync .ai/rules/*.mdc → .cursor/rules + render into AGENTS.md
 agents:
     ./scripts/sync-agent-rules.sh
 
@@ -49,4 +49,4 @@ agents-check:
 
 ## Why not just symlink `.claude/rules` to `.ai/rules`?
 
-Tried it. Claude Code at project level only auto-loads `AGENTS.md` (or `CLAUDE.md`) — not a `.claude/rules/` directory. Codex and Gemini behave the same. Only Cursor honours a project rules directory. So the answer is: symlink for Cursor, bake for the rest.
+Tried it. Claude Code at project level only auto-loads `AGENTS.md` (or `CLAUDE.md`) — not a `.claude/rules/` directory. Codex and Gemini behave the same. Only Cursor honours a project rules directory. So the answer is: symlink for Cursor, render into AGENTS.md for the rest.

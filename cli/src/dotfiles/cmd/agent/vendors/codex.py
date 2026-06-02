@@ -1,7 +1,7 @@
 """agent_setup.codex — Codex CLI agentic setup.
 
 Configures Codex CLI:
-  - Write ~/.codex/AGENTS.md (shared rules.md + codex-specific + baked rules)
+  - Write ~/.codex/AGENTS.md (shared rules.md + codex-specific + rendered rules)
   - Copy ai/agents/codex/default.rules → ~/.codex/rules/default.rules
     (refuse to overwrite if live file is larger — user has custom entries)
   - Merge MCP servers into ~/.codex/config.toml ([mcp_servers.<name>] blocks,

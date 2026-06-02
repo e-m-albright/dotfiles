@@ -3,7 +3,7 @@
 Configures Gemini CLI:
   - Seed ~/.gemini/settings.json from dotfiles seed if missing
   - Merge managed MCP servers into settings.json
-  - Write ~/.gemini/GEMINI.md (rules.md + baked rules)
+  - Write ~/.gemini/GEMINI.md (rules.md + rendered rules)
 
 All paths are injected; Path.home() MUST NOT appear here.
 """

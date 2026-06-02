@@ -10,7 +10,7 @@
 #
 # So this script:
 #   1. Ensures every .ai/rules/*.mdc has a .cursor/rules/<same>.mdc symlink.
-#   2. Bakes every .ai/rules/*.mdc body into AGENTS.md between fenced markers,
+#   2. Renders every .ai/rules/*.mdc body into AGENTS.md between fenced markers,
 #      so the harnesses that can only load one root file get the content.
 #
 # Idempotent. Run after editing any rule. Wire into pre-commit via lefthook
@@ -90,8 +90,8 @@ ensure_cursor_links() {
     fi
 }
 
-# ── 2. Build the baked block from .ai/rules/*.mdc bodies ────────────────
-build_baked_block() {
+# ── 2. Build the rendered block from .ai/rules/*.mdc bodies ────────────────
+build_rules_block() {
     local out="$1"
     {
         printf '%s\n' "$BEGIN_MARKER"
@@ -126,13 +126,13 @@ build_baked_block() {
 
 # ── 3. Replace block in AGENTS.md (or append if markers missing) ────────
 sync_agents_md() {
-    local baked
-    baked="$(mktemp)"
-    build_baked_block "$baked"
+    local rendered
+    rendered="$(mktemp)"
+    build_rules_block "$rendered"
 
     if [[ ! -f "$AGENTS_MD" ]]; then
         echo "error: $AGENTS_MD not found — create it before running sync" >&2
-        rm "$baked"
+        rm "$rendered"
         exit 1
     fi
 
@@ -141,10 +141,10 @@ sync_agents_md() {
 
     if grep -qF "$BEGIN_MARKER" "$AGENTS_MD"; then
         # Replace in place between markers.
-        awk -v begin="$BEGIN_MARKER" -v end="$END_MARKER" -v baked="$baked" '
+        awk -v begin="$BEGIN_MARKER" -v end="$END_MARKER" -v rendered="$rendered" '
             $0 == begin {
-                while ((getline line < baked) > 0) print line
-                close(baked)
+                while ((getline line < rendered) > 0) print line
+                close(rendered)
                 skip = 1
                 next
             }
@@ -155,10 +155,10 @@ sync_agents_md() {
             !skip
         ' "$AGENTS_MD" > "$new_md"
     else
-        # No markers yet — append the baked block at the end.
+        # No markers yet — append the rendered block at the end.
         cat "$AGENTS_MD" > "$new_md"
         printf '\n---\n\n' >> "$new_md"
-        cat "$baked" >> "$new_md"
+        cat "$rendered" >> "$new_md"
     fi
 
     local count
@@ -166,9 +166,9 @@ sync_agents_md() {
 
     if [[ "$MODE" == "check" ]]; then
         if ! cmp -s "$AGENTS_MD" "$new_md"; then
-            echo "drift: AGENTS.md baked rules block is stale" >&2
+            echo "drift: AGENTS.md rendered rules block is stale" >&2
             echo "fix:   scripts/sync-agent-rules.sh" >&2
-            rm "$baked" "$new_md"
+            rm "$rendered" "$new_md"
             exit 1
         fi
     else
@@ -176,11 +176,11 @@ sync_agents_md() {
             echo "  agents.md: $count rules already current"
         else
             mv "$new_md" "$AGENTS_MD"
-            echo "  agents.md: baked $count rules"
+            echo "  agents.md: rendered $count rules"
         fi
     fi
 
-    rm -f "$baked" "$new_md"
+    rm -f "$rendered" "$new_md"
 }
 
 if [[ "$CURSOR" == true ]]; then
