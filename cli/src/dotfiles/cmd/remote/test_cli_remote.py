@@ -89,17 +89,23 @@ def test_remote_setup_warns_when_tailscale_disconnected() -> None:
     assert "Tailscale does not look connected" in result.output
 
 
-def test_remote_disable_exits_nonzero_on_sudo_failure() -> None:
-    r = _runner_with_status("On")
-    r.script(("sudo", "systemsetup", "-setremotelogin", "-f", "off"), exit_code=1)
-    fake = make_fake_context(runner=r, interactive=True)
+def test_remote_off_nudges_to_sharing_pane_when_on() -> None:
+    fake = make_fake_context(runner=_runner_with_status("On"), interactive=True)
     result = runner.invoke(app, ["remote", "off"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 1
-    assert "Full Disk Access" in result.output
+    assert result.exit_code == 0  # nudges, never errors — it doesn't flip the toggle
+    assert "Remote Login is on" in result.output
+    assert "Sharing" in result.output
 
 
-def test_remote_disable_dry_run() -> None:
+def test_remote_off_kill_sessions_dry_run() -> None:
     fake = make_fake_context(runner=_runner_with_status("On"), interactive=True)
     result = runner.invoke(app, ["remote", "off", "--dry-run", "--kill-sessions"], obj=fake)
     assert result.exit_code == 0
     assert "DRY RUN" in result.output
+
+
+def test_remote_status_shows_sharing_toggle_hint() -> None:
+    fake = make_fake_context(runner=_runner_with_status("On"), interactive=True)
+    result = runner.invoke(app, ["remote", "status"], obj=fake, env={"COLUMNS": "200"})
+    assert result.exit_code == 0
+    assert "Sharing" in result.output

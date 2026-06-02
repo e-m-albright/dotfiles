@@ -50,8 +50,8 @@ async def test_copy_connect_command_uses_connection_info():
 
 
 @pytest.mark.asyncio
-async def test_toggle_remote_login_warns_when_not_interactive():
-    # interactive=False (over a non-interactive mosh session) -> sudo-or-warn
+async def test_toggle_remote_login_points_to_sharing_pane():
+    # The TUI never flips Remote Login — [t] just surfaces where to toggle it.
     app = MissionControlApp(ctx=_remote_ctx())
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -59,9 +59,8 @@ async def test_toggle_remote_login_warns_when_not_interactive():
 
         pane = app.query_one(RemotePane)
         result = pane.toggle_login_plan()
-        # make_fake_context defaults interactive=False (non-interactive mosh) -> sudo-or-warn
-        assert result.level == "warn"
-        assert "sudo" in result.message.lower()
+        assert result.level == "info"
+        assert "Sharing" in result.message
 
 
 def _kill_ctx() -> AppContext:

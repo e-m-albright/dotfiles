@@ -13,7 +13,7 @@ from textual.widgets import Button, Label, Static
 
 from dotfiles.app.context import AppContext
 from dotfiles.cmd.remote.models import ConnectionInfo, RemoteStatus
-from dotfiles.cmd.remote.service import RemoteService
+from dotfiles.cmd.remote.service import SHARING_HINT, RemoteService
 from dotfiles.result import StepResult
 
 if TYPE_CHECKING:
@@ -81,15 +81,8 @@ class RemotePane(Container):
         self.notify("Copied connect command", title="Remote")
 
     def toggle_login_plan(self) -> StepResult:
-        """Plan the toggle. Over a non-interactive session sudo will fail — warn instead."""
-        if not self._ctx.interactive:
-            return StepResult(
-                level="warn",
-                message="Toggling Remote Login needs sudo on the host (run on the Mac directly).",
-            )
-        return StepResult(
-            level="info", message="Run `dotfiles remote setup` to enable on the host."
-        )
+        """Remote Login is toggled by hand in System Settings; point at where."""
+        return StepResult(level="info", message=f"Toggle Remote Login: {SHARING_HINT}")
 
     def action_toggle_login(self) -> None:
         result = self.toggle_login_plan()

@@ -350,10 +350,9 @@ dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
 dotfiles remote on --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
                              # Enable phone access with key-only SSH
-dotfiles remote off --dry-run
-                             # Preview turning off macOS Remote Login
+dotfiles remote off          # Point at the Remote Login toggle (you flip it in System Settings)
 dotfiles remote off --kill-sessions
-                             # Turn off Remote Login and kill active SSH/Mosh sessions
+                             # Same, plus kill active SSH/Mosh sessions
 dotfiles session             # fzf-pick a live zellij session and attach
 dotfiles session ls          # list sessions
 dotfiles session new <name>  # create + attach
@@ -372,9 +371,9 @@ dotfiles                     # Bare invocation prints help (use 'dotfiles tui' f
 
 Full end-to-end setup (phone + laptop, Termius/Tailscale config, troubleshooting) lives in [docs/remote-shell.md](docs/remote-shell.md).
 
-`dotfiles remote on` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote off` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too. `dotfiles remote status` shows whether Remote Login is on and, when it is, whether SSH accepts password logins (`key-only` vs `password allowed` — run `dotfiles remote on --harden-ssh` to lock it to keys).
+`dotfiles remote on` authorizes the phone key, hardens SSH (with `--harden-ssh`), and prints the Mosh command to paste into Termius — it connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote status` shows whether Remote Login is on and, when it is, whether SSH accepts password logins (`key-only` vs `password allowed` — run `dotfiles remote on --harden-ssh` to lock it to keys).
 
-Note: on macOS 26+, turning Remote Login off via the CLI requires your terminal app to have Full Disk Access (System Settings → Privacy & Security → Full Disk Access); otherwise toggle Remote Login directly in System Settings → General → Sharing.
+**Remote Login itself is toggled by hand** in System Settings → General → Sharing → Remote Login (`remote status` prints an `open …` shortcut that jumps straight there). The CLI deliberately doesn't flip it: doing so via `systemsetup` requires granting your terminal Full Disk Access on macOS 26+, a standing local-privilege grant not worth the convenience. So `dotfiles remote on` enables the key/harden parts but nudges you to turn Remote Login on; `dotfiles remote off` reminds you where to turn it off and, with `--kill-sessions`, drops already-open Termius sessions.
 
 `dotfiles session` manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote on` also prints a picker-based Termius startup command that drops straight into the fzf session picker. Zellij is configured from `terminal/zellij/` (symlinked by `install.sh`): a minimal `config.kdl` plus a `mobile` deck layout that the `mobile` session opens with on first creation (compact status bar + a Mission Control tab). Sessions auto-serialize, so `dotfiles session attach mobile` resurrects the deck after a reboot.
 
@@ -382,7 +381,7 @@ Note: on macOS 26+, turning Remote Login off via the CLI requires your terminal 
 
 `dotfiles snapshot` captures a point-in-time machine state and saves it as JSON under `~/.local/state/dotfiles/snapshots/`. Use `diff now` to compare the latest saved snapshot against the current live state, or pass two slug prefixes to diff any two captures.
 
-`dotfiles tui` opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. (Bare `dotfiles` with no args prints help.) The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` to toggle Remote Login (sudo-aware), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane is a touch-first manager for live zellij sessions: a pinned **+ New session** row (or press `n`), and tapping any session opens an action sheet — Attach/switch or Kill. Every action is a deliberate tap, so a phone misfire can't yank you into the wrong session or kill one. It also shows `👤 N attached` when more than one client is on the current session.
+`dotfiles tui` opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. (Bare `dotfiles` with no args prints help.) The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` for a reminder of where to toggle Remote Login (System Settings → Sharing), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane is a touch-first manager for live zellij sessions: a pinned **+ New session** row (or press `n`), and tapping any session opens an action sheet — Attach/switch or Kill. Every action is a deliberate tap, so a phone misfire can't yank you into the wrong session or kill one. It also shows `👤 N attached` when more than one client is on the current session.
 
 Tab completion for `dotfiles` (and the `dfs` alias) is autoloaded from
 `shell/completions/_dotfiles` — `.zshrc` prepends that directory to `$fpath`

@@ -5,7 +5,7 @@ from rich.console import Console
 
 from dotfiles.app.context import app_context
 from dotfiles.cmd.remote.models import ConnectionInfo
-from dotfiles.cmd.remote.service import InvalidKeyError, RemoteService
+from dotfiles.cmd.remote.service import SHARING_HINT, SHARING_OPEN, InvalidKeyError, RemoteService
 from dotfiles.console import console, has_errors, render_and_exit, render_steps
 
 remote_app = typer.Typer(help="Turn phone (Termius) remote-shell access on or off.")
@@ -75,7 +75,11 @@ def off(
         False, "--kill-sessions", help="Also kill existing mosh-server/sshd sessions."
     ),
 ) -> None:
-    """Turn off macOS Remote Login (and optionally kill live sessions)."""
+    """Point at the Remote Login toggle (and optionally kill live sessions).
+
+    Remote Login is flipped by hand in System Settings — see `remote status` — so
+    this reports where to toggle it; `--kill-sessions` drops open mosh/sshd logins.
+    """
     steps = _service(ctx).disable(dry_run=dry_run, kill_sessions=kill_sessions)
     render_and_exit(console, steps)
 
@@ -132,3 +136,5 @@ def status(ctx: typer.Context) -> None:
             console.print("SSH auth: [dim]unknown[/]")
     console.print(f"Tailscale: {tail_state} ({tail})")
     console.print(f"{s.user}@{s.host}")
+    console.print(f"[dim]Toggle Remote Login by hand: {SHARING_HINT}[/]")
+    console.print(f"[dim]Shortcut: {SHARING_OPEN}[/]")

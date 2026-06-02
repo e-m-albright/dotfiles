@@ -124,23 +124,24 @@ def test_status_ssh_auth_unknown_when_sshd_query_fails(tmp_path: Path) -> None:
 
 
 def test_sudo_failure_surfaces_underlying_stderr(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
+    runner = _base_runner()  # scripts `sudo -n true` ok so _sudo runs the real call
     runner.script(
-        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
-    )
-    runner.script(("id", "-un"), stdout="evan\n")
-    runner.script(
-        ("sudo", "systemsetup", "-setremotelogin", "-f", "off"),
+        ("sudo", "mkdir", "-p", "/etc/ssh/sshd_config.d"),
         exit_code=1,
-        stderr="setremotelogin: requires Full Disk Access privileges\n",
+        stderr="mkdir: /etc/ssh: Operation not permitted\n",
     )
-    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+    service = RemoteService(
+        runner=runner,
+        interactive=True,
+        home=tmp_path,
+        which=lambda _name: "/opt/homebrew/bin/mosh-server",
+    )
 
-    steps = service.disable(dry_run=False, kill_sessions=False)
+    steps = service.setup(dry_run=False, add_key=None, harden=True, session="mobile")
 
     err = [s for s in steps if s.level == "error"]
     assert err, "expected an error step on sudo failure"
-    assert "requires Full Disk Access privileges" in err[0].message
+    assert "Operation not permitted" in err[0].message
 
 
 def _base_runner() -> FakeProcessRunner:
@@ -174,8 +175,8 @@ def test_setup_dry_run_makes_no_mutating_calls(tmp_path: Path) -> None:
     assert any("DRY RUN" in s.message for s in steps)
 
 
-def test_setup_adds_key_idempotently_and_enables_remote_login(tmp_path: Path) -> None:
-    runner = _base_runner()
+def test_setup_adds_key_idempotently_and_nudges_remote_login(tmp_path: Path) -> None:
+    runner = _base_runner()  # _base_runner reports Remote Login disabled
     service = RemoteService(
         runner=runner,
         interactive=True,
@@ -186,11 +187,13 @@ def test_setup_adds_key_idempotently_and_enables_remote_login(tmp_path: Path) ->
 
     service.setup(dry_run=False, add_key=key, harden=False, session="mobile")
     # second run must not duplicate the key
-    service.setup(dry_run=False, add_key=key, harden=False, session="mobile")
+    steps = service.setup(dry_run=False, add_key=key, harden=False, session="mobile")
 
     contents = (tmp_path / ".ssh" / "authorized_keys").read_text()
     assert contents.count(key) == 1
-    assert ("sudo", "systemsetup", "-setremotelogin", "on") in runner.calls
+    # The CLI never flips Remote Login itself — it nudges to the Sharing toggle.
+    assert ("sudo", "systemsetup", "-setremotelogin", "on") not in runner.calls
+    assert any(s.level == "warn" and "Remote Login is off" in s.message for s in steps)
 
 
 def test_setup_rejects_bad_key(tmp_path: Path) -> None:
@@ -213,7 +216,8 @@ def test_setup_without_sudo_access_warns_instead_of_running(tmp_path: Path) -> N
         which=lambda _name: "/opt/homebrew/bin/mosh-server",
     )
 
-    steps = service.setup(dry_run=False, add_key=None, harden=False, session="mobile")
+    # harden=True is the only step that still needs sudo (writes the key-only config).
+    steps = service.setup(dry_run=False, add_key=None, harden=True, session="mobile")
 
     assert ("sudo", "systemsetup", "-setremotelogin", "on") not in runner.calls
     assert any("Needs sudo" in s.message for s in steps)
@@ -234,18 +238,19 @@ def test_disable_when_already_off_optionally_kills_sessions(tmp_path: Path) -> N
     assert ("pkill", "-u", "evan", "sshd") in runner.calls
 
 
-def test_disable_turns_off_remote_login_when_on(tmp_path: Path) -> None:
+def test_disable_nudges_to_sharing_pane_when_on(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(
         ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
     )
     runner.script(("id", "-un"), stdout="evan\n")
-    runner.script(("sudo", "-n", "true"), exit_code=0)
     service = RemoteService(runner=runner, interactive=True, home=tmp_path)
 
-    service.disable(dry_run=False, kill_sessions=False)
+    steps = service.disable(dry_run=False, kill_sessions=False)
 
-    assert ("sudo", "systemsetup", "-setremotelogin", "-f", "off") in runner.calls
+    # Never flips it itself — surfaces the manual toggle instead.
+    assert ("sudo", "systemsetup", "-setremotelogin", "-f", "off") not in runner.calls
+    assert any(s.level == "warn" and "Remote Login is on" in s.message for s in steps)
 
 
 def test_disable_dry_run_makes_no_changes(tmp_path: Path) -> None:
@@ -261,22 +266,6 @@ def test_disable_dry_run_makes_no_changes(tmp_path: Path) -> None:
     assert ("sudo", "systemsetup", "-setremotelogin", "-f", "off") not in runner.calls
     assert ("pkill", "-u", "evan", "mosh-server") not in runner.calls
     assert any("DRY RUN" in s.message for s in steps)
-
-
-def test_sudo_failure_is_reported_as_error_with_fda_hint(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(
-        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
-    )
-    runner.script(("id", "-un"), stdout="evan\n")
-    runner.script(("sudo", "systemsetup", "-setremotelogin", "-f", "off"), exit_code=1)
-    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
-
-    steps = service.disable(dry_run=False, kill_sessions=False)
-
-    err = [s for s in steps if s.level == "error"]
-    assert err, "expected an error step on sudo failure"
-    assert "Full Disk Access" in err[0].message
 
 
 def test_ensure_tool_reports_brew_install_failure(tmp_path: Path) -> None:

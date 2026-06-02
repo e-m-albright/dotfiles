@@ -27,17 +27,24 @@ client: Termius connects to the laptop over Mosh and runs everything *there*.
 ### On the laptop
 
 1. **Tailscale** is installed by `install.sh`. Make sure it's running and logged in.
-2. Authorize the phone and turn on remote access — paste the phone's **public** key
-   (generate it in Termius first, see below):
+2. **Turn on Remote Login by hand:** System Settings → General → Sharing → **Remote
+   Login**. (`dotfiles remote status` prints an `open …` shortcut that jumps straight
+   to that pane.) The CLI deliberately doesn't flip this — doing it via `systemsetup`
+   would require granting your terminal Full Disk Access on macOS 26+, which isn't
+   worth a standing privilege grant for a one-tap toggle.
+3. Authorize the phone and harden SSH — paste the phone's **public** key (generate it
+   in Termius first, see below):
 
    ```bash
    dotfiles remote on --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
    ```
 
-   This enables macOS Remote Login, appends the key to `~/.ssh/authorized_keys`,
-   and (with `--harden-ssh`) disables SSH password auth so only your key works.
-   It prints the **Tailscale IP** and the exact Mosh command to paste into Termius.
-3. Sanity-check anytime with `dotfiles remote status` (Remote Login + Tailscale state).
+   This appends the key to `~/.ssh/authorized_keys` and (with `--harden-ssh`) disables
+   SSH password auth so only your key works. It prints the **Tailscale IP** and the
+   exact Mosh command to paste into Termius. (If Remote Login is still off, it nudges
+   you back to step 2 rather than failing.)
+4. Sanity-check anytime with `dotfiles remote status` — Remote Login state, Tailscale,
+   and whether SSH is `key-only` or still `password allowed`.
 
 ### On the phone
 
@@ -110,7 +117,7 @@ zellij delete-session <name>   # purge an exited/serialized one from history
 | SSH works, Mosh doesn't | Mosh enabled on the Termius host? mosh-server path = `/opt/homebrew/bin/mosh-server`? Mosh needs UDP — Tailscale handles the NAT traversal. |
 | Key rejected | Re-run `dotfiles remote on --add-key "<public key>"`. With `--harden-ssh`, password auth is off — the key must be right. |
 | Landed in a bare shell, not the deck | The `mobile` session was created without the layout (e.g. after `delete-session`). `dfs session kill mobile` then reconnect to rebuild it. |
-| Want to stop all phone access | `dotfiles remote off --kill-sessions` (disables Remote Login and drops open Mosh/SSH sessions). |
+| Want to stop all phone access | Turn **Remote Login** off in System Settings → General → Sharing (run `dotfiles remote off --kill-sessions` to also drop open Mosh/SSH sessions). |
 
 ## Web client (experiment)
 

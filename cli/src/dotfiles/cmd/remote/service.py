@@ -11,6 +11,13 @@ from dotfiles.result import StepResult
 
 _KEY_PREFIXES = ("ssh-ed25519 ", "ssh-rsa ", "ecdsa-sha2-")
 
+# Remote Login is toggled by hand in System Settings, not by this CLI: flipping it
+# via `systemsetup` needs the terminal to hold Full Disk Access (macOS 26+), which
+# is a standing local-privilege grant we'd rather not require. So we read the state
+# and point at the toggle instead of mutating it.
+SHARING_HINT = "System Settings → General → Sharing → Remote Login"
+SHARING_OPEN = 'open "x-apple.systempreferences:com.apple.Sharing-Settings.extension"'
+
 _HARDEN_PATH = "/etc/ssh/sshd_config.d/90-dotfiles-remote.conf"
 _HARDEN_DIR = "/etc/ssh/sshd_config.d"
 _HARDEN_CONTENT = (
@@ -135,14 +142,7 @@ class RemoteService:
             return StepResult(level="success", message="sudo " + " ".join(args))
         detail = (result.stderr.strip() or result.stdout.strip()).splitlines()
         reason = f": {detail[-1].strip()}" if detail else ""
-        hint = ""
-        if args and args[0] == "systemsetup":
-            hint = (
-                " — if blocked by Full Disk Access, grant your terminal app Full Disk Access "
-                "(System Settings -> Privacy & Security) or toggle it in "
-                "System Settings -> General -> Sharing"
-            )
-        return StepResult(level="error", message=f"sudo {' '.join(args)} failed{reason}{hint}")
+        return StepResult(level="error", message=f"sudo {' '.join(args)} failed{reason}")
 
     def _ensure_tool(self, name: str, *, dry_run: bool) -> StepResult:
         if self._runner.run((name, "--version")).ok:
@@ -192,10 +192,14 @@ class RemoteService:
         out.append(self._write_key(keys, add_key))
         return out
 
-    def _enable_remote_login(self, *, dry_run: bool) -> StepResult:
+    def _enable_remote_login(self) -> StepResult:
         if self._remote_login_on():
             return StepResult(level="success", message="Remote Login already enabled")
-        return self._sudo(("systemsetup", "-setremotelogin", "on"), dry_run=dry_run)
+        return StepResult(
+            level="warn",
+            message="Remote Login is off — turn it on so the phone can connect",
+            details=f"{SHARING_HINT}  ·  {SHARING_OPEN}",
+        )
 
     def _harden(self, harden: bool, *, dry_run: bool) -> list[StepResult]:
         if not harden:
@@ -231,7 +235,7 @@ class RemoteService:
             self._ensure_tool("zellij", dry_run=dry_run),
         ]
         steps.extend(self._ensure_authorized_key(add_key, dry_run=dry_run))
-        steps.append(self._enable_remote_login(dry_run=dry_run))
+        steps.append(self._enable_remote_login())
         steps.extend(self._harden(harden, dry_run=dry_run))
         return steps
 
@@ -281,17 +285,16 @@ class RemoteService:
 
     def disable(self, *, dry_run: bool, kill_sessions: bool) -> list[StepResult]:
         steps: list[StepResult] = []
-        if not self._remote_login_on():
-            steps.append(StepResult(level="success", message="Remote Login already disabled"))
-        elif dry_run:
+        if self._remote_login_on():
             steps.append(
-                StepResult(level="info", message="DRY RUN: sudo systemsetup -setremotelogin -f off")
+                StepResult(
+                    level="warn",
+                    message="Remote Login is on — turn it off to stop new SSH/Mosh logins",
+                    details=f"{SHARING_HINT}  ·  {SHARING_OPEN}",
+                )
             )
         else:
-            # `-f` suppresses the interactive "yes/no" confirmation that
-            # `setremotelogin off` otherwise prints; without it the prompt is
-            # swallowed by the captured subprocess and the command hangs forever.
-            steps.append(self._sudo(("systemsetup", "-setremotelogin", "-f", "off"), dry_run=False))
+            steps.append(StepResult(level="success", message="Remote Login already disabled"))
         if kill_sessions:
             steps.extend(self._kill_sessions(dry_run=dry_run))
         return steps
