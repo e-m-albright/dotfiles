@@ -90,9 +90,40 @@ def _setup_settings_and_mcp(
         reset_mcp=reset_mcp,
     )
     updated = merge_replace(existing, ["mcpServers"], merged_mcp)
-    write_json_safely(settings_file, updated)
 
-    return [StepResult(level="success", message=f"Configured {len(servers)} MCP servers (Gemini)")]
+    # Deploy the managed shell-command blocklist (tools.exclude) from the seed.
+    # `seed-if-missing` above doesn't refresh an existing install, so set it
+    # explicitly here. exclude is a blocklist mirroring deny-commands.yaml; we
+    # never touch tools.core (setting it would disable unlisted built-in tools).
+    managed_exclude = _managed_tool_excludes(seed)
+    results: list[StepResult] = []
+    if managed_exclude is not None:
+        updated = merge_replace(updated, ["tools", "exclude"], managed_exclude)
+        results.append(
+            StepResult(
+                level="success", message=f"Blocked {len(managed_exclude)} shell commands (Gemini)"
+            )
+        )
+
+    write_json_safely(settings_file, updated)
+    results.append(
+        StepResult(level="success", message=f"Configured {len(servers)} MCP servers (Gemini)")
+    )
+    return results
+
+
+def _managed_tool_excludes(seed: Path) -> list[str] | None:
+    """Read the managed tools.exclude list from the dotfiles seed, if present."""
+    if not seed.is_file():
+        return None
+    seed_data: dict[str, object] = load_json_or(seed, {})
+    tools = seed_data.get("tools")
+    if not isinstance(tools, dict):
+        return None
+    exclude = cast("dict[str, object]", tools).get("exclude")
+    if not isinstance(exclude, list):
+        return None
+    return [str(item) for item in cast("list[object]", exclude)]
 
 
 def _setup_instructions(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:

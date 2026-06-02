@@ -86,13 +86,25 @@ def _ensure_pi_installed(
 
 
 def _setup_config_symlinks(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
-    """Symlink settings.json + models.json from dotfiles into pi_home."""
+    """Symlink Pi JSON config from dotfiles into pi_home.
+
+    settings.json + models.json are required. presets.json (consumed by the
+    presets extension) and permission-policy.json (consumed by the
+    permission-policy extension) are optional — both extensions read them from
+    getAgentDir() (= ~/.pi/agent), so they must be linked alongside settings.
+    """
     pi_dir = dotfiles_dir / "ai" / "agents" / "pi"
     results: list[StepResult] = []
     for name in ("settings.json", "models.json"):
         src = pi_dir / name
         if not src.is_file():
             results.append(StepResult(level="error", message=f"Source not found: {src}"))
+            continue
+        symlink(src, pi_home / name)
+        results.append(StepResult(level="success", message=f"Linked Pi {name}"))
+    for name in ("presets.json", "permission-policy.json"):
+        src = pi_dir / name
+        if not src.is_file():
             continue
         symlink(src, pi_home / name)
         results.append(StepResult(level="success", message=f"Linked Pi {name}"))

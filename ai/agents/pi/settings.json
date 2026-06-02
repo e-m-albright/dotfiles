@@ -3,6 +3,7 @@
   "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "medium",
   "shellCommandPrefix": "shopt -s expand_aliases\neval \"$(grep '^alias ' $HOME/dotfiles/shell/.zshrc)\"",
+  "defaultPreset": "dev",
   "safeGit": {
     "promptLevel": "medium",
     "enabledByDefault": true

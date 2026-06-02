@@ -68,7 +68,7 @@ delegates those subcommands to the Python CLI; a few install/bootstrap commands
 - **Zed**: Default editor — set as `$EDITOR` / git editor and the macOS open handler for text, markdown, and source/config files (`.md`, `.txt`, `.yaml`, `.json`, `.toml`, `.py`, `.ts`, etc. — see `macos/file-associations.sh`; GPU-native, boots faster than Cursor for quick edits). Config managed in `editors/zed/` (settings + keymap symlinked). Drives external agents via **ACP** — `claude-acp`, `codex-acp`, `gemini` pre-wired to use **subscription logins, not API keys** (start a thread with `cmd-?`, authenticate in-thread; keybinds `cmd-alt-a`/`-o`/`-g`).
 - **Cursor**: Primary AI-native IDE (VS Code compatible, shared MCP servers, hooks, skills, agents)
 - **LM Studio**: Local LLM runner (MLX/GGUF, OpenAI-compatible server). Model + context window pinned via `macos/lmstudio.sh` (default: `google/gemma-4-e4b` @ 32K) — point Zed/Obsidian/CLIs at `http://localhost:1234/v1`.
-- **TypeWhisper**: On-device voice-to-text (Parakeet ASR + local Gemma cleanup via the LM Studio endpoint above, or Apple Intelligence). Replaced Wispr Flow 2026-05-29 — fully local, no subscription. No Homebrew cask; installed via `dotfiles brew install` post-install from GitHub releases.
+- **TypeWhisper**: On-device voice-to-text (Parakeet ASR + local Gemma cleanup via the LM Studio endpoint above, or Apple Intelligence). Replaced Wispr Flow 2026-05-29 — fully local, no subscription. No Homebrew cask; installed via `dotfiles brew install` post-install from GitHub releases. Its prefs and workflows are tracked in `macos/typewhisper/` and applied with `dotfiles typewhisper apply`.
 - **Obsidian**: Knowledge base — vault configs + community plugins managed via symlinks
 
   | Plugin | Purpose |
@@ -342,6 +342,8 @@ dotfiles brew install        # Sync Homebrew packages from packages.toml
 dotfiles brew upgrade        # Upgrade all installed packages (brew is the version surface)
 dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
+dotfiles typewhisper status  # Show TypeWhisper app + tracked-config state
+dotfiles typewhisper apply   # Apply tracked TypeWhisper prefs/workflows (--quit, --reopen)
 dotfiles profile-shell       # Profile shell startup time
 dotfiles agent global overview      # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent global setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean); prints the Cursor plugin checklist
@@ -360,6 +362,8 @@ dotfiles session new <name>  # create + attach
 dotfiles session attach <name>
                              # attach (create if needed)
 dotfiles session kill <name> # kill a session
+dotfiles remote web          # Experimental: serve sessions to a browser (status)
+dotfiles remote web --start  # Start the zellij web server (daemonized)
 dotfiles snapshot            # Capture machine state (brew, runtimes, symlinks, agent config)
 dotfiles snapshot ls         # List saved snapshots, newest first
 dotfiles snapshot diff [A] [B]
@@ -370,7 +374,9 @@ dotfiles                     # Bare invocation prints help (use 'dotfiles tui' f
 
 `dotfiles remote on` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote off` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
 
-`dotfiles session` manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote on` also prints a picker-based Termius startup command that drops straight into the fzf session picker.
+`dotfiles session` manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote on` also prints a picker-based Termius startup command that drops straight into the fzf session picker. Zellij is configured from `terminal/zellij/` (symlinked by `install.sh`): a minimal `config.kdl` plus a `mobile` deck layout that the `mobile` session opens with on first creation (compact status bar + a Mission Control tab). Sessions auto-serialize, so `dotfiles session attach mobile` resurrects the deck after a reboot.
+
+`dotfiles remote web` is an **experiment** with Zellij's built-in browser client (`zellij web`) — `--start`/`--stop`/`--new-token`. It listens on `127.0.0.1:8082` by default; phone access needs `web_server_ip` + TLS certs set in `terminal/zellij/config.kdl`. Termius/Mosh stays the primary remote path.
 
 `dotfiles snapshot` captures a point-in-time machine state and saves it as JSON under `~/.local/state/dotfiles/snapshots/`. Use `diff now` to compare the latest saved snapshot against the current live state, or pass two slug prefixes to diff any two captures.
 

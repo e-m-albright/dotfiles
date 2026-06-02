@@ -5,6 +5,12 @@
 #
 # Format: prefix_rule(pattern=[argv...], decision="allow")
 # Matches a command iff the patterns prefix the argv exactly.
+#
+# This file is ALLOW-only by design: destructive commands are stopped by Codex's
+# sandbox_mode (standalone) and by Zed's always_deny (when Codex runs through
+# Zed/ACP, where this file's approval policy is overridden). The universal
+# hard-stop floor lives in ai/agents/shared/deny-commands.yaml — see
+# docs/knowledge/agent-fleet.md for the two-surface model.
 
 # --- Package managers ---
 prefix_rule(pattern=["uv", "run"], decision="allow")

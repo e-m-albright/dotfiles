@@ -1,9 +1,21 @@
 {
-  "$comment": "Gemini CLI global settings. Managed by dotfiles (agents/gemini/setup.sh). MCP servers are merged in from agents/shared/mcp-servers.json at install time; do not hand-edit `mcpServers` here.",
+  "$comment": "Gemini CLI global settings, managed by dotfiles (cli agent setup → vendors/gemini.py). `mcpServers` and `tools.exclude` are merged in at install time; do not hand-edit those. `tools.exclude` mirrors ai/agents/shared/deny-commands.yaml (gemini surface), drift-gated by test_deny_commands_sync.py. Exclude is a blocklist; we deliberately do NOT set tools.core, because that would disable every unlisted built-in tool.",
   "security": {
     "auth": {
       "selectedType": "oauth-personal"
     }
+  },
+  "tools": {
+    "exclude": [
+      "run_shell_command(sudo)",
+      "run_shell_command(su)",
+      "run_shell_command(rm)",
+      "run_shell_command(dd)",
+      "run_shell_command(mkfs)",
+      "run_shell_command(chmod)",
+      "run_shell_command(diskutil)",
+      "run_shell_command(killall)"
+    ]
   },
   "mcpServers": {}
 }

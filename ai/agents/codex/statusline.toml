@@ -1,3 +1,9 @@
+# Codex statusline. The segment set below is the fleet-canonical info set —
+# the same project / git / model / context% / 5h / 7d signals Claude's
+# statusline.sh and Pi's git-status.ts render. Codex only exposes a theme name
+# (no per-segment colors), so the warm amber/sage palette the other two share
+# can't be matched here; the segments carry the uniformity. See
+# docs/knowledge/agent-fleet.md.
 theme = "Sublime Snazzy"
 status_line = [
   "app-name",

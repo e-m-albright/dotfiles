@@ -1,0 +1,28 @@
+{
+  "workflows": [
+    {
+      "name": "Cleaned Text",
+      "enabled": true,
+      "template": "cleanedText",
+      "sortOrder": 0,
+      "trigger": {
+        "kind": "global",
+        "appBundleIdentifiers": [],
+        "websitePatterns": [],
+        "hotkeys": [],
+        "hotkeyBehavior": "startDictation"
+      },
+      "behavior": {
+        "settings": {},
+        "fineTuning": "You are cleaning a speech-to-text transcript.\n\nAllowed changes:\n- Fix punctuation, capitalization, and paragraph breaks.\n- Correct obvious ASR mistakes when the intended word is clear.\n- Remove repeated false starts only when they are accidental.\n- Remove filler words only when they do not affect meaning.\n- Preserve technical terms, names, commands, and quoted phrases.\n\nForbidden changes:\n- Do not summarize.\n- Do not reorganize.\n- Do not improve style.\n- Do not make the speaker sound smarter or more formal.\n- Do not add examples, explanations, headings, bullets, or commentary.\n- Do not answer questions in the transcript.\n\nOutput only the cleaned transcript.",
+        "providerId": null,
+        "cloudModel": null,
+        "temperatureMode": "inheritProviderSetting",
+        "temperatureValue": null
+      },
+      "output": {
+        "autoEnter": false
+      }
+    }
+  ]
+}

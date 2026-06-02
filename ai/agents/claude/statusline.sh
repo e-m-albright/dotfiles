@@ -57,17 +57,28 @@ if [[ -z "${NO_COLOR:-}" ]]; then
     GREEN=$'\033[38;5;34m'
     YELLOW=$'\033[38;5;220m'
     RED=$'\033[38;5;196m'
+    # Fleet-canonical amber/sage ramp — shared with Pi's git-status.ts so every
+    # agent's statusline speaks the same warm visual language (burnt amber for
+    # pressure, sage when there's headroom; no alarm red). See
+    # docs/knowledge/agent-fleet.md.
+    AMBER_HOT=$'\033[38;2;217;120;77m'   # #d9784d  >=90
+    AMBER=$'\033[38;2;217;145;61m'       # #d9913d  >=75
+    GOLD2=$'\033[38;2;211;177;95m'       # #d3b15f  >=55
+    SAGE=$'\033[38;2;143;168;121m'       # #8fa879  else
 else
     R='' DIM='' GOLD='' CYAN='' TEAL='' BLUE='' MAGENTA='' GREEN='' YELLOW='' RED=''
+    AMBER_HOT='' AMBER='' GOLD2='' SAGE=''
 fi
 
-# Gradient by percentage: green <60, yellow 60-85, red >=85.
+# Gradient by percentage, matching Pi's amberRamp tiers exactly:
+# sage <55, gold 55-74, amber 75-89, burnt amber >=90.
 ramp() {
     local pct_int
     pct_int=$(printf '%.0f' "$1")
-    if (( pct_int >= 85 )); then printf '%s' "$RED"
-    elif (( pct_int >= 60 )); then printf '%s' "$YELLOW"
-    else printf '%s' "$GREEN"
+    if   (( pct_int >= 90 )); then printf '%s' "$AMBER_HOT"
+    elif (( pct_int >= 75 )); then printf '%s' "$AMBER"
+    elif (( pct_int >= 55 )); then printf '%s' "$GOLD2"
+    else printf '%s' "$SAGE"
     fi
 }
 

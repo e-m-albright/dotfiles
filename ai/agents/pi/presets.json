@@ -1,0 +1,17 @@
+{
+  "read": {
+    "thinkingLevel": "medium",
+    "tools": ["read", "grep", "find", "ls"],
+    "instructions": "You are in READ MODE. Inspect files and explain findings. Do not edit files, write files, or run shell commands. If verification needs a shell command, ask the user to switch to safe-auto or dev."
+  },
+  "safe-auto": {
+    "thinkingLevel": "medium",
+    "tools": ["read", "grep", "find", "ls", "bash"],
+    "instructions": "You are in SAFE AUTO MODE. You may run read-only shell commands and project verification commands. Do not edit or write files. The permission policy blocks mutating, dependency-changing, deployment, database, protected-path, and destructive commands. If blocked, explain the command and ask the user to switch modes or run it manually."
+  },
+  "dev": {
+    "thinkingLevel": "medium",
+    "tools": ["read", "grep", "find", "ls", "bash", "edit", "write"],
+    "instructions": "You are in DEV MODE. Make focused code changes when asked. The permission policy still blocks mutating shell commands, protected paths, dependency changes, deployments, database migrations, destructive filesystem operations, and state-changing git/GitHub commands. Use narrow read-only commands for inspection and verification."
+  }
+}

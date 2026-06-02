@@ -45,6 +45,7 @@ GEMINI_SEED_SETTINGS = json.dumps(
     {
         "$comment": "Gemini settings",
         "security": {"auth": {"selectedType": "oauth-personal"}},
+        "tools": {"exclude": ["run_shell_command(sudo)", "run_shell_command(rm)"]},
         "mcpServers": {},
     }
 )
@@ -145,6 +146,26 @@ class TestGeminiPresent:
         # playwright targets gemini; granola targets only claude → not included
         assert "playwright" in data["mcpServers"]
         assert "granola" not in data["mcpServers"]
+
+    def test_deploys_managed_tool_excludes(self, dotfiles: Path, home: Path) -> None:
+        self._run(dotfiles, home)
+        settings_file = home / ".gemini" / "settings.json"
+        data = json.loads(settings_file.read_text())
+        assert data["tools"]["exclude"] == [
+            "run_shell_command(sudo)",
+            "run_shell_command(rm)",
+        ]
+
+    def test_tool_excludes_deploy_to_existing_install(self, dotfiles: Path, home: Path) -> None:
+        # An existing settings.json (seed-if-missing won't refresh) must still get
+        # the managed blocklist, without losing the user's own keys.
+        gemini_home = home / ".gemini"
+        gemini_home.mkdir(parents=True)
+        (gemini_home / "settings.json").write_text(json.dumps({"my": "custom", "mcpServers": {}}))
+        self._run(dotfiles, home)
+        data = json.loads((gemini_home / "settings.json").read_text())
+        assert data["my"] == "custom"
+        assert "run_shell_command(sudo)" in data["tools"]["exclude"]
 
     def test_mcp_entry_has_no_targets_key(self, dotfiles: Path, home: Path) -> None:
         self._run(dotfiles, home)

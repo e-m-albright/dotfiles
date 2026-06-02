@@ -17,6 +17,7 @@ commands=(
     'session:zellij sessions (ls, attach, new, kill, picker)'
     'tui:Launch the Mission Control TUI'
     'snapshot:Machine-state snapshots (ls, diff)'
+    'typewhisper:Manage TypeWhisper config (status, apply)'
     'agent:Agent namespace (global, local, web)'
     'brew:Brew namespace (install, upgrade, stale)'
     'profile-shell:Profile shell startup time'

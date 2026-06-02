@@ -1,0 +1,155 @@
+# Canonical "hard stop" command vocabulary — the universal danger floor that
+# every agent surface denies. This file is the single source of truth and the
+# rationale record; the per-vendor deny lists are hand-authored in each tool's
+# own committed config (their syntaxes differ and these are security-critical,
+# so we do not machine-translate regexes). A drift gate keeps them in sync:
+#
+#   cli/src/dotfiles/cmd/agent/test_deny_commands_sync.py
+#
+# asserts that every per-surface string below literally appears in the matching
+# committed config. Edit here first, then update the vendor file the test names.
+#
+# Surfaces (where each string must appear):
+#   claude → ai/agents/claude/permissions.json        .deny[]                  Bash(<prefix>:*) glob
+#   cursor → ai/agents/cursor/cli-config.json          .permissions.deny[]     Shell(<cmd>)
+#   zed    → editors/zed/settings.json                 agent.tool_permissions.tools.terminal.always_deny[].pattern   (regex)
+#   pi     → ai/agents/pi/permission-policy.json       .denyCommands[].patterns (regex)
+#   gemini → ai/agents/gemini/settings.json            tools.exclude[]          run_shell_command(<prefix>)
+#
+# Gemini's exclude is prefix-only (can't target git sub-flags), so it carries
+# only the catastrophic top-level commands; git-force/reset protection for
+# Gemini relies on its own confirm prompt standalone and Zed's always_deny in Zed.
+#
+# Pi is intentionally a SUPERSET: its preset-driven policy already denies these
+# and a broader set of mutating commands, so Pi entries below are the floor it
+# must never drop below (the test checks presence, not equality).
+#
+# Two enforcement surfaces, by the way (see docs/knowledge/agent-fleet.md):
+#   - standalone/terminal: each agent's own config is authoritative
+#   - inside Zed (ACP):     editors/zed/settings.json governs; Codex's config.toml
+#                           approval_policy is overridden, Pi's gates aren't surfaced
+#
+# Omit a surface key when the entry doesn't apply there (e.g. Write-path guards
+# are Claude/Cursor only; Zed/Pi gate by command/path separately).
+
+version: 1
+
+categories:
+  - name: Privilege escalation
+    entries:
+      - id: sudo
+        desc: Run as root
+        claude: "Bash(sudo:*)"
+        cursor: "Shell(sudo)"
+        zed: "(^|[;&|]|&&)\\s*sudo\\b"
+        pi: "\\bsudo\\b"
+        gemini: "run_shell_command(sudo)"
+      - id: su
+        desc: Switch user
+        claude: "Bash(su:*)"
+        cursor: "Shell(su)"
+        zed: "(^|[;&|]|&&)\\s*su\\b"
+        pi: "\\bsu\\b"
+        gemini: "run_shell_command(su)"
+
+  - name: Filesystem destruction
+    entries:
+      - id: rm-recursive-force
+        desc: Recursive/forced delete
+        claude: "Bash(rm -rf:*)"
+        cursor: "Shell(rm -rf)"
+        zed: "\\brm\\s+(-[a-zA-Z]*\\s+)*-?[a-zA-Z]*[rf]"
+        pi: "(?:^|[;&|()\\s])rm(?:\\s|$)"
+        gemini: "run_shell_command(rm)"
+      - id: dd
+        desc: Raw disk write
+        claude: "Bash(dd:*)"
+        cursor: "Shell(dd)"
+        zed: "(^|[;&|]|&&)\\s*dd\\b"
+        pi: "\\bdd\\b"
+        gemini: "run_shell_command(dd)"
+      - id: mkfs
+        desc: Format a filesystem
+        claude: "Bash(mkfs:*)"
+        cursor: "Shell(mkfs)"
+        zed: "\\bmkfs(\\.|\\b)"
+        pi: "\\bmkfs(?:\\.|\\s|$)"
+        gemini: "run_shell_command(mkfs)"
+      - id: diskutil-erase
+        desc: Erase a disk
+        claude: "Bash(diskutil erase:*)"
+        zed: "\\bdiskutil\\s+(erase|partitionDisk)\\b"
+        gemini: "run_shell_command(diskutil)"
+
+  - name: Dangerous permissions
+    entries:
+      - id: chmod-world
+        desc: World-writable / recursive perm change
+        claude: "Bash(chmod 777:*)"
+        cursor: "Shell(chmod 777)"
+        zed: "\\bchmod\\s+(-[a-zA-Z]*\\s+)*(777|-R)\\b"
+        pi: "\\bchmod\\b"
+        gemini: "run_shell_command(chmod)"
+
+  - name: Destructive git
+    entries:
+      - id: git-push-force
+        desc: Force push (history overwrite)
+        claude: "Bash(git push --force:*)"
+        cursor: "Shell(git push --force)"
+        zed: "\\bgit\\s+push\\b.*(--force|-f)\\b"
+        pi: "\\bgit\\s+push\\b"
+      - id: git-push-force-short
+        desc: Force push (short flag)
+        claude: "Bash(git push -f:*)"
+      - id: git-reset-hard
+        desc: Hard reset (discard work)
+        claude: "Bash(git reset --hard:*)"
+        cursor: "Shell(git reset --hard)"
+        zed: "\\bgit\\s+reset\\s+--hard\\b"
+        pi: "\\bgit\\s+reset\\b"
+      - id: git-clean
+        desc: Delete untracked files
+        claude: "Bash(git clean:*)"
+        cursor: "Shell(git clean)"
+        zed: "\\bgit\\s+clean\\b"
+        pi: "\\bgit\\s+clean\\b"
+      - id: git-branch-delete-force
+        desc: Force-delete a branch
+        claude: "Bash(git branch -D:*)"
+        zed: "\\bgit\\s+branch\\s+-D\\b"
+        pi: "\\bgit\\s+branch\\s+-[dD]\\b"
+
+  - name: Remote code execution
+    # Pipe-to-shell is expressible precisely only on the regex surfaces; blocking
+    # bare curl/wget on Claude/Cursor would break legitimate use, so those tools
+    # rely on the model + their default mode here.
+    entries:
+      - id: curl-pipe-shell
+        desc: Pipe a download straight into a shell
+        zed: "\\b(curl|wget)\\b[^|]*\\|\\s*(ba)?sh\\b"
+        pi: "\\bcurl\\b"
+      - id: wget
+        desc: Network download (Pi blocks; layered with curl-pipe regex on Zed)
+        pi: "\\bwget\\b"
+
+  - name: Process / system control
+    entries:
+      - id: killall
+        desc: Kill processes by name
+        claude: "Bash(killall:*)"
+        zed: "\\bkillall\\b"
+        pi: "\\bkillall\\b"
+        gemini: "run_shell_command(killall)"
+      - id: pkill-9
+        desc: Force-kill processes
+        claude: "Bash(pkill -9:*)"
+        zed: "\\bpkill\\b"
+        pi: "\\bpkill\\b"
+
+  - name: Fork bomb
+    # Special-char heavy; only the regex surfaces can match it.
+    entries:
+      - id: fork-bomb
+        desc: Classic shell fork bomb
+        zed: ":\\s*\\(\\s*\\)\\s*\\{\\s*:\\s*\\|\\s*:"

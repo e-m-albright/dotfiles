@@ -31,6 +31,7 @@ sub_help () {
     printf "   clean                Clean up Homebrew caches\n"
     printf "   dock                 Reset macOS Dock layout\n"
     printf "   snapshot [ls|diff]   Capture / list / diff machine-state snapshots\n"
+    printf "   typewhisper <cmd>    Manage TypeWhisper config (status|apply)\n"
     printf "   profile-shell        Profile shell startup time\n"
     printf "\n"
     printf "${BLUE}Control${NC} — drive this Mac locally or from your phone\n"
@@ -159,6 +160,10 @@ sub_dock () {
 
 sub_install() {
     . "$DOTFILES_DIR/install.sh"
+}
+
+sub_typewhisper() {
+    "$DOTFILES_DIR/macos/typewhisper.sh" "$@"
 }
 
 sub_shell_profile() {
