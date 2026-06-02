@@ -64,6 +64,37 @@ def _app_with(stdout: str):
 
 
 @pytest.mark.asyncio
+async def test_create_requests_handoff_instead_of_exec(monkeypatch):
+    # Handoff must go through request_handoff (exit-then-exec), never exec inside
+    # the running app — otherwise the new session inherits a tty that eats input.
+    monkeypatch.delenv("ZELLIJ", raising=False)
+    app, _ = _app_with("work [created]\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from dotfiles.cmd.session.pane import SessionsPane
+
+        pane = app.query_one(SessionsPane)
+        pane._on_new_session("api")
+        assert app.handoff_command == ("zellij", "attach", "--create", "api")
+
+
+@pytest.mark.asyncio
+async def test_attach_action_requests_handoff(monkeypatch):
+    monkeypatch.delenv("ZELLIJ", raising=False)
+    app, _ = _app_with("work [created]\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from dotfiles.cmd.session.models import Session
+        from dotfiles.cmd.session.pane import SessionsPane
+
+        pane = app.query_one(SessionsPane)
+        pane._on_action(Session(name="work", running=True, current=False), "attach")
+        assert app.handoff_command == ("zellij", "attach", "--create", "work")
+
+
+@pytest.mark.asyncio
 async def test_new_binding_opens_create_modal():
     app, _ = _app_with("work [created]\n")
     async with app.run_test() as pilot:

@@ -1,5 +1,6 @@
 """Top-level Typer application. Subcommands are mounted here; logic lives in core."""
 
+import os
 import sys
 
 import typer
@@ -26,7 +27,12 @@ def _launch_tui() -> None:
     """Import lazily so non-TUI commands don't pay the Textual import cost."""
     from dotfiles.tui.app import MissionControlApp
 
-    MissionControlApp().run()
+    app = MissionControlApp()
+    app.run()
+    # The app exits (restoring the terminal) before handing off to zellij, so the
+    # attached session gets a clean tty and actually receives keystrokes.
+    if app.handoff_command:
+        os.execvp(app.handoff_command[0], list(app.handoff_command))
 
 
 @app.callback()

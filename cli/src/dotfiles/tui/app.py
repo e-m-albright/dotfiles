@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import ClassVar
 
@@ -29,10 +30,21 @@ class MissionControlApp(App[None]):
     def __init__(self, *, ctx: AppContext | None = None) -> None:
         super().__init__()
         self._ctx = ctx if ctx is not None else build_real_context(interactive=sys.stdin.isatty())
+        # Command to exec *after* the app exits — set when handing the terminal
+        # off to zellij. We exit cleanly first so Textual fully restores the
+        # terminal (blocking stdin, cooked mode, mouse off) before the exec;
+        # exec'ing from inside a running/suspended app leaves stdin in a state
+        # that swallows the new process's keystrokes.
+        self.handoff_command: tuple[str, ...] | None = None
 
     @property
     def ctx(self) -> AppContext:
         return self._ctx
+
+    def request_handoff(self, command: Sequence[str]) -> None:
+        """Quit the TUI and hand the terminal to `command` once `run()` returns."""
+        self.handoff_command = tuple(command)
+        self.exit()
 
     def on_mount(self) -> None:
         self.sub_title = "▚▚ phone command deck ▚▚"

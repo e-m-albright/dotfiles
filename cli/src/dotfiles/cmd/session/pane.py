@@ -7,7 +7,6 @@ on a phone can't yank you somewhere or destroy a session.
 
 from __future__ import annotations
 
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, cast
@@ -199,13 +198,11 @@ class SessionsPane(Container):
             return
         layout = layout_name_for(self._ctx.home, name)
         command = attach_command(name, exists=False, layout=layout)
-        with self._app.suspend():
-            os.execvp(command[0], list(command))  # replaces this process; does not return
+        self._app.request_handoff(command)
 
     def _handoff(self, name: str) -> None:
         command = zellij_handoff_command(name, in_zellij=in_zellij())
-        with self._app.suspend():
-            os.execvp(command[0], list(command))  # replaces this process; does not return
+        self._app.request_handoff(command)
 
 
 class _SessionActions(ModalScreen[str | None]):

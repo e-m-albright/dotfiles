@@ -80,15 +80,18 @@ Footer {
     color: #e8c34a;
 }
 
-/* Modal action sheet / prompt — responsive so it fits a phone viewport. */
+/* Modal action sheet / prompt — centered on the screen, responsive width.
+   `align` belongs on the screen (centers the box); the box only sizes itself. */
+ModalScreen {
+    align: center middle;
+}
 #confirm-box {
     border: thick #e8c34a;
     background: #0d0d0d;
     padding: 1 2;
-    width: 90%;
-    max-width: 56;
+    width: 64;
+    max-width: 90%;
     height: auto;
-    align: center middle;
 }
 #confirm-box Button {
     width: 100%;
