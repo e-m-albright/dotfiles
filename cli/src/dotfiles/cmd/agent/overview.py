@@ -22,15 +22,15 @@ from dotfiles.cmd.agent.config import (
 )
 from dotfiles.cmd.agent.models import (
     AgentOverview,
-    AgentRow,
+    AgentSurface,
     HookRow,
     McpRow,
     PermissionRow,
     RulesSummary,
     SkillsSummary,
-    VendorSurface,
+    SubagentRow,
 )
-from dotfiles.cmd.agent.verify import VendorVerifyService
+from dotfiles.cmd.agent.verify import AgentVerifyService
 from dotfiles.fsutil import list_dir
 
 if TYPE_CHECKING:
@@ -73,12 +73,12 @@ class AgentOverviewService:
         )
 
     # ------------------------------------------------------------------
-    # Vendor surfaces (delegates to VendorVerifyService)
+    # Agent surfaces (delegates to AgentVerifyService)
     # ------------------------------------------------------------------
 
-    def vendor_surfaces(self) -> list[VendorSurface]:
-        """Return vendor surface presence checks, delegating to VendorVerifyService."""
-        svc = VendorVerifyService(
+    def vendor_surfaces(self) -> list[AgentSurface]:
+        """Return agent surface presence checks, delegating to AgentVerifyService."""
+        svc = AgentVerifyService(
             home=self._home,
             dotfiles_dir=self._dotfiles,
             which=self._which,
@@ -186,8 +186,8 @@ class AgentOverviewService:
     # Section 4: Subagents
     # ------------------------------------------------------------------
 
-    def section_agents(self) -> list[AgentRow]:
-        """One AgentRow per .ai/agents/*.md, with deployment flags."""
+    def section_agents(self) -> list[SubagentRow]:
+        """One SubagentRow per .ai/agents/*.md, with deployment flags."""
         agents_root = self._dotfiles / "ai" / "subagents"
         if not agents_root.exists() or not agents_root.is_dir():
             return []
@@ -196,13 +196,13 @@ class AgentOverviewService:
         codex_agents = self._home / ".codex" / "agents"
         pi_agents = self._home / ".pi" / "agent" / "agents"
 
-        rows: list[AgentRow] = []
+        rows: list[SubagentRow] = []
         for entry in list_dir(agents_root):
             if entry.is_dir() or entry.suffix != ".md":
                 continue
             name = entry.stem
             rows.append(
-                AgentRow(
+                SubagentRow(
                     name=name,
                     claude=(claude_agents / f"{name}.md").exists(),
                     codex=(codex_agents / f"{name}.md").exists(),

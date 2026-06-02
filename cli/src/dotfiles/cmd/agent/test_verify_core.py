@@ -1,8 +1,8 @@
-"""Tests for VendorVerifyService (core/verify.py)."""
+"""Tests for AgentVerifyService (core/verify.py)."""
 
 from pathlib import Path
 
-from dotfiles.cmd.agent.verify import VendorVerifyService
+from dotfiles.cmd.agent.verify import AgentVerifyService
 
 
 def _make_svc(
@@ -10,9 +10,9 @@ def _make_svc(
     home: Path,
     dotfiles_dir: Path,
     which_map: dict[str, str] | None = None,
-) -> VendorVerifyService:
+) -> AgentVerifyService:
     _map = which_map or {}
-    return VendorVerifyService(
+    return AgentVerifyService(
         home=home,
         dotfiles_dir=dotfiles_dir,
         which=lambda name: _map.get(name),
@@ -144,7 +144,7 @@ def test_pi_checked_when_cli_present(tmp_path: Path) -> None:
 def test_vendors_returns_all_vendor_groups(tmp_path: Path) -> None:
     svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
     surfaces = svc.vendors()
-    vendors_seen = {s.vendor for s in surfaces}
+    vendors_seen = {s.agent for s in surfaces}
     assert "claude" in vendors_seen
     assert "cursor" in vendors_seen
     assert "codex" in vendors_seen

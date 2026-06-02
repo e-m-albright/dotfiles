@@ -23,7 +23,7 @@ def symlink(src: Path, dest: Path) -> None:
 def prune_broken_symlinks(directory: Path) -> None:
     """Remove dangling symlinks (target no longer exists) from *directory*.
 
-    A no-op if *directory* is not a directory. Used to clean up vendor link dirs
+    A no-op if *directory* is not a directory. Used to clean up agent link dirs
     before re-linking, so a deleted source leaves no orphan behind.
     """
     if not directory.is_dir():

@@ -53,7 +53,7 @@ def _claude(home: Path, cutoff: datetime) -> list[AgentActivity]:
         if last_active >= cutoff:
             out.append(
                 AgentActivity(
-                    vendor="claude",
+                    agent="claude",
                     cwd=decode_claude_slug(project_dir.name),
                     last_active=last_active,
                 )
@@ -69,7 +69,7 @@ def _codex(home: Path, cutoff: datetime) -> list[AgentActivity]:
     for path in root.rglob("*.jsonl"):
         last_active = datetime.fromtimestamp(path.stat().st_mtime)
         if last_active >= cutoff:
-            out.append(AgentActivity(vendor="codex", cwd=_first_cwd(path), last_active=last_active))
+            out.append(AgentActivity(agent="codex", cwd=_first_cwd(path), last_active=last_active))
     return out
 
 

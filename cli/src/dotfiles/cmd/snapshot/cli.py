@@ -86,8 +86,8 @@ def _render_diff(d: SnapshotDiff) -> None:
     for sc in d.symlinks_changed:
         marker = "[red]broke[/]" if sc.broke else "[yellow]changed[/]"
         console.print(f"  {marker} {sc.path} → {sc.new_target or '∅'}")
-    for vendor in d.agent_config_changed:
-        console.print(f"  [yellow]~ agent-config[/] {vendor}")
+    for agent in d.agent_config_changed:
+        console.print(f"  [yellow]~ agent-config[/] {agent}")
 
 
 @snapshot_app.command("diff")

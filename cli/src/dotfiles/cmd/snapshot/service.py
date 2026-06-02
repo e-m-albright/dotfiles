@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.agent import OVERVIEW_AGENTS, Agent
 from dotfiles.cmd.agent.models import AgentOverview
 from dotfiles.cmd.agent.overview import AgentOverviewService
 from dotfiles.cmd.snapshot.models import (
@@ -19,7 +20,6 @@ from dotfiles.cmd.snapshot.models import (
     SymlinkChange,
     SymlinkState,
 )
-from dotfiles.vendor import OVERVIEW_VENDORS, Vendor
 
 # (runtime label -> probe command). The label is the stable key in the snapshot.
 _RUNTIMES: tuple[tuple[str, tuple[str, ...]], ...] = (
@@ -81,31 +81,31 @@ def collect_symlinks(*, home: Path, dotfiles_dir: Path) -> tuple[SymlinkState, .
     return tuple(states)
 
 
-def _vendor_tokens(overview: AgentOverview, vendor: Vendor) -> list[str]:
-    """Stable, sorted tokens describing one vendor's deployed agentic config."""
+def _vendor_tokens(overview: AgentOverview, agent: Agent) -> list[str]:
+    """Stable, sorted tokens describing one agent's deployed agentic config."""
     tokens: list[str] = []
     for row in overview.mcp:
-        if getattr(row, vendor, False):
+        if getattr(row, agent, False):
             tokens.append(f"mcp:{row.server}")
     for hook in overview.hooks:
-        if getattr(hook, vendor, False):
+        if getattr(hook, agent, False):
             tokens.append(f"hook:{hook.event}")
-    if vendor == "claude":
+    if agent == "claude":
         tokens.append(f"skills:{overview.skills.claude_deployed}")
         tokens.append(f"rules:{overview.rules.claude_deployed}")
-    elif vendor == "cursor":
+    elif agent == "cursor":
         tokens.append(f"rules:{overview.rules.cursor_deployed}")
-    elif vendor == "codex":
+    elif agent == "codex":
         tokens.append(f"skills:{overview.skills.shared_deployed}")
     return sorted(tokens)
 
 
 def agent_config_hashes(overview: AgentOverview) -> dict[str, str]:
-    """A stable content hash of each vendor's deployed MCP/hooks/skills/rules."""
+    """A stable content hash of each agent's deployed MCP/hooks/skills/rules."""
     hashes: dict[str, str] = {}
-    for vendor in OVERVIEW_VENDORS:
-        joined = "\n".join(_vendor_tokens(overview, vendor))
-        hashes[vendor] = hashlib.sha256(joined.encode()).hexdigest()[:12]
+    for agent in OVERVIEW_AGENTS:
+        joined = "\n".join(_vendor_tokens(overview, agent))
+        hashes[agent] = hashlib.sha256(joined.encode()).hexdigest()[:12]
     return hashes
 
 

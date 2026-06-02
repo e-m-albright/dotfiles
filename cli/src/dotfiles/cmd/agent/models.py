@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from dotfiles.vendor import Vendor
+from dotfiles.agent import Agent
 
 
 class McpRow(BaseModel):
@@ -40,7 +40,7 @@ class SkillsSummary(BaseModel):
     shared_deployed: int
 
 
-class AgentRow(BaseModel):
+class SubagentRow(BaseModel):
     """One subagent row in the agent overview."""
 
     model_config = ConfigDict(frozen=True)
@@ -73,17 +73,17 @@ class PermissionRow(BaseModel):
     prefix_rules: int = 0
 
 
-VendorSurfaceStatus = Literal["present", "empty", "missing", "skipped"]
+AgentSurfaceStatus = Literal["present", "empty", "missing", "skipped"]
 
 
-class VendorSurface(BaseModel):
-    """One path check within a vendor surface report."""
+class AgentSurface(BaseModel):
+    """One path check within a agent surface report."""
 
     model_config = ConfigDict(frozen=True)
 
-    vendor: Vendor
+    agent: Agent
     label: str
-    status: VendorSurfaceStatus
+    status: AgentSurfaceStatus
     detail: str = ""
 
 
@@ -121,10 +121,10 @@ class AgentOverview(BaseModel):
     mcp: tuple[McpRow, ...]
     hooks: tuple[HookRow, ...]
     skills: SkillsSummary
-    agents: tuple[AgentRow, ...]
+    agents: tuple[SubagentRow, ...]
     rules: RulesSummary
     permissions: tuple[PermissionRow, ...]
-    vendor_surfaces: tuple[VendorSurface, ...] = ()
+    vendor_surfaces: tuple[AgentSurface, ...] = ()
 
 
 class McpProbe(BaseModel):
@@ -137,12 +137,12 @@ class McpProbe(BaseModel):
     detail: str
 
 
-class VendorVerify(BaseModel):
-    """Per-vendor skill-health: deployment counts, drift, and MCP probes."""
+class AgentVerify(BaseModel):
+    """Per-agent skill-health: deployment counts, drift, and MCP probes."""
 
     model_config = ConfigDict(frozen=True)
 
-    vendor: Vendor
+    agent: Agent
     skills_deployed: int
     skills_expected: int
     agents_deployed: int

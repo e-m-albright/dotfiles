@@ -350,8 +350,8 @@ class TestBuildGlobalInstructions:
 
     def test_extra_sections_appended_after_kernel(self, tmp_path: Path) -> None:
         out = build_global_instructions(
-            self._dotfiles(tmp_path), extra_sections=("## Vendor-Specific", "", "- note")
+            self._dotfiles(tmp_path), extra_sections=("## Agent-Specific", "", "- note")
         )
         assert out is not None
         assert out.startswith("CORE RULES BODY")
-        assert out.endswith("## Vendor-Specific\n\n- note")
+        assert out.endswith("## Agent-Specific\n\n- note")

@@ -13,13 +13,13 @@ from rich.table import Table
 from dotfiles.app.context import AppContext, app_context
 from dotfiles.cmd.agent.models import (
     AgentOverview,
-    AgentRow,
+    AgentSurface,
+    AgentVerify,
     FileValidation,
     HookRow,
     McpRow,
     PermissionRow,
-    VendorSurface,
-    VendorVerify,
+    SubagentRow,
 )
 from dotfiles.cmd.agent.overview import AgentOverviewService
 from dotfiles.cmd.agent.skill_health import SkillHealthService
@@ -36,8 +36,8 @@ from dotfiles.result import StepResult
 agent_app = typer.Typer(help="Agentic setup: overview dashboard and skill/agent lint.")
 
 
-class _VendorChoice(StrEnum):
-    """Supported vendor names for `agent setup`."""
+class _AgentChoice(StrEnum):
+    """Supported agent names for `agent setup`."""
 
     claude = "claude"
     cursor = "cursor"
@@ -69,7 +69,7 @@ _CLI_CONFIRMATION = {
 _BOOL_GLYPH = {True: "[green]✓[/]", False: "[dim]—[/]"}
 
 
-def _render_surface(surface: VendorSurface) -> None:
+def _render_surface(surface: AgentSurface) -> None:
     status = surface.status
     if status == "present":
         glyph = "[green]✓[/]"
@@ -148,7 +148,7 @@ def _render_hooks(rows: Iterable[HookRow]) -> None:
     console.print(tbl)
 
 
-def _render_agents(rows: Iterable[AgentRow]) -> None:
+def _render_agents(rows: Iterable[SubagentRow]) -> None:
     console.print()
     console.print("[bold blue]Subagents[/]")
     rows_list = list(rows)
@@ -184,22 +184,22 @@ def _render_permissions(rows: Iterable[PermissionRow]) -> None:
             console.print(f"  [dim]{escape(p.label)}[/]  allow={p.allow}  deny={p.deny}")
 
 
-def _render_vendor_surfaces(surfaces: Iterable[VendorSurface]) -> None:
+def _render_vendor_surfaces(surfaces: Iterable[AgentSurface]) -> None:
     console.print()
-    console.print("[bold blue]Vendor Surfaces[/]")
+    console.print("[bold blue]Agent Surfaces[/]")
     first = True
-    for vendor, group in groupby(surfaces, key=lambda s: s.vendor):
+    for agent, group in groupby(surfaces, key=lambda s: s.agent):
         if not first:
             console.print()
         first = False
-        header = _VENDOR_HEADERS.get(vendor, vendor)
+        header = _VENDOR_HEADERS.get(agent, agent)
         console.print(f"[blue]══ {header} ══[/]")
         vendor_list = list(group)
         for surface in vendor_list:
             _render_surface(surface)
         not_skipped = not (len(vendor_list) == 1 and vendor_list[0].status == "skipped")
-        if not_skipped and vendor in _CLI_CONFIRMATION:
-            console.print(f"  [dim]{_CLI_CONFIRMATION[vendor]}[/]")
+        if not_skipped and agent in _CLI_CONFIRMATION:
+            console.print(f"  [dim]{_CLI_CONFIRMATION[agent]}[/]")
 
 
 def _render_overview(data: AgentOverview) -> None:
@@ -237,18 +237,18 @@ def _render_overview(data: AgentOverview) -> None:
 # ---------------------------------------------------------------------------
 
 # Order matches original sub_agent_setup(): claude → cursor → codex → gemini → pi
-_ALL_VENDORS: list[_VendorChoice] = [
-    _VendorChoice.claude,
-    _VendorChoice.cursor,
-    _VendorChoice.codex,
-    _VendorChoice.gemini,
-    _VendorChoice.pi,
+_ALL_AGENTS: list[_AgentChoice] = [
+    _AgentChoice.claude,
+    _AgentChoice.cursor,
+    _AgentChoice.codex,
+    _AgentChoice.gemini,
+    _AgentChoice.pi,
 ]
 
 
-def _render_setup_results(vendor: str, results: list[StepResult]) -> bool:
-    """Print step results for one vendor; return True if any step failed."""
-    header = _VENDOR_HEADERS.get(vendor, vendor)
+def _render_setup_results(agent: str, results: list[StepResult]) -> bool:
+    """Print step results for one agent; return True if any step failed."""
+    header = _VENDOR_HEADERS.get(agent, agent)
     console.print(f"\n[bold blue]── {header} ──[/]")
     render_steps(console, results)
     return has_errors(results)
@@ -260,7 +260,7 @@ def _render_setup_results(vendor: str, results: list[StepResult]) -> bool:
 
 _VENDOR_ARG = typer.Argument(
     None,
-    help="Vendor to configure (claude/cursor/codex/gemini/pi). Omit to run all.",
+    help="Agent to configure (claude/cursor/codex/gemini/pi). Omit to run all.",
 )
 _RESET_MCP_OPT = typer.Option(
     False,
@@ -275,30 +275,30 @@ _CLEAN_OPT = typer.Option(
 
 
 def _run_vendor(
-    v: _VendorChoice,
+    v: _AgentChoice,
     app_ctx: AppContext,
     *,
     clean: bool,
     reset_mcp: bool,
 ) -> list[StepResult]:
-    """Dispatch to the correct setup_* function for a single vendor."""
+    """Dispatch to the correct setup_* function for a single agent."""
     kw = {"runner": app_ctx.runner, "home": app_ctx.home, "dotfiles_dir": app_ctx.dotfiles_dir}
-    if v == _VendorChoice.claude:
+    if v == _AgentChoice.claude:
         return setup_claude(**kw, clean=clean, reset_mcp=reset_mcp)  # type: ignore[arg-type]
-    if v == _VendorChoice.cursor:
+    if v == _AgentChoice.cursor:
         return setup_cursor(**kw, reset_mcp=reset_mcp)  # type: ignore[arg-type]
-    if v == _VendorChoice.codex:
+    if v == _AgentChoice.codex:
         return setup_codex(**kw)  # type: ignore[arg-type]
-    if v == _VendorChoice.gemini:
+    if v == _AgentChoice.gemini:
         return setup_gemini(**kw, reset_mcp=reset_mcp)  # type: ignore[arg-type]
     return setup_pi(**kw)  # type: ignore[arg-type]
 
 
-def _render_vendor(v: VendorVerify) -> None:
-    """Print one vendor's verify summary (extracted to keep cmd_verify complexity ≤ 10)."""
+def _render_vendor(v: AgentVerify) -> None:
+    """Print one agent's verify summary (extracted to keep cmd_verify complexity ≤ 10)."""
     skills = f"{v.skills_deployed}/{v.skills_expected}" if v.skills_expected else "—"
     agents = f"{v.agents_deployed}/{v.agents_expected}" if v.agents_expected else "—"
-    console.print(f"[bold]{v.vendor}[/]  skills {skills}  agents {agents}")
+    console.print(f"[bold]{v.agent}[/]  skills {skills}  agents {agents}")
     for d in v.drift:
         console.print(f"    [yellow]drift:[/] {d}")
     for probe in v.mcp:
@@ -326,17 +326,17 @@ def cmd_verify(
 @agent_app.command()
 def setup(
     ctx: typer.Context,
-    vendor: _VendorChoice | None = _VENDOR_ARG,
+    agent: _AgentChoice | None = _VENDOR_ARG,
     reset_mcp: bool = _RESET_MCP_OPT,
     clean: bool = _CLEAN_OPT,
 ) -> None:
-    """Configure AI vendor tooling (Claude Code, Cursor, Codex, Gemini, Pi)."""
+    """Configure AI agent tooling (Claude Code, Cursor, Codex, Gemini, Pi)."""
     app_ctx = app_context(ctx)
 
-    vendors_to_run: list[_VendorChoice] = [vendor] if vendor is not None else _ALL_VENDORS
+    agents_to_run: list[_AgentChoice] = [agent] if agent is not None else _ALL_AGENTS
 
     any_error = False
-    for v in vendors_to_run:
+    for v in agents_to_run:
         results = _run_vendor(v, app_ctx, clean=clean, reset_mcp=reset_mcp)
         if _render_setup_results(v.value, results):
             any_error = True

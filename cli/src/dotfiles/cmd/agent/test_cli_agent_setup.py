@@ -66,7 +66,7 @@ def test_agent_setup_help_shows_vendor_choices() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Single-vendor: gemini skipped when not installed
+# Single-agent: gemini skipped when not installed
 # ---------------------------------------------------------------------------
 
 
@@ -100,7 +100,7 @@ def test_agent_setup_gemini_skipped_shows_complete_message(tmp_path: Path) -> No
 
 
 # ---------------------------------------------------------------------------
-# Single-vendor: only the requested vendor runs (isolation)
+# Single-agent: only the requested agent runs (isolation)
 # ---------------------------------------------------------------------------
 
 
@@ -116,7 +116,7 @@ def test_agent_setup_single_vendor_only_touches_tmp(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Invalid vendor
+# Invalid agent
 # ---------------------------------------------------------------------------
 
 

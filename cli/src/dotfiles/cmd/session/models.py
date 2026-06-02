@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from dotfiles.vendor import Vendor
+from dotfiles.agent import Agent
 
 
 class Session(BaseModel):
@@ -22,6 +22,6 @@ class AgentActivity(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    vendor: Vendor
+    agent: Agent
     cwd: str
     last_active: datetime

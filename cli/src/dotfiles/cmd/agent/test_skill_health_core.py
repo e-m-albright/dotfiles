@@ -3,19 +3,19 @@
 from dotfiles.cmd.agent.config import McpServerEntry
 from dotfiles.cmd.agent.models import (
     AgentOverview,
-    AgentRow,
+    AgentVerify,
     McpProbe,
     RulesSummary,
     SkillsSummary,
-    VendorVerify,
+    SubagentRow,
 )
 from dotfiles.cmd.agent.skill_health import SkillHealthService, build_vendor_verifies, probe_mcp
 from dotfiles.testing.fakes import FakeHttpClient, FakeProcessRunner
 
 
 def test_vendor_verify_holds_counts_drift_and_probes():
-    v = VendorVerify(
-        vendor="claude",
+    v = AgentVerify(
+        agent="claude",
         skills_deployed=21,
         skills_expected=21,
         agents_deployed=6,
@@ -23,7 +23,7 @@ def test_vendor_verify_holds_counts_drift_and_probes():
         drift=(),
         mcp=(McpProbe(server="granola", ok=True, detail="reachable"),),
     )
-    assert v.vendor == "claude"
+    assert v.agent == "claude"
     assert v.mcp[0].ok is True
 
 
@@ -78,8 +78,8 @@ def _overview(*, claude_deployed=21, canonical=21) -> AgentOverview:
             canonical_skills=canonical, claude_deployed=claude_deployed, shared_deployed=canonical
         ),
         agents=(
-            AgentRow(name="debugger", claude=True, codex=True, pi=False),
-            AgentRow(name="security-auditor", claude=False, codex=True, pi=False),
+            SubagentRow(name="debugger", claude=True, codex=True, pi=False),
+            SubagentRow(name="security-auditor", claude=False, codex=True, pi=False),
         ),
         rules=RulesSummary(canonical_rules=31, claude_deployed=31, cursor_deployed=31),
         permissions=(),
@@ -94,7 +94,7 @@ def test_build_vendor_verifies_flags_skill_drift():
         which=lambda c: c,
         offline=True,
     )
-    claude = next(v for v in verifies if v.vendor == "claude")
+    claude = next(v for v in verifies if v.agent == "claude")
     assert claude.skills_deployed == 19
     assert claude.skills_expected == 21
     assert any("skills" in d for d in claude.drift)
@@ -104,8 +104,8 @@ def test_build_vendor_verifies_counts_agents_per_vendor():
     verifies = build_vendor_verifies(
         _overview(), mcp_servers={}, http=FakeHttpClient(), which=lambda c: c, offline=True
     )
-    claude = next(v for v in verifies if v.vendor == "claude")
-    codex = next(v for v in verifies if v.vendor == "codex")
+    claude = next(v for v in verifies if v.agent == "claude")
+    codex = next(v for v in verifies if v.agent == "codex")
     assert claude.agents_deployed == 1  # only debugger has claude=True
     assert codex.agents_deployed == 2
     # claude is missing one agent (security-auditor) -> drift recorded
@@ -122,7 +122,7 @@ def test_build_vendor_verifies_offline_skips_probes():
         which=lambda c: c,
         offline=True,
     )
-    claude = next(v for v in verifies if v.vendor == "claude")
+    claude = next(v for v in verifies if v.agent == "claude")
     assert claude.mcp == ()
 
 
@@ -135,4 +135,4 @@ def test_skill_health_service_runs_over_empty_tree(tmp_path):
         which=lambda c: None,
     )
     verifies = svc.verify(offline=True)
-    assert {v.vendor for v in verifies} == {"claude", "cursor", "codex", "gemini"}
+    assert {v.agent for v in verifies} == {"claude", "cursor", "codex", "gemini"}

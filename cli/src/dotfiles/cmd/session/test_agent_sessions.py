@@ -32,7 +32,7 @@ def test_live_agents_discovers_recent_claude_and_codex(tmp_path: Path) -> None:
     )
 
     agents = live_agents(home=tmp_path, now=now, window_minutes=15)
-    found = {(a.vendor, a.cwd) for a in agents}
+    found = {(a.agent, a.cwd) for a in agents}
 
     assert ("claude", "/Users/evan/app") in found
     assert ("codex", "/Users/evan/svc") in found

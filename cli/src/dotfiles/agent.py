@@ -2,8 +2,8 @@
 
 from typing import Literal
 
-Vendor = Literal["claude", "cursor", "codex", "gemini", "pi"]
-VENDORS: tuple[Vendor, ...] = ("claude", "cursor", "codex", "gemini", "pi")
+Agent = Literal["claude", "cursor", "codex", "gemini", "pi"]
+AGENTS: tuple[Agent, ...] = ("claude", "cursor", "codex", "gemini", "pi")
 # The vendors the agent-overview dashboard tracks (its row models carry no `pi`
 # column). snapshot and skill-health both iterate exactly this set.
-OVERVIEW_VENDORS: tuple[Vendor, ...] = ("claude", "cursor", "codex", "gemini")
+OVERVIEW_AGENTS: tuple[Agent, ...] = ("claude", "cursor", "codex", "gemini")

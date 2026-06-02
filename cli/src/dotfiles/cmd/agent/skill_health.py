@@ -12,10 +12,10 @@ from collections.abc import Callable
 from pathlib import Path
 
 from dotfiles.adapters.ports import HttpClient, ProcessRunner
+from dotfiles.agent import OVERVIEW_AGENTS, Agent
 from dotfiles.cmd.agent.config import McpServerEntry, load_mcp_servers
-from dotfiles.cmd.agent.models import AgentOverview, McpProbe, VendorVerify
+from dotfiles.cmd.agent.models import AgentOverview, AgentVerify, McpProbe
 from dotfiles.cmd.agent.overview import AgentOverviewService
-from dotfiles.vendor import OVERVIEW_VENDORS, Vendor
 
 
 def probe_mcp(
@@ -42,18 +42,18 @@ def probe_mcp(
     return McpProbe(server=server, ok=False, detail="no url or command configured")
 
 
-def _vendor_counts(overview: AgentOverview, vendor: Vendor) -> tuple[int, int, int, int]:
+def _vendor_counts(overview: AgentOverview, agent: Agent) -> tuple[int, int, int, int]:
     """Return (skills_deployed, skills_expected, agents_deployed, agents_expected)."""
     canonical = overview.skills.canonical_skills
-    if vendor == "claude":
+    if agent == "claude":
         skills_dep, skills_exp = overview.skills.claude_deployed, canonical
-    elif vendor == "codex":
+    elif agent == "codex":
         skills_dep, skills_exp = overview.skills.shared_deployed, canonical
     else:
         skills_dep, skills_exp = 0, 0
 
-    if vendor in ("claude", "codex"):
-        agents_dep = sum(1 for a in overview.agents if getattr(a, vendor, False))
+    if agent in ("claude", "codex"):
+        agents_dep = sum(1 for a in overview.agents if getattr(a, agent, False))
         agents_exp = len(overview.agents)
     else:
         agents_dep, agents_exp = 0, 0
@@ -70,7 +70,7 @@ def _drift(skills_dep: int, skills_exp: int, agents_dep: int, agents_exp: int) -
 
 
 def _vendor_probes(
-    vendor: Vendor,
+    agent: Agent,
     mcp_servers: dict[str, McpServerEntry],
     *,
     http: HttpClient,
@@ -82,7 +82,7 @@ def _vendor_probes(
     return tuple(
         probe_mcp(name, entry, http=http, which=which)
         for name, entry in mcp_servers.items()
-        if vendor in entry.targets
+        if agent in entry.targets
     )
 
 
@@ -93,27 +93,27 @@ def build_vendor_verifies(
     http: HttpClient,
     which: Callable[[str], str | None] = shutil.which,
     offline: bool = False,
-) -> list[VendorVerify]:
-    """Per-vendor skill-health from an AgentOverview + the MCP server config."""
-    verifies: list[VendorVerify] = []
-    for vendor in OVERVIEW_VENDORS:
-        skills_dep, skills_exp, agents_dep, agents_exp = _vendor_counts(overview, vendor)
+) -> list[AgentVerify]:
+    """Per-agent skill-health from an AgentOverview + the MCP server config."""
+    verifies: list[AgentVerify] = []
+    for agent in OVERVIEW_AGENTS:
+        skills_dep, skills_exp, agents_dep, agents_exp = _vendor_counts(overview, agent)
         verifies.append(
-            VendorVerify(
-                vendor=vendor,
+            AgentVerify(
+                agent=agent,
                 skills_deployed=skills_dep,
                 skills_expected=skills_exp,
                 agents_deployed=agents_dep,
                 agents_expected=agents_exp,
                 drift=_drift(skills_dep, skills_exp, agents_dep, agents_exp),
-                mcp=_vendor_probes(vendor, mcp_servers, http=http, which=which, offline=offline),
+                mcp=_vendor_probes(agent, mcp_servers, http=http, which=which, offline=offline),
             )
         )
     return verifies
 
 
 class SkillHealthService:
-    """Wires AgentOverviewService + MCP config into per-vendor skill-health."""
+    """Wires AgentOverviewService + MCP config into per-agent skill-health."""
 
     def __init__(
         self,
@@ -130,7 +130,7 @@ class SkillHealthService:
         self._home = home
         self._which = which
 
-    def verify(self, *, offline: bool = False) -> list[VendorVerify]:
+    def verify(self, *, offline: bool = False) -> list[AgentVerify]:
         overview = AgentOverviewService(
             runner=self._runner,
             dotfiles_dir=self._dotfiles,

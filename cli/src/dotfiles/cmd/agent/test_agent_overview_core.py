@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from dotfiles.cmd.agent.models import AgentOverview, VendorSurface
+from dotfiles.cmd.agent.models import AgentOverview, AgentSurface
 from dotfiles.cmd.agent.overview import AgentOverviewService
 from dotfiles.testing.fakes import FakeProcessRunner
 
@@ -23,7 +23,7 @@ def make_service(dotfiles: Path, home: Path) -> AgentOverviewService:
 def make_service_with_which(
     dotfiles: Path, home: Path, which: dict[str, str]
 ) -> AgentOverviewService:
-    """Build service with a scripted which() for CLI-gated vendor checks."""
+    """Build service with a scripted which() for CLI-gated agent checks."""
     return AgentOverviewService(
         runner=FakeProcessRunner(),
         dotfiles_dir=dotfiles,
@@ -517,16 +517,16 @@ class TestOverviewAggregator:
 
 
 # ===========================================================================
-# Vendor surfaces (folded into overview)
+# Agent surfaces (folded into overview)
 # ===========================================================================
 
 
-class TestVendorSurfaces:
+class TestAgentSurfaces:
     def test_vendor_surfaces_returns_list_of_vendor_surface(self, tmp_path: Path) -> None:
         svc = make_service(tmp_path / "dotfiles", tmp_path / "home")
         surfaces = svc.vendor_surfaces()
         assert isinstance(surfaces, list)
-        assert all(isinstance(s, VendorSurface) for s in surfaces)
+        assert all(isinstance(s, AgentSurface) for s in surfaces)
 
     def test_surfaces_include_claude_entries(self, tmp_path: Path) -> None:
         home = tmp_path / "home"
@@ -534,7 +534,7 @@ class TestVendorSurfaces:
         (home / ".claude.json").parent.mkdir(parents=True, exist_ok=True)
         (home / ".claude.json").write_text("{}")
         surfaces = make_service(tmp_path / "dotfiles", home).vendor_surfaces()
-        vendors = {s.vendor for s in surfaces}
+        vendors = {s.agent for s in surfaces}
         assert "claude" in vendors
 
     def test_present_path_has_present_status(self, tmp_path: Path) -> None:
@@ -544,7 +544,7 @@ class TestVendorSurfaces:
         settings.write_text("{}")
         surfaces = make_service(tmp_path / "dotfiles", home).vendor_surfaces()
         settings_row = next(
-            (s for s in surfaces if s.vendor == "claude" and s.label == "settings.json"),
+            (s for s in surfaces if s.agent == "claude" and s.label == "settings.json"),
             None,
         )
         assert settings_row is not None
@@ -552,13 +552,13 @@ class TestVendorSurfaces:
 
     def test_missing_path_has_missing_status(self, tmp_path: Path) -> None:
         surfaces = make_service(tmp_path / "dotfiles", tmp_path / "home").vendor_surfaces()
-        claude_surfaces = [s for s in surfaces if s.vendor == "claude"]
+        claude_surfaces = [s for s in surfaces if s.agent == "claude"]
         assert all(s.status == "missing" for s in claude_surfaces)
 
     def test_gemini_skipped_when_cli_absent(self, tmp_path: Path) -> None:
         svc = make_service_with_which(tmp_path / "dotfiles", tmp_path / "home", {})
         surfaces = svc.vendor_surfaces()
-        gemini = [s for s in surfaces if s.vendor == "gemini"]
+        gemini = [s for s in surfaces if s.agent == "gemini"]
         assert len(gemini) == 1
         assert gemini[0].status == "skipped"
 
@@ -569,7 +569,7 @@ class TestVendorSurfaces:
             {"gemini": "/usr/local/bin/gemini"},
         )
         surfaces = svc.vendor_surfaces()
-        gemini = [s for s in surfaces if s.vendor == "gemini"]
+        gemini = [s for s in surfaces if s.agent == "gemini"]
         assert len(gemini) > 1 or gemini[0].status != "skipped"
 
     def test_overview_vendor_surfaces_populated(self, tmp_path: Path) -> None:

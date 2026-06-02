@@ -1,8 +1,8 @@
-"""Vendor surface verification service.
+"""Agent surface verification service.
 
 Reproduces the behavior of agents/shared/verify-vendors.sh:
-- Checks each vendor's surface paths (skills, subagents, MCP, hooks, etc.)
-- path missing → VendorSurface(status="missing")
+- Checks each agent's surface paths (skills, subagents, MCP, hooks, etc.)
+- path missing → AgentSurface(status="missing")
 - dir with SKILL.md files (maxdepth 2) → status="present", detail="N skills @ path"
 - dir with other entries → status="present", detail="N entries @ path"
 - empty dir → status="empty", detail="empty: path"
@@ -18,13 +18,13 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
-from dotfiles.cmd.agent.models import VendorSurface
+from dotfiles.agent import Agent
+from dotfiles.cmd.agent.models import AgentSurface
 from dotfiles.fsutil import list_dir
-from dotfiles.vendor import Vendor
 
 
-class VendorVerifyService:
-    """Build the list of VendorSurface checks, mirroring verify-vendors.sh."""
+class AgentVerifyService:
+    """Build the list of AgentSurface checks, mirroring verify-vendors.sh."""
 
     def __init__(
         self,
@@ -41,8 +41,8 @@ class VendorVerifyService:
     # Public API
     # ------------------------------------------------------------------
 
-    def vendors(self) -> list[VendorSurface]:
-        results: list[VendorSurface] = []
+    def vendors(self) -> list[AgentSurface]:
+        results: list[AgentSurface] = []
         results.extend(self._claude_surfaces())
         results.extend(self._cursor_surfaces())
         results.extend(self._codex_surfaces())
@@ -51,10 +51,10 @@ class VendorVerifyService:
         return results
 
     # ------------------------------------------------------------------
-    # Per-vendor helpers
+    # Per-agent helpers
     # ------------------------------------------------------------------
 
-    def _claude_surfaces(self) -> list[VendorSurface]:
+    def _claude_surfaces(self) -> list[AgentSurface]:
         h = self._home
         return [
             self._check("claude", "skills", h / ".claude" / "skills"),
@@ -65,7 +65,7 @@ class VendorVerifyService:
             self._check("claude", "CLAUDE.md", h / ".claude" / "CLAUDE.md"),
         ]
 
-    def _cursor_surfaces(self) -> list[VendorSurface]:
+    def _cursor_surfaces(self) -> list[AgentSurface]:
         h = self._home
         d = self._dotfiles_dir
         return [
@@ -75,10 +75,10 @@ class VendorVerifyService:
             self._check("cursor", "rules (project)", d / "ai" / "agents" / "cursor" / "rules"),
         ]
 
-    def _codex_surfaces(self) -> list[VendorSurface]:
+    def _codex_surfaces(self) -> list[AgentSurface]:
         h = self._home
         return [
-            self._check("codex", "skills (vendor)", h / ".codex" / "skills"),
+            self._check("codex", "skills (agent)", h / ".codex" / "skills"),
             self._check("codex", "skills (shared)", h / ".agents" / "skills"),
             self._check("codex", "subagents", h / ".codex" / "agents"),
             self._check("codex", "AGENTS.md", h / ".codex" / "AGENTS.md"),
@@ -87,11 +87,11 @@ class VendorVerifyService:
             self._check("codex", "default.rules", h / ".codex" / "rules" / "default.rules"),
         ]
 
-    def _gemini_surfaces(self) -> list[VendorSurface]:
+    def _gemini_surfaces(self) -> list[AgentSurface]:
         if not self._which("gemini"):
             return [
-                VendorSurface(
-                    vendor="gemini",
+                AgentSurface(
+                    agent="gemini",
                     label="skipped",
                     status="skipped",
                     detail="gemini CLI not installed",
@@ -103,11 +103,11 @@ class VendorVerifyService:
             self._check("gemini", "GEMINI.md", h / ".gemini" / "GEMINI.md"),
         ]
 
-    def _pi_surfaces(self) -> list[VendorSurface]:
+    def _pi_surfaces(self) -> list[AgentSurface]:
         if not self._which("pi"):
             return [
-                VendorSurface(
-                    vendor="pi", label="skipped", status="skipped", detail="pi CLI not installed"
+                AgentSurface(
+                    agent="pi", label="skipped", status="skipped", detail="pi CLI not installed"
                 )
             ]
         h = self._home
@@ -123,15 +123,15 @@ class VendorVerifyService:
     # Core path-check logic (mirrors check_path() in the shell script)
     # ------------------------------------------------------------------
 
-    def _check(self, vendor: Vendor, label: str, path: Path) -> VendorSurface:
+    def _check(self, agent: Agent, label: str, path: Path) -> AgentSurface:
         if not path.exists():
-            return VendorSurface(vendor=vendor, label=label, status="missing", detail=str(path))
+            return AgentSurface(agent=agent, label=label, status="missing", detail=str(path))
 
         if path.is_dir():
             n_skills = self._count_skill_md(path)
             if n_skills > 0:
-                return VendorSurface(
-                    vendor=vendor,
+                return AgentSurface(
+                    agent=agent,
                     label=label,
                     status="present",
                     detail=f"{n_skills} skills @ {path}",
@@ -139,19 +139,17 @@ class VendorVerifyService:
             # count all entries (ls -A equivalent)
             n_entries = len(list_dir(path))
             if n_entries > 0:
-                return VendorSurface(
-                    vendor=vendor,
+                return AgentSurface(
+                    agent=agent,
                     label=label,
                     status="present",
                     detail=f"{n_entries} entries @ {path}",
                 )
             # empty dir
-            return VendorSurface(
-                vendor=vendor, label=label, status="empty", detail=f"empty: {path}"
-            )
+            return AgentSurface(agent=agent, label=label, status="empty", detail=f"empty: {path}")
 
         # plain file (or symlink that exists)
-        return VendorSurface(vendor=vendor, label=label, status="present", detail=str(path))
+        return AgentSurface(agent=agent, label=label, status="present", detail=str(path))
 
     def _count_skill_md(self, path: Path) -> int:
         """Count SKILL.md files at maxdepth 2 (the dir itself + immediate subdirs)."""

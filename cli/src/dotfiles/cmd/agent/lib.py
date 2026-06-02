@@ -14,7 +14,7 @@ from typing import cast
 
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.config import load_mcp_servers
-from dotfiles.result import StepResult  # re-exported for the vendor adapters
+from dotfiles.result import StepResult  # re-exported for the agent adapters
 
 # ---------------------------------------------------------------------------
 # MCP helpers
@@ -131,7 +131,7 @@ def merge_managed_mcp(
     """Merge *servers* over *existing_mcp*, honouring ``--reset-mcp``.
 
     The single source of truth for the merge/purge logic shared by every JSON
-    vendor (Claude, Gemini, Cursor, Claude Desktop). When *reset_mcp* is True,
+    agent (Claude, Gemini, Cursor, Claude Desktop). When *reset_mcp* is True,
     *managed_keys* are stripped from the existing config first so renamed or
     removed managed servers don't linger; user-added (unmanaged) entries are
     always preserved. Current *servers* always win on key collisions.
@@ -157,7 +157,7 @@ def build_global_instructions(
     """Return the core agent instructions, or None if the kernel doc is absent.
 
     One hand-authored doc (``agents/shared/rules.md``) is the single source of
-    truth, written verbatim to every vendor's instruction file. *extra_sections*
+    truth, written verbatim to every agent's instruction file. *extra_sections*
     are appended (Codex uses this for its Codex-specific block). No composition,
     no baking — what you read in rules.md is what each tool gets.
     """
@@ -203,11 +203,11 @@ def deploy_subagents(dotfiles_dir: Path, dest_dir: Path) -> list[StepResult]:
 def deploy_skills(
     runner: ProcessRunner,
     dotfiles_dir: Path,
-    vendor: str,
+    agent: str,
     *,
     which: Callable[[str], str | None] = shutil.which,  # type: ignore[assignment]
 ) -> StepResult:
-    """Run ``npx skills add`` to deploy ``ai/skills`` for *vendor*.
+    """Run ``npx skills add`` to deploy ``ai/skills`` for *agent*.
 
     The ``-g``/``--copy`` flags are load-bearing (required by the skills CLI).
     Mirrors ``deploy_skills()`` from lib.sh.
@@ -236,16 +236,16 @@ def deploy_skills(
         "-s",
         "*",
         "-a",
-        vendor,
+        agent,
         "-g",
         "-y",
         "--copy",
     )
     result = runner.run(cmd, check=False)
     if result.exit_code == 0:
-        return StepResult(level="success", message=f"Deployed skills via npx skills ({vendor})")
+        return StepResult(level="success", message=f"Deployed skills via npx skills ({agent})")
     return StepResult(
         level="error",
-        message=f"Failed to deploy skills via npx skills ({vendor})",
+        message=f"Failed to deploy skills via npx skills ({agent})",
         details=result.stderr,
     )

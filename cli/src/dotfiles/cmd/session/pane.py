@@ -31,7 +31,7 @@ def _agents_line(agents: list[AgentActivity], now: datetime) -> str:
     for a in agents:
         mins = max(0, int((now - a.last_active).total_seconds() // 60))
         name = Path(a.cwd).name or a.cwd or "?"
-        parts.append(f"[green]{a.vendor}[/] {name} [dim]{mins}m[/]")
+        parts.append(f"[green]{a.agent}[/] {name} [dim]{mins}m[/]")
     return "  ·  ".join(parts)
 
 
