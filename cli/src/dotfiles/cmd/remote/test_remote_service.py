@@ -81,6 +81,68 @@ def test_status_handles_remote_login_off_and_no_tailscale(tmp_path: Path) -> Non
     assert status.tailnet_ip is None
 
 
+def test_status_reports_ssh_key_only_when_password_and_kbd_off(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
+    runner.script(("id", "-un"), stdout="evan\n")
+    runner.script(("tailscale", "status"), exit_code=1)
+    runner.script(
+        ("/usr/sbin/sshd", "-G"),
+        stdout="passwordauthentication no\nkbdinteractiveauthentication no\n",
+    )
+
+    assert _service(runner, tmp_path).status().ssh_password_auth is False
+
+
+def test_status_reports_password_allowed_when_either_method_on(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
+    runner.script(("id", "-un"), stdout="evan\n")
+    runner.script(("tailscale", "status"), exit_code=1)
+    runner.script(
+        ("/usr/sbin/sshd", "-G"),
+        stdout="passwordauthentication no\nkbdinteractiveauthentication yes\n",
+    )
+
+    assert _service(runner, tmp_path).status().ssh_password_auth is True
+
+
+def test_status_ssh_auth_unknown_when_sshd_query_fails(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
+    runner.script(("id", "-un"), stdout="evan\n")
+    runner.script(("tailscale", "status"), exit_code=1)
+    runner.script(("/usr/sbin/sshd", "-G"), exit_code=1)
+
+    assert _service(runner, tmp_path).status().ssh_password_auth is None
+
+
+def test_sudo_failure_surfaces_underlying_stderr(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
+    runner.script(("id", "-un"), stdout="evan\n")
+    runner.script(
+        ("sudo", "systemsetup", "-setremotelogin", "-f", "off"),
+        exit_code=1,
+        stderr="setremotelogin: requires Full Disk Access privileges\n",
+    )
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+
+    steps = service.disable(dry_run=False, kill_sessions=False)
+
+    err = [s for s in steps if s.level == "error"]
+    assert err, "expected an error step on sudo failure"
+    assert "requires Full Disk Access privileges" in err[0].message
+
+
 def _base_runner() -> FakeProcessRunner:
     runner = FakeProcessRunner()
     runner.script(("id", "-un"), stdout="evan\n")

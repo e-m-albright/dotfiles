@@ -120,5 +120,15 @@ def status(ctx: typer.Context) -> None:
     tail = s.tailnet_ip or "—"
     tail_state = "connected" if s.tailscale_connected else "down"
     console.print(f"Remote Login: {login}")
+    if s.remote_login_on:
+        if s.ssh_password_auth is True:
+            console.print(
+                "SSH auth: [yellow]password allowed[/] — "
+                "run `dfs remote on --harden-ssh` for key-only"
+            )
+        elif s.ssh_password_auth is False:
+            console.print("SSH auth: [green]key-only[/]")
+        else:
+            console.print("SSH auth: [dim]unknown[/]")
     console.print(f"Tailscale: {tail_state} ({tail})")
     console.print(f"{s.user}@{s.host}")

@@ -14,6 +14,8 @@ class RemoteStatus(BaseModel):
     host: str
     user: str
     mosh_server: str
+    # True = SSH permits password login, False = key-only, None = undetermined.
+    ssh_password_auth: bool | None = None
 
 
 class ConnectionInfo(BaseModel):

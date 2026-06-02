@@ -372,7 +372,9 @@ dotfiles                     # Bare invocation prints help (use 'dotfiles tui' f
 
 Full end-to-end setup (phone + laptop, Termius/Tailscale config, troubleshooting) lives in [docs/remote-shell.md](docs/remote-shell.md).
 
-`dotfiles remote on` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote off` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
+`dotfiles remote on` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote off` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too. `dotfiles remote status` shows whether Remote Login is on and, when it is, whether SSH accepts password logins (`key-only` vs `password allowed` — run `dotfiles remote on --harden-ssh` to lock it to keys).
+
+Note: on macOS 26+, turning Remote Login off via the CLI requires your terminal app to have Full Disk Access (System Settings → Privacy & Security → Full Disk Access); otherwise toggle Remote Login directly in System Settings → General → Sharing.
 
 `dotfiles session` manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote on` also prints a picker-based Termius startup command that drops straight into the fzf session picker. Zellij is configured from `terminal/zellij/` (symlinked by `install.sh`): a minimal `config.kdl` plus a `mobile` deck layout that the `mobile` session opens with on first creation (compact status bar + a Mission Control tab). Sessions auto-serialize, so `dotfiles session attach mobile` resurrects the deck after a reboot.
 

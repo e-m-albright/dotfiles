@@ -74,6 +74,24 @@ class RemoteService:
             ("launchctl", "print-disabled", "system")
         )
 
+    def _ssh_password_auth(self) -> bool | None:
+        # True if SSH permits password login (password OR keyboard-interactive),
+        # False if key-only, None if undetermined. `sshd -G` prints the effective
+        # config including drop-ins and, unlike `-T`, doesn't need root — so a
+        # status read never costs a password.
+        result = self._runner.run(("/usr/sbin/sshd", "-G"))
+        if not result.ok:
+            return None
+        values: dict[str, str] = {}
+        for line in result.stdout.splitlines():
+            key, _, value = line.partition(" ")
+            values[key] = value.strip()
+        password = values.get("passwordauthentication")
+        if password is None:
+            return None
+        keyboard = values.get("kbdinteractiveauthentication", "no")
+        return password == "yes" or keyboard == "yes"
+
     @cached_property
     def _tailscale(self) -> tuple[bool, str | None]:
         if self._runner.run(("tailscale", "status")).ok:
@@ -90,6 +108,7 @@ class RemoteService:
             host=self._host,
             user=self._user,
             mosh_server=self._mosh_server,
+            ssh_password_auth=self._ssh_password_auth(),
         )
 
     def connection_info(self, session: str) -> ConnectionInfo:
@@ -114,10 +133,16 @@ class RemoteService:
         result = self._runner.run(("sudo", *args))
         if result.ok:
             return StepResult(level="success", message="sudo " + " ".join(args))
+        detail = (result.stderr.strip() or result.stdout.strip()).splitlines()
+        reason = f": {detail[-1].strip()}" if detail else ""
         hint = ""
         if args and args[0] == "systemsetup":
-            hint = " — if blocked by Full Disk Access, use System Settings -> General -> Sharing"
-        return StepResult(level="error", message=f"sudo {' '.join(args)} failed{hint}")
+            hint = (
+                " — if blocked by Full Disk Access, grant your terminal app Full Disk Access "
+                "(System Settings -> Privacy & Security) or toggle it in "
+                "System Settings -> General -> Sharing"
+            )
+        return StepResult(level="error", message=f"sudo {' '.join(args)} failed{reason}{hint}")
 
     def _ensure_tool(self, name: str, *, dry_run: bool) -> StepResult:
         if self._runner.run((name, "--version")).ok:
