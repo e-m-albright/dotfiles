@@ -122,6 +122,8 @@ zellij delete-session <name>   # purge an exited/serialized one from history
 |---|---|
 | Can't connect at all | Tailscale up + logged in on **both**? `dotfiles remote status`. Remote Login on? |
 | SSH works, Mosh doesn't | Mosh enabled on the Termius host? mosh-server path = `/opt/homebrew/bin/mosh-server`? Mosh needs UDP — Tailscale handles the NAT traversal. |
+| `command not found: mosh-server` | Termius's mosh command used a bare `mosh-server`. A non-login SSH shell has no `/opt/homebrew/bin` on PATH — use the **absolute path**: `/opt/homebrew/bin/mosh-server new -s -c 256 -l LANG=en_US.UTF-8`. |
+| `mosh-server needs a UTF-8 native locale` | Keep the `-l LANG=en_US.UTF-8` flag (lowercase `-l`, the set-locale option — easy to mis-type as `-I`). The SSH exec channel carries no `LANG`, so mosh must be told one. |
 | Key rejected | Re-run `dotfiles remote on --add-key "<public key>"`. With `--harden-ssh`, password auth is off — the key must be right. |
 | Landed in a bare shell, not the deck | The `mobile` session was created without the layout (e.g. after `delete-session`). `dfs session kill mobile` then reconnect to rebuild it. |
 | Want to stop all phone access | Turn **Remote Login** off in System Settings → General → Sharing (run `dotfiles remote off --kill-sessions` to also drop open Mosh/SSH sessions). |
