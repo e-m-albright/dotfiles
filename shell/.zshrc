@@ -54,6 +54,9 @@ plugins=(
     # z         # Replaced by zoxide — see Tool Integrations below
 )
 
+# Custom completions (e.g. _dotfiles). Must precede oh-my-zsh, which runs compinit.
+fpath=("$HOME/dotfiles/shell/completions" $fpath)
+
 source $ZSH/oh-my-zsh.sh
 
 # =============================================================================

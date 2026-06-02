@@ -346,7 +346,6 @@ dotfiles profile-shell       # Profile shell startup time
 dotfiles agent global overview      # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent global setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean); prints the Cursor plugin checklist
 dotfiles agent global verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
-dotfiles completions         # Output shell completions
 dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
 dotfiles remote on --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
@@ -377,11 +376,9 @@ dotfiles                     # Bare invocation prints help (use 'dotfiles tui' f
 
 `dotfiles tui` opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. (Bare `dotfiles` with no args prints help.) The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` to toggle Remote Login (sudo-aware), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane lists live zellij sessions; press Enter to attach (or switch session if already inside zellij).
 
-Enable tab completion:
-```bash
-# Add to ~/.zshrc
-eval "$(dotfiles completions)"
-```
+Tab completion for `dotfiles` (and the `dfs` alias) is autoloaded from
+`shell/completions/_dotfiles` — `.zshrc` prepends that directory to `$fpath`
+before oh-my-zsh runs `compinit`, so it works out of the box after `install`.
 
 ### Git
 

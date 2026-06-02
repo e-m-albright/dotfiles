@@ -1,0 +1,24 @@
+#compdef dotfiles dfs
+# Zsh completion for the `dotfiles` CLI (and its `dfs` alias).
+# Autoloaded from $fpath — see shell/.zshrc, which prepends shell/completions/.
+# Keep this command list in sync with `sub_help` in bin/dotfiles; the contract
+# is enforced by cli/src/dotfiles/app/test_command_tree.py.
+
+local -a commands
+commands=(
+    'install:Run full dotfiles setup'
+    'help:Show help message'
+    'doctor:Check tools and config (--fix to repair)'
+    'update:Update OS, Homebrew, runtimes, and dev tools'
+    'clean:Clean caches'
+    'dock:Reset macOS Dock'
+    'benchmark:Benchmark local LM Studio models for your hardware'
+    'remote:Phone remote-shell access (setup, disable)'
+    'session:zellij sessions (ls, attach, new, kill, picker)'
+    'tui:Launch the Mission Control TUI'
+    'snapshot:Machine-state snapshots (ls, diff)'
+    'agent:Agent namespace (global, local, web)'
+    'brew:Brew namespace (install, upgrade, stale)'
+    'profile-shell:Profile shell startup time'
+)
+_describe 'command' commands

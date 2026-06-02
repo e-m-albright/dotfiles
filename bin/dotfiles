@@ -32,7 +32,6 @@ sub_help () {
     printf "   dock                 Reset macOS Dock layout\n"
     printf "   snapshot [ls|diff]   Capture / list / diff machine-state snapshots\n"
     printf "   profile-shell        Profile shell startup time\n"
-    printf "   completions          Output shell completions (eval to install)\n"
     printf "\n"
     printf "${BLUE}Control${NC} — drive this Mac locally or from your phone\n"
     printf "   tui                    Launch the Mission Control TUI (phone-drivable dashboard)\n"
@@ -187,37 +186,6 @@ sub_shell_profile() {
     printf "  ${YELLOW}Tip:${NC} If startup is slow, check for heavy evals (fnm env, brew shellenv).\n"
 }
 
-sub_completions() {
-    cat << 'EOF'
-# Zsh completions for dotfiles command
-# Add to ~/.zshrc: eval "$(dotfiles completions)"
-
-_dotfiles() {
-    local -a commands
-    commands=(
-        'install:Run full dotfiles setup'
-        'help:Show help message'
-        'doctor:Check tools and config (--fix to repair)'
-        'update:Update OS, Homebrew, runtimes, and dev tools'
-        'clean:Clean caches'
-        'dock:Reset macOS Dock'
-        'completions:Output shell completions'
-        'benchmark:Benchmark local LM Studio models for your hardware'
-        'remote:Phone remote-shell access (setup, disable)'
-        'session:zellij sessions (ls, attach, new, kill, picker)'
-        'tui:Launch the Mission Control TUI'
-        'snapshot:Machine-state snapshots (ls, diff)'
-        'agent:Agent namespace (global, local, web)'
-        'brew:Brew namespace (install, upgrade, stale)'
-        'profile-shell:Profile shell startup time'
-    )
-    _describe 'command' commands
-}
-
-compdef _dotfiles dotfiles dfs
-EOF
-}
-
 # --- Namespace dispatchers ---
 ns_shell() {
     local sub="${1:-profile}"; shift || true
@@ -229,8 +197,9 @@ ns_shell() {
 
 # Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
 # As later phases land, add their names to this list.
-# INVARIANT: every name here must also appear in sub_help and sub_completions —
-# enforced by cli/tests/test_command_tree.py so the lists can't silently drift.
+# INVARIANT: every name here must also appear in sub_help and the zsh completion
+# file (shell/completions/_dotfiles) — enforced by app/test_command_tree.py so
+# the lists can't silently drift.
 PY_CLI_COMMANDS=" remote session doctor benchmark brew snapshot tui "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
@@ -252,7 +221,6 @@ case $COMMAND_NAME in
     update)      sub_update ;;
     clean)       sub_clean ;;
     dock)        sub_dock ;;
-    completions) sub_completions ;;
 
     # profile-shell is a canonical flat command (Machine group in sub_help)
     profile-shell) shift; sub_shell_profile "$@" ;;
