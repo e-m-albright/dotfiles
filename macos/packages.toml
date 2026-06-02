@@ -150,7 +150,6 @@ packages = [
   { name = "raycast",          note = "Launcher + actions; can replace Rectangle/Flycut", disabled = true },
   { name = "warp",             note = "AI terminal", disabled = true },
   { name = "ghostty",          note = "GPU-accelerated terminal" },
-  { name = "termius",          note = "SSH/SFTP client and host manager" },
   { name = "caffeine",         note = "Intel-only, requires Rosetta" },
   { name = "flux-app",         note = "Screen color temperature" },
   { name = "granola",          note = "AI notepad for meetings" },

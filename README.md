@@ -49,7 +49,6 @@ delegates those subcommands to the Python CLI; a few install/bootstrap commands
 
 - **Zsh + Oh My Zsh**: Custom two-line prompt with git status, venv indicator, error-aware prompt character
 - **Ghostty**: GPU-accelerated terminal with desktop notifications
-- **Termius**: SSH/SFTP client and host manager
 - **Rectangle**: Window management
 - **Shell aliases**: `cc` (Claude Code with profiles), `ccr` (AI code review), `cca` (address PR feedback)
 

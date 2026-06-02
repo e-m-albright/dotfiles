@@ -26,7 +26,7 @@ print_success "Auto-hide enabled (no delay, fast animation, no recents)"
 # Desired dock, in left-to-right order. This list is DECLARATIVE: the dock is
 # pruned to exactly these apps (anything else in the apps section is removed).
 # Deliberately omitted (launched via terminal/Raycast, or live in the menu bar):
-# Cursor, Termius, Tailscale, TypeWhisper, LM Studio, Slack.
+# Cursor, Tailscale, TypeWhisper, LM Studio, Slack.
 apps=(
     "/Applications/Google Chrome.app"
     "/Applications/Obsidian.app"
