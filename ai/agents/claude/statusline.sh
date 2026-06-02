@@ -23,6 +23,9 @@
 #
 # Schema: https://code.claude.com/docs/en/statusline.md
 
+# The full glyph + color palette is defined for completeness; not every entry is
+# referenced yet (e.g. the worktree glyph and spare accent colors).
+# shellcheck disable=SC2034
 set -uo pipefail
 
 input="$(cat)"
