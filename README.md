@@ -68,7 +68,7 @@ delegates those subcommands to the Python CLI; a few install/bootstrap commands
 - **Zed**: Default editor — set as `$EDITOR` / git editor and the macOS open handler for text, markdown, and source/config files (`.md`, `.txt`, `.yaml`, `.json`, `.toml`, `.py`, `.ts`, etc. — see `macos/file-associations.sh`; GPU-native, boots faster than Cursor for quick edits). Config managed in `editors/zed/` (settings + keymap symlinked). Drives external agents via **ACP** — `claude-acp`, `codex-acp`, `gemini` pre-wired to use **subscription logins, not API keys** (start a thread with `cmd-?`, authenticate in-thread; keybinds `cmd-alt-a`/`-o`/`-g`).
 - **Cursor**: Primary AI-native IDE (VS Code compatible, shared MCP servers, hooks, skills, agents)
 - **LM Studio**: Local LLM runner (MLX/GGUF, OpenAI-compatible server). Model + context window pinned via `macos/lmstudio.sh` (default: `google/gemma-4-e4b` @ 32K) — point Zed/Obsidian/CLIs at `http://localhost:1234/v1`.
-- **TypeWhisper**: On-device voice-to-text (Parakeet ASR + local Gemma cleanup via the LM Studio endpoint above, or Apple Intelligence). Replaced Wispr Flow 2026-05-29 — fully local, no subscription. No Homebrew cask; installed via `dotfiles brew install` post-install from GitHub releases. Its prefs and workflows are tracked in `macos/typewhisper/` and applied with `dotfiles typewhisper apply`.
+- **TypeWhisper**: On-device voice-to-text (Parakeet ASR + local Gemma cleanup via the LM Studio endpoint above, or Apple Intelligence). Replaced Wispr Flow 2026-05-29 — fully local, no subscription. No Homebrew cask; installed via `dotfiles brew install` post-install from GitHub releases, which also applies its prefs and workflows tracked in `macos/typewhisper/` (the repo is the source of truth).
 - **Obsidian**: Knowledge base — vault configs + community plugins managed via symlinks
 
   | Plugin | Purpose |
@@ -342,8 +342,6 @@ dotfiles brew install        # Sync Homebrew packages from packages.toml
 dotfiles brew upgrade        # Upgrade all installed packages (brew is the version surface)
 dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
-dotfiles typewhisper status  # Show TypeWhisper app + tracked-config state
-dotfiles typewhisper apply   # Apply tracked TypeWhisper prefs/workflows (--quit, --reopen)
 dotfiles profile-shell       # Profile shell startup time
 dotfiles agent global overview      # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent global setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean); prints the Cursor plugin checklist

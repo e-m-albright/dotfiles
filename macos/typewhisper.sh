@@ -149,7 +149,7 @@ apply_typewhisper() {
             quit_typewhisper
         else
             print_error "TypeWhisper is running"
-            print_info "Run: dotfiles typewhisper apply --quit --reopen"
+            print_info "Run: macos/typewhisper.sh apply --quit --reopen"
             return 1
         fi
     fi

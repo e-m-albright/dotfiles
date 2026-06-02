@@ -350,25 +350,30 @@ _TW_FETCH_CMD = _TW_FETCH_URL  # tuple[str, str, str] — (sh, -c, <shell>)
 def test_install_typewhisper_skips_when_present(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Patch Path.exists so /Applications/TypeWhisper.app looks present
+    # Patch Path.exists so /Applications/TypeWhisper.app looks present. With no
+    # typewhisper.sh under dotfiles_dir=tmp_path, the config-apply step is a no-op.
     monkeypatch.setattr(Path, "exists", lambda self: str(self) == "/Applications/TypeWhisper.app")
     runner = FakeProcessRunner()
-    results = install_typewhisper(runner)
+    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
     assert results[0].level == "info"
     assert "already installed" in results[0].message
     assert runner.calls == []
 
 
-def test_install_typewhisper_no_url_is_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_install_typewhisper_no_url_is_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(Path, "exists", lambda self: False)
     runner = FakeProcessRunner()
     runner.script(_TW_FETCH_CMD, stdout="")
-    results = install_typewhisper(runner)
+    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
     assert results[0].level == "error"
     assert "no stable DMG" in results[0].message
 
 
-def test_install_typewhisper_full_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_install_typewhisper_full_happy_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(Path, "exists", lambda self: False)
     runner = FakeProcessRunner()
     tw_url = "https://github.com/TypeWhisper/typewhisper-mac/releases/download/v1.0/TypeWhisper.dmg"
@@ -389,9 +394,38 @@ def test_install_typewhisper_full_happy_path(monkeypatch: pytest.MonkeyPatch) ->
         ("cp", "-R", "/Volumes/TypeWhisper/TypeWhisper.app", "/Applications/"),
         exit_code=0,
     )
-    results = install_typewhisper(runner)
+    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
     assert results[0].level == "success"
     assert "TypeWhisper installed" in results[0].message
+
+
+def test_install_typewhisper_applies_tracked_config_when_present(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # App already installed → no download, but tracked config is re-applied.
+    script = tmp_path / "macos" / "typewhisper.sh"
+    script.parent.mkdir(parents=True)
+    script.write_text("#!/usr/bin/env bash\n")
+    monkeypatch.setattr(Path, "exists", lambda self: str(self) == "/Applications/TypeWhisper.app")
+    runner = FakeProcessRunner()
+    runner.script((str(script), "apply"), exit_code=0)
+    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
+    assert any(r.level == "success" and "config applied" in r.message for r in results)
+
+
+def test_install_typewhisper_config_apply_failure_is_warn_not_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A non-zero apply (e.g. app running) must never fail the install.
+    script = tmp_path / "macos" / "typewhisper.sh"
+    script.parent.mkdir(parents=True)
+    script.write_text("#!/usr/bin/env bash\n")
+    monkeypatch.setattr(Path, "exists", lambda self: str(self) == "/Applications/TypeWhisper.app")
+    runner = FakeProcessRunner()
+    runner.script((str(script), "apply"), exit_code=1)
+    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
+    assert any(r.level == "warn" for r in results)
+    assert not any(r.level == "error" for r in results)
 
 
 # ---------------------------------------------------------------------------

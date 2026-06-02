@@ -440,15 +440,33 @@ _TW_FETCH_URL = (
 _TW_DMG_PATH = "/tmp/TypeWhisper-install.dmg"
 
 
-def install_typewhisper(runner: ProcessRunner) -> list[StepResult]:
-    """Install TypeWhisper from GitHub Releases DMG if not already present.
+def install_typewhisper(runner: ProcessRunner, *, dotfiles_dir: Path) -> list[StepResult]:
+    """Install TypeWhisper (if absent) and apply its version-controlled config.
 
-    Idempotency guard: skips if /Applications/TypeWhisper.app exists.
-    Flow: fetch latest stable DMG URL → download → hdiutil attach → cp -R → detach.
+    Install is idempotent — skips the DMG download when /Applications/TypeWhisper.app
+    exists, but still re-applies the tracked config (macos/typewhisper/) so the repo
+    stays the source of truth. Config apply is best-effort and never fails the
+    install: if the app is running it can't write live SQLite-backed settings, which
+    is reported as a warning, not an error.
     """
-    if Path(_TW_APP_PATH).exists():
-        return [StepResult(level="info", message="TypeWhisper already installed — skipping")]
+    results: list[StepResult] = []
 
+    if Path(_TW_APP_PATH).exists():
+        results.append(
+            StepResult(level="info", message="TypeWhisper already installed — skipping download")
+        )
+    else:
+        install_steps = _download_typewhisper(runner)
+        results.extend(install_steps)
+        if any(step.level == "error" for step in install_steps):
+            return results  # don't try to configure a failed install
+
+    results.extend(_apply_typewhisper_config(runner, dotfiles_dir))
+    return results
+
+
+def _download_typewhisper(runner: ProcessRunner) -> list[StepResult]:
+    """Fetch the latest stable DMG → download → hdiutil attach → cp -R → detach."""
     # Fetch latest stable DMG URL
     url_res = runner.run(_TW_FETCH_URL)
     tw_url = url_res.stdout.strip()
@@ -484,6 +502,27 @@ def install_typewhisper(runner: ProcessRunner) -> list[StepResult]:
         return [StepResult(level="error", message="TypeWhisper: copy to /Applications failed")]
 
     return [StepResult(level="success", message="TypeWhisper installed")]
+
+
+def _apply_typewhisper_config(runner: ProcessRunner, dotfiles_dir: Path) -> list[StepResult]:
+    """Apply the tracked TypeWhisper config via macos/typewhisper.sh (best-effort)."""
+    script = dotfiles_dir / "macos" / "typewhisper.sh"
+    if not script.is_file():
+        return []
+    res = runner.run((str(script), "apply"))
+    if res.exit_code == 0:
+        return [
+            StepResult(level="success", message="TypeWhisper config applied (macos/typewhisper/)")
+        ]
+    return [
+        StepResult(
+            level="warn",
+            message=(
+                "TypeWhisper config not applied (app running?) — quit it and re-run, "
+                "or: macos/typewhisper.sh apply --quit --reopen"
+            ),
+        )
+    ]
 
 
 def install_npm_globals(

@@ -92,7 +92,7 @@ def install(
         # TypeWhisper (productivity flag)
         if "productivity" in flags:
             console.print("\n[bold blue]TypeWhisper[/]")
-            tw_steps = install_typewhisper(runner)
+            tw_steps = install_typewhisper(runner, dotfiles_dir=app_ctx.dotfiles_dir)
             render_steps(console, tw_steps)
             all_steps.extend(tw_steps)
 
