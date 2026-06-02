@@ -51,18 +51,25 @@ client: Termius connects to the laptop over Mosh and runs everything *there*.
 1. **Tailscale** app — install, log into the **same** tailnet, confirm the laptop
    appears in the device list.
 2. **Termius** app — install.
-3. **SSH key** — in Termius, Keychain → generate a new key (ed25519). Copy its
-   **public** key; that's what you pass to `dotfiles remote on --add-key` above.
-   (Easiest order: make the key on the phone first, then run `remote on`.)
-4. **New Host** in Termius:
+3. **SSH key** — in Termius, **Vault → Keychain** (new iOS nav puts it under the
+   bottom **Vault** tab, not Settings) → **+** → generate a key. Prefer a **Face ID
+   key** (Secure Enclave: the private key can't leave the phone, Face ID gates every
+   connect). Copy its **public** key; that's what you pass to `dotfiles remote
+   on --add-key`. (Easiest order: make the key on the phone first, then run `remote on`.)
+4. **New Host** in Termius — these are GUI fields, not a pasted command. `dotfiles
+   remote on` prints the exact values:
    - **Address**: the laptop's Tailscale IP (the `100.x.y.z` that `remote on` printed)
      or its MagicDNS name.
    - **Username**: your macOS username.
    - **Key**: the Termius key from step 3.
-   - **Mosh**: enable it. Set the mosh-server path to `/opt/homebrew/bin/mosh-server`.
-   - **Startup command**: `dotfiles session attach mobile`
-     (or paste the full command `dotfiles remote on` printed).
+   - **Mosh**: enable it. Set the mosh-server path to `/opt/homebrew/bin/mosh-server`
+     (full path — a non-login SSH session may not have `/opt/homebrew/bin` on PATH).
+   - **Startup command**: `dotfiles session attach mobile`.
 5. Connect. You land in the **mobile deck**.
+
+(The `mosh --server=… -- dotfiles session attach mobile` line `remote on` prints is
+the **desktop-to-desktop** form — for the `mosh` CLI on another *computer*. You don't
+paste it into Termius mobile; it just shows the same values the GUI fields take.)
 
 ## Daily use
 

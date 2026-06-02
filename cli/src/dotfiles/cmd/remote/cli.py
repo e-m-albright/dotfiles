@@ -22,20 +22,30 @@ def _service(ctx: typer.Context) -> RemoteService:
 
 def render_connection_info(console: Console, info: ConnectionInfo) -> None:
     """Print the Termius/Mosh connection details for a connection info."""
-    console.print("\n[bold]Termius setup[/]")
-    console.print(f"  Host: {info.host}")
+    console.print(
+        "\n[bold]Termius host fields (enter these in the app — it's GUI, not a command):[/]"
+    )
     if info.tailnet_ip:
-        console.print(f"  Tailscale IP: {info.tailnet_ip}")
+        console.print(f"  Address: {info.tailnet_ip}   [dim](or {info.host})[/]")
     else:
+        console.print(f"  Address: {info.host}")
         console.print(
             "  [yellow]⚠[/] Tailscale does not look connected. "
             "Start Tailscale before connecting from your phone"
         )
     console.print(f"  Username: {info.user}")
     console.print("  Protocol: Mosh")
-    console.print("\n[bold]Paste into Termius as the Mosh command:[/]")
+    console.print(f"  mosh-server path: {info.mosh_server}")
+    console.print(f"  Startup command: {info.startup_command}")
+    console.print(
+        "\n[dim]The line below is the mosh CLI command for the desktop-to-desktop case —"
+        " connecting from another computer's terminal. It is NOT pasted into Termius;"
+        " the phone app uses the fields above.[/]"
+    )
     console.print(info.mosh_command, soft_wrap=True)
-    console.print("\n[dim]Or connect and pick a live session:[/]")
+    console.print(
+        "\n[dim]Same, but drop into the live-session picker instead of attaching `mobile`:[/]"
+    )
     picker_cmd = info.mosh_command.replace(info.startup_command, "dotfiles session")
     console.print(picker_cmd, soft_wrap=True)
 
