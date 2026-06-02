@@ -4,9 +4,7 @@ import sys
 
 import typer
 
-from dotfiles import __version__
 from dotfiles.app.context import AppContext, build_real_context
-from dotfiles.banner import gradient_banner
 from dotfiles.cmd.agent.cli import agent_app
 from dotfiles.cmd.benchmark.cli import benchmark_app
 from dotfiles.cmd.brew.cli import brew_app
@@ -14,7 +12,6 @@ from dotfiles.cmd.doctor.cli import doctor_command
 from dotfiles.cmd.remote.cli import remote_app
 from dotfiles.cmd.session.cli import session_app
 from dotfiles.cmd.snapshot.cli import snapshot_app
-from dotfiles.console import console
 from dotfiles.logging import configure_logging
 
 app = typer.Typer(
@@ -55,13 +52,6 @@ app.add_typer(snapshot_app, name="snapshot")
 def tui() -> None:
     """Launch the Mission Control TUI."""
     _launch_tui()
-
-
-@app.command()
-def version() -> None:
-    """Print the dotfiles-cli version."""
-    console.print(gradient_banner())
-    console.print(__version__)
 
 
 if __name__ == "__main__":  # pragma: no cover

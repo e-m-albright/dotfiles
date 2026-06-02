@@ -1,5 +1,5 @@
-from dotfiles import __version__
+import dotfiles
 
 
-def test_package_imports_and_has_version() -> None:
-    assert __version__ == "0.1.0"
+def test_package_imports() -> None:
+    assert dotfiles.__doc__ is not None

@@ -12,14 +12,6 @@ def test_help_lists_top_level_command_tree() -> None:
         assert command in result.output
 
 
-def test_version_command() -> None:
-    from dotfiles import __version__
-
-    result = runner.invoke(app, ["version"])
-    assert result.exit_code == 0
-    assert __version__ in result.output
-
-
 def test_session_alias_sesh_is_removed() -> None:
     # `sesh` was retired in favour of the full `session` spelling.
     result = runner.invoke(app, ["sesh", "--help"])
@@ -27,8 +19,8 @@ def test_session_alias_sesh_is_removed() -> None:
 
 
 def test_root_callback_builds_context_when_none_injected() -> None:
-    # version command works without an injected obj (callback builds the real context)
-    result = runner.invoke(app, ["version"])
+    # a command works without an injected obj (callback builds the real context)
+    result = runner.invoke(app, ["session", "ls", "--help"])
     assert result.exit_code == 0
 
 

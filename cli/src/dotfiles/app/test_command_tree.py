@@ -3,9 +3,9 @@
 The shim is a hybrid dispatcher: some commands route to the Python CLI
 (`PY_CLI_COMMANDS`), others stay Bash-native. The help text (`sub_help`) and the
 shell completions (`sub_completions`) are hand-maintained for UX, so they can
-silently fall out of sync with the routed-command list — exactly how `version`
-once went undocumented. This test fails the moment a routed command is missing
-from either, turning silent drift into a caught error (philosophy principle #3).
+silently fall out of sync with the routed-command list. This test fails the
+moment a routed command is missing from either, turning silent drift into a
+caught error (philosophy principle #3).
 """
 
 from __future__ import annotations
@@ -56,11 +56,3 @@ def test_every_routed_command_is_documented_in_help_and_completions() -> None:
     assert not missing_from_completions, (
         f"PY_CLI_COMMANDS missing from sub_completions: {missing_from_completions}"
     )
-
-
-def test_version_is_documented() -> None:
-    """Regression guard for the specific command that had drifted."""
-    text = _shim_text()
-    assert "version" in _routed_commands(text)
-    assert "version" in _section(text, "sub_help")
-    assert "version" in _section(text, "sub_completions")
