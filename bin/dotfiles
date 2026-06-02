@@ -78,8 +78,10 @@ sub_update () {
     if brew upgrade 2>&1; then
         print_success "Homebrew packages up to date"
     fi
-    brew cleanup --prune=30
-    print_dim "Cleaned caches older than 30 days"
+    # Quiet cleanup: drop the "Skipping/Removing" wall, keep the freed summary.
+    local freed
+    freed="$(brew cleanup --prune=30 2>/dev/null | grep -o 'freed approximately.*' || true)"
+    print_dim "Cleaned caches older than 30 days${freed:+ — $freed}"
 
     # --- Node.js (fnm) ---
     if command -v fnm >/dev/null 2>&1; then
@@ -148,8 +150,12 @@ sub_clean () {
     print_header "Cleaning up"
 
     print_section "Homebrew"
-    brew cleanup --prune=30
-    print_success "Cleared caches older than 30 days"
+    # brew cleanup is noisy: per-file "Removing:" lines plus "Warning: Skipping X:
+    # most recent version not installed" (expected — an older bottle whose newest
+    # isn't installed). Drop stderr, surface only the freed-space summary.
+    local freed
+    freed="$(brew cleanup --prune=30 2>/dev/null | grep -o 'freed approximately.*' || true)"
+    print_success "Cleared caches older than 30 days${freed:+ — $freed}"
 
     print_completion "Cleanup finished"
 }

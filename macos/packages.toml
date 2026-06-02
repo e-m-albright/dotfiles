@@ -38,11 +38,13 @@ packages = [
   { name = "poppler",              note = "PDF preview (pdftoppm)" },
   { name = "resvg",                note = "SVG-to-PNG rasterizer" },
   { name = "imagemagick",          note = "Image conversion for long-tail formats (.heic, .psd, .tiff)" },
+  { name = "chafa",                note = "Terminal image renderer (yazi inline image previews)" },
   { name = "sevenzip",             note = "Peek inside archives (.zip, .7z, .rar)" },
   { name = "ffmpeg",               note = "Video/audio thumbnails", disabled = true, reason = "~300MB+ with deps, rarely needed" },
   { name = "tmux",                 note = "Terminal multiplexer" },
   { name = "mosh",                 note = "Roaming SSH-compatible shell for phone connections" },
   { name = "zellij",               note = "Modern terminal workspace and multiplexer" },
+  { name = "pandoc",               note = "Universal markup converter (md ↔ docx ↔ pdf ↔ html ↔ …)" },
 ]
 
 [[section]]
@@ -71,6 +73,7 @@ packages = [
   { name = "railway",        note = "Railway.app CLI (deploy, logs, manage projects)" },
   { name = "opentofu",       note = "Open-source Terraform alternative" },
   { name = "flyctl",         note = "Fly.io CLI (deploy, manage apps)" },
+  { name = "ngrok",          note = "Secure tunnels to localhost (webhook testing, demos)" },
   { name = "neonctl",        note = "Neon Postgres CLI (projects, DBs, roles)" },
   { name = "infisical",      note = "Secrets management CLI (requires infisical/get-cli tap)" },
   { name = "git-filter-repo", note = "Git history rewriting (secrets scrub)", disabled = true },
@@ -86,8 +89,10 @@ packages = [
 name = "Security"
 kind = "formula"
 packages = [
-  { name = "gitleaks",     note = "Scan git history/working tree for hardcoded secrets" },
-  { name = "osv-scanner",  note = "Google OSV vulnerability scanner (deps → known CVEs)" },
+  { name = "gitleaks",     note = "Secret scanner: hardcoded creds in git history/working tree" },
+  { name = "osv-scanner",  note = "Dependency CVE scanner (Google OSV database)" },
+  { name = "semgrep",      note = "Static analysis / SAST: pattern-based code vulnerability rules" },
+  { name = "trivy",        note = "Vulnerability + misconfig scanner (containers, IaC, filesystems)" },
 ]
 
 [[section]]
@@ -211,6 +216,7 @@ packages = [
   { name = "cmux",                 note = "Terminal multiplexer for AI agents (nice but not helpful over Ghostty)", disabled = true },
   { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex + Cursor" },
   { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex + Cursor" },
+  { name = "opencode",             note = "Vendor-neutral terminal coding agent", disabled = true, reason = "Disabled 2026-06-01: vendor-neutral CLIs rolled back (subscription economics); standardized on Claude Code + Codex + Cursor" },
   { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server" },
   { name = "huggingface-cli",      note = "Hugging Face CLI (disabled — install per-project if needed)", disabled = true },
 ]
