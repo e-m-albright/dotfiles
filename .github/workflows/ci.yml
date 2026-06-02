@@ -21,7 +21,13 @@ jobs:
 
       - name: Validate JSON files
         run: |
-          find . -name '*.json' -not -path './.git/*' -not -path './.claude/*' -not -path './editors/*' | while read -r f; do
+          # Skip JSONC configs (// comments): editors/ (VS Code/Cursor) and Pi's
+          # models.json — both are JSONC by design and not strict JSON.
+          find . -name '*.json' \
+            -not -path './.git/*' \
+            -not -path './.claude/*' \
+            -not -path './editors/*' \
+            -not -path './ai/agents/pi/models.json' | while read -r f; do
             python3 -m json.tool "$f" >/dev/null || exit 1
           done
           echo "All JSON files are valid"
