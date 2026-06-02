@@ -1,9 +1,23 @@
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 from dotfiles.app.main import app
 from dotfiles.testing.fakes import FakeProcessRunner, FakeSessionLauncher, make_fake_context
 
 runner = CliRunner()
+
+
+def _ctx_with_mobile_layout(tmp_path: Path, *, mobile_running: bool):
+    """Context whose home has a deployed `mobile` layout and a scripted session list."""
+    layouts = tmp_path / ".config" / "zellij" / "layouts"
+    layouts.mkdir(parents=True)
+    (layouts / "mobile.kdl").write_text("layout {}\n")
+    listing = "mobile [Created 1h ago]\nwork (current)\n" if mobile_running else "work (current)\n"
+    r = FakeProcessRunner()
+    r.script(("zellij", "list-sessions", "--no-formatting"), stdout=listing)
+    launcher = FakeSessionLauncher()
+    return make_fake_context(runner=r, launcher=launcher, home=tmp_path), launcher
 
 
 def _ctx_with_sessions(*, selection=None):
@@ -36,6 +50,20 @@ def test_new_creates_and_attaches() -> None:
     result = runner.invoke(app, ["session", "new", "scratch"], obj=ctx)
     assert result.exit_code == 0
     assert launcher.attached == [["zellij", "attach", "--create", "scratch"]]
+
+
+def test_attach_creates_with_layout_when_session_absent(tmp_path: Path) -> None:
+    ctx, launcher = _ctx_with_mobile_layout(tmp_path, mobile_running=False)
+    result = runner.invoke(app, ["session", "attach", "mobile"], obj=ctx)
+    assert result.exit_code == 0
+    assert launcher.attached == [["zellij", "--session", "mobile", "--layout", "mobile"]]
+
+
+def test_attach_plain_when_layout_session_already_running(tmp_path: Path) -> None:
+    ctx, launcher = _ctx_with_mobile_layout(tmp_path, mobile_running=True)
+    result = runner.invoke(app, ["session", "attach", "mobile"], obj=ctx)
+    assert result.exit_code == 0
+    assert launcher.attached == [["zellij", "attach", "mobile"]]
 
 
 def test_kill_runs_and_reports() -> None:

@@ -1,6 +1,7 @@
 """zellij session listing/attach logic. Pure over the ProcessRunner port."""
 
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from dotfiles.adapters.ports import ProcessRunner
@@ -34,9 +35,47 @@ def parse_sessions(output: str) -> list[Session]:
     return sessions
 
 
-def attach_command(name: str) -> tuple[str, ...]:
-    """The zellij command that attaches to `name`, creating it if absent."""
-    # keep in sync with the other zellij attach-command representation
+def layout_name_for(home: Path, name: str) -> str | None:
+    """Return `name` if a curated layout file is deployed for it, else None.
+
+    We ship one layout (`mobile`) under ~/.config/zellij/layouts/; any session
+    whose name matches a deployed layout gets it applied on first creation.
+    """
+    return name if (home / ".config" / "zellij" / "layouts" / f"{name}.kdl").is_file() else None
+
+
+def group_sessions(sessions: list[Session]) -> list[tuple[str, list[Session]]]:
+    """Split sessions into display sections: live ones, then resurrectable history.
+
+    `zellij list-sessions` reports both alive and EXITED (serialized) sessions;
+    we surface them as two groups — "ACTIVE" (current first, then by name) and
+    "RESURRECTABLE" (exited, by name). Empty groups are omitted.
+    """
+    active = sorted((s for s in sessions if s.running), key=lambda s: (not s.current, s.name))
+    exited = sorted((s for s in sessions if not s.running), key=lambda s: s.name)
+    sections: list[tuple[str, list[Session]]] = []
+    if active:
+        sections.append(("ACTIVE", active))
+    if exited:
+        sections.append(("RESURRECTABLE", exited))
+    return sections
+
+
+def attach_command(
+    name: str, *, exists: bool = False, layout: str | None = None
+) -> tuple[str, ...]:
+    """The zellij command to reach `name`.
+
+    A layout can only be applied when the session is first created (`zellij
+    attach` takes no --layout), so we branch on whether it already exists:
+      - layout + absent  -> create it with the layout
+      - layout + present -> plain attach (the persisted state already has it)
+      - no layout        -> attach, creating if absent (the long-standing form)
+    """
+    if layout and not exists:
+        return ("zellij", "--session", name, "--layout", layout)
+    if layout and exists:
+        return ("zellij", "attach", name)
     return ("zellij", "attach", "--create", name)
 
 
@@ -59,8 +98,37 @@ def list_sessions(runner: ProcessRunner) -> list[Session]:
 
 
 def kill_session(runner: ProcessRunner, name: str) -> StepResult:
-    """Kill a named zellij session via the ProcessRunner port."""
+    """Kill a running zellij session via the ProcessRunner port."""
     result = runner.run(("zellij", "kill-session", name))
     if result.ok:
         return StepResult(level="success", message=f"Killed session {name}")
     return StepResult(level="error", message=f"Could not kill session {name}")
+
+
+def delete_session(runner: ProcessRunner, name: str) -> StepResult:
+    """Purge an exited/serialized session from history (`zellij delete-session`)."""
+    result = runner.run(("zellij", "delete-session", name))
+    if result.ok:
+        return StepResult(level="success", message=f"Deleted session {name}")
+    return StepResult(level="error", message=f"Could not delete session {name}")
+
+
+def valid_session_name(name: str) -> bool:
+    """True if `name` is usable as a zellij session name (non-empty, no whitespace)."""
+    return bool(name) and not any(c.isspace() for c in name)
+
+
+def attached_client_count(runner: ProcessRunner) -> int | None:
+    """Clients attached to the *current* session, or None if not inside one.
+
+    `zellij action list-clients` (0.44+) only works from within a session and
+    reports that session's clients — one row per client, first column a numeric
+    CLIENT_ID. We count digit-led rows so an unexpected format degrades to None
+    rather than crashing the TUI. Off-session, zellij exits non-zero -> None.
+    """
+    result = runner.run(("zellij", "action", "list-clients"))
+    if not result.ok:
+        return None
+    rows = [line.split() for line in result.stdout.splitlines() if line.split()]
+    count = sum(1 for cols in rows if cols[0].isdigit())
+    return count or None

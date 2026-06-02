@@ -81,6 +81,38 @@ def off(
 
 
 @remote_app.command()
+def web(
+    ctx: typer.Context,
+    start: bool = typer.Option(False, "--start", help="Start the web server (daemonized)."),
+    stop: bool = typer.Option(False, "--stop", help="Stop the web server."),
+    new_token: bool = typer.Option(False, "--new-token", help="Mint a one-time login token."),
+) -> None:
+    """Experimental: serve zellij sessions to a browser (Termius/Mosh stays primary).
+
+    With no flag, reports server status. Reachable from the phone only after you
+    set web_server_ip + TLS certs in the zellij config (terminal/zellij/config.kdl).
+    """
+    service = _service(ctx)
+    if start:
+        step = service.web_start()
+    elif stop:
+        step = service.web_stop()
+    elif new_token:
+        step = service.web_token()
+    else:
+        step = service.web_status()
+    render_steps(console, [step])
+    if step.level != "error" and not (stop or new_token):
+        console.print(
+            "\n[dim]Local:[/] http://127.0.0.1:8082/mobile"
+            "\n[dim]Phone access needs web_server_ip + TLS in[/] "
+            "terminal/zellij/config.kdl[dim]; until then use Termius/Mosh.[/]"
+        )
+    if step.level == "error":
+        raise typer.Exit(code=1)
+
+
+@remote_app.command()
 def status(ctx: typer.Context) -> None:
     """Show the Mac's remote-shell entrypoint state."""
     s = _service(ctx).status()

@@ -6,7 +6,7 @@ Screen {
 
 #banner {
     background: #0a0a0a;
-    padding: 1 1 0 2;
+    padding: 0 1 0 2;
     height: auto;
     text-style: bold;
 }
@@ -21,24 +21,80 @@ RemotePane, SessionsPane {
     height: auto;
 }
 
+#active-agents {
+    padding: 0 0 1 0;
+}
+
 ListView {
     background: #0d0d0d;
+    height: auto;
 }
 
 ListItem {
     color: #d4af37;
 }
 
+/* "+ New session" — a prominent, always-present create affordance up top. */
+SessionsPane .new-row {
+    height: 1;
+    padding: 0 1;
+    margin: 0 0 1 0;
+    color: #f5d76e;
+    background: #16160c;
+    border-left: outer #6b5d1f;
+}
+SessionsPane ListView > .new-row.-highlight { background: #2a2616; }
+SessionsPane ListView:focus > .new-row.-highlight { background: #34301a; }
+
+/* Non-selectable group divider above each batch of session rows. */
+SessionsPane .section-header {
+    background: #0d0d0d;
+    color: #8a6d1f;
+    text-style: bold;
+    padding: 0 1;
+    margin: 1 0 0 0;
+}
+
+/* Chunky, well-separated tap targets: gap + left accent so taps don't collide. */
+SessionsPane .session-row {
+    height: 3;
+    padding: 0 2;
+    margin: 0 0 1 0;
+    background: #141410;
+    border-left: outer #2a2a1a;
+}
+SessionsPane .session-row.is-current { border-left: outer #f5d76e; }
+SessionsPane .session-row.is-running { border-left: outer #d4af37; }
+SessionsPane .session-row.is-exited {
+    border-left: outer #5a5536;
+    color: #9a8a55;
+    background: #100f0c;
+}
+
+/* Highlighted/focused row reads as the active tap target. */
+SessionsPane ListView > .session-row.-highlight { background: #24220f; }
+SessionsPane ListView:focus > .session-row.-highlight { background: #2f2c14; }
+
 Footer {
     background: #111111;
     color: #e8c34a;
 }
 
+/* Modal action sheet / prompt — responsive so it fits a phone viewport. */
 #confirm-box {
     border: thick #e8c34a;
     background: #0d0d0d;
     padding: 1 2;
-    width: 60;
+    width: 90%;
+    max-width: 56;
     height: auto;
     align: center middle;
+}
+#confirm-box Button {
+    width: 100%;
+    margin: 1 0 0 0;
+}
+#confirm-box Input {
+    width: 100%;
+    margin: 1 0;
 }

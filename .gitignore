@@ -100,3 +100,4 @@ cli/.pytest_cache/
 cli/.coverage
 cli/htmlcov/
 cli/**/__pycache__/
+cli/snapshot_report.html

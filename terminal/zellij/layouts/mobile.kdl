@@ -1,0 +1,21 @@
+// Mobile command deck — what the `mobile` session opens as on first creation.
+// Reached from the phone via `dotfiles session attach mobile` (Termius/Mosh),
+// then persisted, so this layout only applies the very first time the session is
+// created (or after `zellij delete-session mobile`).
+//
+// compact-bar (instead of the default status-bar) reclaims a row on a phone
+// screen; the "deck" tab boots straight into Mission Control.
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="zellij:compact-bar"
+        }
+    }
+    tab name="deck" focus=true {
+        pane command="dotfiles" {
+            args "tui"
+        }
+    }
+    tab name="shell"
+}

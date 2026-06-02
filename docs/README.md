@@ -8,4 +8,4 @@ This is the repository's owned, reviewable memory: how we think about engineerin
 - Ephemeral agent markdown (`docs/adr/`, `docs/specs/`, `docs/plans/`, `docs/superpowers/`) — gitignored; scrub with `just scrub --artifacts`
 - [developer-workflow.md](developer-workflow.md) — how this repo's tooling fits together
 
-Setup/environment notes (machine-specific): `ides.md`, `local-llm-stack.md`, `lm-studio-local-models.md`, `agent-model-routing.md`, `pi-power-setup.md`, `privacy-data-hygiene.md`, `skills-sources.md`, `tools-to-evaluate.md`.
+Setup/environment notes (machine-specific): `ides.md`, `local-llm-stack.md`, `lm-studio-local-models.md`, `agent-model-routing.md`, `pi-power-setup.md`, [`remote-shell.md`](remote-shell.md) (phone ⇄ laptop over Tailscale + Mosh + Zellij), `privacy-data-hygiene.md`, `skills-sources.md`, `tools-to-evaluate.md`.

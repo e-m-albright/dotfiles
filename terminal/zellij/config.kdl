@@ -1,0 +1,22 @@
+// Zellij — minimal overrides on top of the shipped defaults.
+// Source of truth: dotfiles/terminal/zellij/ (symlinked into ~/.config/zellij
+// by install.sh). Dump the full default set any time with:
+//   zellij setup --dump-config
+// Keep this file tiny: only divergences from the defaults belong here.
+
+// Skip the welcome/startup-tips overlay on new sessions.
+show_startup_tips false
+
+// Persist sessions to disk so `zellij attach mobile` resurrects the deck after a
+// reboot or detach. Pinned explicitly rather than relying on the shifting default.
+session_serialization true
+
+// --- Web client (experiment; stays on localhost by default) ------------------
+// `dotfiles remote web --start` serves sessions to a browser. To reach it from
+// the phone over Tailscale you must both bind beyond localhost AND terminate TLS:
+//   web_server_ip   "0.0.0.0"               // or the tailnet IP
+//   web_server_port 8082
+//   web_server_cert "/path/to/cert.pem"     // e.g. `tailscale cert <host>`
+//   web_server_key  "/path/to/key.pem"
+// Until those are set it listens on 127.0.0.1 only, and Termius/Mosh stays the
+// primary remote path.

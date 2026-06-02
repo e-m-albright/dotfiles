@@ -161,10 +161,16 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
     (shell_dir / ".zprofile").write_text("# zprofile")
     (git_dir / ".gitconfig").write_text("[core]\n")
 
+    zellij_src = dotfiles / "terminal" / "zellij"
+    zellij_src.mkdir(parents=True)
+    (zellij_src / "config.kdl").write_text("// zellij\n")
+
     home.mkdir(parents=True)
     (home / ".zshrc").symlink_to(shell_dir / ".zshrc")
     (home / ".gitconfig").symlink_to(git_dir / ".gitconfig")
     (home / ".zprofile").symlink_to(shell_dir / ".zprofile")
+    (home / ".config" / "zellij").mkdir(parents=True)
+    (home / ".config" / "zellij" / "config.kdl").symlink_to(zellij_src / "config.kdl")
 
     # System-path checks resolved under tmp_path (injected), so no host dependence.
     apps_dir = tmp_path / "Applications"

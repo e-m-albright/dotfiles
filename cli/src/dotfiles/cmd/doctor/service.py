@@ -303,6 +303,7 @@ class DoctorService:
         results.extend(self._check_claude_mcp(sec))
         results.extend(self._check_codex(sec))
         results.extend(self._check_ghostty(sec))
+        results.extend(self._check_zellij(sec))
 
         return results
 
@@ -429,6 +430,19 @@ class DoctorService:
             )
 
         return results
+
+    def _check_zellij(self, sec: str) -> list[CheckResult]:
+        """Zellij config symlink — only when zellij is installed."""
+        if self._which("zellij") is None:
+            return []
+        return [
+            self._symlink(
+                sec,
+                "Zellij config",
+                self._dotfiles / "terminal" / "zellij" / "config.kdl",
+                self._home / ".config" / "zellij" / "config.kdl",
+            )
+        ]
 
     def _check_ghostty(self, sec: str) -> list[CheckResult]:
         """Ghostty config or app presence."""

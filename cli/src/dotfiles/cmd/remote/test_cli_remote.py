@@ -31,13 +31,28 @@ def _flat(output: str) -> str:
 def _mosh_line(output: str) -> str:
     """Return the direct-attach mosh command line (first mosh line in output).
 
-    Task 7 added a second mosh line (picker variant) after the first; callers
-    testing the direct-attach command still work because they look for the
-    zellij-attach form which only appears in the first line.
+    A second mosh line (picker variant, `-- dotfiles session`) follows the
+    first; callers testing the direct-attach command still work because the
+    `dotfiles session attach <name>` form only appears in the first line.
     """
     lines = [ln for ln in output.splitlines() if ln.startswith("mosh --server=")]
     assert len(lines) >= 1, f"expected at least one mosh line, got: {lines!r}"
     return lines[0]
+
+
+def test_remote_web_status_prints_localhost_hint() -> None:
+    r = FakeProcessRunner()
+    r.script(("zellij", "web", "--status"), exit_code=1)
+    result = runner.invoke(app, ["remote", "web"], obj=make_fake_context(runner=r))
+    assert result.exit_code == 0
+    assert "127.0.0.1:8082" in _flat(result.output)
+
+
+def test_remote_web_start_invokes_daemon() -> None:
+    r = FakeProcessRunner()
+    result = runner.invoke(app, ["remote", "web", "--start"], obj=make_fake_context(runner=r))
+    assert result.exit_code == 0
+    assert ("zellij", "web", "-d") in r.calls
 
 
 def test_remote_setup_dry_run_prints_connection_command() -> None:
@@ -45,7 +60,7 @@ def test_remote_setup_dry_run_prints_connection_command() -> None:
     result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "40"})
     assert result.exit_code == 0
     line = _mosh_line(result.output)
-    assert "zellij attach --create mobile" in line
+    assert "dotfiles session attach mobile" in line
 
 
 def test_remote_setup_session_flag_changes_command() -> None:
@@ -55,7 +70,7 @@ def test_remote_setup_session_flag_changes_command() -> None:
     )
     assert result.exit_code == 0
     line = _mosh_line(result.output)
-    assert "zellij attach --create work" in line
+    assert "dotfiles session attach work" in line
 
 
 def test_remote_setup_bad_key_exits_nonzero(tmp_path: Path) -> None:

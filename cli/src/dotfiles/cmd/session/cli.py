@@ -3,7 +3,13 @@
 import typer
 
 from dotfiles.app.context import app_context
-from dotfiles.cmd.session.service import SessionError, attach_command, kill_session, list_sessions
+from dotfiles.cmd.session.service import (
+    SessionError,
+    attach_command,
+    kill_session,
+    layout_name_for,
+    list_sessions,
+)
 from dotfiles.console import console, render_and_exit
 
 session_app = typer.Typer(
@@ -27,7 +33,9 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
         return
     choice = app_ctx.launcher.pick([s.name for s in sessions])
     if choice:
-        app_ctx.launcher.attach(attach_command(choice))
+        # Picked from the live list, so it already exists.
+        layout = layout_name_for(app_ctx.home, choice)
+        app_ctx.launcher.attach(attach_command(choice, exists=True, layout=layout))
 
 
 @session_app.command("ls")
@@ -48,15 +56,26 @@ def cmd_list_sessions(ctx: typer.Context) -> None:
 
 @session_app.command()
 def attach(ctx: typer.Context, name: str) -> None:
-    """Attach to a session (creating it if needed)."""
-    app_context(ctx).launcher.attach(attach_command(name))
+    """Attach to a session (creating it, with its deck layout, if needed)."""
+    app_ctx = app_context(ctx)
+    layout = layout_name_for(app_ctx.home, name)
+    exists = False
+    if layout:  # only the existence check needs a list-sessions round-trip
+        try:
+            exists = any(s.name == name for s in list_sessions(app_ctx.runner))
+        except SessionError:
+            exists = False
+    app_ctx.launcher.attach(attach_command(name, exists=exists, layout=layout))
 
 
 @session_app.command()
 def new(ctx: typer.Context, name: str) -> None:
-    """Create a new session and attach to it."""
-    # zellij `attach --create` creates the session if absent, so new == attach-by-name.
-    app_context(ctx).launcher.attach(attach_command(name))
+    """Create a new session and attach to it (with its deck layout if one exists)."""
+    app_ctx = app_context(ctx)
+    # `new` always creates: zellij `attach --create` (no layout) or `--session
+    # --layout` create the session if absent.
+    layout = layout_name_for(app_ctx.home, name)
+    app_ctx.launcher.attach(attach_command(name, exists=False, layout=layout))
 
 
 @session_app.command()

@@ -370,6 +370,8 @@ dotfiles tui                 # Launch Mission Control TUI (phone command deck)
 dotfiles                     # Bare invocation prints help (use 'dotfiles tui' for the dashboard)
 ```
 
+Full end-to-end setup (phone + laptop, Termius/Tailscale config, troubleshooting) lives in [docs/remote-shell.md](docs/remote-shell.md).
+
 `dotfiles remote on` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote off` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
 
 `dotfiles session` manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote on` also prints a picker-based Termius startup command that drops straight into the fzf session picker. Zellij is configured from `terminal/zellij/` (symlinked by `install.sh`): a minimal `config.kdl` plus a `mobile` deck layout that the `mobile` session opens with on first creation (compact status bar + a Mission Control tab). Sessions auto-serialize, so `dotfiles session attach mobile` resurrects the deck after a reboot.
@@ -378,7 +380,7 @@ dotfiles                     # Bare invocation prints help (use 'dotfiles tui' f
 
 `dotfiles snapshot` captures a point-in-time machine state and saves it as JSON under `~/.local/state/dotfiles/snapshots/`. Use `diff now` to compare the latest saved snapshot against the current live state, or pass two slug prefixes to diff any two captures.
 
-`dotfiles tui` opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. (Bare `dotfiles` with no args prints help.) The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` to toggle Remote Login (sudo-aware), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane lists live zellij sessions; press Enter to attach (or switch session if already inside zellij).
+`dotfiles tui` opens the Mission Control TUI — a phone-drivable Textual dashboard over the same core services. Press `q` to quit. (Bare `dotfiles` with no args prints help.) The **Remote** pane shows your Remote Login / Tailscale state; press `[t]` to toggle Remote Login (sudo-aware), `[c]` to copy the Mosh connect command to the clipboard, or `[k]` to kill open Mosh sessions (with a self-disconnect confirmation). The **Sessions** pane is a touch-first session manager. It groups zellij sessions into **ACTIVE** and **RESURRECTABLE** (exited but serialized) and offers a pinned **+ New session** row. Tap a session row for an action sheet — Attach/switch, Kill, or Restore/Delete from history — or press `n` to create one. Every action is a deliberate tap, so a phone misfire can't yank you into the wrong session or destroy one. It also shows `👤 N attached` when more than one client is on the current session.
 
 Tab completion for `dotfiles` (and the `dfs` alias) is autoloaded from
 `shell/completions/_dotfiles` — `.zshrc` prepends that directory to `$fpath`

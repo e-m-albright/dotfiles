@@ -28,8 +28,12 @@ class ConnectionInfo(BaseModel):
     tailnet_ip: str | None
 
     @property
-    def startup_command(self) -> str:  # keep in sync with the zellij attach-command
-        return f"zellij attach --create {self.session}"
+    def startup_command(self) -> str:
+        # Route through the dotfiles CLI: attaches the persisted session, or
+        # first-creates it with its matching deck layout. A plain command (no
+        # quoting/operators) so it survives being pasted into Termius and exec'd
+        # directly by mosh-server.
+        return f"dotfiles session attach {self.session}"
 
     @property
     def mosh_command(self) -> str:

@@ -8,6 +8,31 @@ def _service(runner: FakeProcessRunner, home: Path, *, interactive: bool = False
     return RemoteService(runner=runner, interactive=interactive, home=home)
 
 
+def test_web_start_reports_success(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    step = _service(runner, tmp_path).web_start()
+    assert ("zellij", "web", "-d") in runner.calls
+    assert step.level == "success"
+
+
+def test_web_status_running_vs_stopped(tmp_path: Path) -> None:
+    running = FakeProcessRunner()
+    running.script(("zellij", "web", "--status"), stdout="Server running on 127.0.0.1:8082\n")
+    assert _service(running, tmp_path).web_status().level == "info"
+
+    stopped = FakeProcessRunner()
+    stopped.script(("zellij", "web", "--status"), exit_code=1)
+    assert "not running" in _service(stopped, tmp_path).web_status().message
+
+
+def test_web_token_returns_token_text(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("zellij", "web", "--create-token"), stdout="token_0: abc123\n")
+    step = _service(runner, tmp_path).web_token()
+    assert step.level == "success"
+    assert "abc123" in step.message
+
+
 def test_accepts_ed25519_rsa_ecdsa() -> None:
     assert is_ssh_public_key("ssh-ed25519 AAAAC3Nza... phone")
     assert is_ssh_public_key("ssh-rsa AAAAB3Nza... phone")

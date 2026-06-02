@@ -18,9 +18,9 @@ def test_connection_info_builds_exact_mosh_command() -> None:
     )
     assert info.mosh_command == (
         "mosh --server=/opt/homebrew/bin/mosh-server evan@Evans-MBP-M4 "
-        "-- zellij attach --create mobile"
+        "-- dotfiles session attach mobile"
     )
-    assert info.startup_command == "zellij attach --create mobile"
+    assert info.startup_command == "dotfiles session attach mobile"
 
 
 def test_remote_status_fields() -> None:

@@ -1,6 +1,61 @@
+from pathlib import Path
+
 from dotfiles.cmd.session.models import Session
-from dotfiles.cmd.session.service import attach_command, kill_session, list_sessions, parse_sessions
+from dotfiles.cmd.session.service import (
+    attach_command,
+    attached_client_count,
+    delete_session,
+    group_sessions,
+    kill_session,
+    layout_name_for,
+    list_sessions,
+    parse_sessions,
+    valid_session_name,
+)
 from dotfiles.testing.fakes import FakeProcessRunner
+
+
+def test_delete_session_runs_delete_and_reports() -> None:
+    runner = FakeProcessRunner()
+    step = delete_session(runner, "old")
+    assert ("zellij", "delete-session", "old") in runner.calls
+    assert step.level == "success"
+
+
+def test_delete_session_reports_error_on_failure() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("zellij", "delete-session", "old"), exit_code=1, stderr="nope")
+    assert delete_session(runner, "old").level == "error"
+
+
+def test_valid_session_name_rejects_empty_and_whitespace() -> None:
+    assert valid_session_name("api")
+    assert valid_session_name("api-server_2")
+    assert not valid_session_name("")
+    assert not valid_session_name("two words")
+    assert not valid_session_name("  ")
+
+
+def test_group_sessions_splits_active_and_resurrectable() -> None:
+    sessions = [
+        Session(name="mobile", running=True, current=False),
+        Session(name="old", running=False, current=False),
+        Session(name="work", running=True, current=True),
+        Session(name="archived", running=False, current=False),
+    ]
+    sections = group_sessions(sessions)
+    assert [title for title, _ in sections] == ["ACTIVE", "RESURRECTABLE"]
+    # Current first within ACTIVE, then by name; exited sorted by name.
+    assert [s.name for s in sections[0][1]] == ["work", "mobile"]
+    assert [s.name for s in sections[1][1]] == ["archived", "old"]
+
+
+def test_group_sessions_omits_empty_groups() -> None:
+    only_active = [Session(name="work", running=True, current=True)]
+    assert [t for t, _ in group_sessions(only_active)] == ["ACTIVE"]
+    only_dead = [Session(name="old", running=False, current=False)]
+    assert [t for t, _ in group_sessions(only_dead)] == ["RESURRECTABLE"]
+    assert group_sessions([]) == []
 
 
 def test_parse_empty() -> None:
@@ -24,6 +79,57 @@ def test_parse_running_current_and_exited() -> None:
 
 def test_attach_command_uses_create() -> None:
     assert attach_command("mobile") == ("zellij", "attach", "--create", "mobile")
+
+
+def test_attach_command_with_layout_creates_when_absent() -> None:
+    assert attach_command("mobile", exists=False, layout="mobile") == (
+        "zellij",
+        "--session",
+        "mobile",
+        "--layout",
+        "mobile",
+    )
+
+
+def test_attach_command_with_layout_plain_attaches_when_present() -> None:
+    # A layout can only apply on creation, so an existing session just attaches.
+    assert attach_command("mobile", exists=True, layout="mobile") == (
+        "zellij",
+        "attach",
+        "mobile",
+    )
+
+
+def test_attach_command_without_layout_ignores_exists() -> None:
+    assert attach_command("work", exists=True, layout=None) == (
+        "zellij",
+        "attach",
+        "--create",
+        "work",
+    )
+
+
+def test_layout_name_for_finds_deployed_layout(tmp_path: Path) -> None:
+    layouts = tmp_path / ".config" / "zellij" / "layouts"
+    layouts.mkdir(parents=True)
+    (layouts / "mobile.kdl").write_text("layout {}\n")
+    assert layout_name_for(tmp_path, "mobile") == "mobile"
+    assert layout_name_for(tmp_path, "work") is None
+
+
+def test_attached_client_count_none_outside_session() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("zellij", "action", "list-clients"), exit_code=1, stderr="no active session")
+    assert attached_client_count(runner) is None
+
+
+def test_attached_client_count_counts_id_rows() -> None:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("zellij", "action", "list-clients"),
+        stdout="CLIENT_ID PANE_ID RUNNING_COMMAND\n1 terminal_2 zsh\n2 terminal_5 dotfiles tui\n",
+    )
+    assert attached_client_count(runner) == 2
 
 
 def test_service_list_parses_runner_output() -> None:

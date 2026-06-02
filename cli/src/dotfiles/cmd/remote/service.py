@@ -225,6 +225,35 @@ class RemoteService:
         self._runner.run(("pkill", "-u", user, "sshd"))
         return [StepResult(level="success", message="Existing Mosh/SSH sessions killed")]
 
+    def web_status(self) -> StepResult:
+        """Report whether the zellij web server is running (experimental)."""
+        result = self._runner.run(("zellij", "web", "--status"))
+        detail = (result.stdout or result.stderr).strip()
+        if result.ok:
+            return StepResult(level="info", message=detail or "Web server running")
+        return StepResult(level="info", message="Web server not running")
+
+    def web_start(self) -> StepResult:
+        """Start the zellij web server, daemonized (experimental)."""
+        result = self._runner.run(("zellij", "web", "-d"))
+        if result.ok:
+            return StepResult(level="success", message="Web server started (zellij web -d)")
+        return StepResult(level="error", message=f"zellij web -d failed: {result.stderr.strip()}")
+
+    def web_stop(self) -> StepResult:
+        """Stop the zellij web server (experimental)."""
+        result = self._runner.run(("zellij", "web", "--stop"))
+        if result.ok:
+            return StepResult(level="success", message="Web server stopped")
+        return StepResult(level="warn", message="Web server was not running")
+
+    def web_token(self) -> StepResult:
+        """Mint a single-use web login token (shown once, cannot be retrieved)."""
+        result = self._runner.run(("zellij", "web", "--create-token"))
+        if result.ok:
+            return StepResult(level="success", message=result.stdout.strip() or "Token created")
+        return StepResult(level="error", message=f"Could not create token: {result.stderr.strip()}")
+
     def disable(self, *, dry_run: bool, kill_sessions: bool) -> list[StepResult]:
         steps: list[StepResult] = []
         if not self._remote_login_on():
