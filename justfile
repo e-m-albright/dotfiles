@@ -24,7 +24,7 @@ types:
     uv run pyright
 
 deadcode:
-    uv run vulture src tests .vulture_whitelist.py --min-confidence 80
+    uv run vulture src .vulture_whitelist.py --min-confidence 80
 
 complexity:
     uv run complexipy src -mx 10

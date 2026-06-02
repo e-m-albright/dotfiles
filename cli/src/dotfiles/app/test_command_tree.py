@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-_SHIM = Path(__file__).resolve().parents[2] / "bin" / "dotfiles"
+_SHIM = Path(__file__).resolve().parents[4] / "bin" / "dotfiles"
 
 
 def _shim_text() -> str:

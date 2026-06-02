@@ -341,13 +341,13 @@ dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean)
 dotfiles agent verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
 dotfiles completions         # Output shell completions
-dotfiles remote setup --dry-run
+dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
-dotfiles remote setup --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
+dotfiles remote on --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
                              # Enable phone access with key-only SSH
-dotfiles remote disable --dry-run
+dotfiles remote off --dry-run
                              # Preview turning off macOS Remote Login
-dotfiles remote disable --kill-sessions
+dotfiles remote off --kill-sessions
                              # Turn off Remote Login and kill active SSH/Mosh sessions
 dotfiles sesh                # fzf-pick a live zellij session and attach
 dotfiles sesh ls             # list sessions
@@ -362,9 +362,9 @@ dotfiles tui                 # Launch Mission Control TUI (phone command deck)
 dotfiles                     # Bare invocation prints help (use 'dotfiles tui' for the dashboard)
 ```
 
-`dotfiles remote setup` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote disable` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
+`dotfiles remote on` prints the Mosh command to paste into Termius. It connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote off` turns off macOS Remote Login, which prevents new SSH/Mosh logins. Add `--kill-sessions` to disconnect already-open Termius sessions too.
 
-`dotfiles sesh` (alias: `dotfiles session`) manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote setup` also prints a picker-based Termius startup command that drops straight into the fzf session picker.
+`dotfiles sesh` (alias: `dotfiles session`) manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote on` also prints a picker-based Termius startup command that drops straight into the fzf session picker.
 
 `dotfiles snapshot` captures a point-in-time machine state and saves it as JSON under `~/.local/state/dotfiles/snapshots/`. Use `diff now` to compare the latest saved snapshot against the current live state, or pass two slug prefixes to diff any two captures.
 

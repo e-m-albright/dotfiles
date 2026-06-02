@@ -251,7 +251,7 @@ def test_package_level_flag_respected(tmp_path: Path) -> None:
 
 def test_load_real_manifest() -> None:
     """packages.toml exists and parses without error."""
-    real_path = Path(__file__).parent.parent.parent / "macos" / "packages.toml"
+    real_path = Path(__file__).resolve().parents[5] / "macos" / "packages.toml"
     if not real_path.exists():
         pytest.skip("macos/packages.toml not found")
     manifest = PackageManifest.load(real_path)
