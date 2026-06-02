@@ -52,7 +52,7 @@ def doctor_command(
 
     failures = [r for r in results if r.is_failure]
     if fix:
-        console.print("[dim]Run 'dotfiles agent setup' to redeploy agent configs.[/]")
+        console.print("[dim]Run 'dotfiles agent global setup' to redeploy agent configs.[/]")
 
     if failures:
         console.print(

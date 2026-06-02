@@ -45,22 +45,22 @@ def _make_dotfiles(base: Path) -> Path:
 
 
 def test_agent_setup_help_exits_zero() -> None:
-    result = runner.invoke(app, ["agent", "setup", "--help"])
+    result = runner.invoke(app, ["agent", "global", "setup", "--help"])
     assert result.exit_code == 0, result.output
 
 
 def test_agent_setup_help_shows_reset_mcp_flag() -> None:
-    result = runner.invoke(app, ["agent", "setup", "--help"])
+    result = runner.invoke(app, ["agent", "global", "setup", "--help"])
     assert "--reset-mcp" in result.output
 
 
 def test_agent_setup_help_shows_clean_flag() -> None:
-    result = runner.invoke(app, ["agent", "setup", "--help"])
+    result = runner.invoke(app, ["agent", "global", "setup", "--help"])
     assert "--clean" in result.output
 
 
 def test_agent_setup_help_shows_vendor_choices() -> None:
-    result = runner.invoke(app, ["agent", "setup", "--help"])
+    result = runner.invoke(app, ["agent", "global", "setup", "--help"])
     assert "claude" in result.output
     assert "gemini" in result.output
 
@@ -81,21 +81,21 @@ def test_agent_setup_gemini_skipped_exits_zero(tmp_path: Path) -> None:
     # shutil.which; we pass which= kwarg at the core level, but the CLI uses
     # the real shutil.which. In CI gemini is absent — skip guard is fine.
     # To be deterministic, we test that exit code is 0 (skipped is ok).
-    result = runner.invoke(app, ["agent", "setup", "gemini"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "setup", "gemini"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
 def test_agent_setup_gemini_skipped_shows_vendor_header(tmp_path: Path) -> None:
     dotfiles = _make_dotfiles(tmp_path)
     ctx = make_fake_context(home=tmp_path / "home", dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "setup", "gemini"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "setup", "gemini"], obj=ctx)
     assert "Gemini" in result.output
 
 
 def test_agent_setup_gemini_skipped_shows_complete_message(tmp_path: Path) -> None:
     dotfiles = _make_dotfiles(tmp_path)
     ctx = make_fake_context(home=tmp_path / "home", dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "setup", "gemini"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "setup", "gemini"], obj=ctx)
     assert "complete" in result.output.lower() or "skipped" in result.output.lower()
 
 
@@ -109,7 +109,7 @@ def test_agent_setup_single_vendor_only_touches_tmp(tmp_path: Path) -> None:
     home = tmp_path / "home"
     dotfiles = _make_dotfiles(tmp_path)
     ctx = make_fake_context(home=home, dotfiles_dir=dotfiles)
-    runner.invoke(app, ["agent", "setup", "gemini"], obj=ctx)
+    runner.invoke(app, ["agent", "global", "setup", "gemini"], obj=ctx)
     # Real home must be untouched — no ~/.gemini created
     real_gemini = Path.home() / ".gemini"
     assert not (real_gemini / "settings_test_isolation_marker").exists()
@@ -122,7 +122,7 @@ def test_agent_setup_single_vendor_only_touches_tmp(tmp_path: Path) -> None:
 
 def test_agent_setup_invalid_vendor_exits_nonzero(tmp_path: Path) -> None:
     ctx = make_fake_context(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "setup", "nonexistent"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "setup", "nonexistent"], obj=ctx)
     assert result.exit_code != 0
 
 
@@ -148,6 +148,6 @@ def test_agent_setup_uses_provided_runner(tmp_path: Path) -> None:
     )
     proc = FakeProcessRunner()
     ctx = make_fake_context(home=home, dotfiles_dir=dotfiles, runner=proc)
-    result = runner.invoke(app, ["agent", "setup", "codex"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "setup", "codex"], obj=ctx)
     # codex setup calls npx skills — we just confirm it doesn't crash
     assert result.exit_code == 0, result.output

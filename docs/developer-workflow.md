@@ -48,8 +48,8 @@ dotfiles install        # Full setup from scratch
 dotfiles doctor         # Health check — tools, symlinks, configs (--fix to repair)
 dotfiles update         # Update everything — brew, runtimes, tools, npm globals
 dotfiles stale          # Find disabled packages still installed + broken symlinks
-dotfiles agent setup   # Re-deploy all vendor configs (plugins, hooks, MCP, skills)
-dotfiles agent overview # Show active MCP servers, hooks, skills across Claude + Cursor
+dotfiles agent global setup   # Re-deploy all vendor configs (plugins, hooks, MCP, skills)
+dotfiles agent global overview # Show active MCP servers, hooks, skills across Claude + Cursor
 dotfiles brew           # Re-run Homebrew setup
 dotfiles dock           # Reset macOS Dock layout
 dotfiles clean          # Prune Homebrew caches (30-day)
@@ -121,7 +121,7 @@ Create the project however its ecosystem expects (`bun create`, `uv init`, `carg
 ### 2. Adopt cross-harness agent rules (optional)
 
 ```bash
-dotfiles agent migrate-rules-sync
+dotfiles agent local
 ```
 
 This installs the rule-sync fragment so the project's `AGENTS.md` stays current with the universal kernel. Write an `AGENTS.md` describing:
@@ -342,9 +342,9 @@ Use `/write-skill` (from superpowers) to create new skills with TDD — it watch
 
 ### Editing the rule kernel
 
-The universal agent rules are one hand-authored doc: `ai/agents/shared/rules.md`. Edit it, run `dotfiles agent setup`, and it's written verbatim to every vendor's instruction file (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.pi/agent/AGENTS.md`, and a Cursor `shared-rules.mdc` wrapper). No baking, no per-rule symlinks.
+The universal agent rules are one hand-authored doc: `ai/agents/shared/rules.md`. Edit it, run `dotfiles agent global setup`, and it's written verbatim to every vendor's instruction file (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.pi/agent/AGENTS.md`, and a Cursor `shared-rules.mdc` wrapper). No baking, no per-rule symlinks.
 
-Stack-specific taste is reference, not a pushed rule — it lives in `docs/stacks/`. Per-project rules belong in that project's `AGENTS.md` (use `dotfiles agent migrate-rules-sync`).
+Stack-specific taste is reference, not a pushed rule — it lives in `docs/stacks/`. Per-project rules belong in that project's `AGENTS.md` (use `dotfiles agent local`).
 
 ### Adding MCP Servers
 
@@ -360,11 +360,11 @@ Edit `ai/agents/shared/mcp-servers.json` and specify targets:
 }
 ```
 
-Then run `dotfiles agent setup` to deploy.
+Then run `dotfiles agent global setup` to deploy.
 
 ### Modifying Hooks
 
-Edit `ai/agents/claude/hooks.json` directly, then run `dotfiles agent setup`.
+Edit `ai/agents/claude/hooks.json` directly, then run `dotfiles agent global setup`.
 
 ---
 
@@ -400,9 +400,9 @@ The review also evaluates five dimensions: **Correctness**, **Security**, **API 
 
 | Problem | Fix |
 |---------|-----|
-| Claude Code doesn't have my plugins | Run `dotfiles agent setup` |
+| Claude Code doesn't have my plugins | Run `dotfiles agent global setup` |
 | Hooks aren't running | `just hooks-install` or `lefthook install` |
 | Type checker not found | `uv sync --dev` (Python) or `bun install` (TS) |
 | Format-on-save not working | Check `dotfiles doctor` — formatter must be installed |
-| MCP server not connecting | Check `dotfiles agent overview` for status |
+| MCP server not connecting | Check `dotfiles agent global overview` for status |
 | Stale packages installed | Run `dotfiles stale` to find them |

@@ -42,15 +42,13 @@ sub_help () {
     printf "   session <cmd>          zellij sessions: ls, attach, new, kill, or bare picker\n"
     printf "\n"
     printf "${BLUE}AI${NC} — agentic tooling and local models\n"
-    printf "   agent setup [opts]   Configure all AI vendors (--reset-mcp, --clean)\n"
-    printf "   agent overview       Show active agentic setup (Python dashboard)\n"
-    printf "   agent lint           Validate skill/agent files against conventions\n"
-    printf "   agent verify [--offline]  Check skills/agents deployed + probe MCP servers\n"
-    printf "   agent web-chat-instructions [--step|--list]\n"
-    printf "                        Load advisor prompt into clipboard, chunked for Gemini saved-info\n"
-    printf "   agent migrate-rules-sync [path]\n"
-    printf "                        Adopt cross-harness rule sync (--force, --keep-dead-symlinks)\n"
-    printf "   benchmark <cmd>      Benchmark local LM Studio models (list|bench|estimate|compare)\n"
+    printf "   agent global setup [opts]        Configure all AI vendors (--reset-mcp, --clean)\n"
+    printf "   agent global overview            Show active agentic setup (dashboard)\n"
+    printf "   agent global lint                Validate skill/agent files against conventions\n"
+    printf "   agent global verify [--offline]  Check skills/agents deployed + probe MCP servers\n"
+    printf "   agent local [path]               Align a repo's agent instructions (--check, --vendors)\n"
+    printf "   agent web copy [--step|--list]   Copy web-chat instructions to clipboard (Gemini)\n"
+    printf "   benchmark <cmd>                  Benchmark local LM Studio models (list|bench|estimate|compare)\n"
 }
 
 sub_update () {
@@ -160,10 +158,6 @@ sub_dock () {
     printf "${GREEN}%b Success! MacOS dock command finished.${NC}\n" "$ARROW"
 }
 
-sub_migrate_agents_sync() {
-    "$DOTFILES_DIR/ai/agents/migrate-agents-sync.sh" "$@"
-}
-
 sub_install() {
     . "$DOTFILES_DIR/install.sh"
 }
@@ -213,7 +207,7 @@ _dotfiles() {
         'session:zellij sessions (ls, attach, new, kill, picker)'
         'tui:Launch the Mission Control TUI'
         'snapshot:Machine-state snapshots (ls, diff)'
-        'agent:Agent namespace (overview, lint, setup, verify, web-chat-instructions)'
+        'agent:Agent namespace (global, local, web)'
         'brew:Brew namespace (install, upgrade, stale)'
         'profile-shell:Profile shell startup time'
     )
@@ -225,14 +219,6 @@ EOF
 }
 
 # --- Namespace dispatchers ---
-ns_agent() {
-    local sub="${1:-overview}"; shift || true
-    case "$sub" in
-        migrate-rules-sync) sub_migrate_agents_sync "$@" ;;
-        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, verify, web-chat-instructions, migrate-rules-sync)\n" "$ARROW" "$sub" >&2; exit 1 ;;
-    esac
-}
-
 ns_shell() {
     local sub="${1:-profile}"; shift || true
     case "$sub" in
@@ -250,14 +236,12 @@ if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
 
-# Surgical route: agent overview, lint, web-chat-instructions, setup, and verify are Python; others stay Bash.
-# Bare `agent` (no subcommand) defaults to overview, matching the old dispatcher.
+# agent: every subcommand is Python now — global (this machine), local (a repo), web (browser chats).
+# Bare `agent` defaults to the global overview dashboard, matching the old dispatcher.
 if [[ "${1:-}" == "agent" ]]; then
-    agent_sub="${2:-overview}"
-    case "$agent_sub" in
-        overview|lint|web-chat-instructions|setup|verify)
-            exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "$agent_sub" "${@:3}" ;;
-    esac
+    shift
+    [[ $# -eq 0 ]] && exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent global overview
+    exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "$@"
 fi
 
 case $COMMAND_NAME in
@@ -269,8 +253,6 @@ case $COMMAND_NAME in
     clean)       sub_clean ;;
     dock)        sub_dock ;;
     completions) sub_completions ;;
-    # Namespaces
-    agent)  shift; ns_agent "$@" ;;
 
     # profile-shell is a canonical flat command (Machine group in sub_help)
     profile-shell) shift; sub_shell_profile "$@" ;;

@@ -5,7 +5,7 @@ Glossary for the agentic-tooling vocabulary used in this dotfiles repo. Several 
 ## Language
 
 **Agent** (coding tool / vendor):
-One of the AI coding tools we deploy configuration to — Claude Code, Cursor, Codex, Gemini, Pi. Each has a directory under `ai/agents/<name>/`. In the CLI this is the `Agent` type (an enum of those five). The `dotfiles agent` command namespace operates on them: `dotfiles agent setup` deploys config to every agent; `dotfiles agent lint` validates skills/subagents; `dotfiles agent overview` shows what each one has.
+One of the AI coding tools we deploy configuration to — Claude Code, Cursor, Codex, Gemini, Pi. Each has a directory under `ai/agents/<name>/`. In the CLI this is the `Agent` type (an enum of those five). The `dotfiles agent` command namespace operates on them: `dotfiles agent global setup` deploys config to every agent; `dotfiles agent global lint` validates skills/subagents; `dotfiles agent global overview` shows what each one has.
 _Avoid_: "vendor" (the old code name — renamed to `Agent`), "provider".
 
 **Subagent**:
@@ -17,7 +17,7 @@ A capability triggered by description match, loaded progressively. Canonical sou
 _Avoid_: command, prompt.
 
 **Rule**:
-Persistent ambient guidance loaded into every session. There is exactly **one** hand-authored kernel — `ai/agents/shared/rules.md` — deployed verbatim to every agent by `dotfiles agent setup` (Cursor gets a generated YAML-frontmatter wrapper, `rules/shared-rules.mdc`; others get it inlined into their instructions file). No per-rule `.mdc` files, no glob-based loading, no baking. Language- and framework-specific taste is **not** a rule — it lives as reference in `docs/stacks/`.
+Persistent ambient guidance loaded into every session. There is exactly **one** hand-authored kernel — `ai/agents/shared/rules.md` — deployed verbatim to every agent by `dotfiles agent global setup` (Cursor gets a generated YAML-frontmatter wrapper, `rules/shared-rules.mdc`; others get it inlined into their instructions file). No per-rule `.mdc` files, no glob-based loading, no baking. Language- and framework-specific taste is **not** a rule — it lives as reference in `docs/stacks/`.
 _Avoid_: convention, policy (fine in prose, but the artifact is "the kernel" / "rules.md").
 
 **Hook**:
@@ -37,7 +37,7 @@ A skill or workflow invocable via `/<name>` in the harness. We don't ship custom
 
 ## Relationships
 
-- An **Agent** (coding tool) receives config from `dotfiles agent setup`: the rule kernel, skills, subagents, hooks, MCP servers, and a statusline.
+- An **Agent** (coding tool) receives config from `dotfiles agent global setup`: the rule kernel, skills, subagents, hooks, MCP servers, and a statusline.
 - A **skill** is described by its frontmatter and triggers on user phrases / contexts; a **subagent** is dispatched by another agent with a focused task.
 - The **rule kernel** loads ambient guidance; **hooks** intercept tool calls; **MCP servers** add new tools; **plugins** bundle skills/commands from a marketplace.
 - Canonical AI assets live **once** under `ai/` and are *deployed* (copied / generated) into each agent's user-level directories at setup time — there are no per-agent mirror dirs or symlink farms tracked in this repo.
@@ -57,7 +57,7 @@ ai/
 ├── subagents/           ← canonical subagents (single `.md` files)
 ├── prompts/             ← system-prompt artifacts (advisor/detailed, gemini-chunks/)
 ├── audits/              ← cadence bot-audit prompts (run by schedules; also ad hoc)
-├── rules-sync/          ← cross-harness rule-sync fragment (`dotfiles agent migrate-rules-sync`)
+├── rules-sync/          ← cross-harness rule-sync fragment (`dotfiles agent local`)
 └── artifacts/           ← gitignored ephemeral working files
 
 docs/
@@ -68,7 +68,7 @@ docs/
 └── skills-sources.md    ← upstream skill attribution registry
 ```
 
-Deployment is one-directional: edit the canonical source under `ai/`, run `dotfiles agent setup`, and it lands in `~/.claude`, `~/.cursor`, `~/.codex`, `~/.gemini`, `~/.pi/agent`, and the shared `~/.agents/skills`.
+Deployment is one-directional: edit the canonical source under `ai/`, run `dotfiles agent global setup`, and it lands in `~/.claude`, `~/.cursor`, `~/.codex`, `~/.gemini`, `~/.pi/agent`, and the shared `~/.agents/skills`.
 
 ## Flagged ambiguities
 

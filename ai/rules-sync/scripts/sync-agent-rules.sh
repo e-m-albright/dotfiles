@@ -17,8 +17,9 @@
 # (see lefthook.agent-rules.yml fragment).
 #
 # Usage:
-#   ./scripts/sync-agent-rules.sh           # sync in place
-#   ./scripts/sync-agent-rules.sh --check   # exit 1 if bake is stale (drift guard)
+#   ./scripts/sync-agent-rules.sh              # sync in place
+#   ./scripts/sync-agent-rules.sh --check      # exit 1 if rules are stale (drift guard)
+#   ./scripts/sync-agent-rules.sh --no-cursor  # skip .cursor/rules (project doesn't use Cursor)
 
 set -euo pipefail
 
@@ -31,9 +32,13 @@ BEGIN_MARKER='<!-- BEGIN: project rules (auto-generated from .ai/rules/) -->'
 END_MARKER='<!-- END: project rules -->'
 
 MODE="sync"
-if [[ "${1:-}" == "--check" ]]; then
-    MODE="check"
-fi
+CURSOR=true
+for arg in "$@"; do
+    case "$arg" in
+        --check) MODE="check" ;;
+        --no-cursor) CURSOR=false ;;  # project doesn't use Cursor — skip its rules dir
+    esac
+done
 
 if [[ ! -d "$RULES_DIR" ]]; then
     echo "error: $RULES_DIR not found" >&2
@@ -178,7 +183,9 @@ sync_agents_md() {
     rm -f "$baked" "$new_md"
 }
 
-ensure_cursor_links
+if [[ "$CURSOR" == true ]]; then
+    ensure_cursor_links
+fi
 sync_agents_md
 
 if [[ "$MODE" == "sync" ]]; then

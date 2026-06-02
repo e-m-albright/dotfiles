@@ -204,7 +204,7 @@ See `docs/knowledge/ai-tools.md` for the full landscape and investigation notes.
 
 ### Codex CLI
 
-Setup is automated via `dotfiles agent setup` (also runs during install):
+Setup is automated via `dotfiles agent global setup` (also runs during install):
 
 - **Global instructions**: `~/.codex/AGENTS.md` deployed from shared rules
 - **Config**: `~/.codex/config.toml` with MCP servers and `project_doc_fallback_filenames = ["CODEX.md"]`
@@ -218,7 +218,7 @@ See `ai/agents/codex/` for all configuration files.
 
 ### Gemini CLI
 
-Setup is automated via `dotfiles agent setup`:
+Setup is automated via `dotfiles agent global setup`:
 
 - **Settings**: `~/.gemini/settings.json` seeded from `ai/agents/gemini/settings.json` (preserves existing auth)
 - **Global instructions**: `~/.gemini/GEMINI.md` written verbatim from `ai/agents/shared/rules.md` (the same kernel every vendor gets)
@@ -257,11 +257,11 @@ Services we integrate with, and how. Prefer CLIs (simplest) > MCPs (cross-tool) 
 | **Sentry** | MCP / CLI (`sentry-cli`) | Error tracking, issue triage, release management | Evaluate |
 | **Dagster** | Plugin / MCP | Data pipeline orchestration & observability | Evaluate |
 
-MCP config: `ai/agents/shared/mcp-servers.json` (shared source), deployed to Claude Code and Cursor by `dotfiles agent setup`.
+MCP config: `ai/agents/shared/mcp-servers.json` (shared source), deployed to Claude Code and Cursor by `dotfiles agent global setup`.
 
 ### Claude Code
 
-Setup is automated via `dotfiles agent setup` (also runs during install):
+Setup is automated via `dotfiles agent global setup` (also runs during install):
 
 - **Global instructions**: `~/.claude/CLAUDE.md` written from `ai/agents/shared/rules.md` (the universal kernel — process, safety, voice, command style)
 - - **Permissions**: `permissions.{allow,deny,defaultMode}` from `ai/agents/claude/permissions.json` (canonical baseline — fold interactive approvals back periodically)
@@ -290,7 +290,7 @@ See `ai/agents/claude/` for all configuration files.
 
 ### Cursor
 
-Setup is automated via `dotfiles agent setup cursor` (also runs during install):
+Setup is automated via `dotfiles agent global setup cursor` (also runs during install):
 
 - **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`)
 - **Editor config**: `editors/cursor/settings.json` + `editors/cursor/keybindings.json` symlinked into Cursor User config
@@ -343,9 +343,9 @@ dotfiles brew upgrade        # Upgrade all installed packages (brew is the versi
 dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
 dotfiles profile-shell       # Profile shell startup time
-dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
-dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean); prints the Cursor plugin checklist
-dotfiles agent verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
+dotfiles agent global overview      # Show active agentic setup (Claude Code + Cursor)
+dotfiles agent global setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean); prints the Cursor plugin checklist
+dotfiles agent global verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
 dotfiles completions         # Output shell completions
 dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
@@ -410,7 +410,7 @@ dotfiles/
 │   ├── subagents/          #   Subagent definitions (deployed via cp loop)
 │   ├── prompts/            #   System-prompt artifacts (advisor/detailed, gemini-chunks) for web chats
 │   ├── audits/             #   Audit prompts run by scheduled bot-audits on a cadence
-│   ├── rules-sync/         #   Cross-harness rule-sync fragment (dotfiles agent migrate-rules-sync)
+│   ├── rules-sync/         #   Cross-harness rule-sync fragment (dotfiles agent local)
 │   └── artifacts/          #   Ephemeral agent scratch (gitignored, on demand)
 └── docs/                   # Curated knowledge base (see docs/README.md)
     ├── engineering-philosophy.md  # 12 universal principles

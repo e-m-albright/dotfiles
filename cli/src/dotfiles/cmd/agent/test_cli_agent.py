@@ -47,125 +47,125 @@ def _dotfiles_with_chunks(base: Path, *chunks: tuple[str, str]) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# agent overview
+# agent global overview
 # ---------------------------------------------------------------------------
 
 
 def test_agent_overview_exits_zero(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
 def test_agent_overview_prints_mcp_servers_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
     assert "MCP Servers" in result.output
 
 
 def test_agent_overview_prints_skills_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
     assert "Skills" in result.output
 
 
 def test_agent_overview_prints_subagents_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
     assert "Subagents" in result.output
 
 
 def test_agent_overview_prints_hooks_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
     assert "Hooks" in result.output
 
 
 def test_agent_overview_prints_rules_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
     assert "Rules" in result.output
 
 
 def test_agent_overview_prints_permissions_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
     assert "Permissions" in result.output
 
 
 def test_agent_overview_help_is_available() -> None:
-    result = runner.invoke(app, ["agent", "overview", "--help"])
+    result = runner.invoke(app, ["agent", "global", "overview", "--help"])
     assert result.exit_code == 0
 
 
 # ---------------------------------------------------------------------------
-# agent lint
+# agent global lint
 # ---------------------------------------------------------------------------
 
 
 def test_agent_lint_help_is_available() -> None:
-    result = runner.invoke(app, ["agent", "lint", "--help"])
+    result = runner.invoke(app, ["agent", "global", "lint", "--help"])
     assert result.exit_code == 0
 
 
 def test_agent_lint_valid_skill_exits_zero(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_valid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
 def test_agent_lint_valid_skill_shows_ok(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_valid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
     assert "OK" in result.output
 
 
 def test_agent_lint_invalid_skill_exits_one(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_invalid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
     assert result.exit_code == 1
 
 
 def test_agent_lint_invalid_skill_shows_fail(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_invalid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
     assert "FAIL" in result.output
 
 
 def test_agent_lint_shows_summary(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_valid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
     assert "Summary" in result.output
     assert "passed" in result.output
 
 
 def test_agent_lint_empty_dotfiles_exits_zero(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
     assert result.exit_code == 0
 
 
 # ---------------------------------------------------------------------------
-# agent web-chat-instructions
+# agent web copy
 # ---------------------------------------------------------------------------
 
 
 def test_gemini_prompt_list_exits_zero(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "hello"), ("02-b.md", "world!"))
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
+    result = runner.invoke(app, ["agent", "web", "copy", "--list"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
 def test_gemini_prompt_list_prints_chunk_names(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "hello"), ("02-b.md", "world!"))
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
+    result = runner.invoke(app, ["agent", "web", "copy", "--list"], obj=ctx)
     assert "01-a.md" in result.output
     assert "02-b.md" in result.output
 
@@ -173,7 +173,7 @@ def test_gemini_prompt_list_prints_chunk_names(tmp_path: Path) -> None:
 def test_gemini_prompt_list_prints_char_counts(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "hello"))
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
+    result = runner.invoke(app, ["agent", "web", "copy", "--list"], obj=ctx)
     assert "5" in result.output  # len("hello".encode()) == 5
 
 
@@ -181,7 +181,7 @@ def test_gemini_prompt_default_missing_pbcopy_exits_one(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "hello"))
     proc = FakeProcessRunner()
     ctx = make_fake_context(runner=proc, dotfiles_dir=dotfiles)
-    list_result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
+    list_result = runner.invoke(app, ["agent", "web", "copy", "--list"], obj=ctx)
     assert list_result.exit_code == 0
 
 
@@ -190,13 +190,13 @@ def test_gemini_prompt_list_no_pbcopy_required(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_chunks(tmp_path, ("01-a.md", "abc"))
     proc = FakeProcessRunner()
     ctx = make_fake_context(runner=proc, dotfiles_dir=dotfiles)
-    runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
+    runner.invoke(app, ["agent", "web", "copy", "--list"], obj=ctx)
     assert ("pbcopy",) not in proc.calls
 
 
 def test_gemini_prompt_missing_chunks_dir_exits_one(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "web-chat-instructions", "--list"], obj=ctx)
+    result = runner.invoke(app, ["agent", "web", "copy", "--list"], obj=ctx)
     assert result.exit_code == 1
 
 
@@ -214,6 +214,6 @@ def test_agent_overview_bracket_in_mcp_server_name_survives(tmp_path: Path) -> N
         json.dumps({"srv[x]": {"command": "npx", "args": [], "targets": ["claude"]}})
     )
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
     assert result.exit_code == 0, result.output
     assert "srv[x]" in result.output

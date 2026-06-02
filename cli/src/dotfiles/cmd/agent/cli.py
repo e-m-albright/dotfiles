@@ -5,12 +5,14 @@ from __future__ import annotations
 from collections.abc import Iterable
 from enum import StrEnum
 from itertools import groupby
+from pathlib import Path
 
 import typer
 from rich.markup import escape
 from rich.table import Table
 
 from dotfiles.app.context import AppContext, app_context
+from dotfiles.cmd.agent.local import CANONICAL_VENDORS, align_repo
 from dotfiles.cmd.agent.models import (
     AgentOverview,
     AgentSurface,
@@ -33,7 +35,11 @@ from dotfiles.cmd.agent.web_chat import GeminiChunksService, GeminiError
 from dotfiles.console import console, has_errors, render_steps
 from dotfiles.result import StepResult
 
-agent_app = typer.Typer(help="Agentic setup: overview dashboard and skill/agent lint.")
+agent_app = typer.Typer(help="Agentic setup across machine, repos, and web chats.")
+# Three scopes, by where the agentic context lives:
+#   global → this machine   local → a target repo (single command)   web → browser chats
+global_app = typer.Typer(help="Configure THIS machine's global agentic setup.")
+web_app = typer.Typer(help="Provision browser-chat agents with paste-able instructions.")
 
 
 class _AgentChoice(StrEnum):
@@ -306,7 +312,7 @@ def _render_vendor(v: AgentVerify) -> None:
         console.print(f"    {mark} mcp:{probe.server} [dim]{probe.detail}[/]")
 
 
-@agent_app.command("verify")
+@global_app.command("verify")
 def cmd_verify(
     ctx: typer.Context,
     offline: bool = typer.Option(False, "--offline", help="skip live MCP probes"),
@@ -323,7 +329,7 @@ def cmd_verify(
         _render_vendor(v)
 
 
-@agent_app.command()
+@global_app.command()
 def setup(
     ctx: typer.Context,
     agent: _AgentChoice | None = _VENDOR_ARG,
@@ -349,7 +355,7 @@ def setup(
         console.print("[green]Agent setup complete.[/]")
 
 
-@agent_app.command()
+@global_app.command()
 def overview(ctx: typer.Context) -> None:
     """Show the full agentic setup dashboard (MCP, hooks, skills, subagents, rules, permissions)."""
     app_ctx = app_context(ctx)
@@ -362,7 +368,7 @@ def overview(ctx: typer.Context) -> None:
     _render_overview(svc.overview())
 
 
-@agent_app.command()
+@global_app.command()
 def lint(ctx: typer.Context) -> None:
     """Validate .ai/skills/ and .ai/agents/ markdown files (was: verify skills)."""
     app_ctx = app_context(ctx)
@@ -388,8 +394,8 @@ def lint(ctx: typer.Context) -> None:
         raise typer.Exit(1)
 
 
-@agent_app.command("web-chat-instructions")
-def web_chat_instructions(
+@web_app.command("copy")
+def web_copy(
     ctx: typer.Context,
     list_chunks: bool = typer.Option(
         False, "--list", help="Print chunk filenames and sizes, then exit."
@@ -398,7 +404,7 @@ def web_chat_instructions(
         False, "--step", help="Interactive: copy each chunk and wait for enter."
     ),
 ) -> None:
-    """Load system-instruction chunks into the clipboard for a web chat (Gemini saved-info)."""
+    """Copy system-instruction chunks to the clipboard for a web chat (Gemini saved-info)."""
     app_ctx = app_context(ctx)
 
     svc = GeminiChunksService(
@@ -460,3 +466,60 @@ def _gemini_flycut(svc: GeminiChunksService) -> None:
         "     in Gemini, paste, and save.\n"
         "\nIf your Flycut history didn't catch all 7, re-run with --step instead."
     )
+
+
+# ---------------------------------------------------------------------------
+# agent local — align a target repo to the standard
+# ---------------------------------------------------------------------------
+
+
+_LOCAL_PATH_ARG = typer.Argument(None, help="Target repo path (default: current directory).")
+
+
+@agent_app.command("local")
+def local_align(
+    ctx: typer.Context,
+    path: Path | None = _LOCAL_PATH_ARG,
+    check: bool = typer.Option(
+        False, "--check", help="Report drift without modifying the target repo."
+    ),
+    vendors: str = typer.Option(
+        ",".join(CANONICAL_VENDORS),
+        "--vendors",
+        help="Comma-separated tools the project supports (default: the canonical set).",
+    ),
+    force: bool = typer.Option(False, "--force", help="Overwrite an existing sync engine."),
+    keep_dead_symlinks: bool = typer.Option(
+        False, "--keep-dead-symlinks", help="Don't prune decorative dead rule symlinks."
+    ),
+) -> None:
+    """Align a repo's custom agent instructions to the standard (applies by default)."""
+    app_ctx = app_context(ctx)
+    selected = _parse_vendors(vendors)
+
+    results = align_repo(
+        runner=app_ctx.runner,
+        dotfiles_dir=app_ctx.dotfiles_dir,
+        target=(path or Path.cwd()).resolve(),
+        vendors=selected,
+        check=check,
+        force=force,
+        keep_dead_symlinks=keep_dead_symlinks,
+    )
+    render_steps(console, results)
+    if has_errors(results) or (check and any(r.level == "warn" for r in results)):
+        raise typer.Exit(1)
+
+
+def _parse_vendors(raw: str) -> set[str]:
+    """Parse --vendors into a validated set, erroring on unknown names."""
+    selected = {v.strip() for v in raw.split(",") if v.strip()}
+    unknown = selected - set(CANONICAL_VENDORS)
+    if unknown:
+        console.print(f"[red]error:[/] unknown vendors: {', '.join(sorted(unknown))}")
+        raise typer.Exit(2)
+    return selected
+
+
+agent_app.add_typer(global_app, name="global")
+agent_app.add_typer(web_app, name="web")
