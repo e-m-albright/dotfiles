@@ -9,7 +9,9 @@ from dotfiles.tui.app import MissionControlApp
 
 def _remote_ctx() -> AppContext:
     runner = FakeProcessRunner()
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
     runner.script(("tailscale", "status"), stdout="100.64.0.1 host\n")
     runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
     runner.script(("id", "-un"), stdout="evan\n")
@@ -65,7 +67,9 @@ async def test_toggle_remote_login_warns_when_not_interactive():
 def _kill_ctx() -> AppContext:
     """Context whose runner we can inspect for pkill calls."""
     runner = FakeProcessRunner()
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
     runner.script(("tailscale", "status"), stdout="100.64.0.1 host\n")
     runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
     runner.script(("id", "-un"), stdout="evan\n")

@@ -20,9 +20,10 @@ def test_version_command() -> None:
     assert __version__ in result.output
 
 
-def test_session_alias_sesh_is_registered() -> None:
+def test_session_alias_sesh_is_removed() -> None:
+    # `sesh` was retired in favour of the full `session` spelling.
     result = runner.invoke(app, ["sesh", "--help"])
-    assert result.exit_code == 0
+    assert result.exit_code != 0
 
 
 def test_root_callback_builds_context_when_none_injected() -> None:
@@ -31,7 +32,6 @@ def test_root_callback_builds_context_when_none_injected() -> None:
     assert result.exit_code == 0
 
 
-def test_session_and_sesh_share_real_commands() -> None:
-    for name in ("session", "sesh"):
-        result = runner.invoke(app, [name, "ls", "--help"])
-        assert result.exit_code == 0
+def test_session_command_exposes_real_subcommands() -> None:
+    result = runner.invoke(app, ["session", "ls", "--help"])
+    assert result.exit_code == 0

@@ -1,4 +1,4 @@
-"""`dotfiles session` / `sesh` commands: list, attach, new, kill zellij sessions."""
+"""`dotfiles session` commands: list, attach, new, kill zellij sessions."""
 
 import typer
 
@@ -23,7 +23,7 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
         console.print(f"[red]zellij error:[/] {exc}")
         raise typer.Exit(code=1) from exc
     if not sessions:
-        console.print("No active zellij sessions. Use [bold]sesh new <name>[/] to create one.")
+        console.print("No active zellij sessions. Use [bold]session new <name>[/] to create one.")
         return
     choice = app_ctx.launcher.pick([s.name for s in sessions])
     if choice:

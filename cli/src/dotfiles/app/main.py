@@ -44,7 +44,6 @@ def _main(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
 # Command tree.
 app.add_typer(remote_app, name="remote")
 app.add_typer(session_app, name="session")
-app.add_typer(session_app, name="sesh")
 app.command("doctor")(doctor_command)
 app.add_typer(brew_app, name="brew")
 app.add_typer(agent_app, name="agent")

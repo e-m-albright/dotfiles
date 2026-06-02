@@ -66,7 +66,13 @@ class RemoteService:
         return self._which("mosh-server") or "/opt/homebrew/bin/mosh-server"
 
     def _remote_login_on(self) -> bool:
-        return "On" in self._line(("systemsetup", "-getremotelogin"))
+        # `systemsetup -getremotelogin` needs admin on macOS 26+ (without sudo it
+        # prints "You need administrator access…" and we'd misread it as off).
+        # The launchd override is the same state the Sharing pane toggles and is
+        # readable without privileges, so a `status` call never needs a password.
+        return '"com.openssh.sshd" => enabled' in self._line(
+            ("launchctl", "print-disabled", "system")
+        )
 
     @cached_property
     def _tailscale(self) -> tuple[bool, str | None]:

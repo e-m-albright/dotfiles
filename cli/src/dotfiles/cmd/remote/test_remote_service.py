@@ -23,7 +23,9 @@ def test_rejects_garbage_and_private_keys() -> None:
 
 def test_status_reads_system_state(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
     runner.script(("id", "-un"), stdout="evan\n")
     runner.script(("scutil", "--get", "LocalHostName"), stdout="Evans-MBP-M4\n")
     runner.script(("tailscale", "status"), exit_code=0)
@@ -40,7 +42,9 @@ def test_status_reads_system_state(tmp_path: Path) -> None:
 
 def test_status_handles_remote_login_off_and_no_tailscale(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: Off\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => disabled\n'
+    )
     runner.script(("id", "-un"), stdout="evan\n")
     runner.script(("scutil", "--get", "LocalHostName"), stdout="Evans-MBP-M4\n")
     runner.script(("tailscale", "status"), exit_code=1)
@@ -56,7 +60,9 @@ def _base_runner() -> FakeProcessRunner:
     runner = FakeProcessRunner()
     runner.script(("id", "-un"), stdout="evan\n")
     runner.script(("scutil", "--get", "LocalHostName"), stdout="Evans-MBP-M4\n")
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: Off\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => disabled\n'
+    )
     runner.script(("tailscale", "status"), exit_code=1)
     runner.script(("mosh", "--version"), stdout="mosh 1.4.0\n")
     runner.script(("zellij", "--version"), stdout="zellij 0.44.3\n")
@@ -128,7 +134,9 @@ def test_setup_without_sudo_access_warns_instead_of_running(tmp_path: Path) -> N
 
 def test_disable_when_already_off_optionally_kills_sessions(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: Off\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => disabled\n'
+    )
     runner.script(("id", "-un"), stdout="evan\n")
     service = RemoteService(runner=runner, interactive=True, home=tmp_path)
 
@@ -141,7 +149,9 @@ def test_disable_when_already_off_optionally_kills_sessions(tmp_path: Path) -> N
 
 def test_disable_turns_off_remote_login_when_on(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
     runner.script(("id", "-un"), stdout="evan\n")
     runner.script(("sudo", "-n", "true"), exit_code=0)
     service = RemoteService(runner=runner, interactive=True, home=tmp_path)
@@ -153,7 +163,9 @@ def test_disable_turns_off_remote_login_when_on(tmp_path: Path) -> None:
 
 def test_disable_dry_run_makes_no_changes(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
     runner.script(("id", "-un"), stdout="evan\n")
     service = RemoteService(runner=runner, interactive=True, home=tmp_path)
 
@@ -166,7 +178,9 @@ def test_disable_dry_run_makes_no_changes(tmp_path: Path) -> None:
 
 def test_sudo_failure_is_reported_as_error_with_fda_hint(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
     runner.script(("id", "-un"), stdout="evan\n")
     runner.script(("sudo", "systemsetup", "-setremotelogin", "off"), exit_code=1)
     service = RemoteService(runner=runner, interactive=True, home=tmp_path)
@@ -183,7 +197,9 @@ def test_ensure_tool_reports_brew_install_failure(tmp_path: Path) -> None:
     runner.script(("mosh", "--version"), exit_code=1)
     runner.script(("brew", "install", "mosh"), exit_code=1)
     runner.script(("zellij", "--version"), stdout="zellij 0.44.3\n")
-    runner.script(("systemsetup", "-getremotelogin"), stdout="Remote Login: On\n")
+    runner.script(
+        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    )
     runner.script(("id", "-un"), stdout="evan\n")
     runner.script(("sudo", "-n", "true"), exit_code=0)
     service = RemoteService(

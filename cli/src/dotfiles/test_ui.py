@@ -88,4 +88,4 @@ def test_render_connection_info_offers_picker_command() -> None:
     out = buf.getvalue()
     # direct-attach command AND a picker variant are both offered
     assert "zellij attach --create mobile" in out
-    assert "dotfiles sesh" in out
+    assert "dotfiles session" in out

@@ -12,7 +12,11 @@ def _runner_with_status(remote_login: str = "Off") -> FakeProcessRunner:
     r = FakeProcessRunner()
     r.script(("id", "-un"), stdout="evan\n")
     r.script(("scutil", "--get", "LocalHostName"), stdout="Evans-MBP-M4\n")
-    r.script(("systemsetup", "-getremotelogin"), stdout=f"Remote Login: {remote_login}\n")
+    sshd = "enabled" if remote_login == "On" else "disabled"
+    r.script(
+        ("launchctl", "print-disabled", "system"),
+        stdout=f'\t"com.openssh.sshd" => {sshd}\n',
+    )
     r.script(("tailscale", "status"), exit_code=1)
     r.script(("mosh", "--version"), stdout="mosh 1.4.0\n")
     r.script(("zellij", "--version"), stdout="zellij 0.44.3\n")

@@ -32,7 +32,7 @@ sub_help () {
     printf "   remote on [opts]       Turn on SSH/Mosh/Zellij access for Termius\n"
     printf "   remote off [opts]      Turn off macOS Remote Login for phone access\n"
     printf "   remote status          Show the remote-shell entrypoint state\n"
-    printf "   session|sesh <cmd>     zellij sessions: ls, attach, new, kill, or bare picker\n"
+    printf "   session <cmd>          zellij sessions: ls, attach, new, kill, or bare picker\n"
     printf "\n"
     printf "${BLUE}Command center:${NC}\n"
     printf "   tui                    Launch the Mission Control TUI (phone-drivable dashboard)\n"
@@ -237,7 +237,6 @@ _dotfiles() {
         'benchmark:Benchmark local LM Studio models for your hardware'
         'remote:Phone remote-shell access (setup, disable)'
         'session:zellij sessions (ls, attach, new, kill, picker)'
-        'sesh:zellij sessions (alias)'
         'tui:Launch the Mission Control TUI'
         'snapshot:Machine-state snapshots (ls, diff)'
         'agent:Agent namespace (overview, lint, setup, verify, web-chat-instructions)'
@@ -248,7 +247,7 @@ _dotfiles() {
     _describe 'command' commands
 }
 
-compdef _dotfiles dotfiles
+compdef _dotfiles dotfiles dfs
 EOF
 }
 
@@ -281,7 +280,7 @@ ns_cursor() {
 # As later phases land, add their names to this list.
 # INVARIANT: every name here must also appear in sub_help and sub_completions —
 # enforced by cli/tests/test_command_tree.py so the lists can't silently drift.
-PY_CLI_COMMANDS=" version remote session sesh doctor benchmark brew snapshot tui "
+PY_CLI_COMMANDS=" version remote session doctor benchmark brew snapshot tui "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
