@@ -328,6 +328,28 @@ class TestCursorignore:
 
 
 # ---------------------------------------------------------------------------
+# Marketplace plugin reminder (folded in from the old `cursor-plugins` command)
+# ---------------------------------------------------------------------------
+
+
+class TestPluginReminder:
+    def test_reminder_present_when_plugins_doc_exists(self, dotfiles: Path, home: Path) -> None:
+        (dotfiles / "ai" / "agents" / "cursor" / "PLUGINS.md").write_text("# Cursor plugins\n")
+        results = _run(dotfiles, home)
+        reminder = next((r for r in results if "Marketplace plugins" in r.message), None)
+        assert reminder is not None
+        assert reminder.level == "info"
+        assert reminder.ok
+        # Points at PLUGINS.md as the source of truth rather than re-listing the matrix
+        assert "PLUGINS.md" in reminder.details
+
+    def test_no_reminder_when_plugins_doc_missing(self, dotfiles: Path, home: Path) -> None:
+        # The dotfiles fixture has no PLUGINS.md — reminder is skipped, not errored.
+        results = _run(dotfiles, home)
+        assert not any("Marketplace plugins" in r.message for r in results)
+
+
+# ---------------------------------------------------------------------------
 # Overall
 # ---------------------------------------------------------------------------
 

@@ -51,7 +51,6 @@ sub_help () {
     printf "                        Load advisor prompt into clipboard, chunked for Gemini saved-info\n"
     printf "   agent migrate-rules-sync [path]\n"
     printf "                        Adopt cross-harness rule sync (--force, --keep-dead-symlinks)\n"
-    printf "   agent cursor-plugins Show Cursor plugin install checklist (manual /add-plugin list)\n"
     printf "   benchmark <cmd>      Benchmark local LM Studio models (list|bench|estimate|compare)\n"
 }
 
@@ -195,26 +194,6 @@ sub_shell_profile() {
     printf "  ${YELLOW}Tip:${NC} If startup is slow, check for heavy evals (fnm env, brew shellenv).\n"
 }
 
-sub_cursor_plugins() {
-    local plugins_file="$DOTFILES_DIR/ai/agents/cursor/PLUGINS.md"
-    printf "${BLUE}%b Cursor plugin checklist${NC}\n\n" "$ARROW"
-    printf "Run these in Cursor chat (manual install):\n"
-    printf "  /add-plugin superpowers\n"
-    printf "  /add-plugin context7-plugin\n"
-    # Neon plugin disabled 2026-04-09 — revisit when actively using Neon projects
-    printf "\nOptional research add-on:\n"
-    printf "  /add-plugin parallel\n"
-    printf "\nSaaS / team add-ons (when needed):\n"
-    printf "  /add-plugin linear\n"
-    printf "  /add-plugin datadog\n"
-    printf "  /add-plugin slack\n"
-    printf "  /add-plugin cloudflare\n"
-    printf "  /add-plugin notion-workspace\n"
-    if [[ -f "$plugins_file" ]]; then
-        printf "\nFull matrix: %s\n" "$plugins_file"
-    fi
-}
-
 sub_completions() {
     cat << 'EOF'
 # Zsh completions for dotfiles command
@@ -252,8 +231,7 @@ ns_agent() {
     local sub="${1:-overview}"; shift || true
     case "$sub" in
         migrate-rules-sync) sub_migrate_agents_sync "$@" ;;
-        cursor-plugins) sub_cursor_plugins "$@" ;;
-        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, verify, web-chat-instructions, migrate-rules-sync, cursor-plugins)\n" "$ARROW" "$sub" >&2; exit 1 ;;
+        *) printf "${RED}%b Unknown: agent %s${NC} (try: setup, lint, overview, verify, web-chat-instructions, migrate-rules-sync)\n" "$ARROW" "$sub" >&2; exit 1 ;;
     esac
 }
 
@@ -262,14 +240,6 @@ ns_shell() {
     case "$sub" in
         profile) sub_shell_profile "$@" ;;
         *) printf "${RED}%b Unknown: shell %s${NC} (try: profile)\n" "$ARROW" "$sub" >&2; exit 1 ;;
-    esac
-}
-
-ns_cursor() {
-    local sub="${1:-plugins}"; shift || true
-    case "$sub" in
-        plugins) sub_cursor_plugins "$@" ;;
-        *) printf "${RED}%b Unknown: cursor %s${NC} (try: plugins)\n" "$ARROW" "$sub" >&2; exit 1 ;;
     esac
 }
 
@@ -307,11 +277,8 @@ case $COMMAND_NAME in
     # profile-shell is a canonical flat command (Machine group in sub_help)
     profile-shell) shift; sub_shell_profile "$@" ;;
 
-    # Silent back-compat: cursor-plugins is now `agent cursor-plugins`;
-    # shell/cursor were the old single-item namespaces (shell profile / cursor plugins)
-    cursor-plugins)  shift; sub_cursor_plugins "$@" ;;
+    # Silent back-compat for the old `shell profile` single-item namespace
     shell)  shift; ns_shell "$@" ;;
-    cursor) shift; ns_cursor "$@" ;;
 
     *)
         if declare -f "sub_${COMMAND_NAME}" >/dev/null 2>&1; then

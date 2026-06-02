@@ -67,6 +67,7 @@ def setup_cursor(
     results.extend(_setup_cli_config(dotfiles_dir, home))
     results.extend(_setup_plugin(dotfiles_dir, home))
     results.extend(_setup_cursorignore(dotfiles_dir))
+    results.extend(_plugin_reminder(dotfiles_dir))
     return results
 
 
@@ -153,6 +154,25 @@ def _setup_plugin(dotfiles_dir: Path, home: Path) -> list[StepResult]:
     return [
         StepResult(
             level="success", message="Registered dotfiles plugin (~/.cursor/plugins/dotfiles)"
+        )
+    ]
+
+
+def _plugin_reminder(dotfiles_dir: Path) -> list[StepResult]:
+    """Remind that Cursor Marketplace plugins install manually via /add-plugin in Cursor chat.
+
+    Cursor plugins can't be installed from the CLI, so this is a next-step nudge rather
+    than an action. PLUGINS.md is the source of truth for the full per-profile matrix.
+    """
+    plugins_doc = dotfiles_dir / "ai" / "agents" / "cursor" / "PLUGINS.md"
+    if not plugins_doc.is_file():
+        return []
+    return [
+        StepResult(
+            level="info",
+            message="Marketplace plugins are manual — in Cursor chat run "
+            "/add-plugin superpowers, then context7-plugin",
+            details=f"parallel optional · full matrix: {plugins_doc}",
         )
     ]
 
