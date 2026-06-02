@@ -98,7 +98,7 @@ async def test_kill_sessions_confirm_path_runs_pkill_not_disable():
         assert ("pkill", "-u", "evan", "mosh-server") in runner.calls
         assert ("pkill", "-u", "evan", "sshd") in runner.calls
         # Must NOT disable Remote Login
-        assert ("sudo", "systemsetup", "-setremotelogin", "off") not in runner.calls
+        assert ("sudo", "systemsetup", "-setremotelogin", "-f", "off") not in runner.calls
 
 
 @pytest.mark.asyncio

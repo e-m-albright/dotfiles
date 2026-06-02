@@ -183,7 +183,7 @@ def test_disable_turns_off_remote_login_when_on(tmp_path: Path) -> None:
 
     service.disable(dry_run=False, kill_sessions=False)
 
-    assert ("sudo", "systemsetup", "-setremotelogin", "off") in runner.calls
+    assert ("sudo", "systemsetup", "-setremotelogin", "-f", "off") in runner.calls
 
 
 def test_disable_dry_run_makes_no_changes(tmp_path: Path) -> None:
@@ -196,7 +196,7 @@ def test_disable_dry_run_makes_no_changes(tmp_path: Path) -> None:
 
     steps = service.disable(dry_run=True, kill_sessions=True)
 
-    assert ("sudo", "systemsetup", "-setremotelogin", "off") not in runner.calls
+    assert ("sudo", "systemsetup", "-setremotelogin", "-f", "off") not in runner.calls
     assert ("pkill", "-u", "evan", "mosh-server") not in runner.calls
     assert any("DRY RUN" in s.message for s in steps)
 
@@ -207,7 +207,7 @@ def test_sudo_failure_is_reported_as_error_with_fda_hint(tmp_path: Path) -> None
         ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
     )
     runner.script(("id", "-un"), stdout="evan\n")
-    runner.script(("sudo", "systemsetup", "-setremotelogin", "off"), exit_code=1)
+    runner.script(("sudo", "systemsetup", "-setremotelogin", "-f", "off"), exit_code=1)
     service = RemoteService(runner=runner, interactive=True, home=tmp_path)
 
     steps = service.disable(dry_run=False, kill_sessions=False)
@@ -318,7 +318,7 @@ def test_kill_sessions_runs_pkill_without_disabling_remote_login(tmp_path: Path)
 
     assert ("pkill", "-u", "evan", "mosh-server") in runner.calls
     assert ("pkill", "-u", "evan", "sshd") in runner.calls
-    assert ("sudo", "systemsetup", "-setremotelogin", "off") not in runner.calls
+    assert ("sudo", "systemsetup", "-setremotelogin", "-f", "off") not in runner.calls
     assert any(s.level == "success" for s in steps)
 
 

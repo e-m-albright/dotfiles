@@ -260,10 +260,13 @@ class RemoteService:
             steps.append(StepResult(level="success", message="Remote Login already disabled"))
         elif dry_run:
             steps.append(
-                StepResult(level="info", message="DRY RUN: sudo systemsetup -setremotelogin off")
+                StepResult(level="info", message="DRY RUN: sudo systemsetup -setremotelogin -f off")
             )
         else:
-            steps.append(self._sudo(("systemsetup", "-setremotelogin", "off"), dry_run=False))
+            # `-f` suppresses the interactive "yes/no" confirmation that
+            # `setremotelogin off` otherwise prints; without it the prompt is
+            # swallowed by the captured subprocess and the command hangs forever.
+            steps.append(self._sudo(("systemsetup", "-setremotelogin", "-f", "off"), dry_run=False))
         if kill_sessions:
             steps.extend(self._kill_sessions(dry_run=dry_run))
         return steps

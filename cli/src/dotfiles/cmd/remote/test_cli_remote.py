@@ -91,7 +91,7 @@ def test_remote_setup_warns_when_tailscale_disconnected() -> None:
 
 def test_remote_disable_exits_nonzero_on_sudo_failure() -> None:
     r = _runner_with_status("On")
-    r.script(("sudo", "systemsetup", "-setremotelogin", "off"), exit_code=1)
+    r.script(("sudo", "systemsetup", "-setremotelogin", "-f", "off"), exit_code=1)
     fake = make_fake_context(runner=r, interactive=True)
     result = runner.invoke(app, ["remote", "off"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 1
