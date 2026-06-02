@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/dotfiles/agents/codex/hooks/format-on-save.sh",
+            "command": "~/dotfiles/ai/agents/codex/hooks/format-on-save.sh",
             "timeout": 30
           }
         ]

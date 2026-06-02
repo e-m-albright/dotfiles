@@ -1,1 +1,1 @@
-/Users/evan/dotfiles/agents/claude/hooks/format-on-save.sh
+../../claude/hooks/format-on-save.sh

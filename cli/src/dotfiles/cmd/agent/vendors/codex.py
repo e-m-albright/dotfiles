@@ -1,13 +1,13 @@
-"""agent_setup.codex — port of agents/codex/setup.sh.
+"""agent_setup.codex — Codex CLI agentic setup.
 
 Configures Codex CLI:
   - Write ~/.codex/AGENTS.md (shared rules.md + codex-specific + baked rules)
-  - Copy agents/codex/default.rules → ~/.codex/rules/default.rules
+  - Copy ai/agents/codex/default.rules → ~/.codex/rules/default.rules
     (refuse to overwrite if live file is larger — user has custom entries)
   - Merge MCP servers into ~/.codex/config.toml ([mcp_servers.<name>] blocks,
     preserving non-mcp_servers sections)
   - Inject statusline.toml content into [tui] section of config.toml
-  - Copy agents/codex/hooks.json → ~/.codex/hooks.json
+  - Copy ai/agents/codex/hooks.json → ~/.codex/hooks.json
   - deploy_skills(runner, dotfiles_dir, "codex")
   - deploy_subagents(dotfiles_dir, ~/.codex/agents)
 

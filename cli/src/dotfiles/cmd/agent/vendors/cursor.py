@@ -1,11 +1,10 @@
-"""agent_setup.cursor — port of agents/cursor/setup.sh.
+"""agent_setup.cursor — Cursor agentic setup.
 
 Configures Cursor agentic setup:
   - Merge shared MCP servers into dotfiles_dir/editors/cursor/mcp.json (IN-REPO)
-  - Generate dotfiles_dir/agents/cursor/rules/shared-rules.mdc (YAML frontmatter)
-  - Symlink process rules (.mdc suffix) into agents/cursor/rules/
-  - Symlink dotfiles_dir/agents/cursor/cli-config.json → home/.cursor/cli-config.json
-  - Symlink dotfiles_dir/agents/cursor → home/.cursor/plugins/dotfiles
+  - Generate dotfiles_dir/ai/agents/cursor/rules/shared-rules.mdc (kernel + YAML frontmatter)
+  - Symlink dotfiles_dir/ai/agents/cursor/cli-config.json → home/.cursor/cli-config.json
+  - Symlink dotfiles_dir/ai/agents/cursor → home/.cursor/plugins/dotfiles
   - Generate dotfiles_dir/editors/cursor/.cursorignore from shared ignore-patterns
 
 All paths are injected; Path.home() MUST NOT appear here.
