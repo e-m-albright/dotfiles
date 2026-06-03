@@ -7,6 +7,7 @@ Screen {
 #banner {
     background: #0a0a0a;
     padding: 0 1 0 2;
+    margin-top: 1;
     height: auto;
     text-style: bold;
 }
@@ -34,22 +35,26 @@ ListItem {
     color: #d4af37;
 }
 
-/* "+ New session" — a prominent, always-present create affordance up top. */
+/* "+ New session" — a prominent, always-present create affordance up top.
+   Soft blue marks "create" distinctly against the gold session rows (amber +
+   cool-blue is the deck's cyberpunk pairing). Left padding matches .session-row
+   so the `+` and `●` markers — and their text — align vertically. */
 SessionsPane .new-row {
     height: 1;
-    padding: 0 1;
-    margin: 0 0 1 0;
-    color: #f5d76e;
-    background: #16160c;
-    border-left: outer #6b5d1f;
-}
-SessionsPane ListView > .new-row.-highlight { background: #2a2616; }
-SessionsPane ListView:focus > .new-row.-highlight { background: #34301a; }
-
-/* Chunky, well-separated tap targets: gap + left accent so taps don't collide. */
-SessionsPane .session-row {
-    height: 3;
     padding: 0 2;
+    margin: 0 0 1 0;
+    color: #7fa8d9;
+    background: #0e1622;
+    border-left: outer #3d5a80;
+}
+SessionsPane ListView > .new-row.-highlight { background: #16243a; }
+SessionsPane ListView:focus > .new-row.-highlight { background: #1d2f4d; }
+
+/* Chunky, well-separated tap targets: vertical padding + gap + left accent so
+   taps don't collide and each row is comfortable to hit on a phone. */
+SessionsPane .session-row {
+    height: auto;
+    padding: 1 2;
     margin: 0 0 1 0;
     background: #141410;
     border-left: outer #2a2a1a;
@@ -83,6 +88,36 @@ ModalScreen {
     width: 100%;
     margin: 1 0 0 0;
 }
+/* Textual's default focused-button style is `bold reverse`, which inverts the
+   label into the screen's dark bg (e.g. green text boxed on black). Keep the
+   bold + the subtle background-tint as the focus cue, but drop the reverse. */
+#confirm-box Button:focus {
+    text-style: bold;
+}
+/* Brand-cohesive button palette (Textual's default green/blue/red reads as
+   messy noise on the gold deck). Attach = brand amber (the hero action),
+   Kill = soft red (danger breaks the palette), Cancel = dim neutral (recedes). */
+#confirm-box Button.-success {
+    background: #c79a2e;
+    color: #0d0d0d;
+    border-top: tall #e0b84a;
+    border-bottom: tall #8f6f1f;
+}
+#confirm-box Button.-success:hover { background: #d8aa3a; border-top: tall #c79a2e; }
+#confirm-box Button.-error {
+    background: #b5546a;
+    color: #f6e9ec;
+    border-top: tall #c9697e;
+    border-bottom: tall #8f3f52;
+}
+#confirm-box Button.-error:hover { background: #c25f76; border-top: tall #b5546a; }
+#confirm-box Button.-primary {
+    background: #23231a;
+    color: #cdbf80;
+    border-top: tall #333324;
+    border-bottom: tall #14140e;
+}
+#confirm-box Button.-primary:hover { background: #2c2c20; border-top: tall #3a3a2a; }
 #confirm-box Input {
     width: 100%;
     margin: 1 0;
