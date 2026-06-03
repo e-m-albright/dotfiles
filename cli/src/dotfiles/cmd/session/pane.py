@@ -88,6 +88,7 @@ class SessionsPane(Container):
     BORDER_TITLE = "Sessions"
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("n", "new_session", "New"),
+        Binding("k", "kill_highlighted", "Kill"),
         Binding("r", "reload", "Reload"),
     ]
 
@@ -118,7 +119,7 @@ class SessionsPane(Container):
         clients = attached_client_count(self._ctx.runner) if in_zellij() else None
         self._app.call_from_thread(self._apply_sessions, sessions, agents, now, clients)
 
-    def _apply_sessions(
+    async def _apply_sessions(
         self,
         sessions: list[Session],
         agents: list[AgentActivity],
@@ -128,7 +129,9 @@ class SessionsPane(Container):
         self._sessions = live_sessions(sessions)
         self.query_one("#active-agents", Static).update(_agents_line(agents, now, clients))
         view = self.query_one("#session-list", ListView)
-        view.clear()
+        # clear() is deferred — await it so the old fixed-id rows are actually
+        # gone before we re-append them (otherwise: DuplicateIds on reload).
+        await view.clear()
         # Create is always one tap away, even with zero sessions.
         view.append(ListItem(Label("[b]+  New session[/]"), id=_NEW_ROW_ID, classes="new-row"))
         if not self._sessions:
@@ -159,6 +162,31 @@ class SessionsPane(Container):
 
     def action_new_session(self) -> None:
         self._app.push_screen(_NewSession(), self._on_new_session)
+
+    def action_kill_highlighted(self) -> None:
+        """Kill the highlighted session after one confirm (a keyboard shortcut for
+        the row's kill action). No-ops on the New row; refuses the current session,
+        since killing it would tear down this very TUI."""
+        view = self.query_one("#session-list", ListView)
+        item = view.highlighted_child
+        item_id = item.id if item is not None else None
+        if not item_id or not item_id.startswith("sess-"):
+            return
+        name = item_id.removeprefix("sess-")
+        session = next((s for s in self._sessions if s.name == name), None)
+        if session is None:
+            return
+        if session.current:
+            self.notify(
+                "Can't kill the session you're attached to.",
+                title="Sessions",
+                severity="warning",
+            )
+            return
+        self._app.push_screen(
+            _ConfirmKill(session),
+            lambda ok, s=session: self._on_action(s, "kill") if ok else None,
+        )
 
     def _on_action(self, session: Session, action: str | None) -> None:
         if action == "attach":
@@ -197,6 +225,23 @@ class _SessionActions(ModalScreen[str | None]):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(None if event.button.id == "cancel" else event.button.id)
+
+
+class _ConfirmKill(ModalScreen[bool]):
+    """One-tap-to-confirm kill sheet for the `k` shortcut; dismisses True to kill."""
+
+    def __init__(self, session: Session) -> None:
+        super().__init__()
+        self._s = session
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="confirm-box"):
+            yield Label(f"Kill [b]{self._s.name}[/]?")
+            yield Button("Kill", variant="error", id="kill")
+            yield Button("Cancel", variant="primary", id="cancel")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.dismiss(event.button.id == "kill")
 
 
 class _NewSession(ModalScreen[str | None]):

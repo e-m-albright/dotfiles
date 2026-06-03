@@ -156,6 +156,82 @@ async def test_kill_action_invokes_kill_session():
 
 
 @pytest.mark.asyncio
+async def test_kill_hotkey_confirms_then_kills_highlighted_session():
+    app, runner = _app_with("work [created]\n")  # running, not current
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from textual.widgets import ListView
+
+        from dotfiles.cmd.session.pane import _ConfirmKill
+
+        view = app.query_one("#session-list", ListView)
+        view.index = next(i for i, item in enumerate(view.children) if item.id == "sess-work")
+        await pilot.press("k")
+        await pilot.pause()
+        assert isinstance(app.screen, _ConfirmKill)
+        await pilot.press("enter")  # confirm the highlighted "Kill" button
+        await pilot.pause()
+        assert ("zellij", "kill-session", "work") in runner.calls
+
+
+@pytest.mark.asyncio
+async def test_kill_hotkey_refuses_current_session():
+    app, runner = _app_with("work (current)\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from textual.screen import ModalScreen
+        from textual.widgets import ListView
+
+        view = app.query_one("#session-list", ListView)
+        view.index = next(i for i, item in enumerate(view.children) if item.id == "sess-work")
+        await pilot.press("k")
+        await pilot.pause()
+        # No confirm sheet opens, and nothing is killed (would tear down the TUI).
+        assert not isinstance(app.screen, ModalScreen)
+        assert not any(c[:2] == ("zellij", "kill-session") for c in runner.calls)
+
+
+@pytest.mark.asyncio
+async def test_kill_hotkey_noops_on_new_row():
+    app, runner = _app_with("work [created]\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from textual.screen import ModalScreen
+        from textual.widgets import ListView
+
+        view = app.query_one("#session-list", ListView)
+        view.index = next(i for i, item in enumerate(view.children) if item.id == "new-session")
+        await pilot.press("k")
+        await pilot.pause()
+        assert not isinstance(app.screen, ModalScreen)
+        assert not any(c[:2] == ("zellij", "kill-session") for c in runner.calls)
+
+
+@pytest.mark.asyncio
+async def test_reload_twice_does_not_duplicate_new_row():
+    # clear() is deferred in Textual, so a naive clear()+append() re-adds the
+    # fixed-id "new-session" row before the old one is removed -> DuplicateIds.
+    app, _ = _app_with("work [created]\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from textual.widgets import ListItem, ListView
+
+        from dotfiles.cmd.session.pane import SessionsPane
+
+        pane = app.query_one(SessionsPane)
+        pane.action_reload()
+        await pilot.pause()
+        await pilot.pause()
+        view = app.query_one("#session-list", ListView)
+        new_rows = [i for i in view.query(ListItem) if "new-row" in i.classes]
+        assert len(new_rows) == 1
+
+
+@pytest.mark.asyncio
 async def test_exited_sessions_are_not_listed():
     runner = FakeProcessRunner()
     runner.script(
