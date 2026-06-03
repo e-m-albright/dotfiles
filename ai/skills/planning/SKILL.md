@@ -17,7 +17,7 @@ Apply these criteria during brainstorming, planning, and spec review — before 
 
 **When NOT to use:**
 - **`superpowers:writing-plans`** — when the *what* and *whether* are settled and you need a concrete, step-by-step implementation plan. That skill writes the plan; this one decides what (and whether) to plan.
-- **`brainstorming`** — when you want adversarial critique of an idea rather than scope/effort triage. The two pair well: brainstorm to pressure-test, then plan to scope.
+- **`collaborative-ideation`** — when you want adversarial critique of an idea rather than scope/effort triage. The two pair well: ideate to pressure-test, then plan to scope.
 
 ## Should We Build This?
 

@@ -9,10 +9,7 @@
     "enabledByDefault": true
   },
   "packages": [
-    {
-      "source": "npm:pi-superpowers-plus",
-      "skills": ["!skills/brainstorming"]
-    },
+    "npm:pi-superpowers-plus",
     "npm:mitsupi"
   ],
   "lastChangelogVersion": "0.77.0"

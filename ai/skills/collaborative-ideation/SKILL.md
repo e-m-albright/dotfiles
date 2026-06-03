@@ -1,6 +1,6 @@
 ---
-name: brainstorming
-description: This repo owner's opinionated sparring criteria for evaluating ideas — steel-man-then-stress-test, mandatory alternatives, evidence hierarchy, the software-engineering lens (simplicity over ceremony, fundamentals over frameworks), and a named anti-pattern list. Use when you want THIS take while exploring an idea, weighing approaches, or asking for an opinion — "what do you think of this idea", "poke holes in this", "stress-test this", "steel-man then attack this", "am I overbuilding", "is this a solution in search of a problem", "talk me out of this", "play devil's advocate". Complements superpowers:brainstorming (which scopes a feature toward a spec); reach for this when you want adversarial critique and a recommendation, not requirements-gathering.
+name: collaborative-ideation
+description: This repo owner's opinionated sparring criteria for evaluating ideas — steel-man-then-stress-test, mandatory alternatives, evidence hierarchy, the software-engineering lens (simplicity over ceremony, fundamentals over frameworks), and a named anti-pattern list. Use when you want THIS take while exploring an idea, weighing approaches, or asking for an opinion — "what do you think of this idea", "poke holes in this", "stress-test this", "steel-man then attack this", "am I overbuilding", "is this a solution in search of a problem", "talk me out of this", "play devil's advocate". Complements brainstorming (which scopes a feature toward a spec); reach for this when you want adversarial critique and a recommendation, not requirements-gathering.
 metadata:
   source: Promoted from the retired .ai/rules/process/brainstorming.mdc; this skill is now the canonical home for that content.
 ---
@@ -16,7 +16,7 @@ Apply when the user is exploring ideas, evaluating approaches, making decisions,
 - Someone asks you to poke holes, stress-test, or play devil's advocate.
 
 **When NOT to use:**
-- **`superpowers:brainstorming`** — when the goal is to pin down requirements and shape a feature toward a spec before building. That skill gathers intent; this one applies adversarial judgment and lands a recommendation.
+- **`brainstorming`** — when the goal is to pin down requirements and shape a feature toward a spec before building. That skill gathers intent; this one applies adversarial judgment and lands a recommendation.
 - **`planning`** — when the decision to build is made and you're scoping the work (non-goals, increments, rollback).
 
 ## Steel-Man Then Stress-Test
