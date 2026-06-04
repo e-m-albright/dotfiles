@@ -37,6 +37,17 @@
 
 `AGENTS.md` is the cross-platform convention that works with Claude Code, Cursor, Gemini, ChatGPT, and others. Think of it as **project instructions for everyone**—humans and AI alike. It now includes a "Project Context" section covering what you're building and why (previously a separate `ABSTRACT.md` file).
 
+### Domain language: inline, then graduate to CONTEXT.md
+
+The ubiquitous-language glossary (term definitions, aliases-to-avoid, relationships between concepts) is a **different genre** from project instructions. AGENTS.md is imperative ("how we build") and auto-loaded into *every* agent turn, so it's token-budget sensitive and stays curated. A domain glossary is declarative ("what words mean"), grows as the model is discovered, can live per-bounded-context, and is consulted *on demand*. So it doesn't follow `ABSTRACT.md` into AGENTS.md by default.
+
+The rule:
+
+- **Tiny domain** (a handful of terms, fits in ~30 lines, single context): keep a `## Domain Language` section in AGENTS.md. A separate file is ceremony at toy size.
+- **Graduate to a standalone `CONTEXT.md`** once it exceeds ~30 lines *or* you need a second bounded context. Leave a pointer behind in AGENTS.md: _"Domain language lives in `CONTEXT.md` (or `CONTEXT-MAP.md` for multi-context repos)."_ That keeps the always-loaded file as the index without paying the glossary's token weight on every turn.
+
+`CONTEXT.md` is a project convention (DDD-flavored), not a tool-supported standard the way `AGENTS.md` is — only skills like `grill-with-docs` and `improve-codebase-architecture` read it, by name. The pointer in AGENTS.md is what makes it discoverable.
+
 ---
 
 ## Recommended Directory Structure

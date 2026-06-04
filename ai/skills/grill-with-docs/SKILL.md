@@ -56,6 +56,8 @@ If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The ma
 
 Create files lazily — only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `docs/adr/` exists, create it when the first ADR is needed.
 
+If the domain is tiny (a handful of terms, fits in ~30 lines, single context), a `## Domain Language` section in `AGENTS.md` is fine — don't spin up a separate file as ceremony. Graduate to a standalone `CONTEXT.md` once the glossary exceeds ~30 lines or a second bounded context appears, leaving a pointer behind in `AGENTS.md`.
+
 ## During the session
 
 ### Challenge against the glossary

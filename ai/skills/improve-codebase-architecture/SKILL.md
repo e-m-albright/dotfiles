@@ -37,7 +37,7 @@ This skill is _informed_ by the project's domain model. The domain language give
 
 ### 1. Explore
 
-Read the project's domain glossary and any ADRs in the area you're touching first.
+Read the project's domain glossary and any ADRs in the area you're touching first. The glossary may be a standalone `CONTEXT.md`/`CONTEXT-MAP.md`, or — for a small domain — a `## Domain Language` section inside `AGENTS.md`. Check both. (When you add a term and the inline section outgrows ~30 lines or a second bounded context appears, graduate it to a standalone `CONTEXT.md` and leave a pointer in `AGENTS.md`.)
 
 Then use the Agent tool with `subagent_type=Explore` to walk the codebase. Don't follow rigid heuristics — explore organically and note where you experience friction:
 
