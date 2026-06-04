@@ -15,6 +15,9 @@ class Session(BaseModel):
     name: str
     running: bool
     current: bool
+    # Age since creation, parsed from zellij's "[Created ... ago]" clause. None
+    # when zellij omits it. Used as the staleness signal for pruning exited ones.
+    created_age_seconds: int | None = None
 
 
 class AgentActivity(BaseModel):

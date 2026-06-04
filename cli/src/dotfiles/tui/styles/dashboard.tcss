@@ -61,6 +61,11 @@ SessionsPane .session-row {
 }
 SessionsPane .session-row.is-current { border-left: outer #f5d76e; }
 SessionsPane .session-row.is-running { border-left: outer #d4af37; }
+/* Resurrectable (exited) rows read as dormant: muted accent, recede from live. */
+SessionsPane .session-row.is-exited { border-left: outer #4a4636; background: #0f0f0c; }
+
+/* The "── resurrectable ──" divider between live and exited groups. */
+SessionsPane .group-label { height: auto; padding: 0 2; margin: 0; background: transparent; }
 
 /* Highlighted/focused row reads as the active tap target. */
 SessionsPane ListView > .session-row.-highlight { background: #24220f; }

@@ -1,6 +1,7 @@
 """In-memory fakes implementing the core ports. Tests only."""
 
 import subprocess
+import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -146,5 +147,7 @@ def make_fake_context(
         http=http or FakeHttpClient(),
         llm_settings=llm_settings or LlmSettings(),
         dotfiles_dir=dotfiles_dir or Path("/home/evan/dotfiles"),
-        state_dir=state_dir or (home_path / ".local" / "state" / "dotfiles"),
+        # A fresh, writable, isolated temp dir per call: code that writes state
+        # (e.g. the session-prune stamp) stays fast and can't leak across tests.
+        state_dir=state_dir or Path(tempfile.mkdtemp(prefix="dotfiles-state-")),
     )

@@ -1,6 +1,8 @@
 """zellij session listing/attach logic. Pure over the ProcessRunner port."""
 
+import re
 from collections.abc import Sequence
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
@@ -9,6 +11,25 @@ from dotfiles.cmd.session.models import Session
 from dotfiles.result import StepResult
 
 _EMPTY_MARKER = "No active zellij sessions found"
+
+# Default retention for exited sessions: drop those older than 14 days, and keep
+# at most the 20 newest. Tunable per call (the `session prune` CLI exposes both).
+DEFAULT_MAX_AGE_DAYS = 14
+DEFAULT_MAX_COUNT = 20
+PRUNE_INTERVAL = timedelta(days=1)
+
+# zellij prints "[Created 10h 40m 27s ago]"; pull the duration out and sum it.
+_CREATED_RE = re.compile(r"\[Created (.+?) ago\]")
+_UNIT_SECONDS = {"d": 86400, "h": 3600, "m": 60, "s": 1}
+
+
+def _created_age_seconds(line: str) -> int | None:
+    """Seconds since creation parsed from a session's "[Created ... ago]" clause."""
+    match = _CREATED_RE.search(line)
+    if not match:
+        return None
+    parts = re.findall(r"(\d+)([dhms])", match.group(1))
+    return sum(int(value) * _UNIT_SECONDS[unit] for value, unit in parts) if parts else None
 
 
 class SessionError(RuntimeError):
@@ -30,9 +51,47 @@ def parse_sessions(output: str) -> list[Session]:
                 name=line.split()[0],
                 running="EXITED" not in line,
                 current="(current)" in line,
+                created_age_seconds=_created_age_seconds(line),
             )
         )
     return sessions
+
+
+def humanize_age(seconds: int | None) -> str:
+    """Compact age string using the largest whole unit: "2d", "1h", "30m", "45s"."""
+    if seconds is None:
+        return "?"
+    for unit, size in (("d", 86400), ("h", 3600), ("m", 60)):
+        if seconds >= size:
+            return f"{seconds // size}{unit}"
+    return f"{seconds}s"
+
+
+def exited_sessions(sessions: Sequence[Session]) -> list[Session]:
+    """Exited (resurrectable) sessions only, newest-first; unknown age sorts last."""
+    exited = (s for s in sessions if not s.running)
+    return sorted(exited, key=lambda s: (s.created_age_seconds is None, s.created_age_seconds or 0))
+
+
+def sessions_to_prune(exited: Sequence[Session], *, max_age_days: int, max_count: int) -> list[str]:
+    """Names of exited sessions to delete: those older than *max_age_days*.
+
+    Sessions with unknown age are never dropped by the age rule.
+    """
+    ordered = exited_sessions(exited)
+    max_age_seconds = max_age_days * 86400
+    doomed = {
+        s.name
+        for i, s in enumerate(ordered)
+        if i >= max_count
+        or (s.created_age_seconds is not None and s.created_age_seconds > max_age_seconds)
+    }
+    return [s.name for s in ordered if s.name in doomed]
+
+
+def should_prune(last_run: datetime | None, now: datetime, interval: timedelta) -> bool:
+    """True if the guarded prune sweep is due (never run, or older than *interval*)."""
+    return last_run is None or (now - last_run) >= interval
 
 
 def layout_name_for(home: Path, name: str) -> str | None:
@@ -86,6 +145,68 @@ def kill_session(runner: ProcessRunner, name: str) -> StepResult:
     if result.ok:
         return StepResult(level="success", message=f"Killed session {name}")
     return StepResult(level="error", message=f"Could not kill session {name}")
+
+
+def delete_session(runner: ProcessRunner, name: str) -> StepResult:
+    """Delete an exited session's serialized state via `zellij delete-session`.
+
+    Valid only for exited (resurrectable) sessions; a running one must be killed.
+    """
+    result = runner.run(("zellij", "delete-session", name))
+    if result.ok:
+        return StepResult(level="success", message=f"Deleted session {name}")
+    return StepResult(level="error", message=f"Could not delete session {name}")
+
+
+def prune_exited(runner: ProcessRunner, names: Sequence[str]) -> list[StepResult]:
+    """Delete each named (exited) session, returning a StepResult per deletion."""
+    return [delete_session(runner, name) for name in names]
+
+
+def _read_prune_stamp(state_file: Path) -> datetime | None:
+    """Last sweep time from *state_file*, or None if missing/unreadable."""
+    try:
+        return datetime.fromisoformat(state_file.read_text().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def _write_prune_stamp(state_file: Path, now: datetime) -> None:
+    """Best-effort: an unwritable state dir just means we re-sweep next time."""
+    try:
+        state_file.parent.mkdir(parents=True, exist_ok=True)
+        state_file.write_text(now.isoformat())
+    except OSError:
+        pass
+
+
+def maybe_prune(
+    runner: ProcessRunner,
+    *,
+    state_file: Path,
+    now: datetime,
+    max_age_days: int = DEFAULT_MAX_AGE_DAYS,
+    max_count: int = DEFAULT_MAX_COUNT,
+    interval: timedelta = PRUNE_INTERVAL,
+) -> list[StepResult]:
+    """Run the retention sweep at most once per *interval* (guarded by *state_file*).
+
+    A no-op when not due. When due, lists sessions, deletes exited ones that breach
+    the age/count policy, and stamps the run (even if nothing was deleted, so a
+    quiet sweep still resets the clock). zellij being unavailable is swallowed.
+    """
+    if not should_prune(_read_prune_stamp(state_file), now, interval):
+        return []
+    try:
+        sessions = list_sessions(runner)
+    except SessionError:
+        return []
+    names = sessions_to_prune(
+        exited_sessions(sessions), max_age_days=max_age_days, max_count=max_count
+    )
+    results = prune_exited(runner, names)
+    _write_prune_stamp(state_file, now)
+    return results
 
 
 def valid_session_name(name: str) -> bool:

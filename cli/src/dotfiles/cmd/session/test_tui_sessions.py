@@ -69,9 +69,13 @@ def test_session_action_buttons_vary_by_state():
     running = Session(name="work", running=True, current=False)
     current = Session(name="mobile", running=True, current=True)
 
+    exited = Session(name="old", running=False, current=False, created_age_seconds=99)
+
     assert [b[1] for b in session_action_buttons(running)] == ["attach", "kill", "cancel"]
     # The session you're in offers no destructive action (would tear down the TUI).
     assert [b[1] for b in session_action_buttons(current)] == ["cancel"]
+    # Exited sessions are resurrectable or deletable, not attach/kill.
+    assert [b[1] for b in session_action_buttons(exited)] == ["resurrect", "delete", "cancel"]
 
 
 def test_live_sessions_keeps_running_current_first():
@@ -121,6 +125,76 @@ async def test_attach_action_requests_handoff(monkeypatch):
         pane = app.query_one(SessionsPane)
         pane._on_action(Session(name="work", running=True, current=False), "attach")
         assert app.handoff_command == ("zellij", "attach", "--create", "work")
+
+
+@pytest.mark.asyncio
+async def test_tui_reload_runs_guarded_prune(tmp_path):
+    runner = FakeProcessRunner()
+    runner.script(
+        ("zellij", "list-sessions", "--no-formatting"),
+        stdout=("mobile (current)\nancient [Created 30d ago] (EXITED - attach to resurrect)\n"),
+    )
+    app = MissionControlApp(ctx=make_fake_context(runner=runner, state_dir=tmp_path))
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        # The opportunistic sweep ran on load and dropped the >14d session.
+        assert ("zellij", "delete-session", "ancient") in runner.calls
+        assert (tmp_path / "session-prune").exists()
+
+
+@pytest.mark.asyncio
+async def test_resurrect_action_requests_handoff(monkeypatch):
+    monkeypatch.delenv("ZELLIJ", raising=False)
+    app, _ = _app_with("old [Created 2d ago] (EXITED - attach to resurrect)\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from dotfiles.cmd.session.models import Session
+        from dotfiles.cmd.session.pane import SessionsPane
+
+        pane = app.query_one(SessionsPane)
+        exited = Session(name="old", running=False, current=False, created_age_seconds=2 * 86400)
+        pane._on_action(exited, "resurrect")
+        # Attaching to an exited session resurrects it from serialized state.
+        assert app.handoff_command == ("zellij", "attach", "--create", "old")
+
+
+@pytest.mark.asyncio
+async def test_delete_action_invokes_delete_session():
+    app, runner = _app_with("old [Created 2d ago] (EXITED - attach to resurrect)\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from dotfiles.cmd.session.models import Session
+        from dotfiles.cmd.session.pane import SessionsPane
+
+        pane = app.query_one(SessionsPane)
+        exited = Session(name="old", running=False, current=False, created_age_seconds=2 * 86400)
+        pane._on_action(exited, "delete")
+        await pilot.pause()
+        assert ("zellij", "delete-session", "old") in runner.calls
+
+
+@pytest.mark.asyncio
+async def test_exited_row_resurrect_hotkey(monkeypatch):
+    monkeypatch.delenv("ZELLIJ", raising=False)
+    app, _ = _app_with("old [Created 2d ago] (EXITED - attach to resurrect)\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from textual.widgets import ListView
+
+        from dotfiles.cmd.session.pane import _SessionActions
+
+        view = app.query_one("#session-list", ListView)
+        view.index = next(i for i, item in enumerate(view.children) if item.id == "sess-old")
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, _SessionActions)
+        await pilot.press("r")  # resurrect hotkey
+        await pilot.pause()
+        assert app.handoff_command == ("zellij", "attach", "--create", "old")
 
 
 @pytest.mark.asyncio
@@ -373,11 +447,11 @@ async def test_session_row_previews_running_programs(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_exited_sessions_are_not_listed():
+async def test_exited_sessions_listed_as_resurrectable():
     runner = FakeProcessRunner()
     runner.script(
         ("zellij", "list-sessions", "--no-formatting"),
-        stdout="work (current)\nold (EXITED - attach to resurrect)\n",
+        stdout="work (current)\nold [Created 2d ago] (EXITED - attach to resurrect)\n",
     )
     app = MissionControlApp(ctx=make_fake_context(runner=runner))
     async with app.run_test() as pilot:
@@ -388,7 +462,9 @@ async def test_exited_sessions_are_not_listed():
         from dotfiles.cmd.session.pane import SessionsPane
 
         pane = app.query_one(SessionsPane)
-        assert pane.session_names() == ["work"]  # exited "old" filtered out
+        # The live group is unchanged; the exited session is now surfaced too.
+        assert pane.session_names() == ["work"]
+        assert [s.name for s in pane._exited] == ["old"]
         view = app.query_one("#session-list", ListView)
         rows = {i.id for i in view.query(ListItem) if "session-row" in i.classes}
-        assert rows == {"sess-work"}
+        assert rows == {"sess-work", "sess-old"}

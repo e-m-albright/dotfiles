@@ -28,9 +28,13 @@ from dotfiles.cmd.session.service import (
     SessionError,
     attach_command,
     attached_client_count,
+    delete_session,
+    exited_sessions,
+    humanize_age,
     kill_session,
     layout_name_for,
     list_sessions,
+    maybe_prune,
     valid_session_name,
 )
 from dotfiles.cmd.session.session_info import session_program_titles, zellij_cache_root
@@ -73,6 +77,16 @@ def _programs_line(programs: Sequence[str], limit: int = 3) -> str:
     return "   [#cdbf80]" + " · ".join(shown) + "[/]"
 
 
+def _exited_item(s: Session) -> ListItem:
+    """A dimmer, tappable row for a resurrectable (exited) session."""
+    age = humanize_age(s.created_age_seconds)
+    lines = [
+        f"[dim]○  {s.name}[/]",
+        f"   [dim]exited · {age} ago · tap to resurrect[/]",
+    ]
+    return ListItem(Label("\n".join(lines)), id=f"sess-{s.name}", classes="session-row is-exited")
+
+
 def _session_item(s: Session, programs: Sequence[str] = ()) -> ListItem:
     """A tall, spaced, tappable row for one session (state shown via glyph + accent).
 
@@ -95,12 +109,19 @@ def _session_item(s: Session, programs: Sequence[str] = ()) -> ListItem:
 def session_action_buttons(s: Session) -> list[tuple[str, str, str]]:
     """(label, button-id, variant) for the per-session action sheet.
 
-    Button-ids map to actions: ``attach`` (attach/switch), ``kill``, ``cancel``.
-    The session you're attached to offers no destructive action — killing it would
-    tear down this very TUI — so it's view-only.
+    Button-ids map to actions: ``attach`` (attach/switch), ``kill``, ``resurrect``
+    (re-attach an exited session), ``delete`` (drop its serialized state),
+    ``cancel``. The session you're attached to offers no destructive action —
+    killing it would tear down this very TUI — so it's view-only.
     """
     if s.current:
         return [("[u]C[/u]ancel", "cancel", "primary")]
+    if not s.running:  # exited → resurrect or delete its saved state
+        return [
+            ("[u]R[/u]esurrect", "resurrect", "success"),
+            ("[u]D[/u]elete", "delete", "error"),
+            ("[u]C[/u]ancel", "cancel", "primary"),
+        ]
     return [
         ("[u]A[/u]ttach", "attach", "success"),
         ("[u]K[/u]ill", "kill", "error"),
@@ -122,6 +143,7 @@ class SessionsPane(Container):
         super().__init__()
         self._ctx = ctx
         self._sessions: list[Session] = []
+        self._exited: list[Session] = []
         # Signatures of the last render, so an unchanged auto-refresh is a no-op
         # (rebuilding the list every tick made it visibly flash).
         self._list_sig: tuple[object, ...] | None = None
@@ -142,6 +164,13 @@ class SessionsPane(Container):
 
     @work(thread=True, exclusive=True)
     def action_reload(self) -> None:
+        # Once-a-day guarded retention sweep, opportunistically on load (the daily
+        # guard keeps the 4s auto-refresh from thrashing it).
+        maybe_prune(
+            self._ctx.runner,
+            state_file=self._ctx.state_dir / "session-prune",
+            now=datetime.now(),
+        )
         try:
             sessions = list_sessions(self._ctx.runner)
         except SessionError:
@@ -167,6 +196,7 @@ class SessionsPane(Container):
     ) -> None:
         programs = programs or {}
         self._sessions = live_sessions(sessions)
+        self._exited = exited_sessions(sessions)
 
         # Only touch the DOM when the rendered content actually changes — an
         # unchanged auto-refresh tick must not flash the list or the agents line.
@@ -174,8 +204,12 @@ class SessionsPane(Container):
         if agents_line != self._agents_sig:
             self.query_one("#active-agents", Static).update(agents_line)
             self._agents_sig = agents_line
-        list_sig = tuple(
-            (s.name, s.current, s.running, tuple(programs.get(s.name, ()))) for s in self._sessions
+        list_sig = (
+            tuple(
+                (s.name, s.current, s.running, tuple(programs.get(s.name, ())))
+                for s in self._sessions
+            ),
+            tuple((s.name, s.created_age_seconds) for s in self._exited),
         )
         if list_sig == self._list_sig:
             return
@@ -188,19 +222,33 @@ class SessionsPane(Container):
         # clear() is deferred — await it so the old fixed-id rows are actually
         # gone before we re-append them (otherwise: DuplicateIds on reload).
         await view.clear()
-        # Create is always one tap away, even with zero sessions.
-        view.append(ListItem(Label("[b]+  New session[/]"), id=_NEW_ROW_ID, classes="new-row"))
-        if not self._sessions:
-            view.append(ListItem(Label("[dim]no sessions yet[/]"), disabled=True))
-        for s in self._sessions:
-            view.append(_session_item(s, programs.get(s.name, ())))
+        self._populate_rows(view, programs)
         if prev_id is not None:
             restored = next((i for i, it in enumerate(view.children) if it.id == prev_id), None)
             if restored is not None:
                 view.index = restored
 
+    def _populate_rows(self, view: ListView, programs: dict[str, list[str]]) -> None:
+        """Rebuild the list rows: the New row, live sessions, then the exited group."""
+        # Create is always one tap away, even with zero sessions.
+        view.append(ListItem(Label("[b]+  New session[/]"), id=_NEW_ROW_ID, classes="new-row"))
+        if not self._sessions and not self._exited:
+            view.append(ListItem(Label("[dim]no sessions yet[/]"), disabled=True))
+        for s in self._sessions:
+            view.append(_session_item(s, programs.get(s.name, ())))
+        if self._exited:
+            view.append(
+                ListItem(Label("[dim]── resurrectable ──[/]"), disabled=True, classes="group-label")
+            )
+            for s in self._exited:
+                view.append(_exited_item(s))
+
     def session_names(self) -> list[str]:
         return [s.name for s in self._sessions]
+
+    def _managed(self) -> list[Session]:
+        """Every row the user can act on: live sessions plus resurrectable ones."""
+        return [*self._sessions, *self._exited]
 
     # ------------------------------------------------------------------ #
     # Interaction
@@ -213,7 +261,7 @@ class SessionsPane(Container):
             return
         if item_id.startswith("sess-"):
             name = item_id.removeprefix("sess-")
-            session = next((s for s in self._sessions if s.name == name), None)
+            session = next((s for s in self._managed() if s.name == name), None)
             if session is not None:
                 self._app.push_screen(
                     _SessionActions(session),
@@ -249,11 +297,15 @@ class SessionsPane(Container):
         )
 
     def _on_action(self, session: Session, action: str | None) -> None:
-        if action == "attach":
+        if action in ("attach", "resurrect"):
             self._handoff(session.name)
         elif action == "kill":
             kill_session(self._ctx.runner, session.name)
             self.notify(f"Killed {session.name}", title="Sessions", severity="warning")
+            self.action_reload()
+        elif action == "delete":
+            delete_session(self._ctx.runner, session.name)
+            self.notify(f"Deleted {session.name}", title="Sessions", severity="warning")
             self.action_reload()
 
     def _on_new_session(self, name: str | None) -> None:
@@ -275,6 +327,8 @@ class _SessionActions(ModalScreen[str | None]):
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("a", "attach", "Attach"),
         Binding("k", "kill", "Kill"),
+        Binding("r", "resurrect", "Resurrect"),
+        Binding("d", "delete", "Delete"),
         Binding("c", "cancel", "Cancel"),
         Binding("escape", "cancel", show=False),
     ]
@@ -285,7 +339,7 @@ class _SessionActions(ModalScreen[str | None]):
 
     def compose(self) -> ComposeResult:
         s = self._s
-        state = "attached here" if s.current else "running"
+        state = "attached here" if s.current else ("running" if s.running else "exited")
         with Vertical(id="confirm-box"):
             yield Label(f"[b]{s.name}[/]  [dim]· {state}[/]")
             for label, button_id, variant in session_action_buttons(s):
@@ -295,12 +349,20 @@ class _SessionActions(ModalScreen[str | None]):
         self.dismiss(None if event.button.id == "cancel" else event.button.id)
 
     def action_attach(self) -> None:
-        if not self._s.current:  # attaching to where you already are is a no-op
+        if self._s.running and not self._s.current:  # only a live, non-current session attaches
             self.dismiss("attach")
 
     def action_kill(self) -> None:
-        if not self._s.current:  # killing the current session would tear down the TUI
+        if self._s.running and not self._s.current:  # killing current would tear down the TUI
             self.dismiss("kill")
+
+    def action_resurrect(self) -> None:
+        if not self._s.running:  # only exited sessions resurrect
+            self.dismiss("resurrect")
+
+    def action_delete(self) -> None:
+        if not self._s.running:  # delete drops an exited session's saved state
+            self.dismiss("delete")
 
     def action_cancel(self) -> None:
         self.dismiss(None)
