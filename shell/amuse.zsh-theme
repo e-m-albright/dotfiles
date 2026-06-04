@@ -5,13 +5,12 @@
 # precmd hook (zero subshells at render time); the prompt strings just
 # interpolate the cached segments.
 #
-#   ~/dir (main ↑2 +1 !3 ?2) [venv] wt:fix-bug cc:yolo
-#   127 $                                        took 8s · 14:32:05
+#   ~/dir (main ↑2 +1 !3 ?2) [venv] wt:fix-bug cc:yolo took 8s 14:32:05
+#   127 $   (yellow on success, red on failure)
 #
 # Line 1: dir · git (branch + ahead/behind + staged/unstaged/untracked) ·
-#         venv · worktree · active Claude profile
+#         venv · worktree · active Claude profile · duration (if slow) · clock
 # Line 2: exit code (only on failure) + $  (yellow ok / red failed)
-# Right:  last command duration (if slow) + clock — transient, clears on rerun
 
 # Colors (modern %F{} syntax only)
 CYAN="%F{51}"
@@ -26,7 +25,6 @@ BOLD="%B"
 UNBOLD="%b"
 
 setopt PROMPT_SUBST          # allow ${...} expansion in PROMPT each render
-setopt TRANSIENT_RPROMPT     # drop the right prompt once a command is accepted
 zmodload zsh/datetime        # $EPOCHREALTIME for command timing
 autoload -Uz add-zsh-hook
 
@@ -64,7 +62,7 @@ _prompt_duration_compute() {
     local elapsed=$(( EPOCHREALTIME - _cmd_start ))
     unset _cmd_start
     (( elapsed >= PROMPT_DURATION_THRESHOLD )) && \
-        _duration_segment="took $(_fmt_duration "$elapsed")"
+        _duration_segment="${DIM}took $(_fmt_duration "$elapsed") ${RESET}"
 }
 
 # -----------------------------------------------------------------------------
@@ -181,10 +179,9 @@ add-zsh-hook preexec _prompt_preexec
 add-zsh-hook precmd  _prompt_precmd
 
 # -----------------------------------------------------------------------------
-# Prompts (pure interpolation — no subshells at render time)
+# Prompt (pure interpolation — no subshells at render time). Everything,
+# including duration + clock, lives on line 1's left; no right prompt.
 # -----------------------------------------------------------------------------
 PROMPT='
-${BOLD}${PINK}%~${UNBOLD}${RESET} ${_git_segment}${_venv_segment}${_wt_segment}${_profile_segment}
+${BOLD}${PINK}%~${UNBOLD}${RESET} ${_git_segment}${_venv_segment}${_wt_segment}${_profile_segment}${_duration_segment}${DIM}%*${RESET}
 ${_exit_segment}${_char_color}\$${RESET} '
-
-RPROMPT='${DIM}${_duration_segment:+${_duration_segment} · }%*${RESET}'
