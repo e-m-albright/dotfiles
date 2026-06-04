@@ -6,7 +6,52 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from dotfiles.cmd.session.agent_sessions import decode_claude_slug, live_agents
+from dotfiles.cmd.session.agent_sessions import (
+    decode_claude_slug,
+    live_agents,
+    match_agents_to_sessions,
+)
+from dotfiles.cmd.session.models import AgentActivity
+
+
+def _agent(cwd: str) -> AgentActivity:
+    return AgentActivity(agent="claude", cwd=cwd, last_active=datetime(2026, 6, 1, 12, 0))
+
+
+def test_match_agents_exact_cwd() -> None:
+    matched, unmatched = match_agents_to_sessions(
+        {"dotfiles": "/Users/evan/dotfiles"}, [_agent("/Users/evan/dotfiles")]
+    )
+    assert [a.cwd for a in matched["dotfiles"]] == ["/Users/evan/dotfiles"]
+    assert unmatched == []
+
+
+def test_match_agents_nested_cwd_picks_deepest_session() -> None:
+    # An agent in dotfiles/cli matches both the home session and dotfiles; the
+    # deepest (most specific) cwd wins.
+    matched, unmatched = match_agents_to_sessions(
+        {"home": "/Users/evan", "dotfiles": "/Users/evan/dotfiles"},
+        [_agent("/Users/evan/dotfiles/cli")],
+    )
+    assert "dotfiles" in matched
+    assert "home" not in matched
+    assert unmatched == []
+
+
+def test_match_agents_unmatched_when_no_session_contains_cwd() -> None:
+    matched, unmatched = match_agents_to_sessions(
+        {"dotfiles": "/Users/evan/dotfiles"}, [_agent("/Users/evan/code/public")]
+    )
+    assert matched == {}
+    assert [a.cwd for a in unmatched] == ["/Users/evan/code/public"]
+
+
+def test_match_agents_sibling_prefix_is_not_a_match() -> None:
+    # /Users/evan/dotfiles-old must not match the /Users/evan/dotfiles session.
+    _, unmatched = match_agents_to_sessions(
+        {"dotfiles": "/Users/evan/dotfiles"}, [_agent("/Users/evan/dotfiles-old")]
+    )
+    assert [a.cwd for a in unmatched] == ["/Users/evan/dotfiles-old"]
 
 
 def test_decode_claude_slug() -> None:

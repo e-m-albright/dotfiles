@@ -22,7 +22,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, ListItem, ListView, Static
 
 from dotfiles.app.context import AppContext
-from dotfiles.cmd.session.agent_sessions import live_agents
+from dotfiles.cmd.session.agent_sessions import live_agents, match_agents_to_sessions
 from dotfiles.cmd.session.models import AgentActivity, Session
 from dotfiles.cmd.session.service import (
     SessionError,
@@ -37,7 +37,11 @@ from dotfiles.cmd.session.service import (
     maybe_prune,
     valid_session_name,
 )
-from dotfiles.cmd.session.session_info import session_program_titles, zellij_cache_root
+from dotfiles.cmd.session.session_info import (
+    session_cwd,
+    session_program_titles,
+    zellij_cache_root,
+)
 from dotfiles.tui.launcher import in_zellij, zellij_handoff_command
 
 if TYPE_CHECKING:
@@ -47,17 +51,28 @@ _NEW_ROW_ID = "new-session"
 _REFRESH_SECONDS = 4.0  # live deck: cheap (one `zellij list-sessions` + a dir scan)
 
 
-def _agents_line(agents: list[AgentActivity], now: datetime, clients: int | None = None) -> str:
-    """One-line summary: attached-client count (when in a session) + live agents."""
+def _elsewhere_line(
+    unmatched: list[AgentActivity], now: datetime, clients: int | None = None
+) -> str:
+    """Top summary: attached-client count + agents NOT tied to a visible session.
+
+    Matched agents live on their session rows; this line catches the rest — agents
+    in a dir with no zellij session (or a hint that our cwd matching missed one).
+    """
     prefix = f"[cyan]👤 {clients} attached[/]  ·  " if clients else ""
-    if not agents:
-        return prefix + "[dim]No agents active in the last 15m[/]"
+    if not unmatched:
+        return prefix + "[dim]No agents elsewhere[/]"
     parts: list[str] = []
-    for a in agents:
+    for a in unmatched:
         mins = max(0, int((now - a.last_active).total_seconds() // 60))
         name = Path(a.cwd).name or a.cwd or "?"
         parts.append(f"[green]{a.agent}[/] {name} [dim]{mins}m[/]")
-    return prefix + "  ·  ".join(parts)
+    return prefix + "[dim]elsewhere:[/]  " + "  ·  ".join(parts)
+
+
+def _agent_badge(agents: Sequence[AgentActivity]) -> str:
+    """Green badge of agent names active in a session, e.g. ``claude`` or ``claude · codex``."""
+    return " · ".join(f"[green]{a.agent}[/]" for a in agents)
 
 
 def live_sessions(sessions: list[Session]) -> list[Session]:
@@ -87,11 +102,13 @@ def _exited_item(s: Session) -> ListItem:
     return ListItem(Label("\n".join(lines)), id=f"sess-{s.name}", classes="session-row is-exited")
 
 
-def _session_item(s: Session, programs: Sequence[str] = ()) -> ListItem:
+def _session_item(
+    s: Session, programs: Sequence[str] = (), agents: Sequence[AgentActivity] = ()
+) -> ListItem:
     """A tall, spaced, tappable row for one session (state shown via glyph + accent).
 
     When zellij tells us what's running in the panes, we lead with that preview
-    line; the action hint follows, dimmer.
+    line; the action hint follows, dimmer, prefixed with any active agents.
     """
     if s.current:
         state_cls, desc = "is-current", "attached here · tap for options"
@@ -100,7 +117,8 @@ def _session_item(s: Session, programs: Sequence[str] = ()) -> ListItem:
     lines = [f"[bold]●  {s.name}[/]"]
     if programs:
         lines.append(_programs_line(programs))
-    lines.append(f"   [dim]{desc}[/]")
+    badge = _agent_badge(agents)
+    lines.append(f"   {badge} [dim]· {desc}[/]" if badge else f"   [dim]{desc}[/]")
     return ListItem(
         Label("\n".join(lines)), id=f"sess-{s.name}", classes=f"session-row {state_cls}"
     )
@@ -184,32 +202,48 @@ class SessionsPane(Container):
             for s in sessions
             if s.running
         }
-        self._app.call_from_thread(self._apply_sessions, sessions, agents, now, clients, programs)
+        session_cwds = {
+            s.name: cwd
+            for s in sessions
+            if s.running and (cwd := session_cwd(cache_root=cache_root, name=s.name))
+        }
+        matched, unmatched = match_agents_to_sessions(session_cwds, agents)
+        self._app.call_from_thread(
+            self._apply_sessions, sessions, unmatched, now, clients, programs, matched
+        )
 
     async def _apply_sessions(
         self,
         sessions: list[Session],
-        agents: list[AgentActivity],
+        unmatched: list[AgentActivity],
         now: datetime,
         clients: int | None = None,
         programs: dict[str, list[str]] | None = None,
+        matched: dict[str, list[AgentActivity]] | None = None,
     ) -> None:
         programs = programs or {}
+        matched = matched or {}
         self._sessions = live_sessions(sessions)
         self._exited = exited_sessions(sessions)
 
         # Only touch the DOM when the rendered content actually changes — an
-        # unchanged auto-refresh tick must not flash the list or the agents line.
-        agents_line = _agents_line(agents, now, clients)
-        if agents_line != self._agents_sig:
-            self.query_one("#active-agents", Static).update(agents_line)
-            self._agents_sig = agents_line
-        # Exited rows key on name only: their age ticks every second, but the
-        # displayed label is coarse and dormant — including age would rebuild
-        # (and flash) the whole list on every refresh.
+        # unchanged auto-refresh tick must not flash the list or the elsewhere line.
+        elsewhere = _elsewhere_line(unmatched, now, clients)
+        if elsewhere != self._agents_sig:
+            self.query_one("#active-agents", Static).update(elsewhere)
+            self._agents_sig = elsewhere
+        # Exited rows key on name only (their age ticks every second). Matched
+        # agents key on NAMES only, not idle minutes — so an agent starting/stopping
+        # rebuilds the row, but a ticking minute never flashes the list.
         list_sig = (
             tuple(
-                (s.name, s.current, s.running, tuple(programs.get(s.name, ())))
+                (
+                    s.name,
+                    s.current,
+                    s.running,
+                    tuple(programs.get(s.name, ())),
+                    tuple(a.agent for a in matched.get(s.name, [])),
+                )
                 for s in self._sessions
             ),
             tuple(s.name for s in self._exited),
@@ -225,20 +259,25 @@ class SessionsPane(Container):
         # clear() is deferred — await it so the old fixed-id rows are actually
         # gone before we re-append them (otherwise: DuplicateIds on reload).
         await view.clear()
-        self._populate_rows(view, programs)
+        self._populate_rows(view, programs, matched)
         if prev_id is not None:
             restored = next((i for i, it in enumerate(view.children) if it.id == prev_id), None)
             if restored is not None:
                 view.index = restored
 
-    def _populate_rows(self, view: ListView, programs: dict[str, list[str]]) -> None:
+    def _populate_rows(
+        self,
+        view: ListView,
+        programs: dict[str, list[str]],
+        matched: dict[str, list[AgentActivity]],
+    ) -> None:
         """Rebuild the list rows: the New row, live sessions, then the exited group."""
         # Create is always one tap away, even with zero sessions.
         view.append(ListItem(Label("[b]+  New session[/]"), id=_NEW_ROW_ID, classes="new-row"))
         if not self._sessions and not self._exited:
             view.append(ListItem(Label("[dim]no sessions yet[/]"), disabled=True))
         for s in self._sessions:
-            view.append(_session_item(s, programs.get(s.name, ())))
+            view.append(_session_item(s, programs.get(s.name, ()), matched.get(s.name, [])))
         if self._exited:
             view.append(
                 ListItem(Label("[dim]── resurrectable ──[/]"), disabled=True, classes="group-label")

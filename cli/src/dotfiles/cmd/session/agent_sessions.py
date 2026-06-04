@@ -78,3 +78,34 @@ def live_agents(*, home: Path, now: datetime, window_minutes: int = 15) -> list[
     cutoff = now - timedelta(minutes=window_minutes)
     found = _claude(home, cutoff) + _codex(home, cutoff)
     return sorted(found, key=lambda a: a.last_active, reverse=True)
+
+
+def _deepest_session_for(cwd: str, session_cwds: dict[str, str]) -> str | None:
+    """Session name whose cwd most specifically contains *cwd*, or None."""
+    candidates = [
+        (name, base.rstrip("/"))
+        for name, base in session_cwds.items()
+        if cwd == base.rstrip("/") or cwd.startswith(base.rstrip("/") + "/")
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda nb: len(nb[1]))[0]
+
+
+def match_agents_to_sessions(
+    session_cwds: dict[str, str], agents: list[AgentActivity]
+) -> tuple[dict[str, list[AgentActivity]], list[AgentActivity]]:
+    """Group agents under the session whose cwd contains them; deepest cwd wins.
+
+    An agent matches a session when its cwd equals the session's cwd or is nested
+    beneath it. Agents matching no session land in the returned "unmatched" list.
+    """
+    matched: dict[str, list[AgentActivity]] = {}
+    unmatched: list[AgentActivity] = []
+    for agent in agents:
+        best = _deepest_session_for(agent.cwd, session_cwds)
+        if best is None:
+            unmatched.append(agent)
+        else:
+            matched.setdefault(best, []).append(agent)
+    return matched, unmatched

@@ -4,9 +4,23 @@ from pathlib import Path
 
 from dotfiles.cmd.session.session_info import (
     parse_pane_titles,
+    parse_session_cwd,
+    session_cwd,
     session_program_titles,
     zellij_cache_root,
 )
+
+
+def test_parse_session_cwd_reads_top_level_cwd() -> None:
+    layout = (
+        'layout {\n    cwd "/Users/evan/dotfiles"\n    pane {\n        cwd "/tmp/other"\n    }\n}\n'
+    )
+    assert parse_session_cwd(layout) == "/Users/evan/dotfiles"
+
+
+def test_parse_session_cwd_none_when_absent() -> None:
+    assert parse_session_cwd("layout {\n    pane { }\n}\n") is None
+
 
 # Trimmed from a real session-metadata.kdl: one terminal pane + two plugin panes
 # (chrome) + one suppressed plugin overlay. Only the terminal pane should surface.
@@ -73,6 +87,17 @@ def test_session_program_titles_reads_from_cache(tmp_path: Path):
     info.mkdir(parents=True)
     (info / "session-metadata.kdl").write_text(_METADATA)
     assert session_program_titles(cache_root=tmp_path, name="banana") == ["✳ Claude Code"]
+
+
+def test_session_cwd_reads_from_cache(tmp_path: Path):
+    info = tmp_path / "contract_version_1" / "session_info" / "banana"
+    info.mkdir(parents=True)
+    (info / "session-layout.kdl").write_text('layout {\n    cwd "/Users/evan/blog"\n}\n')
+    assert session_cwd(cache_root=tmp_path, name="banana") == "/Users/evan/blog"
+
+
+def test_session_cwd_degrades_to_none_when_missing(tmp_path: Path):
+    assert session_cwd(cache_root=tmp_path, name="ghost") is None
 
 
 def test_session_program_titles_degrades_to_empty_when_missing(tmp_path: Path):

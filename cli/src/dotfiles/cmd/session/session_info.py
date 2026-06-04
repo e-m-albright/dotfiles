@@ -21,6 +21,7 @@ _PLUGIN = re.compile(r"\bis_plugin\s+true\b")
 _SUPPRESSED = re.compile(r"\bis_suppressed\s+true\b")
 _EXITED = re.compile(r"\bexited\s+true\b")
 _TITLE = re.compile(r'\btitle\s+"([^"]*)"')
+_CWD = re.compile(r'\bcwd\s+"([^"]*)"')
 
 
 def zellij_cache_root(home: Path, platform: str) -> Path:
@@ -69,6 +70,30 @@ def parse_pane_titles(metadata: str) -> list[str]:
         if title and title.group(1).strip():
             titles.append(title.group(1).strip())
     return titles
+
+
+def parse_session_cwd(layout: str) -> str | None:
+    """The session's base cwd from its session-layout.kdl (top-level `cwd "…"`).
+
+    The top-level cwd is the first one in the file (panes may carry their own
+    below it), so the first match is the session root we want.
+    """
+    match = _CWD.search(layout)
+    return match.group(1) if match else None
+
+
+def session_cwd(*, cache_root: Path, name: str) -> str | None:
+    """Base working directory of session *name*, or None on any failure."""
+    try:
+        files = sorted(cache_root.glob(f"*/session_info/{name}/session-layout.kdl"))
+    except OSError:
+        return None
+    if not files:
+        return None
+    try:
+        return parse_session_cwd(files[-1].read_text())
+    except OSError:
+        return None
 
 
 def session_program_titles(*, cache_root: Path, name: str) -> list[str]:

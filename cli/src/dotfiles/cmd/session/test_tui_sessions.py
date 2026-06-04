@@ -380,6 +380,97 @@ async def test_rebuild_does_not_duplicate_new_row():
 
 
 @pytest.mark.asyncio
+async def test_agent_matched_by_cwd_shows_on_session_row(tmp_path):
+    # A codex agent whose cwd equals the 'work' session's layout cwd should show
+    # as a badge on that row — and NOT in the elsewhere line.
+    import json
+    import os
+    from datetime import datetime
+
+    workdir = "/Users/evan/proj"
+    info = (
+        tmp_path
+        / "Library/Caches/org.Zellij-Contributors.Zellij/contract_version_1/session_info/work"
+    )
+    info.mkdir(parents=True)
+    (info / "session-layout.kdl").write_text(f'layout {{\n    cwd "{workdir}"\n}}\n')
+    sessions_dir = tmp_path / ".codex" / "sessions"
+    sessions_dir.mkdir(parents=True)
+    transcript = sessions_dir / "x.jsonl"
+    transcript.write_text(json.dumps({"cwd": workdir}) + "\n")
+    ts = datetime.now().timestamp()
+    os.utime(transcript, (ts, ts))
+
+    runner = FakeProcessRunner()
+    runner.script(("zellij", "list-sessions", "--no-formatting"), stdout="work (current)\n")
+    app = MissionControlApp(ctx=make_fake_context(runner=runner, home=tmp_path))
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from textual.widgets import Label, ListView, Static
+
+        view = app.query_one("#session-list", ListView)
+        row = next(i for i in view.children if i.id == "sess-work")
+        row_text = getattr(row.query_one(Label).render(), "plain", "")
+        assert "codex" in row_text
+        elsewhere = getattr(app.query_one("#active-agents", Static).render(), "plain", "")
+        assert "codex" not in elsewhere
+
+
+@pytest.mark.asyncio
+async def test_unmatched_agent_shows_in_elsewhere_line():
+    app, _ = _app_with("work (current)\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from datetime import datetime
+
+        from textual.widgets import Static
+
+        from dotfiles.cmd.session.models import AgentActivity, Session
+        from dotfiles.cmd.session.pane import SessionsPane
+
+        pane = app.query_one(SessionsPane)
+        now = datetime.now()
+        agent = AgentActivity(agent="claude", cwd="/Users/evan/public", last_active=now)
+        await pane._apply_sessions([Session(name="work", running=True, current=True)], [agent], now)
+        await pilot.pause()
+        line = getattr(app.query_one("#active-agents", Static).render(), "plain", "")
+        assert "elsewhere" in line
+        assert "claude" in line
+        assert "public" in line
+
+
+@pytest.mark.asyncio
+async def test_matched_agent_minute_tick_does_not_rebuild_row():
+    # The row badge keys on agent name only; an idle-minute change must not flash.
+    app, _ = _app_with("work (created)\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from datetime import datetime, timedelta
+
+        from textual.widgets import ListView
+
+        from dotfiles.cmd.session.models import AgentActivity, Session
+        from dotfiles.cmd.session.pane import SessionsPane
+
+        pane = app.query_one(SessionsPane)
+        now = datetime(2026, 6, 1, 12, 0)
+        sess = [Session(name="work", running=True, current=False)]
+        fresh = [AgentActivity(agent="claude", cwd="/x", last_active=now)]
+        await pane._apply_sessions(sess, [], now, None, None, {"work": fresh})
+        await pilot.pause()
+        view = app.query_one("#session-list", ListView)
+        before = next(i for i in view.children if i.id == "sess-work")
+        idle = [AgentActivity(agent="claude", cwd="/x", last_active=now - timedelta(minutes=3))]
+        await pane._apply_sessions(sess, [], now, None, None, {"work": idle})
+        await pilot.pause()
+        after = next(i for i in view.children if i.id == "sess-work")
+        assert before is after  # same widget -> no rebuild -> no flash
+
+
+@pytest.mark.asyncio
 async def test_exited_age_tick_does_not_rebuild_rows():
     # zellij reports exited age down to the second, so it changes every refresh.
     # That must NOT churn the list (would flash); only the session *set* matters.
