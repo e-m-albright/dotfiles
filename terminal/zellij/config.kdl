@@ -11,6 +11,13 @@ show_startup_tips false
 // reboot or detach. Pinned explicitly rather than relying on the shifting default.
 session_serialization true
 
+// Also serialize each pane's visible scrollback, so a resurrected session (after
+// a reboot or quit) comes back with its buffer instead of blank panes. Capped so
+// the on-disk state doesn't balloon. Only affects resurrection — a live detach
+// keeps everything regardless.
+serialize_pane_viewport true
+scrollback_lines_to_serialize 10000
+
 // --- Web client (experiment; stays on localhost by default) ------------------
 // `dotfiles remote web --start` serves sessions to a browser. To reach it from
 // the phone over Tailscale you must both bind beyond localhost AND terminate TLS:
