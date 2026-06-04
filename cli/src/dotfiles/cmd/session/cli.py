@@ -1,10 +1,16 @@
 """`dotfiles session` commands: list, attach, new, kill, prune zellij sessions."""
 
+import sys
+from collections.abc import Sequence
 from datetime import datetime
 
 import typer
+from rich.console import Console
+from rich.markup import escape
 
 from dotfiles.app.context import AppContext, app_context
+from dotfiles.cmd.session.agent_sessions import live_agents, match_agents_to_sessions
+from dotfiles.cmd.session.models import AgentActivity, Session
 from dotfiles.cmd.session.service import (
     DEFAULT_MAX_AGE_DAYS,
     DEFAULT_MAX_COUNT,
@@ -19,7 +25,15 @@ from dotfiles.cmd.session.service import (
     prune_exited,
     sessions_to_prune,
 )
+from dotfiles.cmd.session.session_info import (
+    session_cwd,
+    session_program_titles,
+    zellij_cache_root,
+)
 from dotfiles.console import console, render_and_exit
+
+# Brand-gold, matching the TUI's "what's running" preview line.
+_PROGRAM_STYLE = "#cdbf80"
 
 
 def _sweep(app_ctx: AppContext) -> None:
@@ -47,16 +61,101 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
     if not sessions:
         console.print("No active zellij sessions. Use [bold]session new <name>[/] to create one.")
         return
-    choice = app_ctx.launcher.pick([s.name for s in sessions])
+    rows = [
+        _picker_row(s, programs, agents)
+        for s, programs, agents in _enriched_rows(app_ctx, sessions)
+    ]
+    choice = app_ctx.launcher.pick(rows)
     if choice:
         # Picked from the live list, so it already exists.
         layout = layout_name_for(app_ctx.home, choice)
         app_ctx.launcher.attach(attach_command(choice, exists=True, layout=layout))
 
 
+def _agent_badge(agents: Sequence[AgentActivity]) -> str:
+    """Green badge of agent names active in a session, e.g. ``claude · codex``."""
+    return " · ".join(f"[green]{a.agent}[/]" for a in agents)
+
+
+def _programs_preview(programs: Sequence[str], limit: int = 3) -> str:
+    """Brand-gold summary of running pane titles, capped with a ``+N`` overflow.
+
+    Titles are escaped so a stray ``[`` in a pane title can't be read as markup.
+    """
+    shown = [escape(p) for p in programs[:limit]]
+    if len(programs) > limit:
+        shown.append(f"+{len(programs) - limit}")
+    return f"[{_PROGRAM_STYLE}]" + " · ".join(shown) + "[/]"
+
+
+def _ls_line(s: Session, programs: Sequence[str] = (), agents: Sequence[AgentActivity] = ()) -> str:
+    """One enriched list row: name, state, then active agents + what's running.
+
+    Mirrors the TUI row content (agent badge in green, pane preview in gold) on a
+    single line. Exited rows stay minimal — just name and age.
+    """
+    if not s.running:
+        return f"  [bold]{s.name}[/] [dim](exited · {humanize_age(s.created_age_seconds)})[/]"
+    tag = "current" if s.current else "running"
+    extras = [
+        part
+        for part in (_agent_badge(agents), _programs_preview(programs) if programs else "")
+        if part
+    ]
+    detail = "  " + " · ".join(extras) if extras else ""
+    return f"  [bold]{s.name}[/] [dim]({tag})[/]{detail}"
+
+
+# Render rich markup to raw ANSI so the same enriched row can be handed to fzf
+# (which speaks ANSI via --ansi, not console markup). Truecolor for the gold accent.
+_ansi_console = Console(color_system="truecolor", force_terminal=True)
+
+
+def _ansi(markup: str) -> str:
+    """Render a console-markup string to an ANSI-coded line (no trailing newline)."""
+    with _ansi_console.capture() as cap:
+        _ansi_console.print(markup, end="", soft_wrap=True)
+    return cap.get()
+
+
+def _picker_row(
+    s: Session, programs: Sequence[str] = (), agents: Sequence[AgentActivity] = ()
+) -> str:
+    """A `name<TAB>label` row for the fzf picker: clean key, enriched ANSI label.
+
+    fzf shows/searches the label (the same line `ls` prints) but returns the row
+    verbatim, so the caller recovers the session name from the hidden first field.
+    """
+    return f"{s.name}\t{_ansi(_ls_line(s, programs, agents).strip())}"
+
+
+def _enriched_rows(
+    app_ctx: AppContext, sessions: Sequence[Session]
+) -> list[tuple[Session, Sequence[str], Sequence[AgentActivity]]]:
+    """Sessions paired with their live enrichment, ordered as the deck shows them.
+
+    Running first (current, then by name), then exited. Each enrichment is
+    best-effort — what's running in the panes, and which agents are active in the
+    session's cwd subtree — and degrades to empty when zellij's cache is unreadable.
+    """
+    now = datetime.now()
+    cache_root = zellij_cache_root(app_ctx.home, sys.platform)
+    running = sorted((s for s in sessions if s.running), key=lambda s: (not s.current, s.name))
+    programs = {s.name: session_program_titles(cache_root=cache_root, name=s.name) for s in running}
+    session_cwds = {
+        s.name: cwd for s in running if (cwd := session_cwd(cache_root=cache_root, name=s.name))
+    }
+    matched, _ = match_agents_to_sessions(session_cwds, live_agents(home=app_ctx.home, now=now))
+    rows: list[tuple[Session, Sequence[str], Sequence[AgentActivity]]] = [
+        (s, programs.get(s.name, ()), matched.get(s.name, [])) for s in running
+    ]
+    rows.extend((s, (), ()) for s in exited_sessions(sessions))
+    return rows
+
+
 @session_app.command("ls")
 def cmd_list_sessions(ctx: typer.Context) -> None:
-    """List zellij sessions."""
+    """List zellij sessions with what's running and which agents are active."""
     app_ctx = app_context(ctx)
     _sweep(app_ctx)
     try:
@@ -67,14 +166,8 @@ def cmd_list_sessions(ctx: typer.Context) -> None:
     if not sessions:
         console.print("No active zellij sessions.")
         return
-    for s in sessions:
-        if s.current:
-            tag = "current"
-        elif s.running:
-            tag = "running"
-        else:
-            tag = f"exited · {humanize_age(s.created_age_seconds)}"
-        console.print(f"  [bold]{s.name}[/] [dim]({tag})[/]")
+    for s, programs, agents in _enriched_rows(app_ctx, sessions):
+        console.print(_ls_line(s, programs, agents))
 
 
 @session_app.command()

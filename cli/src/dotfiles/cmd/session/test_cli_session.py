@@ -1,8 +1,11 @@
+from datetime import datetime
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from dotfiles.app.main import app
+from dotfiles.cmd.session.cli import _ls_line, _picker_row
+from dotfiles.cmd.session.models import AgentActivity, Session
 from dotfiles.testing.fakes import FakeProcessRunner, FakeSessionLauncher, make_fake_context
 
 runner = CliRunner()
@@ -53,8 +56,6 @@ def test_ls_runs_guarded_prune_sweep(tmp_path: Path) -> None:
 
 
 def test_ls_sweep_is_guarded_by_recent_stamp(tmp_path: Path) -> None:
-    from datetime import datetime
-
     (tmp_path / "session-prune").write_text(datetime.now().isoformat())
     ctx, r = _ctx_with_exited(state_dir=tmp_path)
     runner.invoke(app, ["session", "ls"], obj=ctx)
@@ -97,13 +98,57 @@ def test_ls_lists_sessions() -> None:
 
 def test_ls_shows_age_on_exited_rows(tmp_path: Path) -> None:
     # Guard the sweep so the row is only formatted, not deleted mid-list.
-    from datetime import datetime
 
     (tmp_path / "session-prune").write_text(datetime.now().isoformat())
     ctx, _ = _ctx_with_exited(state_dir=tmp_path)
     result = runner.invoke(app, ["session", "ls"], obj=ctx)
     assert result.exit_code == 0
     assert "exited · 30d" in result.output
+
+
+def _agent(name: str, cwd: str = "/home/evan/code") -> AgentActivity:
+    return AgentActivity(agent=name, cwd=cwd, last_active=datetime(2026, 1, 1))
+
+
+def test_ls_line_running_shows_agents_and_programs() -> None:
+    s = Session(name="work", running=True, current=True)
+    line = _ls_line(s, programs=["Claude Code", "nvim"], agents=[_agent("claude")])
+    assert "work" in line
+    assert "(current)" in line
+    assert "[green]claude[/]" in line
+    assert "Claude Code · nvim" in line
+
+
+def test_ls_line_running_without_enrichment_is_just_name_and_state() -> None:
+    s = Session(name="mobile", running=True, current=False)
+    assert _ls_line(s) == "  [bold]mobile[/] [dim](running)[/]"
+
+
+def test_ls_line_caps_programs_with_overflow() -> None:
+    s = Session(name="busy", running=True, current=False)
+    line = _ls_line(s, programs=["a", "b", "c", "d", "e"])
+    assert "+2" in line
+
+
+def test_ls_line_escapes_program_markup() -> None:
+    s = Session(name="x", running=True, current=False)
+    line = _ls_line(s, programs=["weird [title]"])
+    assert "\\[title]" in line  # escaped so rich won't treat it as a tag
+
+
+def test_picker_row_has_clean_key_and_enriched_label() -> None:
+    s = Session(name="work", running=True, current=True)
+    key, tab, label = _picker_row(s, programs=["nvim"], agents=[_agent("claude")]).partition("\t")
+    assert key == "work"  # hidden field fzf returns → clean session name
+    assert tab == "\t"
+    # The visible label carries the same info as `ls` (ANSI-wrapped, so substrings).
+    assert "claude" in label
+    assert "nvim" in label
+
+
+def test_ls_line_exited_is_minimal() -> None:
+    s = Session(name="old", running=False, current=False, created_age_seconds=30 * 86400)
+    assert _ls_line(s) == "  [bold]old[/] [dim](exited · 30d)[/]"
 
 
 def test_attach_with_name_hands_off_to_zellij() -> None:
@@ -145,7 +190,9 @@ def test_bare_picker_picks_then_attaches() -> None:
     ctx, launcher = _ctx_with_sessions(selection="work")
     result = runner.invoke(app, ["session"], obj=ctx)
     assert result.exit_code == 0
-    assert launcher.picked == [["mobile", "work"]]
+    # Keys are the session names (current first, then by name); the fzf labels are
+    # the enriched rows. The chosen key flows straight into the attach command.
+    assert launcher.picked == [["work", "mobile"]]
     assert launcher.attached == [["zellij", "attach", "--create", "work"]]
 
 

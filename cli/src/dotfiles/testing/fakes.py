@@ -107,7 +107,9 @@ class FakeSessionLauncher:
         self.attached: list[list[str]] = []
 
     def pick(self, options: Sequence[str]) -> str | None:
-        self.picked.append(list(options))
+        # Mirror FzfExecLauncher's `key<TAB>label` contract: record the keys (the
+        # first tab-field) so tests assert on session names, not the ANSI labels.
+        self.picked.append([o.split("\t", 1)[0] for o in options])
         return self.selection
 
     def attach(self, command: Sequence[str]) -> None:

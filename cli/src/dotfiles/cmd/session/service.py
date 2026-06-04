@@ -123,7 +123,11 @@ def attach_command(
 
 @runtime_checkable
 class SessionLauncher(Protocol):
-    """Interactive hand-off: pick from a list, and exec into a command."""
+    """Interactive hand-off: pick from a list, and exec into a command.
+
+    `pick` rows follow a `key<TAB>label` convention: the label is displayed (and may
+    carry ANSI colour), but the selected row's key (first tab-field) is returned.
+    """
 
     def pick(self, options: Sequence[str]) -> str | None: ...
 
