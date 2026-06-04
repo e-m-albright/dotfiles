@@ -15,39 +15,13 @@ export DOTFILES_DIR EXTRA_DIR
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 
 sub_help () {
-    # Gold-gradient wordmark (banner.py is canonical); never let it break help.
-    uv run --project "$DOTFILES_DIR/cli" python -c "from dotfiles.banner import print_banner; print_banner()" 2>/dev/null || true
-    printf "%s Usage: ${YELLOW}%s <command>${NC}\n" "$ARROW" "$BIN_NAME"
-    printf "\n"
-    printf "   help                 This help message\n"
-    printf "\n"
-    printf "${BLUE}Machine${NC} — setup, maintenance, and machine-state\n"
-    printf "   install              Run full dotfiles setup\n"
-    printf "   update               Update OS, Homebrew, runtimes, and dev tools\n"
-    printf "   doctor [--fix]       Check all tools are installed (--fix to repair config)\n"
-    printf "   brew install [opts]  Sync packages from packages.toml (--dry-run, --no-ai/-productivity/-social)\n"
-    printf "   brew upgrade         Upgrade all installed packages (brew is the version surface)\n"
-    printf "   brew stale           Find installed packages not declared in packages.toml\n"
-    printf "   clean                Clean up Homebrew caches\n"
-    printf "   dock                 Reset macOS Dock layout\n"
-    printf "   snapshot [ls|diff]   Capture / list / diff machine-state snapshots\n"
-    printf "   profile-shell        Profile shell startup time\n"
-    printf "\n"
-    printf "${BLUE}Control${NC} — drive this Mac locally or from your phone\n"
-    printf "   tui                    Launch the Mission Control TUI (phone-drivable dashboard)\n"
-    printf "   remote on [opts]       SSH/Mosh/Zellij access for Termius (--add-key, --harden-ssh, --session, --dry-run)\n"
-    printf "   remote off [opts]      Point at the Remote Login toggle; --kill-sessions drops live logins\n"
-    printf "   remote status          Show remote-shell state + SSH auth posture + the toggle shortcut\n"
-    printf "   session <cmd>          zellij sessions: ls, attach, new, kill, or bare picker\n"
-    printf "\n"
-    printf "${BLUE}AI${NC} — agentic tooling and local models\n"
-    printf "   agent global setup [opts]        Configure all AI vendors (--reset-mcp, --clean)\n"
-    printf "   agent global overview            Show active agentic setup (dashboard)\n"
-    printf "   agent global lint                Validate skill/agent files against conventions\n"
-    printf "   agent global verify [--offline]  Check skills/agents deployed + probe MCP servers\n"
-    printf "   agent local [path]               Align a repo's agent instructions (--check, --vendors)\n"
-    printf "   agent web copy [--step|--list]   Copy web-chat instructions to clipboard (Gemini)\n"
-    printf "   benchmark <cmd>                  Benchmark local LM Studio models (list|bench|estimate|compare)\n"
+    # Banner + the full command tree are rendered by the Python CLI (Typer/Rich),
+    # so this top-level help matches every `dfs <command> --help` exactly. The
+    # catalog and its Machine/Control/AI grouping live in dotfiles.app.main; this
+    # shim no longer hand-maintains a parallel list. Fall back to a one-liner if
+    # the Python env can't be reached (e.g. uv missing), so help never hard-fails.
+    uv run --project "$DOTFILES_DIR/cli" python -c "from dotfiles.app.main import print_help; print_help()" 2>/dev/null \
+        || printf "%s Usage: ${YELLOW}%s <command>${NC} (run \`dfs doctor\` — Python CLI unreachable)\n" "$ARROW" "$BIN_NAME"
 }
 
 sub_update () {
