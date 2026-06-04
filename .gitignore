@@ -8,6 +8,7 @@
 .claude/
 .cursor/hooks/state/
 .crush/
+.direnv/
 cli/.complexipy_cache/
 
 # -----------------------------------------------------------------------------
