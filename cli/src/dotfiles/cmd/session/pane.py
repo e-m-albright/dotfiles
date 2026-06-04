@@ -204,12 +204,15 @@ class SessionsPane(Container):
         if agents_line != self._agents_sig:
             self.query_one("#active-agents", Static).update(agents_line)
             self._agents_sig = agents_line
+        # Exited rows key on name only: their age ticks every second, but the
+        # displayed label is coarse and dormant — including age would rebuild
+        # (and flash) the whole list on every refresh.
         list_sig = (
             tuple(
                 (s.name, s.current, s.running, tuple(programs.get(s.name, ())))
                 for s in self._sessions
             ),
-            tuple((s.name, s.created_age_seconds) for s in self._exited),
+            tuple(s.name for s in self._exited),
         )
         if list_sig == self._list_sig:
             return

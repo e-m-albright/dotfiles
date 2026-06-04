@@ -380,6 +380,37 @@ async def test_rebuild_does_not_duplicate_new_row():
 
 
 @pytest.mark.asyncio
+async def test_exited_age_tick_does_not_rebuild_rows():
+    # zellij reports exited age down to the second, so it changes every refresh.
+    # That must NOT churn the list (would flash); only the session *set* matters.
+    app, _ = _app_with("old [Created 1m ago] (EXITED - attach to resurrect)\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from datetime import datetime
+
+        from textual.widgets import ListView
+
+        from dotfiles.cmd.session.models import Session
+        from dotfiles.cmd.session.pane import SessionsPane
+
+        pane = app.query_one(SessionsPane)
+        now = datetime.now()
+        await pane._apply_sessions(
+            [Session(name="old", running=False, current=False, created_age_seconds=100)], [], now
+        )
+        await pilot.pause()
+        view = app.query_one("#session-list", ListView)
+        before = next(i for i in view.children if i.id == "sess-old")
+        await pane._apply_sessions(
+            [Session(name="old", running=False, current=False, created_age_seconds=104)], [], now
+        )
+        await pilot.pause()
+        after = next(i for i in view.children if i.id == "sess-old")
+        assert before is after  # same widget object -> no teardown -> no flash
+
+
+@pytest.mark.asyncio
 async def test_unchanged_reload_does_not_rebuild_rows():
     # The auto-refresh flashed because it tore down + rebuilt the list every
     # tick. An unchanged reload must reuse the existing row widgets (identity).
