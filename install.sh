@@ -304,6 +304,16 @@ else
     print_info "Zellij not installed — skipping config"
 fi
 
+# direnv
+print_section "direnv"
+if command -v direnv >/dev/null 2>&1; then
+    mkdir -p ~/.config/direnv
+    ln -sf "$DOTFILES_DIR/terminal/direnv/direnvrc" ~/.config/direnv/direnvrc 2>/dev/null || true
+    print_success "direnv configured (layout uv helper symlinked)"
+else
+    print_info "direnv not installed — skipping config"
+fi
+
 # Editor configurations
 print_header "📝 Editor Configuration"
 
