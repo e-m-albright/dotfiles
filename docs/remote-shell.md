@@ -90,6 +90,18 @@ paste it into Termius mobile; it just shows the same values the GUI fields take.
 | Open the session manager | `Ctrl o` then `w` |
 | Quit Zellij (**ends** the session) | `Ctrl q` — avoid unless you mean it |
 
+**Drive the Sessions pane by keyboard** (tapping/scrolling is unreliable over
+Mosh, so the deck is built to need neither):
+
+| Do this | Keys |
+|---|---|
+| Jump straight to the n-th live session | `1`–`9` |
+| Move the highlight | `j` / `k` (vim) or arrows |
+| Open the highlighted session's actions | `Enter` |
+| New session | `n` |
+| Kill the highlighted session | `x` |
+| Reload the list | `r` |
+
 **Pick up on the laptop:** `dfs session attach mobile` (or `dfs session` to fuzzy-pick).
 Same session, same panes, same running programs. You can stay attached on both.
 
@@ -100,9 +112,11 @@ the laptop. That's the everyday safety net: close Termius, lose signal, walk awa
 and `dfs session attach mobile` later picks up exactly where you left off.
 
 The **Mission Control TUI** Sessions pane manages your live sessions: a pinned
-**+ New session** row (or press `n`), and tapping any session opens an action sheet
-to **Attach/switch** or **Kill** it. Every action is a deliberate tap, so a phone
-misfire is harmless.
+**+ New session** row (`n`), and selecting any session opens an action sheet to
+**Attach/switch** or **Kill** it. On the laptop you can tap; on the phone, drive it
+by keyboard (see the Sessions-pane key table above) — `1`–`9` jump straight to a
+session, `j`/`k` move the highlight, `Enter` opens the actions. Every destructive
+action still takes a deliberate confirm, so a misfire is harmless.
 
 One Zellij nuance worth knowing: `kill` destroys a session (it's gone, not
 recoverable). Zellij does serialize sessions to disk and can resurrect them after a

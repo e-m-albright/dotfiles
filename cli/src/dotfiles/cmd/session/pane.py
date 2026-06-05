@@ -135,10 +135,13 @@ class SessionsPane(Container):
     BORDER_TITLE = "Sessions"
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("n", "new_session", "New"),
-        Binding("k", "kill_highlighted", "Kill"),
+        Binding("x", "kill_highlighted", "Kill"),
         Binding("r", "reload", "Reload"),
-        # 1-9 jump straight to the n-th live session — fast keyboard switching, and
-        # the way to pick a session on mobile where tapping/scrolling is unreliable.
+        # Keyboard-first navigation so the deck is fully drivable on mobile, where
+        # tapping/scrolling over Mosh is unreliable: vim j/k move the highlight,
+        # and 1-9 jump straight to the n-th live session. (Kill is `x`, freeing k.)
+        Binding("j", "cursor_down", "Down", show=False),
+        Binding("k", "cursor_up", "Up", show=False),
         *(Binding(str(i), f"attach_index({i})", f"Session {i}", show=False) for i in range(1, 10)),
     ]
 
@@ -294,6 +297,14 @@ class SessionsPane(Container):
         """Jump to the n-th live session (1-9). No-ops when n is past the list."""
         if 1 <= n <= len(self._sessions):
             self._handoff(self._sessions[n - 1].name)
+
+    def action_cursor_down(self) -> None:
+        """vim `j`: move the list highlight down (mobile-friendly arrow alternative)."""
+        self.query_one("#session-list", ListView).action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        """vim `k`: move the list highlight up."""
+        self.query_one("#session-list", ListView).action_cursor_up()
 
     def action_kill_highlighted(self) -> None:
         """Kill the highlighted session after one confirm (a keyboard shortcut for

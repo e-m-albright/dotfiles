@@ -94,6 +94,28 @@ async def test_create_requests_handoff_instead_of_exec(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_vim_jk_move_the_list_highlight():
+    # j/k move the highlight (mobile-friendly arrow alternative); after one j the
+    # second live row ("work") is highlighted and Enter opens its action sheet.
+    app, _ = _app_with("mobile [created]\nwork [created]\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from textual.widgets import ListView
+
+        from dotfiles.cmd.session.pane import _SessionActions
+
+        view = app.query_one("#session-list", ListView)
+        view.index = next(i for i, item in enumerate(view.children) if item.id == "sess-mobile")
+        await pilot.press("j")  # down to the next session row
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, _SessionActions)
+        assert app.screen._s.name == "work"
+
+
+@pytest.mark.asyncio
 async def test_numeric_hotkey_jumps_to_nth_live_session(monkeypatch):
     # 1-9 attach the n-th live session (current first, then by name) — keyboard/
     # mobile session switching without tapping or scrolling.
@@ -333,7 +355,7 @@ async def test_kill_hotkey_confirms_then_kills_highlighted_session():
 
         view = app.query_one("#session-list", ListView)
         view.index = next(i for i, item in enumerate(view.children) if item.id == "sess-work")
-        await pilot.press("k")
+        await pilot.press("x")  # pane kill hotkey (k is vim-up now)
         await pilot.pause()
         assert isinstance(app.screen, _ConfirmKill)
         await pilot.press("enter")  # confirm the highlighted "Kill" button
@@ -352,7 +374,7 @@ async def test_kill_hotkey_refuses_current_session():
 
         view = app.query_one("#session-list", ListView)
         view.index = next(i for i, item in enumerate(view.children) if item.id == "sess-work")
-        await pilot.press("k")
+        await pilot.press("x")
         await pilot.pause()
         # No confirm sheet opens, and nothing is killed (would tear down the TUI).
         assert not isinstance(app.screen, ModalScreen)
@@ -370,7 +392,7 @@ async def test_kill_hotkey_noops_on_new_row():
 
         view = app.query_one("#session-list", ListView)
         view.index = next(i for i, item in enumerate(view.children) if item.id == "new-session")
-        await pilot.press("k")
+        await pilot.press("x")
         await pilot.pause()
         assert not isinstance(app.screen, ModalScreen)
         assert not any(c[:2] == ("zellij", "kill-session") for c in runner.calls)
