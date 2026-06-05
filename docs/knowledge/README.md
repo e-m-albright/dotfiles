@@ -8,6 +8,7 @@ Durable, opinionated knowledge that isn't tied to one language stack. Reference 
 - [browser-tooling.md](browser-tooling.md) — tiered browser/UI automation tools
 - [customer-discovery.md](customer-discovery.md) — customer-interview methodology (Mom Test)
 - [engineering-gates.md](engineering-gates.md) — enforcing code health mechanically (ratchets, CI structure, affectedness, audit gates)
+- [code-health-portfolio.md](code-health-portfolio.md) — the code-health skill book: the 7 form lenses + Tier-B function/safety lenses, their antagonists, the convergent sequence, and the scheduling policy
 - [project-memory.md](project-memory.md) — decision-organization system (ADRs, curated memory)
 - [agent-output.md](agent-output.md) — `ai/.agents/` working-files & artifacts convention (plans, research)
 - [agent-fleet.md](agent-fleet.md) — fleet uniformity across the 5 agents: capability matrix, canonical statusline palette, the shared deny vocabulary, and the two permission surfaces (standalone vs Zed/ACP)
