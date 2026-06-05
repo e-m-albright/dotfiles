@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$CURSOR_AGENT\" ] && exit 0; terminal-notifier -title \"Claude Code · $(basename \"$CLAUDE_PROJECT_DIR\")\" -message 'Permission needed' -sound Basso 2>/dev/null || true"
+            "command": "[ -n \"$CURSOR_AGENT\" ] && exit 0; printf '\\a' > /dev/tty 2>/dev/null || true; terminal-notifier -title \"Claude Code · $(basename \"$CLAUDE_PROJECT_DIR\")\" -message 'Permission needed' -sound Basso 2>/dev/null || true"
           }
         ]
       }
