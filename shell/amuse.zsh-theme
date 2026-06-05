@@ -19,6 +19,7 @@ RED="%F{1}"
 YELLOW="%F{226}"
 GREEN="%F{82}"
 ORANGE="%F{208}"
+GOLD="%F{179}"
 DIM="%F{242}"
 RESET="%f"
 BOLD="%B"
@@ -150,7 +151,7 @@ _prompt_context_compute() {
 # Python virtualenv indicator
 _prompt_venv_compute() {
     if [[ -n "$VIRTUAL_ENV" ]]; then
-        _venv_segment="${DIM}[${VIRTUAL_ENV:t}]${RESET} "
+        _venv_segment="${GOLD}[${VIRTUAL_ENV:t}]${RESET} "
     else
         _venv_segment=""
     fi
