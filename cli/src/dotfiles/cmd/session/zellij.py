@@ -35,7 +35,6 @@ _PLUGIN = re.compile(r"\bis_plugin\s+true\b")
 _SUPPRESSED = re.compile(r"\bis_suppressed\s+true\b")
 _EXITED = re.compile(r"\bexited\s+true\b")
 _TITLE = re.compile(r'\btitle\s+"([^"]*)"')
-_CWD = re.compile(r'\bcwd\s+"([^"]*)"')
 
 
 class SessionError(RuntimeError):
@@ -172,16 +171,6 @@ def parse_pane_titles(metadata: str) -> list[str]:
     return titles
 
 
-def parse_session_cwd(layout: str) -> str | None:
-    """The session's base cwd from its session-layout.kdl (top-level `cwd "…"`).
-
-    The top-level cwd is the first one in the file (panes may carry their own
-    below it), so the first match is the session root we want.
-    """
-    match = _CWD.search(layout)
-    return match.group(1) if match else None
-
-
 # --- the seam ----------------------------------------------------------------
 
 
@@ -268,13 +257,3 @@ class Zellij:
         except OSError:
             return []
         return parse_pane_titles(metadata)
-
-    def session_cwd(self, name: str) -> str | None:
-        """Base working directory of session *name*, or None on any failure."""
-        try:
-            files = sorted(self._cache_root.glob(f"*/session_info/{name}/session-layout.kdl"))
-            if not files:
-                return None
-            return parse_session_cwd(files[-1].read_text())
-        except OSError:
-            return None

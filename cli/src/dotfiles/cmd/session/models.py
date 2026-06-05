@@ -1,7 +1,5 @@
 """Domain models for zellij sessions and live agent discovery."""
 
-from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict
 
 from dotfiles.agent import Agent
@@ -21,10 +19,15 @@ class Session(BaseModel):
 
 
 class AgentActivity(BaseModel):
-    """A recently-active agent session, discovered from transcript file mtimes."""
+    """A live agent process and the zellij session it runs in.
+
+    `session` is the agent process's inherited ZELLIJ_SESSION_NAME — the exact
+    session it lives in — or None when it's running outside any zellij session.
+    `cwd` is its working directory, used only to label "elsewhere" agents.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     agent: Agent
-    cwd: str
-    last_active: datetime
+    session: str | None = None
+    cwd: str = ""

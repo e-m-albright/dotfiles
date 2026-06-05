@@ -9,7 +9,7 @@ from rich.markup import escape
 
 from dotfiles.app.context import AppContext, app_context
 from dotfiles.cmd.session import session_name
-from dotfiles.cmd.session.agent_sessions import live_agents, match_agents_to_sessions
+from dotfiles.cmd.session.agent_sessions import agents_by_session, live_agents
 from dotfiles.cmd.session.models import AgentActivity, Session
 from dotfiles.cmd.session.service import (
     DEFAULT_MAX_AGE_DAYS,
@@ -135,15 +135,13 @@ def _enriched_rows(
     """Sessions paired with their live enrichment, ordered as the deck shows them.
 
     Running first (current, then by name), then exited. Each enrichment is
-    best-effort — what's running in the panes, and which agents are active in the
-    session's cwd subtree — and degrades to empty when zellij's cache is unreadable.
+    best-effort — what's running in the panes, and which agents are live in each
+    session — and degrades to empty when zellij's cache is unreadable.
     """
-    now = datetime.now()
     zellij = _zellij(app_ctx)
     running = sorted((s for s in sessions if s.running), key=lambda s: (not s.current, s.name))
     programs = {s.name: zellij.program_titles(s.name) for s in running}
-    session_cwds = {s.name: cwd for s in running if (cwd := zellij.session_cwd(s.name))}
-    matched, _ = match_agents_to_sessions(session_cwds, live_agents(home=app_ctx.home, now=now))
+    matched, _ = agents_by_session(live_agents(app_ctx.runner))
     rows: list[tuple[Session, Sequence[str], Sequence[AgentActivity]]] = [
         (s, programs.get(s.name, ()), matched.get(s.name, [])) for s in running
     ]

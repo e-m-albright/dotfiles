@@ -22,7 +22,7 @@ from textual.widgets import Button, Input, Label, ListItem, ListView, Static
 
 from dotfiles.app.context import AppContext
 from dotfiles.cmd.session import session_name
-from dotfiles.cmd.session.agent_sessions import live_agents, match_agents_to_sessions
+from dotfiles.cmd.session.agent_sessions import agents_by_session, live_agents
 from dotfiles.cmd.session.models import AgentActivity, Session
 from dotfiles.cmd.session.service import exited_sessions, humanize_age, maybe_prune
 from dotfiles.cmd.session.zellij import (
@@ -39,22 +39,16 @@ _NEW_ROW_ID = "new-session"
 _REFRESH_SECONDS = 4.0  # live deck: cheap (one `zellij list-sessions` + a dir scan)
 
 
-def _elsewhere_line(
-    unmatched: list[AgentActivity], now: datetime, clients: int | None = None
-) -> str:
-    """Top summary: attached-client count + agents NOT tied to a visible session.
+def _elsewhere_line(unmatched: list[AgentActivity], clients: int | None = None) -> str:
+    """Top summary: attached-client count + agents running outside any session.
 
     Matched agents live on their session rows; this line catches the rest — agents
-    in a dir with no zellij session (or a hint that our cwd matching missed one).
+    whose process carries no ZELLIJ_SESSION_NAME, labelled by their working dir.
     """
     prefix = f"[cyan]👤 {clients} attached[/]  ·  " if clients else ""
     if not unmatched:
         return prefix + "[dim]No agents elsewhere[/]"
-    parts: list[str] = []
-    for a in unmatched:
-        mins = max(0, int((now - a.last_active).total_seconds() // 60))
-        name = Path(a.cwd).name or a.cwd or "?"
-        parts.append(f"[green]{a.agent}[/] {name} [dim]{mins}m[/]")
+    parts = [f"[green]{a.agent}[/] {Path(a.cwd).name or a.cwd or '?'}" for a in unmatched]
     return prefix + "[dim]elsewhere:[/]  " + "  ·  ".join(parts)
 
 
@@ -185,23 +179,18 @@ class SessionsPane(Container):
             sessions = self._zellij.list_sessions()
         except SessionError:
             sessions = []
-        now = datetime.now()
-        agents = live_agents(home=self._ctx.home, now=now)
+        agents = live_agents(self._ctx.runner)
         clients = self._zellij.attached_client_count() if in_zellij() else None
         programs = {s.name: self._zellij.program_titles(s.name) for s in sessions if s.running}
-        session_cwds = {
-            s.name: cwd for s in sessions if s.running and (cwd := self._zellij.session_cwd(s.name))
-        }
-        matched, unmatched = match_agents_to_sessions(session_cwds, agents)
+        matched, unmatched = agents_by_session(agents)
         self._app.call_from_thread(
-            self._apply_sessions, sessions, unmatched, now, clients, programs, matched
+            self._apply_sessions, sessions, unmatched, clients, programs, matched
         )
 
     async def _apply_sessions(
         self,
         sessions: list[Session],
         unmatched: list[AgentActivity],
-        now: datetime,
         clients: int | None = None,
         programs: dict[str, list[str]] | None = None,
         matched: dict[str, list[AgentActivity]] | None = None,
@@ -213,7 +202,7 @@ class SessionsPane(Container):
 
         # Only touch the DOM when the rendered content actually changes — an
         # unchanged auto-refresh tick must not flash the list or the elsewhere line.
-        elsewhere = _elsewhere_line(unmatched, now, clients)
+        elsewhere = _elsewhere_line(unmatched, clients)
         if elsewhere != self._agents_sig:
             self.query_one("#active-agents", Static).update(elsewhere)
             self._agents_sig = elsewhere

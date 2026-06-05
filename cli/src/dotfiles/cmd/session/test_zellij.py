@@ -12,7 +12,6 @@ from dotfiles.cmd.session.zellij import (
     handoff_command,
     layout_name_for,
     parse_pane_titles,
-    parse_session_cwd,
     parse_sessions,
     zellij_cache_root,
 )
@@ -115,17 +114,6 @@ def test_handoff_switches_when_in_zellij() -> None:
 
 
 # --- cache format (pure) -----------------------------------------------------
-
-
-def test_parse_session_cwd_reads_top_level_cwd() -> None:
-    layout = (
-        'layout {\n    cwd "/Users/evan/dotfiles"\n    pane {\n        cwd "/tmp/other"\n    }\n}\n'
-    )
-    assert parse_session_cwd(layout) == "/Users/evan/dotfiles"
-
-
-def test_parse_session_cwd_none_when_absent() -> None:
-    assert parse_session_cwd("layout {\n    pane { }\n}\n") is None
 
 
 # Trimmed from a real session-metadata.kdl: one terminal pane + two plugin panes
@@ -306,19 +294,6 @@ def test_program_titles_reads_from_cache(tmp_path: Path, monkeypatch) -> None:
     info.mkdir(parents=True)
     (info / "session-metadata.kdl").write_text(_METADATA)
     assert _zellij(FakeProcessRunner(), home=tmp_path).program_titles("banana") == ["✳ Claude Code"]
-
-
-def test_session_cwd_reads_from_cache(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    info = tmp_path / "zellij" / "contract_version_1" / "session_info" / "banana"
-    info.mkdir(parents=True)
-    (info / "session-layout.kdl").write_text('layout {\n    cwd "/Users/evan/blog"\n}\n')
-    assert _zellij(FakeProcessRunner(), home=tmp_path).session_cwd("banana") == "/Users/evan/blog"
-
-
-def test_session_cwd_degrades_to_none_when_missing(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    assert _zellij(FakeProcessRunner(), home=tmp_path).session_cwd("ghost") is None
 
 
 def test_program_titles_degrades_to_empty_when_missing(tmp_path: Path, monkeypatch) -> None:

@@ -106,8 +106,8 @@ def test_ls_shows_age_on_exited_rows(tmp_path: Path) -> None:
     assert "exited · 30d" in result.output
 
 
-def _agent(name: str, cwd: str = "/home/evan/code") -> AgentActivity:
-    return AgentActivity(agent=name, cwd=cwd, last_active=datetime(2026, 1, 1))
+def _agent(name: str, session: str = "work") -> AgentActivity:
+    return AgentActivity(agent=name, session=session, cwd="/home/evan/code")
 
 
 def test_ls_line_running_shows_agents_and_programs() -> None:

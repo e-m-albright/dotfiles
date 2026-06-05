@@ -389,30 +389,15 @@ async def test_rebuild_does_not_duplicate_new_row():
 
 
 @pytest.mark.asyncio
-async def test_agent_matched_by_cwd_shows_on_session_row(tmp_path):
-    # A codex agent whose cwd equals the 'work' session's layout cwd should show
-    # as a badge on that row — and NOT in the elsewhere line.
-    import json
-    import os
-    from datetime import datetime
-
-    workdir = "/Users/evan/proj"
-    info = (
-        tmp_path
-        / "Library/Caches/org.Zellij-Contributors.Zellij/contract_version_1/session_info/work"
+async def test_agent_matched_by_session_env_shows_on_row():
+    # A codex process whose ZELLIJ_SESSION_NAME is 'work' shows as a badge on that
+    # row — and NOT in the elsewhere line. No cwd involved.
+    app, runner = _app_with("work (current)\n")
+    runner.script(("pgrep", "-x", "codex"), stdout="999\n")
+    runner.script(
+        ("ps", "eww", "-p", "999", "-o", "command="),
+        stdout="codex PWD=/Users/evan/proj ZELLIJ_SESSION_NAME=work\n",
     )
-    info.mkdir(parents=True)
-    (info / "session-layout.kdl").write_text(f'layout {{\n    cwd "{workdir}"\n}}\n')
-    sessions_dir = tmp_path / ".codex" / "sessions"
-    sessions_dir.mkdir(parents=True)
-    transcript = sessions_dir / "x.jsonl"
-    transcript.write_text(json.dumps({"cwd": workdir}) + "\n")
-    ts = datetime.now().timestamp()
-    os.utime(transcript, (ts, ts))
-
-    runner = FakeProcessRunner()
-    runner.script(("zellij", "list-sessions", "--no-formatting"), stdout="work (current)\n")
-    app = MissionControlApp(ctx=make_fake_context(runner=runner, home=tmp_path))
     async with app.run_test() as pilot:
         await pilot.pause()
         await pilot.pause()
@@ -432,17 +417,14 @@ async def test_unmatched_agent_shows_in_elsewhere_line():
     async with app.run_test() as pilot:
         await pilot.pause()
         await pilot.pause()
-        from datetime import datetime
-
         from textual.widgets import Static
 
         from dotfiles.cmd.session.models import AgentActivity, Session
         from dotfiles.cmd.session.pane import SessionsPane
 
         pane = app.query_one(SessionsPane)
-        now = datetime.now()
-        agent = AgentActivity(agent="claude", cwd="/Users/evan/public", last_active=now)
-        await pane._apply_sessions([Session(name="work", running=True, current=True)], [agent], now)
+        agent = AgentActivity(agent="claude", session=None, cwd="/Users/evan/public")
+        await pane._apply_sessions([Session(name="work", running=True, current=True)], [agent])
         await pilot.pause()
         line = getattr(app.query_one("#active-agents", Static).render(), "plain", "")
         assert "elsewhere" in line
@@ -451,29 +433,25 @@ async def test_unmatched_agent_shows_in_elsewhere_line():
 
 
 @pytest.mark.asyncio
-async def test_matched_agent_minute_tick_does_not_rebuild_row():
-    # The row badge keys on agent name only; an idle-minute change must not flash.
+async def test_unchanged_matched_agents_do_not_rebuild_row():
+    # The row keys on agent names; an identical refresh must not flash the list.
     app, _ = _app_with("work (created)\n")
     async with app.run_test() as pilot:
         await pilot.pause()
         await pilot.pause()
-        from datetime import datetime, timedelta
-
         from textual.widgets import ListView
 
         from dotfiles.cmd.session.models import AgentActivity, Session
         from dotfiles.cmd.session.pane import SessionsPane
 
         pane = app.query_one(SessionsPane)
-        now = datetime(2026, 6, 1, 12, 0)
         sess = [Session(name="work", running=True, current=False)]
-        fresh = [AgentActivity(agent="claude", cwd="/x", last_active=now)]
-        await pane._apply_sessions(sess, [], now, None, None, {"work": fresh})
+        agents = [AgentActivity(agent="claude", session="work", cwd="/x")]
+        await pane._apply_sessions(sess, [], None, None, {"work": agents})
         await pilot.pause()
         view = app.query_one("#session-list", ListView)
         before = next(i for i in view.children if i.id == "sess-work")
-        idle = [AgentActivity(agent="claude", cwd="/x", last_active=now - timedelta(minutes=3))]
-        await pane._apply_sessions(sess, [], now, None, None, {"work": idle})
+        await pane._apply_sessions(sess, [], None, None, {"work": agents})
         await pilot.pause()
         after = next(i for i in view.children if i.id == "sess-work")
         assert before is after  # same widget -> no rebuild -> no flash
