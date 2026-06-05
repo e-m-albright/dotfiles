@@ -345,7 +345,7 @@ dotfiles profile-shell       # Profile shell startup time
 dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean); prints the Cursor plugin checklist
 dotfiles agent verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
-dotfiles agent stats         # Skill-usage analytics from transcripts: leaderboard, dead skills, weak triggers (--since, --json)
+dotfiles agent stats         # Skill-usage analytics from Claude + Codex transcripts: leaderboard, dead skills, weak triggers (--since, --json)
 dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
 dotfiles remote on --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh

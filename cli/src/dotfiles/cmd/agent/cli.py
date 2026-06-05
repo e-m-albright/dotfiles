@@ -445,6 +445,11 @@ def _render_vendors(counts: tuple[tuple[str, int], ...]) -> None:
     console.print()
     parts = "  ".join(f"{escape(v)} {n}" for v, n in counts) or "[dim](none)[/]"
     console.print(f"[bold blue]Vendors[/]  {parts}  [dim]· Cursor — (GUI, no logs)[/]")
+    if any(v == "codex" for v, _ in counts):
+        console.print(
+            "  [dim]Codex fires = SKILL.md opens per session"
+            " (autonomous; slash-invokes not separable)[/]"
+        )
 
 
 def _stats_json(r: SkillUsageReport) -> dict[str, object]:

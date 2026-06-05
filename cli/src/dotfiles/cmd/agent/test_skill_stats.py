@@ -9,7 +9,11 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from dotfiles.app.main import app
-from dotfiles.cmd.agent.skill_stats import ClaudeTranscriptReader, SkillUsageService
+from dotfiles.cmd.agent.skill_stats import (
+    ClaudeTranscriptReader,
+    CodexTranscriptReader,
+    SkillUsageService,
+)
 from dotfiles.testing.fakes import make_fake_context
 
 runner = CliRunner()
@@ -237,6 +241,105 @@ def test_sequences_detects_recurring_chains(tmp_path: Path) -> None:
     report = _service(home, dotfiles).report(since_days=90, now=_at(60))
 
     assert (("brainstorming", "writing-plans"), 2) in report.sequences
+
+
+# ---------------------------------------------------------------------------
+# Codex reader — skills loaded by reading SKILL.md via exec_command
+# ---------------------------------------------------------------------------
+
+
+def _codex_exec(*skills: str, ts: datetime, workdir: str = "/x/ophira") -> str:
+    cmd = " ; ".join(f"sed -n '1,200p' .agents/skills/{s}/SKILL.md" for s in skills)
+    return json.dumps(
+        {
+            "timestamp": ts.isoformat(),
+            "type": "response_item",
+            "payload": {
+                "type": "function_call",
+                "name": "exec_command",
+                "arguments": json.dumps({"cmd": cmd, "workdir": workdir}),
+            },
+        }
+    )
+
+
+def _codex_call(name: str, cmd: str) -> str:
+    return json.dumps(
+        {
+            "timestamp": _at(0).isoformat(),
+            "type": "response_item",
+            "payload": {
+                "type": "function_call",
+                "name": name,
+                "arguments": json.dumps({"cmd": cmd, "workdir": "/x/p"}),
+            },
+        }
+    )
+
+
+def _write_codex_rollout(home: Path, name: str, lines: list[str]) -> None:
+    folder = home / ".codex" / "archived_sessions"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / f"rollout-{name}.jsonl").write_text("\n".join(lines) + "\n")
+
+
+def test_codex_reader_counts_skill_opens(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    _write_codex_rollout(home, "s1", [_codex_exec("code-quality-audit", ts=_at(0))])
+
+    events = list(CodexTranscriptReader(home).events())
+
+    assert len(events) == 1
+    assert events[0].skill == "code-quality-audit"
+    assert events[0].vendor == "codex"
+    assert events[0].explicit is False
+    assert events[0].project == "ophira"
+
+
+def test_codex_dedupes_skill_per_session(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    _write_codex_rollout(
+        home,
+        "s1",
+        [_codex_exec("observability", ts=_at(0)), _codex_exec("observability", ts=_at(5))],
+    )
+
+    assert len(list(CodexTranscriptReader(home).events())) == 1
+
+
+def test_codex_multi_skill_command(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    _write_codex_rollout(home, "s1", [_codex_exec("audit", "review-changeset", ts=_at(0))])
+
+    skills = {e.skill for e in CodexTranscriptReader(home).events()}
+
+    assert skills == {"audit", "review-changeset"}
+
+
+def test_codex_excludes_system_skills(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    cmd = "cat .codex/skills/.system/imagegen/SKILL.md"
+    _write_codex_rollout(home, "s1", [_codex_call("exec_command", cmd)])
+
+    assert list(CodexTranscriptReader(home).events()) == []
+
+
+def test_codex_ignores_non_exec_calls(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    _write_codex_rollout(home, "s1", [_codex_call("update_plan", "skills/audit/SKILL.md")])
+
+    assert list(CodexTranscriptReader(home).events()) == []
+
+
+def test_service_blends_codex_usage(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    dotfiles = _dotfiles_with_skills(tmp_path, "observability")
+    _write_codex_rollout(home, "s1", [_codex_exec("observability", ts=_at(0))])
+
+    report = SkillUsageService(home=home, dotfiles_dir=dotfiles).report(since_days=90, now=_at(60))
+
+    assert "observability" not in report.dead  # used in Codex → not dead
+    assert ("codex", 1) in report.vendor_counts
 
 
 # ---------------------------------------------------------------------------

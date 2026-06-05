@@ -11,8 +11,9 @@ cross-references the canonical ``ai/skills/`` inventory to surface:
   ``description:`` isn't earning autonomous invocations;
 - recurring **sequences** (skills that chain).
 
-The reader is a port: ``ClaudeTranscriptReader`` today; Codex and others slot in
-behind the same ``SkillEvent`` stream without touching the service.
+Readers are ports: ``ClaudeTranscriptReader`` and ``CodexTranscriptReader`` emit
+the same ``SkillEvent`` stream behind one service. Cursor is GUI-only and leaves
+no parseable logs, so it is honestly uncovered.
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from itertools import pairwise
 from pathlib import Path
-from typing import cast
+from typing import Protocol, cast
 
 # A user-typed slash command surfaces in the transcript as
 # ``<command-name>/skill-name</command-name>``. Built-in commands (/compact,
@@ -116,8 +117,16 @@ def _project(obj: dict[str, object], path: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Reader port — Claude Code today, Codex/others fall in behind SkillEvent
+# Reader ports — each vendor emits the same SkillEvent stream
 # ---------------------------------------------------------------------------
+
+
+class TranscriptReader(Protocol):
+    """A per-vendor source of normalized skill invocations."""
+
+    dropped_lines: int
+
+    def events(self) -> Iterator[SkillEvent]: ...
 
 
 class ClaudeTranscriptReader:
@@ -137,16 +146,11 @@ class ClaudeTranscriptReader:
 
     def _read_file(self, path: Path) -> Iterator[SkillEvent]:
         for raw in _iter_lines(path):
-            obj = self._parse(raw)
-            if obj is not None:
-                yield from _line_events(raw, obj, path, self.vendor)
-
-    def _parse(self, raw: str) -> dict[str, object] | None:
-        try:
-            return _as_dict(json.loads(raw))
-        except json.JSONDecodeError:
-            self.dropped_lines += 1
-            return None
+            obj = _decode(raw)
+            if obj is None:
+                self.dropped_lines += 1
+                continue
+            yield from _line_events(raw, obj, path, self.vendor)
 
 
 def _line_events(raw: str, obj: dict[str, object], path: Path, vendor: str) -> Iterator[SkillEvent]:
@@ -171,6 +175,77 @@ def _line_events(raw: str, obj: dict[str, object], path: Path, vendor: str) -> I
     elif kind == "assistant":
         for skill in _skill_uses(obj):
             yield SkillEvent(skill, vendor, project, timestamp, False, session)
+
+
+# A Codex skill open is an exec_command whose cmd reads `…/skills/<name>/SKILL.md`.
+# The direct `skills/<name>/SKILL.md` shape excludes Codex's own `.system/*`
+# builtins, whose extra path segment breaks the match.
+_SKILL_PATH = re.compile(r"(?:^|/)skills/([a-z0-9][a-z0-9-]*)/SKILL\.md")
+
+
+class CodexTranscriptReader:
+    """Stream ``SkillEvent``s from Codex rollouts in ``~/.codex/{,archived_}sessions``.
+
+    Codex has no Skill tool: the model loads a skill by reading its ``SKILL.md``
+    after picking it from the described catalog, so an open is one AUTONOMOUS
+    (description-driven) use. Slash-invoked opens aren't separable, so Codex never
+    contributes EXPLICIT events. De-duplicated per (session, skill): re-reading a
+    long skill across several ``sed`` pages counts once.
+    """
+
+    vendor = "codex"
+
+    def __init__(self, home: Path) -> None:
+        codex = home / ".codex"
+        self._roots = (codex / "sessions", codex / "archived_sessions")
+        self.dropped_lines = 0
+
+    def events(self) -> Iterator[SkillEvent]:
+        for root in self._roots:
+            if not root.is_dir():
+                continue
+            for jsonl in sorted(root.glob("rollout-*.jsonl")):
+                yield from self._read_file(jsonl)
+
+    def _read_file(self, path: Path) -> Iterator[SkillEvent]:
+        seen: set[str] = set()
+        for raw in _iter_lines(path):
+            obj = _decode(raw)
+            if obj is None:
+                self.dropped_lines += 1
+                continue
+            yield from _codex_opens(obj, path.stem, seen)
+
+
+def _codex_opens(obj: dict[str, object], session: str, seen: set[str]) -> Iterator[SkillEvent]:
+    payload = _as_dict(obj.get("payload"))
+    if payload is None:
+        return
+    if payload.get("type") != "function_call" or payload.get("name") != "exec_command":
+        return
+    timestamp = _timestamp(obj)
+    if timestamp is None:
+        return
+    args = _as_str(payload.get("arguments")) or ""
+    project = _codex_project(args)
+    for name in dict.fromkeys(_SKILL_PATH.findall(args)):
+        key = f"{session}:{name}"
+        if key not in seen:
+            seen.add(key)
+            yield SkillEvent(name, "codex", project, timestamp, False, session)
+
+
+def _codex_project(args: str) -> str:
+    parsed = _decode(args)
+    workdir = _as_str(parsed.get("workdir")) if parsed else None
+    return Path(workdir).name if workdir else "codex"
+
+
+def _decode(raw: str) -> dict[str, object] | None:
+    try:
+        return _as_dict(json.loads(raw))
+    except json.JSONDecodeError:
+        return None
 
 
 def _iter_lines(path: Path) -> Iterator[str]:
@@ -261,11 +336,15 @@ class SkillUsageService:
         *,
         home: Path,
         dotfiles_dir: Path,
-        readers: Iterable[ClaudeTranscriptReader] | None = None,
+        readers: Iterable[TranscriptReader] | None = None,
     ) -> None:
         self._home = home
         self._dotfiles_dir = dotfiles_dir
-        self._readers = list(readers) if readers is not None else [ClaudeTranscriptReader(home)]
+        self._readers: list[TranscriptReader] = (
+            list(readers)
+            if readers is not None
+            else [ClaudeTranscriptReader(home), CodexTranscriptReader(home)]
+        )
 
     def report(self, *, since_days: int, now: datetime) -> SkillUsageReport:
         cutoff = now - timedelta(days=since_days)
