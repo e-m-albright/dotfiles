@@ -94,6 +94,21 @@ async def test_create_requests_handoff_instead_of_exec(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_numeric_hotkey_jumps_to_nth_live_session(monkeypatch):
+    # 1-9 attach the n-th live session (current first, then by name) — keyboard/
+    # mobile session switching without tapping or scrolling.
+    monkeypatch.delenv("ZELLIJ", raising=False)
+    app, _ = _app_with("mobile [created]\nwork (current)\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        # Live order: current ("work") first, then "mobile" → 2 jumps to mobile.
+        await pilot.press("2")
+        await pilot.pause()
+        assert app.handoff_command == ("zellij", "attach", "--create", "mobile")
+
+
+@pytest.mark.asyncio
 async def test_attach_action_requests_handoff(monkeypatch):
     monkeypatch.delenv("ZELLIJ", raising=False)
     app, _ = _app_with("work [created]\n")

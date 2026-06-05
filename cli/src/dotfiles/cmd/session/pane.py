@@ -137,6 +137,9 @@ class SessionsPane(Container):
         Binding("n", "new_session", "New"),
         Binding("k", "kill_highlighted", "Kill"),
         Binding("r", "reload", "Reload"),
+        # 1-9 jump straight to the n-th live session — fast keyboard switching, and
+        # the way to pick a session on mobile where tapping/scrolling is unreliable.
+        *(Binding(str(i), f"attach_index({i})", f"Session {i}", show=False) for i in range(1, 10)),
     ]
 
     def __init__(self, ctx: AppContext) -> None:
@@ -286,6 +289,11 @@ class SessionsPane(Container):
 
     def action_new_session(self) -> None:
         self._app.push_screen(_NewSession(), self._on_new_session)
+
+    def action_attach_index(self, n: int) -> None:
+        """Jump to the n-th live session (1-9). No-ops when n is past the list."""
+        if 1 <= n <= len(self._sessions):
+            self._handoff(self._sessions[n - 1].name)
 
     def action_kill_highlighted(self) -> None:
         """Kill the highlighted session after one confirm (a keyboard shortcut for
