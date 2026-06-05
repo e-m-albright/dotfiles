@@ -117,6 +117,8 @@ def test_ls_line_running_shows_agents_and_programs() -> None:
     assert "(current)" in line
     assert "[green]claude[/]" in line
     assert "Claude Code · nvim" in line
+    # Agent badge is followed by just a space + the gold preview — no redundant dot.
+    assert "[green]claude[/] [#cdbf80]" in line
 
 
 def test_ls_line_running_without_enrichment_is_just_name_and_state() -> None:

@@ -100,7 +100,9 @@ def _ls_line(s: Session, programs: Sequence[str] = (), agents: Sequence[AgentAct
         for part in (_agent_badge(agents), _programs_preview(programs) if programs else "")
         if part
     ]
-    detail = "  " + " · ".join(extras) if extras else ""
+    # Space (not " · ") between the agent badge and the preview: the preview's
+    # leading glyph (✳/⠐ from the pane title) already separates them visually.
+    detail = "  " + " ".join(extras) if extras else ""
     return f"  [bold]{s.name}[/] [dim]({tag})[/]{detail}"
 
 
