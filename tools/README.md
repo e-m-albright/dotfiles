@@ -4,7 +4,7 @@ Standalone Python CLIs that complement the rest of the dotfiles. Each tool is a 
 
 ## Current Tools
 
-- **[yt-ingest](./yt-ingest/)** -- ingest YouTube bookmarks into the Obsidian Learn/ queue with Gemini + oEmbed verification.
+_None currently. (`yt-ingest` moved to the notes vault at `~/code/private/notes/.scripts/yt-ingest` -- it was vault-specific.)_
 
 ## Adding a Tool
 
