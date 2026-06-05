@@ -7,7 +7,6 @@ session. (Detaching is a zellij keybind, `Ctrl o d`, not a list action.)
 
 from __future__ import annotations
 
-import sys
 from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
@@ -25,24 +24,13 @@ from dotfiles.app.context import AppContext
 from dotfiles.cmd.session import session_name
 from dotfiles.cmd.session.agent_sessions import live_agents, match_agents_to_sessions
 from dotfiles.cmd.session.models import AgentActivity, Session
-from dotfiles.cmd.session.service import (
+from dotfiles.cmd.session.service import exited_sessions, humanize_age, maybe_prune
+from dotfiles.cmd.session.zellij import (
     SessionError,
-    attach_command,
-    attached_client_count,
-    delete_session,
-    exited_sessions,
-    humanize_age,
-    kill_session,
-    layout_name_for,
-    list_sessions,
-    maybe_prune,
+    Zellij,
+    handoff_command,
+    in_zellij,
 )
-from dotfiles.cmd.session.session_info import (
-    session_cwd,
-    session_program_titles,
-    zellij_cache_root,
-)
-from dotfiles.tui.launcher import in_zellij, zellij_handoff_command
 
 if TYPE_CHECKING:
     from dotfiles.tui.app import MissionControlApp
@@ -160,6 +148,7 @@ class SessionsPane(Container):
     def __init__(self, ctx: AppContext) -> None:
         super().__init__()
         self._ctx = ctx
+        self._zellij = Zellij(ctx.runner, home=ctx.home)
         self._sessions: list[Session] = []
         self._exited: list[Session] = []
         # Signatures of the last render, so an unchanged auto-refresh is a no-op
@@ -185,27 +174,20 @@ class SessionsPane(Container):
         # Once-a-day guarded retention sweep, opportunistically on load (the daily
         # guard keeps the 4s auto-refresh from thrashing it).
         maybe_prune(
-            self._ctx.runner,
+            self._zellij,
             state_file=self._ctx.state_dir / "session-prune",
             now=datetime.now(),
         )
         try:
-            sessions = list_sessions(self._ctx.runner)
+            sessions = self._zellij.list_sessions()
         except SessionError:
             sessions = []
         now = datetime.now()
         agents = live_agents(home=self._ctx.home, now=now)
-        clients = attached_client_count(self._ctx.runner) if in_zellij() else None
-        cache_root = zellij_cache_root(self._ctx.home, sys.platform)
-        programs = {
-            s.name: session_program_titles(cache_root=cache_root, name=s.name)
-            for s in sessions
-            if s.running
-        }
+        clients = self._zellij.attached_client_count() if in_zellij() else None
+        programs = {s.name: self._zellij.program_titles(s.name) for s in sessions if s.running}
         session_cwds = {
-            s.name: cwd
-            for s in sessions
-            if s.running and (cwd := session_cwd(cache_root=cache_root, name=s.name))
+            s.name: cwd for s in sessions if s.running and (cwd := self._zellij.session_cwd(s.name))
         }
         matched, unmatched = match_agents_to_sessions(session_cwds, agents)
         self._app.call_from_thread(
@@ -342,23 +324,23 @@ class SessionsPane(Container):
         if action in ("attach", "resurrect"):
             self._handoff(session.name)
         elif action == "kill":
-            kill_session(self._ctx.runner, session.name)
+            self._zellij.kill_session(session.name)
             self.notify(f"Killed {session.name}", title="Sessions", severity="warning")
             self.action_reload()
         elif action == "delete":
-            delete_session(self._ctx.runner, session.name)
+            self._zellij.delete_session(session.name)
             self.notify(f"Deleted {session.name}", title="Sessions", severity="warning")
             self.action_reload()
 
     def _on_new_session(self, name: str | None) -> None:
         if not name:
             return
-        layout = layout_name_for(self._ctx.home, name)
-        command = attach_command(name, exists=False, layout=layout)
+        layout = self._zellij.layout_for(name)
+        command = self._zellij.attach_command(name, exists=False, layout=layout)
         self._app.request_handoff(command)
 
     def _handoff(self, name: str) -> None:
-        command = zellij_handoff_command(name, in_zellij=in_zellij())
+        command = handoff_command(name, in_zellij=in_zellij())
         self._app.request_handoff(command)
 
 
