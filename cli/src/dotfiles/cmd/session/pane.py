@@ -166,6 +166,9 @@ class SessionsPane(Container):
 
     def on_mount(self) -> None:
         self.action_reload()
+        # Focus the list so arrow keys navigate/scroll it straight away (mouse
+        # wheel works regardless, now that the ListView is a bounded scroll region).
+        self.query_one("#session-list", ListView).focus()
         # Keep the deck live so it reflects sessions created/killed elsewhere.
         self.set_interval(_REFRESH_SECONDS, self.action_reload)
 

@@ -12,6 +12,12 @@ Screen {
     text-style: bold;
 }
 
+/* The pane stack fills the space between the banner and the footer, so the
+   sessions list below can be a bounded scroll region rather than overflowing. */
+#panes {
+    height: 1fr;
+}
+
 RemotePane, SessionsPane {
     border: round #e8c34a;
     border-title-color: #f5d76e;
@@ -19,16 +25,20 @@ RemotePane, SessionsPane {
     background: #0d0d0d;
     margin: 1 1;
     padding: 1 2;
-    height: auto;
 }
+/* Remote pane takes what it needs; the sessions list claims the rest and scrolls. */
+RemotePane { height: auto; }
+SessionsPane { height: 1fr; }
 
 #active-agents {
     padding: 0 0 1 0;
 }
 
+/* 1fr (not auto) so the list scrolls — mouse wheel and arrow keys move within a
+   bounded region instead of the rows overflowing off-screen unreachably. */
 ListView {
     background: #0d0d0d;
-    height: auto;
+    height: 1fr;
 }
 
 ListItem {

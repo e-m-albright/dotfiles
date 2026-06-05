@@ -51,7 +51,7 @@ class MissionControlApp(App[None]):
 
     def compose(self) -> ComposeResult:
         yield Static(gradient_banner(COMPACT_LINES), id="banner")
-        with Vertical():
+        with Vertical(id="panes"):
             yield RemotePane(self._ctx)
             yield SessionsPane(self._ctx)
         yield Footer()
