@@ -11,7 +11,7 @@ import typer
 from rich.markup import escape
 from rich.table import Table
 
-from dotfiles.app.context import AppContext, app_context
+from dotfiles.app.context import app_context
 from dotfiles.cmd.agent.local import CANONICAL_VENDORS, align_repo
 from dotfiles.cmd.agent.models import (
     AgentOverview,
@@ -24,13 +24,9 @@ from dotfiles.cmd.agent.models import (
     SubagentRow,
 )
 from dotfiles.cmd.agent.overview import AgentOverviewService
+from dotfiles.cmd.agent.setup import ALL_AGENTS, run_setup
 from dotfiles.cmd.agent.skill_health import SkillHealthService
 from dotfiles.cmd.agent.skills import validate_skill_files
-from dotfiles.cmd.agent.vendors.claude import setup_claude
-from dotfiles.cmd.agent.vendors.codex import setup_codex
-from dotfiles.cmd.agent.vendors.cursor import setup_cursor
-from dotfiles.cmd.agent.vendors.gemini import setup_gemini
-from dotfiles.cmd.agent.vendors.pi import setup_pi
 from dotfiles.cmd.agent.web_chat import GeminiChunksService, GeminiError
 from dotfiles.console import console, has_errors, render_steps
 from dotfiles.result import StepResult
@@ -242,22 +238,12 @@ def _render_overview(data: AgentOverview) -> None:
 # Setup helpers
 # ---------------------------------------------------------------------------
 
-# Order matches original sub_agent_setup(): claude → cursor → codex → gemini → pi
-_ALL_AGENTS: list[_AgentChoice] = [
-    _AgentChoice.claude,
-    _AgentChoice.cursor,
-    _AgentChoice.codex,
-    _AgentChoice.gemini,
-    _AgentChoice.pi,
-]
 
-
-def _render_setup_results(agent: str, results: list[StepResult]) -> bool:
-    """Print step results for one agent; return True if any step failed."""
+def _render_setup_results(agent: str, results: list[StepResult]) -> None:
+    """Print step results for one agent under its vendor header."""
     header = _VENDOR_HEADERS.get(agent, agent)
     console.print(f"\n[bold blue]── {header} ──[/]")
     render_steps(console, results)
-    return has_errors(results)
 
 
 # ---------------------------------------------------------------------------
@@ -278,26 +264,6 @@ _CLEAN_OPT = typer.Option(
     "--clean",
     help="Remove nonconforming plugins/MCPs/stale projects (claude only).",
 )
-
-
-def _run_vendor(
-    v: _AgentChoice,
-    app_ctx: AppContext,
-    *,
-    clean: bool,
-    reset_mcp: bool,
-) -> list[StepResult]:
-    """Dispatch to the correct setup_* function for a single agent."""
-    kw = {"runner": app_ctx.runner, "home": app_ctx.home, "dotfiles_dir": app_ctx.dotfiles_dir}
-    if v == _AgentChoice.claude:
-        return setup_claude(**kw, clean=clean, reset_mcp=reset_mcp)  # type: ignore[arg-type]
-    if v == _AgentChoice.cursor:
-        return setup_cursor(**kw, reset_mcp=reset_mcp)  # type: ignore[arg-type]
-    if v == _AgentChoice.codex:
-        return setup_codex(**kw)  # type: ignore[arg-type]
-    if v == _AgentChoice.gemini:
-        return setup_gemini(**kw, reset_mcp=reset_mcp)  # type: ignore[arg-type]
-    return setup_pi(**kw)  # type: ignore[arg-type]
 
 
 def _render_vendor(v: AgentVerify) -> None:
@@ -338,21 +304,17 @@ def setup(
 ) -> None:
     """Configure AI agent tooling (Claude Code, Cursor, Codex, Gemini, Pi)."""
     app_ctx = app_context(ctx)
+    agents = [agent.value] if agent is not None else list(ALL_AGENTS)
 
-    agents_to_run: list[_AgentChoice] = [agent] if agent is not None else _ALL_AGENTS
-
-    any_error = False
-    for v in agents_to_run:
-        results = _run_vendor(v, app_ctx, clean=clean, reset_mcp=reset_mcp)
-        if _render_setup_results(v.value, results):
-            any_error = True
+    results = run_setup(app_ctx, agents=agents, clean=clean, reset_mcp=reset_mcp)
+    for result in results:
+        _render_setup_results(result.agent, result.steps)
 
     console.print()
-    if any_error:
+    if any(result.failed for result in results):
         console.print("[red]Agent setup completed with errors.[/]")
         raise typer.Exit(1)
-    else:
-        console.print("[green]Agent setup complete.[/]")
+    console.print("[green]Agent setup complete.[/]")
 
 
 @global_app.command()
