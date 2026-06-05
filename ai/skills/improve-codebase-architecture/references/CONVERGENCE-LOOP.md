@@ -15,9 +15,11 @@ Four facets:
 3. **Dependency shape** — zero cycles; dependencies point toward stability (the dependency matrix trends lower-triangular).
 4. **Depth** — deep modules, errors defined out of existence, idiomatic per language.
 
-If a facet is undefined for the area, *naming it is the first deliverable*. Don't refactor toward an unstated target.
+Do this as a **top-down pass before any hotspot work**. The Phase-1 churn×complexity ranking is deliberately local and will happily polish modules while the whole package decomposition stays wrong; only a top-down look catches a mis-drawn bounded context or a cross-cutting concern smeared across many files.
 
-ADRs are constraints, not suggestions: a move that contradicts an ADR is only surfaced when the friction is real enough to reopen the ADR, and is marked as such.
+If a facet is undefined for the area, *naming it is the first deliverable*. Don't refactor toward an unstated target — a target that drifts each run is why refactoring efforts fail to terminate. Pin it as committed artifacts (CONTEXT.md, ADRs, dependency contracts).
+
+ADRs are constraints, not suggestions: a move that contradicts an ADR is only surfaced when the friction is real enough to reopen the ADR, and is marked as such. Read the ADR log for **rejected and superseded** decisions and drop any move that re-proposes one — this is the shared memory that stops successive passes (and sibling code-health skills) from undoing each other. When you reject a move here for a load-bearing reason, write it back to the log so the next pass honors it.
 
 ## Phase 1 — Measure
 
@@ -112,6 +114,7 @@ The step that turns cleanup into convergence. See engineering-gates.md §1 for t
 - Every dependency contract is green in CI and ratcheted.
 - Every module name maps to an ontology term; the top-level structure screams the domain.
 - No partially-migrated (expand-without-contract) states remain.
+- **No move in the pass undid a decision recorded in the ADR log.** If a pass keeps reversing a prior pass's work, that's oscillation, not convergence — stop and record the contested decision instead of flip-flopping it.
 
 ### The economic brake
 

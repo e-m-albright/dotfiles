@@ -65,20 +65,28 @@ Read [references/CONVERGENCE-LOOP.md](references/CONVERGENCE-LOOP.md) for the fu
 
 ### Phase 0 — Target (define "done")
 
-Without a named steady state, refactoring churns forever. Establish the target from what already exists, creating docs lazily as decisions crystallize:
+Without a named steady state, refactoring churns forever — the empirical signature of unattended agent refactoring is cosmetic renames that leave the design-smell count statistically unchanged. So this phase is a **required gate, not a warm-up**: do one **top-down architectural pass first**, before touching any hotspot. The hotspot ranking in Phase 1 is deliberately local; a codebase can have every hotspot deepened and still have the wrong bounded contexts. Ask the questions no single file reveals: is the context decomposition right? does the top-level structure scream the domain? what cross-cutting concern is smeared across many files?
 
-- **Ontology** — read the domain glossary (`CONTEXT.md`/`CONTEXT-MAP.md`, or a `## Domain Language` section in `AGENTS.md`) and any ADRs in the area. This is the *naming authority* for modules. See [references/ONTOLOGY-AND-HIERARCHY.md](references/ONTOLOGY-AND-HIERARCHY.md).
-- **Hierarchy** — the directory tree should be a literal index of the domain (package-by-feature, top-level dirs that "scream" the domain, not the framework).
-- **Dependency shape** — the target is zero cycles and dependencies pointing toward stability (the dependency matrix trends lower-triangular).
+Then pin the target as **durable, committed artifacts** — convergence is impossible against a target that drifts each run:
+
+- **Ontology** — the domain glossary (`CONTEXT.md`/`CONTEXT-MAP.md`, or a `## Domain Language` section in `AGENTS.md`) and any ADRs in the area. The *naming authority* for modules. See [references/ONTOLOGY-AND-HIERARCHY.md](references/ONTOLOGY-AND-HIERARCHY.md).
+- **Hierarchy** — the directory tree as a literal index of the domain (package-by-feature, top-level dirs that "scream" the domain, not the framework).
+- **Dependency shape** — zero cycles; dependencies point toward stability (the dependency matrix trends lower-triangular).
 - **Depth** — deep modules; errors defined out of existence.
+- **The rejected-decision log** — read `docs/adr/` (or the project's ADR location) for moves already *declined*. A refactor that re-proposes a rejected/superseded decision is the #1 way successive passes (and sibling skills) undo each other. Treat the ADR log as shared memory: never re-litigate what's recorded, and when a move is rejected in this run for a load-bearing reason, write it back so the next pass and the other code-health skills honor it too.
 
-If the area lacks any of these, say so — naming the target is itself the first valuable output.
+If the area lacks any of these, say so and create it — naming the target is itself the first valuable output, and the artifact is what makes the loop terminate.
 
 ### Phase 1 — Measure
 
 Establish the scorecard so progress is objective, not vibes. Read [references/METRICS.md](references/METRICS.md) for the metric set and ratchet mechanics.
 
-- Detect and run the repo's static tools (cognitive-complexity, duplication, dependency cycles, dead code, suppression counts). Don't invent metrics the repo can't compute.
+- **Run the deterministic scorecard** to get a reproducible baseline: `scripts/scorecard.sh --json > before.json` (LOC, per-family suppression counts, churn×LOC hotspots; `--deep` also runs any installed analyzers). Re-run it in Phase 6 and diff — this is what makes "measurably ratchet" true rather than improvised.
+
+  > DO NOT read `scripts/scorecard.sh` before running it; it is a black-box read-only tool meant to be called, not ingested into context. Run it with `--help` to see options.
+
+- **Take a qualitative baseline grade too.** Numbers miss taste. Grade the area against the `review` health rubric ([../review/SKILL.md](../review/SKILL.md)) for a letter grade (e.g. "B−"), so Phase 6 can report "B− → A−," not just "dup 12% → 7%." The number proves no regression; the grade captures whether a principal engineer would now sign off.
+- Beyond the scorecard, detect any other static tools the repo has (cognitive-complexity, duplication, dependency cycles, dead code). Don't invent metrics the repo can't compute.
 - **Bootstrap the ratchet if absent.** If there's no `baselines.json`, scaffold one per [docs/knowledge/engineering-gates.md](../../../docs/knowledge/engineering-gates.md) (in this repo) or the project's equivalent, seeding ceilings at *current actuals* — then the loop tightens them. This is what makes "ratchet down measurably" real even in a repo with no gates.
 - **Rank hotspots by churn × complexity.** Complexity in code nobody touches is nearly free; spend effort where change concentrates (CodeScene's central finding — see METRICS.md). Use `git log` to get churn.
 - Emit the starting scorecard (the same metrics Phase 6 will diff).
@@ -88,6 +96,10 @@ Establish the scorecard so progress is objective, not vibes. Read [references/ME
 Fan out parallel `Explore` subagents, one per dimension, each returning candidate moves. **In this repo**, point them at the canonical audit prompts in [ai/audits/](../../audits/) (`god-functions`, `duplication`, `coupling`, `abstractions`). **In any other project**, use the self-contained dimension briefs in [references/DE-SLOP.md](references/DE-SLOP.md) (god functions, data clumps, duplication, weak abstractions, conditional bloat, the AI-slop catalog) and [references/ONTOLOGY-AND-HIERARCHY.md](references/ONTOLOGY-AND-HIERARCHY.md) (coupling, cycles, naming/hierarchy drift). Add a semantic-duplication pass (token → embeddings → confirm) per DE-SLOP.md.
 
 Each candidate move records: files, the friction (in LANGUAGE.md + domain vocabulary), the proposed change in plain English, and the benefit in **locality/leverage** and **which metric it moves**.
+
+Also note **strengths worth preserving** — clever solutions, a genuinely deep module, a clean seam. A convergence pass that only hunts problems will sand off the good parts; name them so no later move erodes them.
+
+Drop any candidate that re-proposes a decision recorded as rejected/superseded in the ADR log (Phase 0). Re-litigating settled decisions is churn, and across the sibling code-health skills it is how passes undo each other.
 
 ### Phase 3 — Rank
 
@@ -111,6 +123,7 @@ Execute each move with refactoring discipline (full mechanics + the per-move loo
 - **Mikado for anything non-trivial** — try the move naively; if it fans out, revert to green and record the prerequisites as graph leaves, then work leaves-first.
 - **Deterministic tools for the mechanical bulk** — route rote, behavior-preserving transforms (rename, extract, guard-clause flattening, dead-code removal) through codemods (ast-grep, OpenRewrite, comby) where available; reserve your own judgment for *which* abstraction, naming, and semantic dedup.
 - **Auto-fix vs grill** — auto-apply the unambiguous, mechanical, behavior-preserving fixes (dead code, unused imports, guard clauses, lookup tables replacing if/elif chains, dedup-to-an-existing-home). Grill the user on judgment calls (a new abstraction, an interface/seam change, anything touching the public surface or an ADR). Default to grilling when uncertain. The grilling loop is the original module-deepening conversation — see below.
+- **Arbitrate conflicting moves, don't let the last one win.** These lenses genuinely contradict — dedup pulls against decoupling, deepening against minimalism, DDD richness against YAGNI. When two ranked moves recommend opposite edits on the same code (extract vs inline, split vs merge), that's not noise to resolve by ordering — surface the tension to the user with the tradeoff, decide once, and record the choice as an ADR. Silently resolving conflicts by accretion is exactly the tangled-refactoring failure mode.
 
 **The grilling loop (judgment moves).** Walk the design tree with the user — constraints, dependencies, the shape of the deepened module, what sits behind the seam, which tests survive. Side effects happen inline:
 - Naming a module after a concept not in `CONTEXT.md`? Add the term (same discipline as `/grill-with-docs` — see [../grill-with-docs/references/CONTEXT-FORMAT.md](../grill-with-docs/references/CONTEXT-FORMAT.md)). Create the file lazily.
@@ -127,7 +140,9 @@ Lock the gains in so the codebase can't re-rot — this is the difference betwee
 
 ### Phase 6 — Report & repeat
 
-Show the before/after scorecard: LOC, duplication %, #functions-over-cognitive-complexity, dependency cycles, suppression counts, and the **refactored-vs-added ratio** (the de-slop north star — GitClear data shows AI assistants *add* code instead of consolidating; this loop inverts that). Then check the termination conditions (CONVERGENCE-LOOP.md). If the area hasn't converged and the next move still pays for itself, loop. Stop when the move list is empty, the contracts hold, **or** the economics turn (over-tidying is procrastination — the AHA/Tidy-First brake).
+Re-run `scripts/scorecard.sh --json` and diff against `before.json`; re-grade against the `review` rubric. Show both: the quantitative before/after (LOC, duplication %, #functions-over-cognitive-complexity, dependency cycles, suppression counts, and the **refactored-vs-added ratio** — the de-slop north star, since AI assistants *add* code instead of consolidating and this loop inverts that) **and** the qualitative grade move (e.g. "B− → A−"). The numbers prove no regression; the grade proves it actually got better.
+
+Then check the termination conditions (CONVERGENCE-LOOP.md), one of which is **no move undid a recorded decision**. If the area hasn't converged and the next move still pays for itself, loop. Stop when the move list is empty, the contracts hold, **or** the economics turn (over-tidying is procrastination — the AHA/Tidy-First brake).
 
 ## Scope of a run
 
