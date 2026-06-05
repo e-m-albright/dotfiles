@@ -38,7 +38,7 @@ Tidy *before* a feature only when it makes that feature quicker, smaller, or saf
 ## Antagonists (decide, don't let the last edit win)
 
 - **vs `deepen` (Ousterhout):** aggressive Extract-Function can shatter a deep module into shallow ones with entangled interfaces ("lasagna code" — the documented Ousterhout-vs-Clean-Code tension). Tiebreak: **extract for a real seam or genuine reuse, not to hit a line target.** If the extracted pieces only ever call each other in order, you made it worse.
-- **vs `subtract`:** extracting duplication competes with deleting it. Tiebreak: if a caller can just *lose* the code, delete it (subtract) before abstracting it (tidy).
+- **vs `prune`:** extracting duplication competes with deleting it. Tiebreak: if a caller can just *lose* the code, delete it (prune) before abstracting it (tidy).
 - **vs `legible`:** a transform that's mechanically cleaner can read worse. Tiebreak: if the named transform reduces readability, it's not a tidy — skip it.
 
 When a tidy would reverse a decision recorded in the ADR log, stop and surface it rather than flip-flopping.

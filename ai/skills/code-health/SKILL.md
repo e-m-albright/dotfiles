@@ -1,6 +1,6 @@
 ---
 name: code-health
-description: The entry point and router for the code-health skill portfolio — diagnoses what a codebase needs and dispatches to the right lens, or sequences several for a full pass. Knows the form lenses (deepen, improve-codebase-architecture, tidy, legible, domain-align, subtract, functional-core) and the function/safety/speed lenses (/review, /security-review, diagnose, performance-engineer), their antagonists, and which are safe to run unattended. Use when the user says "improve code health", "where do I start", "do a full health pass", "audit and improve this repo", "which refactoring should I do here", or isn't sure which lens fits. SKIP when the user already named a specific lens — invoke that one directly.
+description: The entry point and router for the code-health skill portfolio — diagnoses what a codebase needs and dispatches to the right lens, or sequences several for a full pass. Knows the form lenses (deepen, improve-codebase-architecture, tidy, legible, domain-align, prune, functional-core) and the function/safety/speed lenses (/review, /security-review, diagnose, performance-engineer), their antagonists, and which are safe to run unattended. Use when the user says "improve code health", "where do I start", "do a full health pass", "audit and improve this repo", "which refactoring should I do here", or isn't sure which lens fits. SKIP when the user already named a specific lens — invoke that one directly.
 ---
 
 # Code Health
@@ -27,7 +27,7 @@ State this to the user when they ask for "unimpeachable" code: the book guarante
 | "clean up this function", extract, flatten conditionals, a known transform | **tidy** | mechanical · convergent |
 | "hard to follow", naming, comments, newcomer/agent comprehension | **legible** | taste · readability |
 | names don't match the business, leaked API names, wrong boundaries | **domain-align** | conceptual · divergent |
-| over-engineered, dead code, YAGNI, "make it smaller" | **subtract** | minimalist · convergent |
+| over-engineered, dead code, YAGNI, "make it smaller" | **prune** | minimalist · convergent |
 | "can only test end-to-end", tame side effects, illegal states | **functional-core** | testability · structural |
 
 For a **single area**, route to one lens. For a **full pass**, sequence them (next section).
@@ -36,7 +36,7 @@ For a **single area**, route to one lens. For a **full pass**, sequence them (ne
 
 Lenses have a natural order that minimizes rework:
 
-1. **subtract** — delete first; never restructure code you could remove. Smaller surface for everything after.
+1. **prune** — delete first; never restructure code you could remove. Smaller surface for everything after.
 2. **domain-align** + **deepen** — get the concepts and boundaries right (diverge: find the real design).
 3. **functional-core** — isolate effects so what remains is testable.
 4. **tidy** — execute the mechanical transforms safely.
@@ -48,7 +48,7 @@ Don't run all seven blindly — let the Tier-A routing table and the scorecard p
 
 ## Keeping lenses from fighting
 
-The lenses genuinely contradict (dedup↔decouple, deepen↔subtract, DDD-richness↔YAGNI). Two shared rules, enforced by every lens:
+The lenses genuinely contradict (dedup↔decouple, deepen↔prune, DDD-richness↔YAGNI). Two shared rules, enforced by every lens:
 
 - **Rejected-decision log.** Before proposing, read the ADR log (`docs/adr/`) for decisions already declined; never re-litigate them. When a lens rejects a move for a load-bearing reason, write it back. This is the memory that stops successive passes and sibling lenses from undoing each other.
 - **Arbitration, not accretion.** When two lenses recommend opposite edits on the same code, surface the tradeoff and decide *once*, recording it — don't let whichever ran last win.
@@ -58,7 +58,7 @@ The lenses genuinely contradict (dedup↔decouple, deepen↔subtract, DDD-richne
 Generative, structural refactoring on a weekly cron, auto-merged, is an anti-pattern — empirically it produces cosmetic churn with no measured health gain and a review backlog. So:
 
 - **Safe unattended (weekly):** the `scorecard`/audit **detection** run that opens an issue or draft PR (never auto-merge); **ratchet enforcement** in CI (block regressions); deterministic **codemods** (`tidy`'s ast-grep/OpenRewrite transforms).
-- **Interactive / human-gated:** `deepen`, `domain-align`, `subtract`, `functional-core`, and the engine's structural moves; all of Tier B. These are judgment- and conflict-heavy; they need a human and the arbitration rules above.
+- **Interactive / human-gated:** `deepen`, `domain-align`, `prune`, `functional-core`, and the engine's structural moves; all of Tier B. These are judgment- and conflict-heavy; they need a human and the arbitration rules above.
 
 This mirrors how `ai/audits/` already run on a cadence: schedule the *finding*, gate the *fixing*.
 

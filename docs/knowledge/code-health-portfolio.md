@@ -24,9 +24,9 @@ Code quality has four source-measurable pillars (CISQ/ISO 5055): **Reliability, 
 | **deepen** | Ousterhout — deep modules | taste · divergent | vs tidy/Clean-Code over-decomposition → prefer depth |
 | **improve-codebase-architecture** | empirical SE — fitness functions, ratchet | measured · convergent | the orchestrator; ratchets the rest in |
 | **tidy** | Fowler/Beck — refactoring catalog, two-hats | mechanical · convergent | vs deepen → extract for a real seam, not a line target |
-| **legible** | Buse-Weimer + Scalabrino — readability | taste · readability | vs subtract → keep the *why*, cut restating |
+| **legible** | Buse-Weimer + Scalabrino — readability | taste · readability | vs prune → keep the *why*, cut restating |
 | **domain-align** | Evans DDD — ubiquitous language, contexts | conceptual · divergent | vs YAGNI → richness only in the core subdomain |
-| **subtract** | minimalism — YAGNI, worse-is-better, Tigerstyle | minimalist · convergent | vs structure-adders → delete first, then build |
+| **prune** | minimalism — YAGNI, worse-is-better, Tigerstyle | minimalist · convergent | vs structure-adders → delete first, then build |
 | **functional-core** | FP/hexagonal — pure core, parse-don't-validate | testability · structural | vs YAGNI → isolate effects only where they block testing |
 
 ### Tier B — function / safety / speed (non-behavior-preserving, existing skills)
@@ -35,7 +35,7 @@ Code quality has four source-measurable pillars (CISQ/ISO 5055): **Reliability, 
 
 ## The convergent sequence (full pass)
 
-`subtract` (delete first) → `domain-align` + `deepen` (get concepts/boundaries right) → `functional-core` (make it testable) → `tidy` (mechanical transforms) → `legible` (readability) → `improve-codebase-architecture` (measure, ratchet into CI contracts, re-grade) → Tier B (pillars refactoring can't reach). Let the churn×complexity scorecard pick where effort pays; don't run all of it blindly.
+`prune` (delete first) → `domain-align` + `deepen` (get concepts/boundaries right) → `functional-core` (make it testable) → `tidy` (mechanical transforms) → `legible` (readability) → `improve-codebase-architecture` (measure, ratchet into CI contracts, re-grade) → Tier B (pillars refactoring can't reach). Let the churn×complexity scorecard pick where effort pays; don't run all of it blindly.
 
 ## Shared conventions (what keeps it convergent)
 

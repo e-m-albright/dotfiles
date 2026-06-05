@@ -1,6 +1,6 @@
 ---
 name: functional-core
-description: The testability/effect-isolation lens of the code-health portfolio — extract a pure core and push side effects to the edges (functional core / imperative shell, ports & adapters), and model types so illegal states are unrepresentable (parse don't validate). Use when the user says "make this testable", "extract a pure core", "functional core imperative shell", "parse don't validate", "make illegal states unrepresentable", "tame the side effects", "ports and adapters / hexagonal", or "this can only be tested end-to-end". SKIP for whole-repo measured convergence (improve-codebase-architecture), bug-finding (/review), or pure deletion (subtract).
+description: The testability/effect-isolation lens of the code-health portfolio — extract a pure core and push side effects to the edges (functional core / imperative shell, ports & adapters), and model types so illegal states are unrepresentable (parse don't validate). Use when the user says "make this testable", "extract a pure core", "functional core imperative shell", "parse don't validate", "make illegal states unrepresentable", "tame the side effects", "ports and adapters / hexagonal", or "this can only be tested end-to-end". SKIP for whole-repo measured convergence (improve-codebase-architecture), bug-finding (/review), or pure deletion (prune).
 ---
 
 # Functional Core
@@ -24,7 +24,7 @@ A function mixes a database/network/filesystem call with the decision logic; tes
 
 ## Antagonists
 
-- **vs `subtract`/YAGNI:** introducing ports, adapter seams, and richer types adds structure. Tiebreak: **only isolate effects where entanglement actually blocks testing or reasoning** — don't add a port for a single in-process call (one adapter is a hypothetical seam; two is a real one).
+- **vs `prune`/YAGNI:** introducing ports, adapter seams, and richer types adds structure. Tiebreak: **only isolate effects where entanglement actually blocks testing or reasoning** — don't add a port for a single in-process call (one adapter is a hypothetical seam; two is a real one).
 - **vs `tidy`:** extracting a pure core is a bigger move than a mechanical transform; sequence the mechanical tidies first to make the extraction obvious.
 - **vs `deepen`:** strongly aligned — a pure core *is* a deep module. Use `deepen`'s vocabulary for the interface.
 

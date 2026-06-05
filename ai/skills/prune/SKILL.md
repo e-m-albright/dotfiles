@@ -1,6 +1,6 @@
 ---
-name: subtract
-description: The minimalism/deletion lens of the code-health portfolio — improve a codebase by removing rather than adding. Hunts dead code, speculative abstraction, unused flags/config, premature generality, redundant layers, and features nobody uses, then deletes them safely. The one lens with an honest hard metric: net LOC and feature count go down. Use when the user says "what can we delete", "this is over-engineered", "YAGNI", "remove dead code", "make it smaller", "simplify by removing", "trim this", or "subtract". SKIP for diff-scoped quality cleanup (/simplify), bug-finding (/review), or adding structure (deepen/domain-align).
+name: prune
+description: The minimalism/deletion lens of the code-health portfolio — improve a codebase by removing rather than adding. Hunts dead code, speculative abstraction, unused flags/config, premature generality, redundant layers, and features nobody uses, then deletes them safely. The one lens with an honest hard metric — net LOC and feature count go down. Use when the user says "what can we delete", "this is over-engineered", "YAGNI", "remove dead code", "make it smaller", "simplify by removing", "trim this", or "prune". SKIP for diff-scoped quality cleanup (/simplify), bug-finding (/review), or adding structure (deepen/domain-align).
 ---
 
 # Subtract
@@ -24,7 +24,7 @@ The code is bloated: defensive checks the types make impossible, abstractions wi
    - **Unused features** — behind dead flags or with no callers/usage; remove with the owner's confirmation.
 2. **Confirm it's truly unused** before deleting — check call sites, dynamic dispatch, reflection, external consumers, and public API surface. A wrong deletion is a behavior change. Lean on the type system and a full test run.
 3. **Delete in safe, reviewable steps**, each verified green; separate deletion commits (git keeps history — deleting confidently is the point).
-4. **Report the subtraction** — LOC removed, surface area removed. This is the one place celebrating the number is legitimate, because it was earned by real removal.
+4. **Report the pruneion** — LOC removed, surface area removed. This is the one place celebrating the number is legitimate, because it was earned by real removal.
 
 ## Antagonists
 
