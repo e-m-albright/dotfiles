@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$CURSOR_AGENT\" ] && exit 0; terminal-notifier -title \"Claude Code · $(basename \"$CLAUDE_PROJECT_DIR\")\" -message \"$(cat ~/.claude/agent-status-$PPID 2>/dev/null || echo 'Done — ready for input')\" -sound Glass 2>/dev/null || true"
+            "command": "[ -n \"$CURSOR_AGENT\" ] && exit 0; printf '\\a' > /dev/tty 2>/dev/null || true; terminal-notifier -title \"Claude Code · $(basename \"$CLAUDE_PROJECT_DIR\")\" -message \"$(cat ~/.claude/agent-status-$PPID 2>/dev/null || echo 'Done — ready for input')\" -sound Glass 2>/dev/null || true"
           }
         ]
       }
