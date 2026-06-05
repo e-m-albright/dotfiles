@@ -23,6 +23,7 @@ from dotfiles.cmd.session.service import (
     list_sessions,
     maybe_prune,
     prune_exited,
+    session_name_error,
     sessions_to_prune,
 )
 from dotfiles.cmd.session.session_info import (
@@ -188,6 +189,9 @@ def attach(ctx: typer.Context, name: str) -> None:
 def new(ctx: typer.Context, name: str) -> None:
     """Create a new session and attach to it (with its deck layout if one exists)."""
     app_ctx = app_context(ctx)
+    if error := session_name_error(name):
+        console.print(f"[red]{error}[/]")
+        raise typer.Exit(code=1)
     # `new` always creates: zellij `attach --create` (no layout) or `--session
     # --layout` create the session if absent.
     layout = layout_name_for(app_ctx.home, name)

@@ -218,6 +218,24 @@ def valid_session_name(name: str) -> bool:
     return bool(name) and not any(c.isspace() for c in name)
 
 
+def invalid_session_name_chars(name: str) -> tuple[str, ...]:
+    """Human-readable invalid character groups present in *name*."""
+    return ("spaces",) if any(c.isspace() for c in name) else ()
+
+
+def session_name_error(name: str) -> str | None:
+    """Validation error for *name*, or None when the characters are valid."""
+    invalid = invalid_session_name_chars(name)
+    if not invalid:
+        return None
+    return f"Session name cannot contain {', '.join(invalid)}"
+
+
+def strip_invalid_session_name_chars(name: str) -> str:
+    """Drop characters zellij session names cannot contain."""
+    return "".join(c for c in name if not c.isspace())
+
+
 def attached_client_count(runner: ProcessRunner) -> int | None:
     """Clients attached to the *current* session, or None if not inside one.
 

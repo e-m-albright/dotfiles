@@ -211,6 +211,34 @@ async def test_new_binding_opens_create_modal():
 
 
 @pytest.mark.asyncio
+async def test_new_session_modal_prevents_spaces_and_shows_error():
+    app, _ = _app_with("work [created]\n")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        from textual.widgets import Input, Label
+
+        from dotfiles.cmd.session.pane import _NewSession
+
+        await pilot.press("n")
+        await pilot.pause()
+        assert isinstance(app.screen, _NewSession)
+        field = app.screen.query_one("#new-name", Input)
+        assert field.placeholder == "e.g. api"
+        await pilot.click("#new-name")
+        await pilot.press(*"two words")
+        await pilot.pause()
+
+        assert field.value == "twowords"
+        error = app.screen.query_one("#name-error", Label)
+        text = getattr(error.render(), "plain", "")
+        assert "Session name cannot contain spaces" in text
+        await pilot.press("enter")
+        await pilot.pause()
+        assert app.handoff_command == ("zellij", "attach", "--create", "twowords")
+
+
+@pytest.mark.asyncio
 async def test_selecting_session_row_opens_action_sheet():
     app, _ = _app_with("work [created]\n")  # running, not current
     async with app.run_test() as pilot:

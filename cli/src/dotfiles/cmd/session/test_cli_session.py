@@ -165,6 +165,14 @@ def test_new_creates_and_attaches() -> None:
     assert launcher.attached == [["zellij", "attach", "--create", "scratch"]]
 
 
+def test_new_rejects_session_names_with_spaces() -> None:
+    ctx, launcher = _ctx_with_sessions()
+    result = runner.invoke(app, ["session", "new", "two words"], obj=ctx)
+    assert result.exit_code == 1
+    assert "Session name cannot contain spaces" in result.output
+    assert launcher.attached == []
+
+
 def test_attach_creates_with_layout_when_session_absent(tmp_path: Path) -> None:
     ctx, launcher = _ctx_with_mobile_layout(tmp_path, mobile_running=False)
     result = runner.invoke(app, ["session", "attach", "mobile"], obj=ctx)
