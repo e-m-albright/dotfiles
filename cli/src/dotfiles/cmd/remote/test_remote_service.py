@@ -196,6 +196,38 @@ def test_setup_adds_key_idempotently_and_nudges_remote_login(tmp_path: Path) -> 
     assert any(s.level == "warn" and "Remote Login is off" in s.message for s in steps)
 
 
+def test_setup_reports_existing_authorized_key_without_flag(tmp_path: Path) -> None:
+    # A key added on a prior run is reported as present, not nagged about.
+    keys = tmp_path / ".ssh" / "authorized_keys"
+    keys.parent.mkdir(parents=True)
+    keys.write_text("ssh-ed25519 AAAAC3NzaPHONE phone\n")
+    service = RemoteService(
+        runner=_base_runner(), interactive=True, home=tmp_path, which=lambda _n: "/x"
+    )
+    steps = service.setup(dry_run=False, add_key=None, harden=False, session="mobile")
+    assert any(s.level == "success" and "already authorized" in s.message for s in steps)
+    assert not any("No phone key" in s.message for s in steps)
+
+
+def test_setup_reports_key_only_when_already_hardened(tmp_path: Path) -> None:
+    # With no --harden-ssh flag, report the EFFECTIVE state, not "rerun the flag".
+    runner = _base_runner()
+    runner.script(
+        ("/usr/sbin/sshd", "-G"),
+        stdout="passwordauthentication no\nkbdinteractiveauthentication no\n",
+    )
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path, which=lambda _n: "/x")
+    steps = service.setup(dry_run=False, add_key=None, harden=False, session="mobile")
+    assert any(s.level == "success" and "key-only" in s.message for s in steps)
+
+
+def test_setup_opens_sharing_settings_when_remote_login_off(tmp_path: Path) -> None:
+    runner = _base_runner()  # reports Remote Login disabled
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path, which=lambda _n: "/x")
+    service.setup(dry_run=False, add_key=None, harden=False, session="mobile")
+    assert any(c[0] == "open" and "Sharing" in c[1] for c in runner.calls)
+
+
 def test_setup_rejects_bad_key(tmp_path: Path) -> None:
     import pytest
 

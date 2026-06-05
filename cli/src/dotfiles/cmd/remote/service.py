@@ -16,7 +16,8 @@ _KEY_PREFIXES = ("ssh-ed25519 ", "ssh-rsa ", "ecdsa-sha2-")
 # is a standing local-privilege grant we'd rather not require. So we read the state
 # and point at the toggle instead of mutating it.
 SHARING_HINT = "System Settings → General → Sharing → Remote Login"
-SHARING_OPEN = 'open "x-apple.systempreferences:com.apple.Sharing-Settings.extension"'
+_SHARING_URL = "x-apple.systempreferences:com.apple.Sharing-Settings.extension"
+SHARING_OPEN = f'open "{_SHARING_URL}"'
 
 _HARDEN_PATH = "/etc/ssh/sshd_config.d/90-dotfiles-remote.conf"
 _HARDEN_DIR = "/etc/ssh/sshd_config.d"
@@ -162,6 +163,19 @@ class RemoteService:
         keys.write_text(existing + separator + add_key + "\n")
         return StepResult(level="success", message="Added phone public key")
 
+    def _existing_key_status(self, keys: Path) -> StepResult:
+        """Report keys already in authorized_keys, rather than nagging about the
+        --add-key flag — a key added on a prior run is still there."""
+        existing = keys.read_text().splitlines() if keys.exists() else []
+        authorized = sum(1 for line in existing if is_ssh_public_key(line))
+        if authorized:
+            return StepResult(
+                level="success", message=f"{authorized} phone key(s) already authorized"
+            )
+        return StepResult(
+            level="warn", message="No phone key yet. Rerun with --add-key '<public key>'"
+        )
+
     def _ensure_authorized_key(self, add_key: str | None, *, dry_run: bool) -> list[StepResult]:
         ssh_dir = self._home / ".ssh"
         keys = ssh_dir / "authorized_keys"
@@ -177,12 +191,7 @@ class RemoteService:
             out.append(StepResult(level="success", message="SSH authorized_keys ready"))
 
         if add_key is None:
-            out.append(
-                StepResult(
-                    level="warn",
-                    message="No phone key provided. Rerun with --add-key '<public key>'",
-                )
-            )
+            out.append(self._existing_key_status(keys))
             return out
         if not is_ssh_public_key(add_key):
             raise InvalidKeyError(add_key)
@@ -192,22 +201,38 @@ class RemoteService:
         out.append(self._write_key(keys, add_key))
         return out
 
-    def _enable_remote_login(self) -> StepResult:
+    def _enable_remote_login(self, *, dry_run: bool) -> StepResult:
         if self._remote_login_on():
             return StepResult(level="success", message="Remote Login already enabled")
+        # We can't flip the toggle (needs Full Disk Access), but we can open the
+        # exact Settings pane so it's one tap away instead of a buried path.
+        if not dry_run:
+            self._runner.run(("open", _SHARING_URL))
         return StepResult(
             level="warn",
-            message="Remote Login is off — turn it on so the phone can connect",
-            details=f"{SHARING_HINT}  ·  {SHARING_OPEN}",
+            message="Remote Login is off — opened System Settings; flip the Remote Login toggle",
+            details=SHARING_HINT,
         )
 
     def _harden(self, harden: bool, *, dry_run: bool) -> list[StepResult]:
         if not harden:
+            # Report the actual effective state, not whether the flag was passed.
+            password_auth = self._ssh_password_auth()
+            if password_auth is False:
+                return [
+                    StepResult(level="success", message="SSH already key-only (password auth off)")
+                ]
+            if password_auth is True:
+                return [
+                    StepResult(
+                        level="warn",
+                        message="SSH password auth is ON — rerun with --harden-ssh to disable it",
+                    )
+                ]
             return [
                 StepResult(
-                    level="warn",
-                    message="SSH password auth unchanged. Rerun with --harden-ssh "
-                    "after adding your Termius key",
+                    level="info",
+                    message="SSH password-auth state unknown (could not read sshd config)",
                 )
             ]
         if dry_run:
@@ -235,7 +260,7 @@ class RemoteService:
             self._ensure_tool("zellij", dry_run=dry_run),
         ]
         steps.extend(self._ensure_authorized_key(add_key, dry_run=dry_run))
-        steps.append(self._enable_remote_login())
+        steps.append(self._enable_remote_login(dry_run=dry_run))
         steps.extend(self._harden(harden, dry_run=dry_run))
         return steps
 
