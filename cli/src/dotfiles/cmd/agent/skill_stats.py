@@ -277,11 +277,7 @@ class SkillUsageService:
             events.extend(reader.events())
             dropped += reader.dropped_lines
 
-        # An explicit (slash) event is a real skill only if the name is canonical
-        # or has fired autonomously somewhere — this drops built-in commands like
-        # /compact, /login that are not skills. Autonomous events are always kept.
-        known = canonical | {_short(e.skill) for e in events if not e.explicit}
-        kept = [e for e in events if not e.explicit or _short(e.skill) in known]
+        kept = _real_skill_events(events, canonical)
         windowed = [e for e in kept if e.timestamp >= cutoff]
         leaderboard = _leaderboard(windowed, canonical, cutoff, now)
         fired = {e.skill for e in windowed} | {_short(e.skill) for e in windowed}
@@ -301,6 +297,18 @@ class SkillUsageService:
             vendor_counts=tuple(Counter(e.vendor for e in windowed).most_common()),
             dropped_lines=dropped,
         )
+
+
+def _real_skill_events(events: list[SkillEvent], canonical: frozenset[str]) -> list[SkillEvent]:
+    """Drop explicit events that aren't real skills.
+
+    An explicit (slash) event counts only if its name is canonical or it has also
+    fired autonomously somewhere — this filters out built-in commands like
+    ``/compact`` and ``/login``, which surface as ``<command-name>`` but are not
+    skills. Autonomous (model-chosen) events are always kept.
+    """
+    known = canonical | {_short(e.skill) for e in events if not e.explicit}
+    return [e for e in events if not e.explicit or _short(e.skill) in known]
 
 
 def _leaderboard(
