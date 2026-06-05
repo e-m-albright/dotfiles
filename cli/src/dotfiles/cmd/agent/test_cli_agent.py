@@ -47,106 +47,106 @@ def _dotfiles_with_chunks(base: Path, *chunks: tuple[str, str]) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# agent global overview
+# agent overview
 # ---------------------------------------------------------------------------
 
 
 def test_agent_overview_exits_zero(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
 def test_agent_overview_prints_mcp_servers_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert "MCP Servers" in result.output
 
 
 def test_agent_overview_prints_skills_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert "Skills" in result.output
 
 
 def test_agent_overview_prints_subagents_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert "Subagents" in result.output
 
 
 def test_agent_overview_prints_hooks_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert "Hooks" in result.output
 
 
 def test_agent_overview_prints_rules_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert "Rules" in result.output
 
 
 def test_agent_overview_prints_permissions_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert "Permissions" in result.output
 
 
 def test_agent_overview_help_is_available() -> None:
-    result = runner.invoke(app, ["agent", "global", "overview", "--help"])
+    result = runner.invoke(app, ["agent", "overview", "--help"])
     assert result.exit_code == 0
 
 
 # ---------------------------------------------------------------------------
-# agent global lint
+# agent lint
 # ---------------------------------------------------------------------------
 
 
 def test_agent_lint_help_is_available() -> None:
-    result = runner.invoke(app, ["agent", "global", "lint", "--help"])
+    result = runner.invoke(app, ["agent", "lint", "--help"])
     assert result.exit_code == 0
 
 
 def test_agent_lint_valid_skill_exits_zero(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_valid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
     assert result.exit_code == 0, result.output
 
 
 def test_agent_lint_valid_skill_shows_ok(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_valid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
     assert "OK" in result.output
 
 
 def test_agent_lint_invalid_skill_exits_one(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_invalid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
     assert result.exit_code == 1
 
 
 def test_agent_lint_invalid_skill_shows_fail(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_invalid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
     assert "FAIL" in result.output
 
 
 def test_agent_lint_shows_summary(tmp_path: Path) -> None:
     dotfiles = _dotfiles_with_valid_skill(tmp_path)
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
     assert "Summary" in result.output
     assert "passed" in result.output
 
 
 def test_agent_lint_empty_dotfiles_exits_zero(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
-    result = runner.invoke(app, ["agent", "global", "lint"], obj=ctx)
+    result = runner.invoke(app, ["agent", "lint"], obj=ctx)
     assert result.exit_code == 0
 
 
@@ -214,6 +214,6 @@ def test_agent_overview_bracket_in_mcp_server_name_survives(tmp_path: Path) -> N
         json.dumps({"srv[x]": {"command": "npx", "args": [], "targets": ["claude"]}})
     )
     ctx = make_fake_context(dotfiles_dir=dotfiles)
-    result = runner.invoke(app, ["agent", "global", "overview"], obj=ctx)
+    result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert result.exit_code == 0, result.output
     assert "srv[x]" in result.output

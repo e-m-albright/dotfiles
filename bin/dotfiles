@@ -179,11 +179,11 @@ if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
 
-# agent: every subcommand is Python now — global (this machine), local (a repo), web (browser chats).
-# Bare `agent` defaults to the global overview dashboard, matching the old dispatcher.
+# agent: every subcommand is Python now — machine setup (setup/overview/lint/verify) + web (browser chats).
+# Bare `agent` defaults to the overview dashboard, matching the old dispatcher.
 if [[ "${1:-}" == "agent" ]]; then
     shift
-    [[ $# -eq 0 ]] && exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent global overview
+    [[ $# -eq 0 ]] && exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent overview
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "$@"
 fi
 

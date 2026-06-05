@@ -2,7 +2,7 @@
 
 Your global instruction file, deployed verbatim to every AI coding tool (Claude Code, Cursor, Codex, Gemini, Pi). Maintained in one place: `agents/shared/rules.md` in the dotfiles repo.
 
-Project-specific rules live in the project's `AGENTS.md` (look for a "Project Coding Rules" section between fenced markers). To set up cross-harness rule delivery in a project, run `dotfiles agent migrate-rules-sync`. Look for `ABSTRACT.md` for repo context when present.
+Project-specific rules live in the project's hand-written `AGENTS.md` (with `CLAUDE.md`/`GEMINI.md` symlinked to it so every harness loads it). Look for `ABSTRACT.md` for repo context when present.
 
 ## Process
 

@@ -48,8 +48,8 @@ dotfiles install        # Full setup from scratch
 dotfiles doctor         # Health check — tools, symlinks, configs (--fix to repair)
 dotfiles update         # Update everything — brew, runtimes, tools, npm globals
 dotfiles stale          # Find disabled packages still installed + broken symlinks
-dotfiles agent global setup   # Re-deploy all vendor configs (plugins, hooks, MCP, skills)
-dotfiles agent global overview # Show active MCP servers, hooks, skills across Claude + Cursor
+dotfiles agent setup   # Re-deploy all vendor configs (plugins, hooks, MCP, skills)
+dotfiles agent overview # Show active MCP servers, hooks, skills across Claude + Cursor
 dotfiles brew           # Re-run Homebrew setup
 dotfiles dock           # Reset macOS Dock layout
 dotfiles clean          # Prune Homebrew caches (30-day)
@@ -118,13 +118,9 @@ git who            # Shortlog by author
 
 Create the project however its ecosystem expects (`bun create`, `uv init`, `cargo new`, `go mod init`, …). dotfiles no longer scaffolds projects — consult [`docs/stacks/`](stacks/README.md) for our current taste (tooling, layout, idioms) and apply what fits.
 
-### 2. Adopt cross-harness agent rules (optional)
+### 2. Write the project's AGENTS.md (optional)
 
-```bash
-dotfiles agent local
-```
-
-This installs the rule-sync fragment so the project's `AGENTS.md` stays current with the universal kernel. Write an `AGENTS.md` describing:
+The universal kernel is already deployed globally, so projects need no scaffolding. For project-specific conventions, hand-write an `AGENTS.md` at the repo root and symlink `CLAUDE.md` → `AGENTS.md` (plus `GEMINI.md` → `AGENTS.md` if you use Gemini there) so every harness loads it. Describe:
 - What this project does
 - Key architectural decisions
 - Team conventions that differ from defaults
@@ -342,9 +338,9 @@ Use `/write-skill` (from superpowers) to create new skills with TDD — it watch
 
 ### Editing the rule kernel
 
-The universal agent rules are one hand-authored doc: `ai/agents/shared/rules.md`. Edit it, run `dotfiles agent global setup`, and it's written verbatim to every vendor's instruction file (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.pi/agent/AGENTS.md`, and a Cursor `shared-rules.mdc` wrapper). No baking, no per-rule symlinks.
+The universal agent rules are one hand-authored doc: `ai/agents/shared/rules.md`. Edit it, run `dotfiles agent setup`, and it's written verbatim to every vendor's instruction file (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.pi/agent/AGENTS.md`, and a Cursor `shared-rules.mdc` wrapper). No baking, no per-rule symlinks.
 
-Stack-specific taste is reference, not a pushed rule — it lives in `docs/stacks/`. Per-project rules belong in that project's `AGENTS.md` (use `dotfiles agent local`).
+Stack-specific taste is reference, not a pushed rule — it lives in `docs/stacks/`. Per-project rules belong in that project's hand-written `AGENTS.md`.
 
 ### Adding MCP Servers
 
@@ -360,11 +356,11 @@ Edit `ai/agents/shared/mcp-servers.json` and specify targets:
 }
 ```
 
-Then run `dotfiles agent global setup` to deploy.
+Then run `dotfiles agent setup` to deploy.
 
 ### Modifying Hooks
 
-Edit `ai/agents/claude/hooks.json` directly, then run `dotfiles agent global setup`.
+Edit `ai/agents/claude/hooks.json` directly, then run `dotfiles agent setup`.
 
 ---
 
@@ -400,9 +396,9 @@ The review also evaluates five dimensions: **Correctness**, **Security**, **API 
 
 | Problem | Fix |
 |---------|-----|
-| Claude Code doesn't have my plugins | Run `dotfiles agent global setup` |
+| Claude Code doesn't have my plugins | Run `dotfiles agent setup` |
 | Hooks aren't running | `just hooks-install` or `lefthook install` |
 | Type checker not found | `uv sync --dev` (Python) or `bun install` (TS) |
 | Format-on-save not working | Check `dotfiles doctor` — formatter must be installed |
-| MCP server not connecting | Check `dotfiles agent global overview` for status |
+| MCP server not connecting | Check `dotfiles agent overview` for status |
 | Stale packages installed | Run `dotfiles stale` to find them |

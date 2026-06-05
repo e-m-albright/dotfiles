@@ -30,7 +30,7 @@ def test_doctor_fix_prints_agent_setup_hint(tmp_path: Path) -> None:
     home.mkdir()
     ctx = make_fake_context(home=home, dotfiles_dir=tmp_path / "dotfiles")
     result = runner.invoke(app, ["doctor", "--fix"], obj=ctx)
-    assert "dotfiles agent global setup" in result.output
+    assert "dotfiles agent setup" in result.output
 
 
 # The "all checks pass → no failures" scenario is covered as a direct

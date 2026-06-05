@@ -334,7 +334,7 @@ if command -v cursor >/dev/null 2>&1; then
     fi
 
     # Agentic config (MCP, rules, hooks, plugin registration)
-    "$DOTFILES_DIR/bin/dotfiles" agent global setup cursor
+    "$DOTFILES_DIR/bin/dotfiles" agent setup cursor
 
     print_success "Cursor configured"
 fi
@@ -408,7 +408,7 @@ else
 fi
 
 print_section "Setup"
-"$DOTFILES_DIR/bin/dotfiles" agent global setup claude
+"$DOTFILES_DIR/bin/dotfiles" agent setup claude
 
 # Agent Permissions (tiered profiles: scout, dev, yolo)
 print_section "Agent Permissions"
@@ -440,7 +440,7 @@ print_todo "Verify git identity: ${CYAN}git config user.name && git config user.
 printf "\n"
 printf "  ${BOLD}Optional:${NC}\n"
 print_todo_optional "Cursor MCP servers are auto-configured — edit ${CYAN}~/dotfiles/ai/agents/cursor/mcp.json${NC} to customize"
-print_todo_optional "When you want dotfiles-managed MCPs reset to profile defaults: ${CYAN}dotfiles agent global setup --reset-mcp${NC}"
+print_todo_optional "When you want dotfiles-managed MCPs reset to profile defaults: ${CYAN}dotfiles agent setup --reset-mcp${NC}"
 print_todo_optional "Edit ${CYAN}~/dotfiles/ai/agents/claude/plugins.yaml${NC} to customize Claude Code plugins"
 printf "\n"
 printf "  Run ${CYAN}dotfiles doctor${NC} to verify everything is set up correctly.\n"
