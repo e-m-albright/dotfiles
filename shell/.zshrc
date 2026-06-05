@@ -94,6 +94,9 @@ yz() {
 }
 
 # Git (supplements oh-my-zsh git plugin)
+# Drop the plugin's `gpu` (git push upstream) — a footgun next to `gps`, and we
+# rarely have an `upstream` remote. `gps`/`gp` cover push.
+unalias gpu 2>/dev/null
 alias gs='git status -sb'
 alias gd='git diff'
 alias gds='git diff --staged'

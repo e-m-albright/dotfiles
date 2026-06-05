@@ -16,17 +16,8 @@ from dotfiles.cmd.session.service import (
     prune_exited,
     sessions_to_prune,
     should_prune,
-    valid_session_name,
 )
 from dotfiles.testing.fakes import FakeProcessRunner
-
-
-def test_valid_session_name_rejects_empty_and_whitespace() -> None:
-    assert valid_session_name("api")
-    assert valid_session_name("api-server_2")
-    assert not valid_session_name("")
-    assert not valid_session_name("two words")
-    assert not valid_session_name("  ")
 
 
 def test_parse_empty() -> None:

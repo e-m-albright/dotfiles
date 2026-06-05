@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.markup import escape
 
 from dotfiles.app.context import AppContext, app_context
+from dotfiles.cmd.session import session_name
 from dotfiles.cmd.session.agent_sessions import live_agents, match_agents_to_sessions
 from dotfiles.cmd.session.models import AgentActivity, Session
 from dotfiles.cmd.session.service import (
@@ -23,7 +24,6 @@ from dotfiles.cmd.session.service import (
     list_sessions,
     maybe_prune,
     prune_exited,
-    session_name_error,
     sessions_to_prune,
 )
 from dotfiles.cmd.session.session_info import (
@@ -189,7 +189,7 @@ def attach(ctx: typer.Context, name: str) -> None:
 def new(ctx: typer.Context, name: str) -> None:
     """Create a new session and attach to it (with its deck layout if one exists)."""
     app_ctx = app_context(ctx)
-    if error := session_name_error(name):
+    if error := session_name.error(name):
         console.print(f"[red]{error}[/]")
         raise typer.Exit(code=1)
     # `new` always creates: zellij `attach --create` (no layout) or `--session

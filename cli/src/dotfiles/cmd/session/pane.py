@@ -22,6 +22,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, ListItem, ListView, Static
 
 from dotfiles.app.context import AppContext
+from dotfiles.cmd.session import session_name
 from dotfiles.cmd.session.agent_sessions import live_agents, match_agents_to_sessions
 from dotfiles.cmd.session.models import AgentActivity, Session
 from dotfiles.cmd.session.service import (
@@ -35,9 +36,6 @@ from dotfiles.cmd.session.service import (
     layout_name_for,
     list_sessions,
     maybe_prune,
-    session_name_error,
-    strip_invalid_session_name_chars,
-    valid_session_name,
 )
 from dotfiles.cmd.session.session_info import (
     session_cwd,
@@ -457,19 +455,19 @@ class _NewSession(ModalScreen[str | None]):
 
     def _submit(self) -> None:
         name = self.query_one("#new-name", Input).value.strip()
-        if valid_session_name(name):
+        if session_name.is_valid(name):
             self.dismiss(name)
             return
-        if error := session_name_error(name):
+        if error := session_name.error(name):
             self.query_one("#name-error", Label).update(f"[red]{error}[/]")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id != "new-name":
             return
-        cleaned = strip_invalid_session_name_chars(event.value)
+        cleaned = session_name.clean(event.value)
         if cleaned == event.value:
             return
-        if error := session_name_error(event.value):
+        if error := session_name.error(event.value):
             self.query_one("#name-error", Label).update(f"[red]{error}[/]")
         event.input.value = cleaned
 
