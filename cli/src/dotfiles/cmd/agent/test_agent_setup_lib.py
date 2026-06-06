@@ -230,8 +230,13 @@ class TestDeploySkills:
         result = deploy_skills(runner, dotfiles, "claude-code", which=lambda _: "/usr/bin/npx")
 
         assert result.ok
-        assert len(runner.calls) == 1
-        cmd = runner.calls[0]
+        # Refresh = remove our skills (by name, not '*') then add fresh.
+        assert len(runner.calls) == 2
+        remove = runner.calls[0]
+        assert remove[:3] == ("npx", "skills", "remove")
+        assert "my-skill" in remove
+        assert "*" not in remove  # never wipe externally-installed skills
+        cmd = runner.calls[1]
         assert cmd[0] == "npx"
         assert cmd[1] == "skills"
         assert cmd[2] == "add"

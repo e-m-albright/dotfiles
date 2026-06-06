@@ -13,6 +13,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import yaml
+
 from dotfiles.cmd.agent.models import FileValidation, FileValidationStatus
 from dotfiles.fsutil import list_dir
 
@@ -73,6 +75,31 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], list[str]]:
 def _count_caps(body_lines: list[str]) -> int:
     """Count standalone MUST/ALWAYS/NEVER occurrences in the body."""
     return sum(len(_CAPS_RE.findall(line)) for line in body_lines)
+
+
+def _frontmatter_yaml_error(lines: list[str]) -> str | None:
+    """Strict-parse the frontmatter block as YAML; return an error if invalid.
+
+    Our naive ``key: value`` parser tolerates things a real YAML parser rejects —
+    most commonly an unquoted ``: `` inside a value (e.g. ``description: ...
+    metric: net LOC``), which reads as a nested mapping. The ``npx skills`` CLI
+    uses a strict parser and **silently drops** any skill with invalid
+    frontmatter, so it must be a hard lint error, not a deploy-time surprise.
+    Returns ``None`` for missing/unclosed frontmatter (handled by other checks).
+    """
+    if not lines or lines[0].rstrip() != "---":
+        return None
+    block: list[str] = []
+    for line in lines[1:]:
+        if line.rstrip() == "---":
+            try:
+                yaml.safe_load("\n".join(block))
+            except yaml.YAMLError as exc:
+                detail = str(exc).splitlines()[0].strip()
+                return f"invalid YAML frontmatter ({detail})"
+            return None
+        block.append(line)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -144,6 +171,10 @@ def validate_file(
             status="fail",
             errors=("missing frontmatter",),
         )
+
+    yaml_err = _frontmatter_yaml_error(lines)
+    if yaml_err:
+        errors.append(yaml_err)
 
     fields, body_lines = _parse_frontmatter(text)
     _check_name(fields.get("name", ""), expected_name, errors, warnings)

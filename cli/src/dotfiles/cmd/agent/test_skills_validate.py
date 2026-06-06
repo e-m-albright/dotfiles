@@ -71,7 +71,21 @@ def test_missing_frontmatter_is_fail() -> None:
         text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
     )
     assert result.status == "fail"
-    assert any("missing frontmatter" in e for e in result.errors)
+
+
+def test_inline_colon_in_description_is_invalid_yaml_fail() -> None:
+    # An unquoted ': ' inside the description reads as a nested mapping; strict
+    # YAML parsers (like the npx skills CLI) reject it and silently drop the
+    # skill. The linter must catch it as a hard error. Regression: the `prune`
+    # skill once failed to deploy for exactly this reason.
+    text = _skill_text(
+        description="Use when removing code; the one honest metric: net LOC goes down."
+    )
+    result = validate_file(
+        text, kind="skill", expected_name="my-skill", rel_path="ai/skills/my-skill/SKILL.md"
+    )
+    assert result.status == "fail"
+    assert any("invalid YAML frontmatter" in e for e in result.errors)
 
 
 def test_name_mismatch_is_fail() -> None:

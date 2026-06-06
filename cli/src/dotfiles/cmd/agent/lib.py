@@ -228,6 +228,18 @@ def deploy_skills(
             details="Install Node.js to enable skill deployment",
         )
 
+    # `npx skills add --copy` skips any skill whose destination dir already
+    # exists, so an edited skill silently keeps its stale deployed copy. Remove
+    # our skills first (by name — never `-s '*'`, which would also delete
+    # externally-installed skills like superpowers), then add fresh. check=False:
+    # a first-time deploy has nothing to remove and remove may exit non-zero.
+    skill_names = sorted(p.parent.name for p in src.glob("*/SKILL.md"))
+    if skill_names:
+        runner.run(
+            ("npx", "skills", "remove", *skill_names, "-a", agent, "-g", "-y"),
+            check=False,
+        )
+
     cmd = (
         "npx",
         "skills",
