@@ -131,7 +131,7 @@ def _parse_plugins_yaml(plugins_yaml: Path) -> _JsonDict:
 
     try:
         raw: object = yaml.safe_load(plugins_yaml.read_text()) or []
-    except Exception:
+    except (yaml.YAMLError, OSError):
         return {}
 
     result: _JsonDict = {}
