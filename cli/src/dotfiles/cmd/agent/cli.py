@@ -11,6 +11,7 @@ import typer
 from rich.markup import escape
 from rich.table import Table
 
+from dotfiles.agent import VENDORS
 from dotfiles.app.context import app_context
 from dotfiles.cmd.agent.models import (
     AgentOverview,
@@ -51,21 +52,9 @@ class _AgentChoice(StrEnum):
 # Glyph / render helpers (moved from cli/verify.py)
 # ---------------------------------------------------------------------------
 
-_VENDOR_HEADERS = {
-    "claude": "Claude Code",
-    "cursor": "Cursor",
-    "codex": "Codex",
-    "gemini": "Gemini",
-    "pi": "Pi",
-}
-
-_CLI_CONFIRMATION = {
-    "claude": "CLI confirmation: skills auto-listed in every Claude Code session via Skill tool",
-    "cursor": "CLI confirmation: GUI only — Cursor → Settings → MCP / Rules",
-    "codex": "CLI confirmation: 'codex' (interactive) — no list-skills subcommand",
-    "gemini": "CLI confirmation: 'gemini' (interactive)",
-    "pi": "CLI confirmation: 'pi' (interactive, LM Studio local-first)",
-}
+# Derived from the single VENDORS registry in dotfiles.agent — don't re-list here.
+_VENDOR_HEADERS = {v.name: v.display_name for v in VENDORS}
+_CLI_CONFIRMATION = {v.name: v.cli_confirmation for v in VENDORS}
 
 _BOOL_GLYPH = {True: "[green]✓[/]", False: "[dim]—[/]"}
 
