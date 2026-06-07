@@ -10,6 +10,8 @@ metadata:
 
 # Converge
 
+> **Canon** — enacts Principle 10 (*Suppressions ratchet downward*) and Principle 5 (*Simplicity is the goal*); the engine that ratchets the rest in. See [CANON.md](../../../CANON.md).
+
 A **convergence engine**: a repeatable loop that pushes a codebase toward a named steady state — simpler, deduplicated, idiomatic, organized by a real ontology — and **ratchets each gain in** so the next change can't undo it. The aim is code a grumpy 15-year principal engineer would approve without comments: deep modules, no slop, measurably better every pass.
 
 This is the whole-codebase, multi-pass sibling of the diff-scoped tools. Use `/review` to grade a single PR and `/simplify` to clean one diff; use **this** when you want to drive an area (or the whole repo) toward convergence over several passes and lock the result in.

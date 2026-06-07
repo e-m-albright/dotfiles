@@ -5,6 +5,8 @@ description: The minimalism/deletion lens of the code-health portfolio — impro
 
 # Prune
 
+> **Canon** — enacts Principle 6 (*Dead code is dead weight*) and Principle 5 (*Simplicity is the goal*). See [CANON.md](../../../CANON.md).
+
 The **deletion lens** — worse-is-better, YAGNI, "the best code is no code." Every other lens can add (abstraction, types, comments, structure); this one only asks **what can be removed without losing behavior the system actually needs?** It's the counterweight that keeps the portfolio from accreting, and it's grounded by the GitClear finding that AI assistants overwhelmingly *add* and rarely consolidate.
 
 It is codebase-scoped and deletion-first — distinct from the built-in `/simplify` (which cleans the current diff) and from `form-tidy` (which restructures). Prune's success metric is honest and visible: **net lines and surface area go down**, achieved by real removal, never by compressing or laundering (no comment-stripping — that's gaming, see [METRICS.md](../converge/references/METRICS.md)).

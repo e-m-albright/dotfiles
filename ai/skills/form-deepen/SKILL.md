@@ -10,6 +10,8 @@ metadata:
 
 # Deepen
 
+> **Canon** — enacts Principle 5 (*Simplicity is the goal — small files are a proxy*): deep modules over shallow. See [CANON.md](../../../CANON.md).
+
 Surface architectural friction and propose **deepening opportunities** — refactors that turn shallow modules into deep ones. The aim is testability and AI-navigability, found by *judgment*, not measured by a gate.
 
 This is the **taste pole** of the code-health portfolio: it ideates freely on improvements that are about design feel — depth, naming, the right seam — and that no metric can see. It pairs with [converge](../converge/SKILL.md) (the measured convergence engine): use this to *find* the deep move conversationally; use that to *measure, ratchet, and lock in* changes across a whole repo. Safety is still verified by tests; "better" here is gated by your judgment and the user's, and recorded as an ADR — not by a number.

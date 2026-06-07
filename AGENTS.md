@@ -2,6 +2,8 @@
 
 Follow `ai/agents/shared/rules.md` — the universal agent kernel, deployed verbatim to every vendor — plus any project-specific rules below.
 
+**The Canon & the Catechism** ([`CANON.md`](CANON.md)) is the umbrella term for this repo's engineering philosophy and practice — process, code health, developer experience, and the toolbelt (justfiles, lefthook, CI) that enforces them. When the owner says **"the Canon,"** they mean *all of it*. New patterns earn their place by tracing to an article of the Canon; new articles earn theirs by naming the rite that enforces them.
+
 This is a personal dotfiles and development environment configuration repo. It bootstraps a Mac to a curated developer experience: machine setup scripts, editor configs, and the agentic-coding tooling (rules, skills, MCP) we deploy across vendors.
 
 ## What This Repo Contains
@@ -61,7 +63,10 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 ## Reference Docs
 
 The curated knowledge base lives in `docs/` (see `docs/README.md`):
+- `CANON.md` (repo root) -- **the Canon & the Catechism**: the umbrella philosophy + practice (process, code health, DX, toolbelt). Start here for the whole ethos.
+- `docs/engineering-philosophy.md` -- the 12 universal code-health principles (Canon, article II)
+- `docs/knowledge/engineering-gates.md` -- how each principle is enforced mechanically (the toolbelt doctrine)
+- `docs/knowledge/code-health-portfolio.md` -- the code-health lenses + entry-point map (the Catechism); `docs/health/` holds per-scope state + the independent `ASSESSMENT.md`
 - `docs/stacks/` -- technology taste by language/framework (pick/avoid, idioms, patterns), plus `services.md`, `infrastructure.md`, `python/ml.md`
 - `docs/knowledge/` -- cross-cutting practice: `ai-tools.md`, `token-efficiency.md`, `browser-tooling.md`, `customer-discovery.md`, `project-memory.md`, prompting guides
-- `docs/engineering-philosophy.md` -- 12 universal code-health principles
 - `docs/pi-power-setup.md` -- Pi agent power setup (mitsupi, safe-git, oh-my-pi vs base Pi)

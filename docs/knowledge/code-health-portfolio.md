@@ -4,6 +4,8 @@
 
 ## The Canon & the Catechism
 
+> This page is the **code-health** chapter of a repo-wide frame. The full umbrella — process, code health, DX, and the toolbelt — lives at [`CANON.md`](../../CANON.md). What follows applies the same two-halves lens to code health specifically.
+
 The whole system has two halves. Naming them makes the umbrella easy to hold in one's head — and easy to keep honest, because they answer different questions.
 
 - **The Canon** — *what is true about good code.* The doctrine you don't relitigate every PR: the [12 Principles](../engineering-philosophy.md), the [gates that enforce each](engineering-gates.md), the [form/function completeness model](#the-completeness-model-form-vs-function) below, the arbitrated [antagonist tiebreaks](#the-lenses), and the [evidence base](#evidence-base). The Canon answers **why**. It changes rarely, and only by argument.
