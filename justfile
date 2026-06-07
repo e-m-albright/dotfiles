@@ -40,6 +40,12 @@ deadcode:
 complexity:
     uv run complexipy src -mx 9
 
+# Code-health ratchet for the cli scope. `just ratchet --update` lowers ceilings to actuals.
+# Runs from cli/ (the baseline's run_from); the monotonic guard lives in the script.
+[group('quality')]
+ratchet *args:
+    bash {{repo}}/ai/skills/converge/scripts/ratchet-check.sh {{repo}}/docs/health/cli/baselines.json {{args}}
+
 # Full static-check + test gate. `just check --fast` (or `check fast`) skips tests — pre-commit.
 [group('quality')]
 check mode='all':
@@ -58,6 +64,7 @@ check mode='all':
     just types
     just deadcode
     just complexity
+    just ratchet
     if [[ "$run_test" -eq 1 ]]; then
         just test
     fi

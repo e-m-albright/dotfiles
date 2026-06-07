@@ -35,6 +35,48 @@ Current scopes: [`cli/`](cli/) (the `dotfiles` CLI + Mission Control TUI).
 
 Tolerated decisions with load-bearing rationale graduate to [`docs/adr/`](../adr/).
 
-## Starting a new scope / repo
+## Starting a new scope / repo (the adopt path)
 
-Run the engine in the target; it bootstraps `docs/health/<scope>/baselines.json` from the scorecard and seeds `findings.md`. Outside this repo the skill still works (the scorecard travels with it); commit the `docs/health/` it produces there so that repo gets the same durable memory.
+One command bootstraps the backbone in any git repo:
+
+```
+cd <target-repo>
+dotfiles agent health --scope <name> --glob '<files_glob>' --run-from '<dir>'
+```
+
+It runs the scorecard against the current repo, seeds `docs/health/<scope>/baselines.json`
+(ceilings set to current actuals via `ratchet-check.sh --update`), and seeds a
+`findings.md` ledger — then points you at `/converge` to grade and populate the
+backlog. Idempotent: re-running keeps existing baselines unless `--force`. Commit
+the `docs/health/` it produces so that repo gets the same durable memory.
+
+## Routines — what makes it self-managing
+
+The system converges on its own through three wired routines, not ad-hoc passes.
+The dividing line is **schedule the *finding*, gate the *fixing*** — generative
+refactoring is never auto-applied (see the [portfolio scheduling
+policy](../knowledge/code-health-portfolio.md#scheduling-policy)).
+
+1. **The ratchet gate (enforced every commit).** `just ratchet` runs
+   `ratchet-check.sh` against `cli/`'s baseline; it's wired into `just check`, which
+   lefthook runs at pre-commit (`--fast`) and pre-push. Any new suppression above a
+   ceiling fails the commit. `just ratchet --update` lowers ceilings to current
+   actuals (monotonic — never raises), locking in every improvement. This is the
+   floor that only rises.
+2. **The adopt command (one-shot, deterministic).** `dotfiles agent health` above —
+   replicable in any repo with zero re-specification.
+3. **Scheduled detection (safe unattended).** `scorecard.sh --json` (diff against the
+   committed baseline) and the `ai/audits/*` prompts are safe to run on a cron: they
+   **open an issue or draft PR, never auto-merge and never auto-apply a generative
+   refactor** — the empirically-documented anti-pattern. Every taste/structural lens
+   and all of Tier B stay interactive and human-gated.
+
+### Gotchas the grep-based ratchet has (learned by dogfooding)
+
+- **Pathspec `**` skips shallow files.** A plain `src/**/*.py` git pathspec silently
+  omits files directly under `src/`. `ratchet-check.sh` wraps the glob in `:(glob)`
+  magic so `**` spans directories *and* matches shallow files.
+- **A pattern catalog can match its own grep.** The file that *defines* the
+  suppression regexes (`cmd/agent/health.py`) must not contain a family's literal
+  match form; factor alternations into groups (`except (Exception|BaseException)`,
+  not `except Exception|except BaseException`) so the catalog doesn't self-count.

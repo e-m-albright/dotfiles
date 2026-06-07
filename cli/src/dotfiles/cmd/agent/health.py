@@ -26,7 +26,9 @@ SUPPRESSION_PATTERNS: dict[str, str] = {
     "type-ignore": r"# *type: *ignore|// *@ts-(ignore|expect-error)",
     "lint-disable": r"# *noqa|# *pyright: *ignore|eslint-disable|biome-ignore|svelte-ignore",
     "allow-attr": r"#\[allow\(",
-    "broad-except": r"except Exception|except BaseException",
+    # Alternation is factored into a group so this catalog file doesn't match its
+    # own grep — the one family whose naive literal form would equal its own match.
+    "broad-except": r"except (Exception|BaseException)",
     "any-type": r"dict\[str, *Any\]|: *Any\b|\bas any\b",
     "cast-escape": r"\bcast\(|\.unwrap\(\)",
     "skipped-test": r"@pytest\.mark\.skip|\bit\.skip\b|\bdescribe\.skip\b|#\[ignore\]",
