@@ -42,6 +42,7 @@ Code quality has four source-measurable pillars (CISQ/ISO 5055): **Reliability, 
 1. **Rejected-decision log.** Every lens reads `docs/adr/` for declined moves before proposing, and writes back load-bearing rejections. This is the memory that stops passes and sibling lenses from undoing each other — the single highest-leverage anti-oscillation mechanism.
 2. **Arbitration, not accretion.** Contradictory moves on the same code surface the tradeoff and get decided once and recorded — never resolved by whichever ran last.
 3. **Quality ratchet.** Metrics may hold or improve, never regress (committed baselines, monotonic guard). The safe substrate for any continuous run. See [engineering-gates.md](engineering-gates.md).
+4. **Persistent health state.** Each run reads and writes a committed `docs/health/<scope>/` — `baselines.json` (the ratchet numbers), `findings.md` (fixed / open backlog / tolerated / dismissed), and `report-<date>.md` (graded snapshot). This is what makes passes *stateful and convergent across runs* instead of re-discovering the same findings; see [health/README.md](../health/README.md).
 
 ## Scheduling policy
 

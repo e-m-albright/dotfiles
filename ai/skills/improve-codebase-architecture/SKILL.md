@@ -73,7 +73,7 @@ Then pin the target as **durable, committed artifacts** — convergence is impos
 - **Hierarchy** — the directory tree as a literal index of the domain (package-by-feature, top-level dirs that "scream" the domain, not the framework).
 - **Dependency shape** — zero cycles; dependencies point toward stability (the dependency matrix trends lower-triangular).
 - **Depth** — deep modules; errors defined out of existence.
-- **The rejected-decision log** — read `docs/adr/` (or the project's ADR location) for moves already *declined*. A refactor that re-proposes a rejected/superseded decision is the #1 way successive passes (and sibling skills) undo each other. Treat the ADR log as shared memory: never re-litigate what's recorded, and when a move is rejected in this run for a load-bearing reason, write it back so the next pass and the other code-health skills honor it too.
+- **The persistent health state** — read `docs/health/<scope>/` first if it exists: `findings.md` (the ledger — skip anything **Tolerated**, don't re-propose open **backlog** items as if new, don't re-investigate **dismissed** ones), the last `report-<date>.md` for context, and `baselines.json` for the current ratchet. Plus `docs/adr/` for declined moves. Re-proposing a recorded decision is the #1 way successive passes (and sibling skills) undo each other — treat this state as shared memory. The convention is in [docs/health/README.md](../../../docs/health/README.md); create the scope dir lazily on first pass.
 
 If the area lacks any of these, say so and create it — naming the target is itself the first valuable output, and the artifact is what makes the loop terminate.
 
@@ -84,6 +84,8 @@ Establish the scorecard so progress is objective, not vibes. Read [references/ME
 - **Run the deterministic scorecard** to get a reproducible baseline: `scripts/scorecard.sh --json > before.json` (LOC, per-family suppression counts, churn×LOC hotspots; `--deep` also runs any installed analyzers). Re-run it in Phase 6 and diff — this is what makes "measurably ratchet" true rather than improvised.
 
   > DO NOT read `scripts/scorecard.sh` before running it; it is a black-box read-only tool meant to be called, not ingested into context. Run it with `--help` to see options.
+
+- **Bootstrap or refresh `docs/health/<scope>/baselines.json`** (the committed ratchet). On a first pass, seed every ceiling at the current actual; on later passes, `scripts/ratchet-check.sh docs/health/<scope>/baselines.json` reports any family above ceiling (fails non-zero). This is the operationalized ratchet — see [docs/health/README.md](../../../docs/health/README.md).
 
 - **Take a qualitative baseline grade too.** Numbers miss taste. Grade the area against the `review` health rubric ([../review/SKILL.md](../review/SKILL.md)) for a letter grade (e.g. "B−"), so Phase 6 can report "B− → A−," not just "dup 12% → 7%." The number proves no regression; the grade captures whether a principal engineer would now sign off.
 - Beyond the scorecard, detect any other static tools the repo has (cognitive-complexity, duplication, dependency cycles, dead code). Don't invent metrics the repo can't compute.
@@ -134,13 +136,15 @@ Execute each move with refactoring discipline (full mechanics + the per-move loo
 
 Lock the gains in so the codebase can't re-rot — this is the difference between a one-shot cleanup and *convergence*:
 
-- **Lower the baselines.** Tighten every `baselines.json` ceiling to the new, better actual. Never raise silently (the monotonic guard in engineering-gates.md). LOC, duplication, and suppression counts only move down.
+- **Lower the baselines.** Tighten `docs/health/<scope>/baselines.json` to the new, better actuals — `scripts/ratchet-check.sh docs/health/<scope>/baselines.json --update` lowers ceilings to current counts and never raises them (the monotonic guard, engineering-gates.md). LOC, duplication, and suppression counts only move down.
 - **Encode satisfied constraints as CI contracts.** Once an area has zero cycles or respects a layering rule, write it into the dependency linter (import-linter / dependency-cruiser / ArchUnit / cargo-modules) so a future change *can't* reintroduce it. This is the "cleanup + prevention" step that stops infinite churn.
 - **No gaming.** Never strip comments/blanks or launder types to slip under a ceiling; a clean longer file beats a mangled shorter one. When a metric is at floor, do the real refactor or change the *formula* — see the anti-gaming rules in engineering-gates.md.
 
 ### Phase 6 — Report & repeat
 
 Re-run `scripts/scorecard.sh --json` and diff against `before.json`; re-grade against the `review` rubric. Show both: the quantitative before/after (LOC, duplication %, #functions-over-cognitive-complexity, dependency cycles, suppression counts, and the **refactored-vs-added ratio** — the de-slop north star, since AI assistants *add* code instead of consolidating and this loop inverts that) **and** the qualitative grade move (e.g. "B− → A−"). The numbers prove no regression; the grade proves it actually got better.
+
+**Persist the run** to `docs/health/<scope>/` so the next pass is stateful: write/refresh `report-<date>.md` (the graded snapshot), and update `findings.md` — move fixed items to the run log, append newly-discovered to the backlog, record anything newly Tolerated (with an ADR) or Dismissed. This durable ledger is what makes successive passes *converge* instead of re-discovering the same findings (see [docs/health/README.md](../../../docs/health/README.md)).
 
 Then check the termination conditions (CONVERGENCE-LOOP.md), one of which is **no move undid a recorded decision**. If the area hasn't converged and the next move still pays for itself, loop. Stop when the move list is empty, the contracts hold, **or** the economics turn (over-tidying is procrastination — the AHA/Tidy-First brake).
 

@@ -1,0 +1,30 @@
+{
+  "scope": "cli/src/dotfiles (non-test)",
+  "files_glob": "src/**/*.py",
+  "run_from": "cli/",
+  "updated": "2026-06-07",
+  "policy": "Monotonic ratchet — every ceiling may only DECREASE. Raising one needs a Ratchet-Bump trailer + reason. See docs/knowledge/engineering-gates.md §1. Check with the improve-codebase-architecture skill's scripts/ratchet-check.sh.",
+  "loc_nontest": 9010,
+  "complexity": {
+    "cognitive_max": 10,
+    "functions_over_10": 0,
+    "tool": "complexipy src -mx 10"
+  },
+  "dependency_cycles": 0,
+  "suppressions": {
+    "type-ignore": 16,
+    "cast": 35,
+    "any-annotation": 14,
+    "noqa": 0,
+    "broad-except": 0,
+    "pragma-no-cover": 1
+  },
+  "suppression_patterns": {
+    "type-ignore": "# *type: *ignore",
+    "cast": "cast\\(",
+    "any-annotation": ": Any\\b|dict\\[str, Any\\]",
+    "noqa": "# *noqa",
+    "broad-except": "except Exception",
+    "pragma-no-cover": "# *pragma: *no cover"
+  }
+}
