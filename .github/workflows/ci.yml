@@ -51,3 +51,15 @@ jobs:
         with:
           severity: warning
           ignore_paths: ".git"
+
+  # The Python health gate — same recipes lefthook runs locally, so CI enforces
+  # the ratchet/complexity/coverage floor instead of trusting every contributor's
+  # hooks. "CI calls task-runner recipes; YAML holds zero logic." (engineering-gates §3)
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: extractions/setup-just@v2
+      - name: Health + quality gate (fmt, lint, types, deadcode, complexity, ratchet, tests)
+        run: just check
