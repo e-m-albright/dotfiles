@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from itertools import groupby
 
@@ -13,12 +13,14 @@ from rich.table import Table
 
 from dotfiles.agent import VENDORS
 from dotfiles.app.context import app_context
+from dotfiles.cmd.agent.health import HealthBootstrap, HealthError, HealthService, git_root
 from dotfiles.cmd.agent.models import (
     AgentOverview,
     AgentSurface,
     AgentVerify,
     FileValidation,
     HookRow,
+    Hotspot,
     McpRow,
     PermissionRow,
     SubagentRow,
@@ -467,6 +469,84 @@ def _stats_json(r: SkillUsageReport) -> dict[str, object]:
         "sequences": [{"from": a, "to": b, "count": n} for (a, b), n in r.sequences],
         "vendors": dict(r.vendor_counts),
     }
+
+
+_HEALTH_SCOPE = typer.Option("repo", "--scope", help="Health scope name (docs/health/<scope>/).")
+_HEALTH_GLOB = typer.Option(
+    "**/*", "--glob", help="files_glob the ratchet counts over (e.g. 'src/**/*.py')."
+)
+_HEALTH_RUN_FROM = typer.Option(
+    ".", "--run-from", help="Dir the glob is relative to (e.g. 'cli/')."
+)
+_HEALTH_FORCE = typer.Option(
+    False, "--force", help="Reseed baselines.json even if it exists (re-counts ceilings)."
+)
+
+
+@agent_app.command()
+def health(
+    ctx: typer.Context,
+    scope: str = _HEALTH_SCOPE,
+    glob: str = _HEALTH_GLOB,
+    run_from: str = _HEALTH_RUN_FROM,
+    force: bool = _HEALTH_FORCE,
+) -> None:
+    """Bootstrap a repo's code-health backbone: scorecard → baselines.json + findings.md."""
+    app_ctx = app_context(ctx)
+    svc = HealthService(
+        runner=app_ctx.runner,
+        scripts_dir=app_ctx.dotfiles_dir / "ai" / "skills" / "converge" / "scripts",
+    )
+    try:
+        target = git_root(app_ctx.runner)
+        result = svc.bootstrap(
+            target=target,
+            scope=scope,
+            files_glob=glob,
+            run_from=run_from,
+            today=date.today(),
+            force=force,
+        )
+    except HealthError as exc:
+        console.print(f"[red]error:[/] {escape(str(exc))}")
+        raise typer.Exit(1) from exc
+    _render_health(result)
+
+
+def _render_health(r: HealthBootstrap) -> None:
+    console.print()
+    console.print(f"[bold blue]Code-health backbone[/]  [dim]scope: {escape(r.scope)}[/]")
+    console.print(f"  repo  [dim]{escape(r.target)}[/]")
+    console.print(f"  LOC {r.scorecard.loc}   suppressions {r.total_suppressions}")
+    if r.created:
+        console.print(f"  [green]✓[/] baselines  [dim]{escape(r.baselines_path)}[/]")
+    else:
+        console.print(
+            f"  [yellow]○[/] baselines exist — kept (--force to reseed)  "
+            f"[dim]{escape(r.baselines_path)}[/]"
+        )
+    console.print(f"  [green]✓[/] findings   [dim]{escape(r.findings_path)}[/]")
+    _render_hotspots(r.scorecard.hotspots)
+    console.print()
+    console.print(
+        "[dim]Next: run [/][bold]/converge[/][dim] to grade (report-<date>.md) "
+        "and populate the findings backlog.[/]"
+    )
+
+
+def _render_hotspots(rows: tuple[Hotspot, ...]) -> None:
+    if not rows:
+        return
+    console.print()
+    console.print("[bold blue]Hotspots[/] [dim]— churn*LOC; spend refactor effort here first[/]")
+    tbl = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
+    tbl.add_column("score", justify="right")
+    tbl.add_column("churn", justify="right")
+    tbl.add_column("loc", justify="right")
+    tbl.add_column("file", style="dim")
+    for h in rows[:8]:
+        tbl.add_row(str(h.score), str(h.churn), str(h.loc), escape(h.file))
+    console.print(tbl)
 
 
 @web_app.command("copy")

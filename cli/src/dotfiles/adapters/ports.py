@@ -5,6 +5,7 @@ inject fakes. `CommandResult` lives here because it's the `ProcessRunner` payloa
 """
 
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict
@@ -39,6 +40,7 @@ class ProcessRunner(Protocol):
         check: bool = False,
         env: Mapping[str, str] | None = None,
         stdin: str | None = None,
+        cwd: Path | None = None,
     ) -> CommandResult: ...
 
 

@@ -19,8 +19,10 @@ MODE="${2:-check}"
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "not a git repo" >&2; exit 2; }
 
 # Count current matches for a regex across the baseline's files_glob, excluding tests.
+# The glob carries `:(glob)` magic so `**` spans directories AND matches files
+# directly under a prefix — a plain `src/**/*.py` pathspec silently skips `src/x.py`.
 count() { # regex -> count of matches outside test files (awk never exits non-zero)
-  { git grep -InE "$1" -- "$GLOB" 2>/dev/null || true; } | awk '!/test_/{n++} END{print n+0}'
+  { git grep -InE "$1" -- ":(glob)$GLOB" 2>/dev/null || true; } | awk '!/test_/{n++} END{print n+0}'
 }
 
 GLOB="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("files_glob","**/*"))' "$BASELINE")"

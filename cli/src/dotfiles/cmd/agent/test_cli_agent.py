@@ -217,3 +217,48 @@ def test_agent_overview_bracket_in_mcp_server_name_survives(tmp_path: Path) -> N
     result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert result.exit_code == 0, result.output
     assert "srv[x]" in result.output
+
+
+# ---------------------------------------------------------------------------
+# agent health — code-health backbone bootstrap
+# ---------------------------------------------------------------------------
+
+_HEALTH_CARD = json.dumps(
+    {
+        "loc": 4242,
+        "since": "6 months ago",
+        "suppressions": {"type-ignore": 2},
+        "hotspots": [{"file": "cli/src/big.py", "score": 900, "churn": 30, "loc": 30}],
+    }
+)
+
+
+def _health_ctx(tmp_path: Path):
+    """A context whose runner scripts git-root + scorecard so `agent health` runs offline."""
+    dotfiles = tmp_path / "dotfiles"
+    target = tmp_path / "target"
+    target.mkdir()
+    scripts = dotfiles / "ai" / "skills" / "converge" / "scripts"
+    proc = FakeProcessRunner()
+    proc.script(("git", "rev-parse", "--show-toplevel"), stdout=str(target) + "\n")
+    proc.script((str(scripts / "scorecard.sh"), "--json"), stdout=_HEALTH_CARD)
+    return make_fake_context(runner=proc, dotfiles_dir=dotfiles), target
+
+
+def test_agent_health_bootstraps_backbone(tmp_path: Path) -> None:
+    ctx, target = _health_ctx(tmp_path)
+    result = runner.invoke(app, ["agent", "health", "--scope", "demo"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "Code-health backbone" in result.output
+    assert (target / "docs" / "health" / "demo" / "baselines.json").exists()
+    assert (target / "docs" / "health" / "demo" / "findings.md").exists()
+
+
+def test_agent_health_outside_repo_exits_one(tmp_path: Path) -> None:
+    dotfiles = tmp_path / "dotfiles"
+    proc = FakeProcessRunner()
+    proc.script(("git", "rev-parse", "--show-toplevel"), exit_code=128)
+    ctx = make_fake_context(runner=proc, dotfiles_dir=dotfiles)
+    result = runner.invoke(app, ["agent", "health"], obj=ctx)
+    assert result.exit_code == 1
+    assert "not inside a git repo" in result.output

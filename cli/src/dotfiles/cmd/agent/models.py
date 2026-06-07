@@ -127,6 +127,42 @@ class AgentOverview(BaseModel):
     vendor_surfaces: tuple[AgentSurface, ...] = ()
 
 
+class Hotspot(BaseModel):
+    """One churn*LOC hotspot from scorecard.sh — where refactor effort pays."""
+
+    model_config = ConfigDict(frozen=True)
+
+    file: str
+    score: int
+    churn: int
+    loc: int
+
+
+class Scorecard(BaseModel):
+    """Parsed `scorecard.sh --json` output: the deterministic metric set."""
+
+    model_config = ConfigDict(frozen=True)
+
+    loc: int
+    since: str
+    suppressions: dict[str, int]
+    hotspots: tuple[Hotspot, ...] = ()
+
+
+class HealthBootstrap(BaseModel):
+    """Result of `dotfiles agent health`: a scope's seeded code-health backbone."""
+
+    model_config = ConfigDict(frozen=True)
+
+    scope: str
+    target: str
+    baselines_path: str
+    findings_path: str
+    created: bool  # False when baselines already existed and were kept
+    scorecard: Scorecard
+    total_suppressions: int
+
+
 class McpProbe(BaseModel):
     """Result of probing one MCP server's reachability."""
 
