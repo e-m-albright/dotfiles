@@ -5,9 +5,14 @@ and convergent across runs** instead of re-discovering the same findings. The
 `converge` / `code-health` skills read this before diagnosing
 and write to it after.
 
+The umbrella has two halves — **the Canon** (what is true about good code: the
+[12 principles](../engineering-philosophy.md) + [gates](../knowledge/engineering-gates.md))
+and **the Catechism** (what you do about it: the lenses, ratchet, routines, and the
+call-and-response entry-point map). Both are framed in the
+[portfolio](../knowledge/code-health-portfolio.md#the-canon--the-catechism).
+
 See also: [ASSESSMENT.md](ASSESSMENT.md) — an independent, critical review of the
-whole system (verdict + gap list); the [portfolio](../knowledge/code-health-portfolio.md)
-— lenses, antagonists, substrate legend, and the entry-point map.
+whole system (verdict + gap list).
 
 ## Layout
 
