@@ -33,6 +33,40 @@ Code quality has four source-measurable pillars (CISQ/ISO 5055): **Reliability, 
 
 `/review` (correctness, defects, health grade) · `/security-review` (vulnerabilities) · `diagnose` (hard bugs, regressions) · `performance-engineer` (bottlenecks). These find or change behavior; they are not refactors.
 
+## Substrate legend (what kind of thing each lens is)
+
+The lenses are deliberately different *kinds* of artifact, invoked differently. The router (`code-health`) hides this, but when reaching for one directly:
+
+| Kind | How you invoke it | Which lenses |
+|---|---|---|
+| **Skill** | name or `/name` (auto-fires on triggers) | `code-health`, `converge`, `deepen`, `tidy`, `prune`, `clarify`, `align`, `purify`, `review`, `diagnose` |
+| **Slash command** | typed `/name` only (built-in) | `/security-review`, `/simplify` |
+| **Subagent** | dispatched via the Agent tool | `performance-engineer` |
+
+A newcomer should start at the **`code-health` router** and let it dispatch; reach for a specific lens directly only when you already know the one you want.
+
+## Entry points — reach for which
+
+The single front door is **`code-health`**. Past it, pick by what you actually want:
+
+| You want to… | Reach for | Tier · kind |
+|---|---|---|
+| not sure — diagnose what this repo needs | **`code-health`** | router |
+| measurably converge a whole repo + ratchet it in | **`converge`** | A · measured engine |
+| think through *one area's* design, conversationally | **`deepen`** | A · taste |
+| make it smaller — delete dead/speculative code | **`prune`** | A · deletion |
+| make the code reflect the business domain | **`align`** | A · domain |
+| make a tangled unit testable (pure core / effects out) | **`purify`** | A · testability |
+| apply a known safe refactoring (extract, guard clauses…) | **`tidy`** | A · mechanical |
+| make it readable to a newcomer / navigable by an agent | **`clarify`** | A · readability |
+| find bugs + grade a diff before merge | **`review`** | B · correctness |
+| audit specifically for vulnerabilities | **`/security-review`** | B · security |
+| chase a known failing test / hard bug | **`diagnose`** | B · debugging |
+| make it faster | **`performance-engineer`** | B · speed |
+| bootstrap a repo's health backbone (baselines + ledger) | **`dotfiles agent health`** | tooling |
+
+The one overlap to know: a bare *"this feels coupled / where are the seams?"* fits **both** `converge` (whole-repo, measured) and `deepen` (one area, conversational) — add a scope word, or let the router decide.
+
 ## The convergent sequence (full pass)
 
 `prune` (delete first) → `align` + `deepen` (get concepts/boundaries right) → `purify` (make it testable) → `tidy` (mechanical transforms) → `clarify` (readability) → `converge` (measure, ratchet into CI contracts, re-grade) → Tier B (pillars refactoring can't reach). Let the churn×complexity scorecard pick where effort pays; don't run all of it blindly.

@@ -5,6 +5,10 @@ and convergent across runs** instead of re-discovering the same findings. The
 `converge` / `code-health` skills read this before diagnosing
 and write to it after.
 
+See also: [ASSESSMENT.md](ASSESSMENT.md) — an independent, critical review of the
+whole system (verdict + gap list); the [portfolio](../knowledge/code-health-portfolio.md)
+— lenses, antagonists, substrate legend, and the entry-point map.
+
 ## Layout
 
 One subdirectory per measured scope (a package or the repo):
