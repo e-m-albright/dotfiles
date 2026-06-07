@@ -127,6 +127,16 @@ class AgentOverview(BaseModel):
     vendor_surfaces: tuple[AgentSurface, ...] = ()
 
 
+class CatechismEntry(BaseModel):
+    """One call-and-response of the code-health Catechism: a symptom → the rite to reach for."""
+
+    model_config = ConfigDict(frozen=True)
+
+    symptom: str  # what you want (the question)
+    rite: str  # the skill/command to reach for (the answer)
+    tier: str  # where it sits in the ontology
+
+
 class Hotspot(BaseModel):
     """One churn*LOC hotspot from scorecard.sh — where refactor effort pays."""
 

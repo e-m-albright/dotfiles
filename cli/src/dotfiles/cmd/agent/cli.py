@@ -13,11 +13,13 @@ from rich.table import Table
 
 from dotfiles.agent import VENDORS
 from dotfiles.app.context import app_context
+from dotfiles.cmd.agent.catechism import CATECHISM
 from dotfiles.cmd.agent.health import HealthBootstrap, HealthError, HealthService, git_root
 from dotfiles.cmd.agent.models import (
     AgentOverview,
     AgentSurface,
     AgentVerify,
+    CatechismEntry,
     FileValidation,
     HookRow,
     Hotspot,
@@ -547,6 +549,31 @@ def _render_hotspots(rows: tuple[Hotspot, ...]) -> None:
     for h in rows[:8]:
         tbl.add_row(str(h.score), str(h.churn), str(h.loc), escape(h.file))
     console.print(tbl)
+
+
+@agent_app.command()
+def catechism(ctx: typer.Context) -> None:
+    """The code-health Catechism: symptom → the rite to reach for (the entry-point map)."""
+    app_context(ctx)  # validate context; the catechism itself is static
+    _render_catechism(CATECHISM)
+
+
+def _render_catechism(entries: tuple[CatechismEntry, ...]) -> None:
+    console.print()
+    console.print(
+        "[bold blue]The Catechism[/] [dim]— believe the Canon, practice this. "
+        "Front door: [/][bold]code-health[/][dim].[/]"
+    )
+    tbl = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
+    tbl.add_column("You want to…", style="dim", max_width=48)
+    tbl.add_column("Reach for")
+    tbl.add_column("Tier · kind", style="dim")
+    for e in entries:
+        tbl.add_row(escape(e.symptom), f"[bold]{escape(e.rite)}[/]", escape(e.tier))
+    console.print(tbl)
+    console.print(
+        "\n[dim]The doctrine behind it: CANON.md · the theory: code-health-portfolio.md[/]"
+    )
 
 
 @web_app.command("copy")

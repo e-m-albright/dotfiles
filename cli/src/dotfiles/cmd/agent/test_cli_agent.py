@@ -262,3 +262,13 @@ def test_agent_health_outside_repo_exits_one(tmp_path: Path) -> None:
     result = runner.invoke(app, ["agent", "health"], obj=ctx)
     assert result.exit_code == 1
     assert "not inside a git repo" in result.output
+
+
+def test_agent_catechism_prints_routing(tmp_path: Path) -> None:
+    ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
+    result = runner.invoke(app, ["agent", "catechism"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "The Catechism" in result.output
+    # a representative rite from each tier is present
+    for rite in ("code-health", "form-prune", "diagnose"):
+        assert rite in result.output
