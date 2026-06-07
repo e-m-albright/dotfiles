@@ -236,6 +236,8 @@ def test_setup_rejects_bad_key(tmp_path: Path) -> None:
     service = RemoteService(runner=_base_runner(), interactive=True, home=tmp_path)
     with pytest.raises(InvalidKeyError):
         service.setup(dry_run=False, add_key="not a key", harden=False, session="mobile")
+    # Fail-fast: a malformed key must raise before any filesystem mutation.
+    assert not (tmp_path / ".ssh").exists()
 
 
 def test_setup_without_sudo_access_warns_instead_of_running(tmp_path: Path) -> None:

@@ -179,6 +179,10 @@ class RemoteService:
     def _ensure_authorized_key(self, add_key: str | None, *, dry_run: bool) -> list[StepResult]:
         ssh_dir = self._home / ".ssh"
         keys = ssh_dir / "authorized_keys"
+        # Fail fast: reject a malformed key before any filesystem mutation, so an
+        # invalid key never leaves a freshly-created ~/.ssh/authorized_keys behind.
+        if add_key is not None and not is_ssh_public_key(add_key):
+            raise InvalidKeyError(add_key)
         out: list[StepResult] = []
         if dry_run:
             out.append(StepResult(level="info", message=f"DRY RUN: ensure {keys} (700/600)"))
@@ -193,8 +197,6 @@ class RemoteService:
         if add_key is None:
             out.append(self._existing_key_status(keys))
             return out
-        if not is_ssh_public_key(add_key):
-            raise InvalidKeyError(add_key)
         if dry_run:
             out.append(StepResult(level="info", message="DRY RUN: append phone key if missing"))
             return out
