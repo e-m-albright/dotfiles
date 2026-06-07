@@ -8,7 +8,7 @@ metadata:
   adaptations: Expanded from a conversational module-deepening tool into a full measure→diagnose→rank→converge→ratchet→report convergence engine. Deepening is now one move-type in Phase 4. Added references/CONVERGENCE-LOOP.md, references/METRICS.md, references/DE-SLOP.md, references/ONTOLOGY-AND-HIERARCHY.md (synthesized from CodeScene Code Red, GitClear AI-slop data, RefactorBench/SWE-Refactor, SonarSource cognitive complexity, the Mikado Method, Google LSC, Ousterhout, Metz/Dodds). Reuses the repo's ai/audits/*, review health rubric, and engineering-gates ratchet rather than duplicating them.
 ---
 
-# Improve Codebase Architecture
+# Converge
 
 A **convergence engine**: a repeatable loop that pushes a codebase toward a named steady state — simpler, deduplicated, idiomatic, organized by a real ontology — and **ratchets each gain in** so the next change can't undo it. The aim is code a grumpy 15-year principal engineer would approve without comments: deep modules, no slop, measurably better every pass.
 

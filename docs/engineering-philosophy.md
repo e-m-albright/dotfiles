@@ -6,6 +6,8 @@ Agentic programming amplifies whatever foundation you build on. Strong foundatio
 
 Code health is not a cleanup task you schedule between features. It is the single highest-leverage investment for maintaining velocity in an agentic codebase.
 
+When you notice a foundational crack while doing other work, surface it and address it — or formally defer it with a written reason. The tiebreaker on any judgment call is *which is more correct in the long run*, not which is faster to ship; prefer fewer, deeper, more correct changes over many shallow patches. This is **not** a license to gold-plate: scope the depth to the subdomain that earns it (see the prune↔align tiebreak in the [code-health portfolio](knowledge/code-health-portfolio.md)), and propose any rewrite explicitly before taking it on — don't surprise the reader with scope.
+
 Every principle here should map to at least one automated gate in any project that adopts it. If you cannot enforce it, do not claim it.
 
 ---

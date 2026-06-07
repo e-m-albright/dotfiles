@@ -111,6 +111,18 @@ After fixed + surface criteria, identify 2–5 additional observations specific 
 
 Scale: A=4.0, A-=3.7, B+=3.3, B=3.0, B-=2.7, C+=2.3, C=2.0, C-=1.7, D=1.0, F=0.0. Overall grade = weighted average.
 
+**Worked example** — multiply each criterion's grade-point by its weight, sum, divide by total weight, map back to a letter:
+
+| Criterion | Grade | Points | Weight | Weighted |
+|-----------|-------|--------|--------|----------|
+| U1 Type Safety | B+ | 3.3 | 1.5 | 4.95 |
+| U3 DRY | A- | 3.7 | 1.5 | 5.55 |
+| U11 Module Depth | B | 3.0 | 1.25 | 3.75 |
+| U2,U4–U10 (8 crit, avg B) | B | 3.0 | 1.0 ×8 | 24.0 |
+| **Total** | | | **13.25** | **38.25** |
+
+Overall = 38.25 / 13.25 = 2.89 → **B**. Show this table in the report so the letter is reproducible, not asserted.
+
 ## Size Thresholds by Surface
 
 | Surface | File limit | Function limit | Justification |

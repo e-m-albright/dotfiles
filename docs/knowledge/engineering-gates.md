@@ -14,7 +14,11 @@ The non-obvious half is the **monotonic guard**: a second gate enforces that a c
 - **No metric gaming.** Mechanically compressing a file (stripping comments/blanks) to slip under a line ceiling is forbidden — a clean, well-organized file beats a mangled one that's nominally shorter. `dict[str, Any]` → `dict[str, object]` is "type laundering," the same surrender disguised. When a metric is at floor, either do the real refactor or change the *formula* — never game the number. LOC is a proxy, not a target.
 - **`headroom 0` is borrowed credit.** Never compress *unrelated* existing code to make room for your addition; it hides growth and burns the next agent. Never land a new file at exact-fit (its ceiling becomes its own line count, trapping the next edit) — leave a few lines of slack.
 - **Net-≤0 per suppression family.** A `+1` in one family must be paid by a `≥1` reduction in the *same* family in the *same* commit. Switching families to dodge a ratchet trips the sibling ceiling.
-- **Stop-the-line.** About to type any suppression marker → stop, present alternatives (fix it / refactor the call site / surface for review). Adding it as the first move is the regression.
+- **Stop-the-line.** About to type any suppression marker → stop, present alternatives (fix the underlying issue / refactor the call site / **change the boundary forcing the type confusion** — parse into a typed model at the edge instead of casting downstream / surface for review). Adding it as the first move is the regression.
+
+**The full marker set (if you're about to type ANY of these, stop):** Python — `# noqa`, `# type: ignore`, `# pyright: ignore`, `# pragma: no cover`; Rust — `#[allow(...)]` (every family), `transmute`, `unchecked` unwraps; TS/Svelte — `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`, `eslint-disable`, `biome-ignore`, `svelte-ignore`, unchecked `as`; tests — `@pytest.mark.skip`, `it.skip`/`describe.skip`, `#[ignore]`; casts — `cast(...)`, `as`, `Box<dyn Any>`. A ratchet that counts only some families just pushes the surrender into an uncounted one (`dict[str, Any]` → `dict[str, object]`, `any` → `unknown`, `Box<dyn Any>` → `Box<dyn Debug>` are all type laundering). Cover every variant or none.
+
+**Every kept suppression carries a `reason:`.** If one genuinely survives review, it gets a same-line, specific, attributable annotation — `# type: ignore[arg-type]  # reason: upstream stub wrong, tracked in <ref>` (Rust: a `// reason:` line above the attribute). "Specific, attributable, dated" — a bare suppression with no reason is itself a regression, independent of the count.
 
 ## 2. No competing versions
 
@@ -43,7 +47,7 @@ Set each floor a few points **below** current actual, then ratchet up in steps, 
 
 - Coverage: `pytest --cov-fail-under`, `vitest --coverage` line floor, `cargo llvm-cov --fail-under-lines`.
 - Complexity: `complexipy -mx N` (Python cognitive), `clippy.toml` `cognitive-complexity-threshold` calibrated just above the current worst offender (ratchet down as offenders are decomposed), CRAP-score gates on the web diff.
-- Coverage exclusions (generated/CLI-shell files) live in one shared ignore regex with per-file justifications, never scattered `# pragma: no cover`.
+- Coverage exclusions (generated/CLI-shell files) live in one shared ignore regex with per-file justifications, never scattered `# pragma: no cover`. When a single branch is hard to cover, **decompose the untested branch into a unit-testable function** rather than dodging the floor with a `no cover` pragma.
 
 ## 6. Contract codegen with a freshness gate
 
