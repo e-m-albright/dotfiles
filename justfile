@@ -38,7 +38,7 @@ deadcode:
 # Complexipy cognitive complexity gate.
 [group('quality')]
 complexity:
-    uv run complexipy src -mx 10
+    uv run complexipy src -mx 9
 
 # Full static-check + test gate. `just check --fast` (or `check fast`) skips tests — pre-commit.
 [group('quality')]

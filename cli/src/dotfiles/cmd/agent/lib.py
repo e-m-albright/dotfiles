@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import cast
 
 from dotfiles.adapters.ports import ProcessRunner
-from dotfiles.cmd.agent.config import load_mcp_servers
+from dotfiles.cmd.agent.config import McpServerEntry, load_mcp_servers
 from dotfiles.result import StepResult  # re-exported for the agent adapters
 
 # ---------------------------------------------------------------------------
@@ -83,19 +83,27 @@ def mcp_servers_for(
 
     result: dict[str, dict[str, object]] = {}
     for name, entry in entries.items():
-        if name in skip:
-            continue
-        if target not in entry.targets:
-            continue
-        # Retrieve the original raw dict to preserve all fields, then strip targets
-        raw_entry = raw_dict.get(name)
-        if not isinstance(raw_entry, dict):
-            continue
-        raw_entry_typed = cast(dict[str, object], raw_entry)
-        config: dict[str, object] = {k: v for k, v in raw_entry_typed.items() if k != "targets"}
-        result[name] = config
-
+        config = _targeted_server_config(name, entry, target, skip, raw_dict)
+        if config is not None:
+            result[name] = config
     return result
+
+
+def _targeted_server_config(
+    name: str,
+    entry: McpServerEntry,
+    target: str,
+    skip: frozenset[str] | set[str],
+    raw_dict: dict[str, object],
+) -> dict[str, object] | None:
+    """The raw server config (``targets`` stripped) iff *name* serves *target* and isn't skipped."""
+    if name in skip or target not in entry.targets:
+        return None
+    raw_entry = raw_dict.get(name)
+    if not isinstance(raw_entry, dict):
+        return None
+    raw_entry_typed = cast(dict[str, object], raw_entry)
+    return {k: v for k, v in raw_entry_typed.items() if k != "targets"}
 
 
 def all_mcp_server_names(dotfiles_dir: Path) -> set[str]:

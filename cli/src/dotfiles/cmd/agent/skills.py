@@ -49,18 +49,23 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], list[str]]:
     if not lines or lines[0].rstrip() != "---":
         return {}, lines  # no frontmatter — caller will detect missing FM
 
-    fm_end = None
-    for i, line in enumerate(lines[1:], start=1):
-        if line.rstrip() == "---":
-            fm_end = i
-            break
-
+    fm_end = _closing_fence_index(lines)
     if fm_end is None:
         return {}, []  # unclosed frontmatter -> body undefined (matches Bash awk = 0)
 
-    fm_lines = lines[1:fm_end]
-    body_lines = lines[fm_end + 1 :]
+    return _parse_fm_fields(lines[1:fm_end]), lines[fm_end + 1 :]
 
+
+def _closing_fence_index(lines: list[str]) -> int | None:
+    """Index of the second ``---`` fence, or None if the frontmatter is unclosed."""
+    for i, line in enumerate(lines[1:], start=1):
+        if line.rstrip() == "---":
+            return i
+    return None
+
+
+def _parse_fm_fields(fm_lines: list[str]) -> dict[str, str]:
+    """Single-line ``key: value`` (and bare ``key:``) entries from a frontmatter block."""
     fields: dict[str, str] = {}
     for line in fm_lines:
         if ": " in line:
@@ -68,8 +73,7 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], list[str]]:
             fields[key.strip()] = value.strip()
         elif line.endswith(":"):
             fields[line[:-1].strip()] = ""
-
-    return fields, body_lines
+    return fields
 
 
 def _count_caps(body_lines: list[str]) -> int:

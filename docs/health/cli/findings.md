@@ -14,6 +14,7 @@ Severity: **will-drift** (silently rots) · **friction** (slows change) · **aes
 ## Run log
 
 - **2026-06-07** — first measured pass (engine: converge). Baseline graded **B+** ([report](report-2026-06-07.md)). Landed: −6 stale `type:ignore` (shutil.which), narrowed broad `except` in `_parse_plugins_yaml`, single `VENDORS` registry, SSH-key fail-fast fix (+regression test). Suppressions (combined) 24→17. Seeded this ledger + baselines.
+- **2026-06-07** (cont.) — complexity pass: decomposed all 6 at-ceiling functions; **ratcheted `cognitive_max` 10→9** (gate `complexipy src -mx 9`). The ceiling is now genuinely tighter — any new cc-10 function fails CI.
 
 ---
 
@@ -24,7 +25,7 @@ Ranked by churn×complexity / drift risk.
 1. **Settings typed-boundary at call sites** · purify · *friction* — `cmd/agent/lib.py` accepts `env: dict[str,str]`; settings flow as dicts in places. Most of the 35 `cast` / 14 `Any` cluster lives here. Type the specific load sites (parse-don't-validate); leave the generic `settings_merger` helpers alone (Tolerated). Biggest suppression-metric mover.
 2. **VendorPaths home-dir centralization** · align · *will-drift* — `~/.claude`, `~/.codex`, `~/.agents`, `~/.cursor`, `~/.gemini`, `~/.pi` hardcoded across `vendors/*`, `verify.py`, `overview.py`, `doctor/service.py`. Extend the `VENDORS` registry with a paths accessor. High blast radius → its own pass.
 3. **Observability integration** · (Tier-B/design) · *friction* — structlog is wired but barely used; `cmd/agent/lib.py`, `cmd/brew/service.py`, `cmd/agent/overview.py` have zero logging at service entry/error points. (U5 = C+, the lowest criterion.)
-4. **Complexity-ceiling tidies** · tidy · *friction* — functions at cognitive-complexity 10 still to decompose: `setup_claude` (god orchestrator), `_apply_sessions`, `_install_external_skills`, `render_checks`, `mcp_servers_for`, `_skill_uses`, `_parse_plugins_yaml`. One-per-commit; on churn hotspots, review with care. *(Done 2026-06-07: `install_npm_globals` 10→0 via `_install_one_npm` extraction.)* The `cognitive_max` ceiling stays 10 until **all** at-ceiling functions drop — then ratchet it to 9.
+4. ~~Complexity-ceiling tidies~~ **✅ DONE (2026-06-07)** — every function decomposed below 10; `cognitive_max` ratcheted **10→9**. Extractions: `install_npm_globals`→`_install_one_npm`, `_skill_uses`→`_skill_from_block`, `_install_external_skills`→`_install_external_one`, `mcp_servers_for`→`_targeted_server_config`, `_parse_frontmatter`→`_closing_fence_index`+`_parse_fm_fields`, `render_checks`→`_check_line`. (`setup_claude`/`_apply_sessions` were never actually at the ceiling.)
 5. **File-size extraction** · tidy/deepen · *friction* — `cmd/brew/service.py` (575), `cmd/agent/cli.py` (546) mix concerns; extract e.g. `InstallPlan` and CLI render helpers.
 6. **Dedup in overview rendering** · tidy · *aesthetic* — 3 near-identical `_*_hook_events` and 3 `_render_*` table builders in `cmd/agent/{overview,cli}.py`; extract a generic helper (rule-of-three met).
 7. **Glyph dicts scattered** · clarify · *aesthetic* — status→glyph maps duplicated across `doctor/cli.py`, `agent/cli.py`, `console.py`; centralize. Low value.

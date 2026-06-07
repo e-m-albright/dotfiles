@@ -325,20 +325,17 @@ def _install_external_skills(
     lines: list[str],
 ) -> tuple[int, int]:
     """Install missing external skills; return (total_count, installed_count)."""
-    ext_count = 0
-    ext_installed = 0
-    for line in lines:
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        ext_count += 1
-        skill_name = line.rsplit("@", 1)[-1] if "@" in line else line
-        if _skill_present(home, skill_name):
-            continue
-        result = runner.run(("npx", "skills", "add", line, "-g", "-y"), check=False)
-        if result.exit_code == 0:
-            ext_installed += 1
-    return ext_count, ext_installed
+    entries = [s for s in (ln.strip() for ln in lines) if s and not s.startswith("#")]
+    installed = sum(1 for e in entries if _install_external_one(runner, home, e))
+    return len(entries), installed
+
+
+def _install_external_one(runner: ProcessRunner, home: Path, entry: str) -> bool:
+    """Install one external skill spec if absent; return True iff newly installed."""
+    skill_name = entry.rsplit("@", 1)[-1] if "@" in entry else entry
+    if _skill_present(home, skill_name):
+        return False
+    return runner.run(("npx", "skills", "add", entry, "-g", "-y"), check=False).exit_code == 0
 
 
 def _setup_skills(

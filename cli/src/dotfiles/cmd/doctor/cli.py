@@ -20,18 +20,22 @@ _GLYPH: dict[str, str] = {
 }
 
 
+def _check_line(r: CheckResult) -> str:
+    """One rendered check row: glyph + name + optional detail + optional hint."""
+    line = f"  {_GLYPH.get(r.status, '?')} {r.name}"
+    if r.detail:
+        line += f"  [dim]{r.detail}[/]"
+    if r.hint and r.status in ("missing", "warn"):
+        line += f"  [yellow]{r.hint}[/]"
+    return line
+
+
 def render_checks(results: list[CheckResult]) -> None:
     """Print results grouped by section to the shared console."""
     for section, group in groupby(results, key=lambda r: r.section):
         console.print(f"\n[bold blue]{section}[/]")
         for r in group:
-            glyph = _GLYPH.get(r.status, "?")
-            line = f"  {glyph} {r.name}"
-            if r.detail:
-                line += f"  [dim]{r.detail}[/]"
-            if r.hint and r.status in ("missing", "warn"):
-                line += f"  [yellow]{r.hint}[/]"
-            console.print(line)
+            console.print(_check_line(r))
 
 
 def doctor_command(

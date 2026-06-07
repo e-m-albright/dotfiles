@@ -76,22 +76,23 @@ def _as_str(value: object) -> str | None:
     return value if isinstance(value, str) else None
 
 
+def _skill_from_block(raw_block: object) -> str | None:
+    """Skill name from one assistant content block, if it's a Skill tool_use."""
+    block = _as_dict(raw_block)
+    if block is None or block.get("type") != "tool_use" or block.get("name") != "Skill":
+        return None
+    inp = _as_dict(block.get("input"))
+    return _as_str(inp.get("skill")) if inp else None
+
+
 def _skill_uses(obj: dict[str, object]) -> list[str]:
     """Skill names from an assistant message's ``tool_use`` blocks."""
     message = _as_dict(obj.get("message"))
     content = _as_list(message.get("content")) if message else None
     if content is None:
         return []
-    out: list[str] = []
-    for raw_block in content:
-        block = _as_dict(raw_block)
-        if block is None or block.get("type") != "tool_use" or block.get("name") != "Skill":
-            continue
-        inp = _as_dict(block.get("input"))
-        skill = _as_str(inp.get("skill")) if inp else None
-        if skill:
-            out.append(skill)
-    return out
+    names = (_skill_from_block(b) for b in content)
+    return [n for n in names if n]
 
 
 def _command_skill(raw: str) -> str | None:

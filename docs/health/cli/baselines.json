@@ -6,9 +6,9 @@
   "policy": "Monotonic ratchet — every ceiling may only DECREASE. Raising one needs a Ratchet-Bump trailer + reason. See docs/knowledge/engineering-gates.md §1. Check with the converge skill's scripts/ratchet-check.sh.",
   "loc_nontest": 9010,
   "complexity": {
-    "cognitive_max": 10,
-    "functions_over_10": 0,
-    "tool": "complexipy src -mx 10"
+    "cognitive_max": 9,
+    "functions_over_9": 0,
+    "tool": "complexipy src -mx 9"
   },
   "dependency_cycles": 0,
   "suppressions": {
