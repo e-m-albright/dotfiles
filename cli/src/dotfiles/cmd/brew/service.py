@@ -536,22 +536,23 @@ def install_npm_globals(
     Idempotency guard: skips each package if `which <name>` succeeds.
     Flag-gated: packages with a flag are skipped when that flag is not in flags_on.
     """
-    results: list[StepResult] = []
-    for pkg in manifest.npm_packages:
-        if pkg.disabled or not _flag_active(pkg.flag, flags_on):
-            continue
-        check = runner.run(("sh", "-c", f"command -v {pkg.name}"))
-        if check.stdout.strip() or check.exit_code == 0:
-            results.append(
-                StepResult(level="info", message=f"{pkg.name} already installed — skipping")
-            )
-            continue
-        res = runner.run(("npm", "install", "-g", pkg.name))
-        if res.exit_code == 0:
-            results.append(StepResult(level="success", message=f"npm install -g {pkg.name}"))
-        else:
-            results.append(StepResult(level="error", message=f"npm install -g {pkg.name} failed"))
-    return results
+    steps = (_install_one_npm(pkg, runner, flags_on=flags_on) for pkg in manifest.npm_packages)
+    return [s for s in steps if s is not None]
+
+
+def _install_one_npm(
+    pkg: NpmPackage, runner: ProcessRunner, *, flags_on: set[str]
+) -> StepResult | None:
+    """Install one npm global, or None if it's disabled/flag-gated. Idempotent."""
+    if pkg.disabled or not _flag_active(pkg.flag, flags_on):
+        return None
+    check = runner.run(("sh", "-c", f"command -v {pkg.name}"))
+    if check.stdout.strip() or check.exit_code == 0:
+        return StepResult(level="info", message=f"{pkg.name} already installed — skipping")
+    res = runner.run(("npm", "install", "-g", pkg.name))
+    if res.exit_code == 0:
+        return StepResult(level="success", message=f"npm install -g {pkg.name}")
+    return StepResult(level="error", message=f"npm install -g {pkg.name} failed")
 
 
 def upgrade(runner: ProcessRunner) -> list[StepResult]:
