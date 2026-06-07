@@ -3,7 +3,7 @@
   "files_glob": "src/**/*.py",
   "run_from": "cli/",
   "updated": "2026-06-07",
-  "policy": "Monotonic ratchet — every ceiling may only DECREASE. Raising one needs a Ratchet-Bump trailer + reason. See docs/knowledge/engineering-gates.md §1. Check with the improve-codebase-architecture skill's scripts/ratchet-check.sh.",
+  "policy": "Monotonic ratchet — every ceiling may only DECREASE. Raising one needs a Ratchet-Bump trailer + reason. See docs/knowledge/engineering-gates.md §1. Check with the converge skill's scripts/ratchet-check.sh.",
   "loc_nontest": 9010,
   "complexity": {
     "cognitive_max": 10,

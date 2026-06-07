@@ -1,7 +1,7 @@
 # Code-Health Findings Ledger — `cli/`
 
 The durable memory for code-health passes on the `dotfiles` CLI. Every
-`/improve-codebase-architecture` (or `/code-health`) run **reads this first**
+`/converge` (or `/code-health`) run **reads this first**
 (skip anything Tolerated; don't re-litigate), then **writes back**: mark items
 fixed, append newly-discovered, and re-rank the backlog. Numbers live in
 [`baselines.json`](baselines.json); the graded snapshot in `report-<date>.md`;
@@ -13,7 +13,7 @@ Severity: **will-drift** (silently rots) · **friction** (slows change) · **aes
 
 ## Run log
 
-- **2026-06-07** — first measured pass (engine: improve-codebase-architecture). Baseline graded **B+** ([report](report-2026-06-07.md)). Landed: −6 stale `type:ignore` (shutil.which), narrowed broad `except` in `_parse_plugins_yaml`, single `VENDORS` registry, SSH-key fail-fast fix (+regression test). Suppressions (combined) 24→17. Seeded this ledger + baselines.
+- **2026-06-07** — first measured pass (engine: converge). Baseline graded **B+** ([report](report-2026-06-07.md)). Landed: −6 stale `type:ignore` (shutil.which), narrowed broad `except` in `_parse_plugins_yaml`, single `VENDORS` registry, SSH-key fail-fast fix (+regression test). Suppressions (combined) 24→17. Seeded this ledger + baselines.
 
 ---
 
@@ -21,13 +21,13 @@ Severity: **will-drift** (silently rots) · **friction** (slows change) · **aes
 
 Ranked by churn×complexity / drift risk.
 
-1. **Settings typed-boundary at call sites** · functional-core · *friction* — `cmd/agent/lib.py` accepts `env: dict[str,str]`; settings flow as dicts in places. Most of the 35 `cast` / 14 `Any` cluster lives here. Type the specific load sites (parse-don't-validate); leave the generic `settings_merger` helpers alone (Tolerated). Biggest suppression-metric mover.
-2. **VendorPaths home-dir centralization** · domain-align · *will-drift* — `~/.claude`, `~/.codex`, `~/.agents`, `~/.cursor`, `~/.gemini`, `~/.pi` hardcoded across `vendors/*`, `verify.py`, `overview.py`, `doctor/service.py`. Extend the `VENDORS` registry with a paths accessor. High blast radius → its own pass.
+1. **Settings typed-boundary at call sites** · purify · *friction* — `cmd/agent/lib.py` accepts `env: dict[str,str]`; settings flow as dicts in places. Most of the 35 `cast` / 14 `Any` cluster lives here. Type the specific load sites (parse-don't-validate); leave the generic `settings_merger` helpers alone (Tolerated). Biggest suppression-metric mover.
+2. **VendorPaths home-dir centralization** · align · *will-drift* — `~/.claude`, `~/.codex`, `~/.agents`, `~/.cursor`, `~/.gemini`, `~/.pi` hardcoded across `vendors/*`, `verify.py`, `overview.py`, `doctor/service.py`. Extend the `VENDORS` registry with a paths accessor. High blast radius → its own pass.
 3. **Observability integration** · (Tier-B/design) · *friction* — structlog is wired but barely used; `cmd/agent/lib.py`, `cmd/brew/service.py`, `cmd/agent/overview.py` have zero logging at service entry/error points. (U5 = C+, the lowest criterion.)
 4. **Complexity-ceiling tidies** · tidy · *friction* — functions at cognitive-complexity 10: `setup_claude` (god orchestrator), `_apply_sessions`, `install_npm_globals`, `_install_external_skills`. Decompose one-per-commit; on churn hotspots, review with care.
 5. **File-size extraction** · tidy/deepen · *friction* — `cmd/brew/service.py` (575), `cmd/agent/cli.py` (546) mix concerns; extract e.g. `InstallPlan` and CLI render helpers.
 6. **Dedup in overview rendering** · tidy · *aesthetic* — 3 near-identical `_*_hook_events` and 3 `_render_*` table builders in `cmd/agent/{overview,cli}.py`; extract a generic helper (rule-of-three met).
-7. **Glyph dicts scattered** · legible · *aesthetic* — status→glyph maps duplicated across `doctor/cli.py`, `agent/cli.py`, `console.py`; centralize. Low value.
+7. **Glyph dicts scattered** · clarify · *aesthetic* — status→glyph maps duplicated across `doctor/cli.py`, `agent/cli.py`, `console.py`; centralize. Low value.
 
 ## Tolerated (by design — do NOT re-propose; see ADR)
 

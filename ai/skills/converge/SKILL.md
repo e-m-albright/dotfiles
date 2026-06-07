@@ -1,5 +1,5 @@
 ---
-name: improve-codebase-architecture
+name: converge
 description: A repeatable convergence engine that drives a codebase toward simpler, deduplicated, idiomatic, ontologically-organized code and ratchets the gains in so they can't regress. Measures (static grading), diagnoses (god functions, duplication, coupling, weak abstractions, AI slop), ranks by churn×complexity, applies behavior-preserving refactors (auto-fix mechanical, grill judgment calls), then lowers the baselines. Use when the user wants to "improve architecture", "find refactor opportunities", "simplify this codebase", "deduplicate", "reduce LOC", "de-slop / un-AI-slop the code", "make this more idiomatic", "tighten the module boundaries", "ratchet down complexity", "converge the codebase", "deepen modules", "this feels coupled", or "where are the seams?". For a single pre-merge diff review use /review; for a one-shot quality cleanup of the current diff use /simplify; this skill is the whole-codebase, multi-pass convergence loop.
 metadata:
   source_url: https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md
@@ -128,7 +128,7 @@ Execute each move with refactoring discipline (full mechanics + the per-move loo
 - **Arbitrate conflicting moves, don't let the last one win.** These lenses genuinely contradict — dedup pulls against decoupling, deepening against minimalism, DDD richness against YAGNI. When two ranked moves recommend opposite edits on the same code (extract vs inline, split vs merge), that's not noise to resolve by ordering — surface the tension to the user with the tradeoff, decide once, and record the choice as an ADR. Silently resolving conflicts by accretion is exactly the tangled-refactoring failure mode.
 
 **The grilling loop (judgment moves).** Walk the design tree with the user — constraints, dependencies, the shape of the deepened module, what sits behind the seam, which tests survive. Side effects happen inline:
-- Naming a module after a concept not in `CONTEXT.md`? Add the term (same discipline as `/grill-with-docs` — see [../grill-with-docs/references/CONTEXT-FORMAT.md](../grill-with-docs/references/CONTEXT-FORMAT.md)). Create the file lazily.
+- Naming a module after a concept not in `CONTEXT.md`? Add the term (same discipline as `/grill-with-docs` — see [../grill-with-docs/references/DOMAIN-FORMAT.md](../grill-with-docs/references/DOMAIN-FORMAT.md)). Create the file lazily.
 - User rejects a move with a load-bearing reason a future explorer would need? Offer an ADR so the next pass doesn't re-suggest it (see [../grill-with-docs/references/ADR-FORMAT.md](../grill-with-docs/references/ADR-FORMAT.md)). Skip ephemeral or self-evident reasons.
 - Exploring alternative interfaces for a deepened module? See [references/INTERFACE-DESIGN.md](references/INTERFACE-DESIGN.md). Deepening mechanics and dependency categories: [references/DEEPENING.md](references/DEEPENING.md).
 

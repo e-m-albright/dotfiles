@@ -1,5 +1,5 @@
 ---
-name: domain-align
+name: align
 description: The domain/ontology lens of the code-health portfolio — make the code reflect the business domain, using DDD's ubiquitous language, bounded contexts, and screaming architecture. Detects naming drift, leaked external field names, anemic models, mis-drawn context boundaries, and a directory tree that screams the framework instead of the domain. Use when the user says "align with the domain", "ubiquitous language", "bounded context", "this name doesn't match the business", "screaming architecture", "package by feature", "the code doesn't reflect the domain", or "fix the ontology". SKIP for behavior changes, bug-finding (/review), or purely mechanical refactors (tidy).
 ---
 
@@ -7,7 +7,7 @@ description: The domain/ontology lens of the code-health portfolio — make the 
 
 The **conceptual lens**: does the code speak the language of the domain? Structure can be clean and modules deep while the codebase still models the wrong concepts or names them after an external API. This lens aligns the code's vocabulary and boundaries with the domain — the backbone everything else hangs on, since names drive module boundaries.
 
-It is *informed by and updates* the project's domain model. The full method (ubiquitous language → bounded contexts → package-by-feature → screaming architecture, plus the dependency-hierarchy enforcement) lives in [../improve-codebase-architecture/references/ONTOLOGY-AND-HIERARCHY.md](../improve-codebase-architecture/references/ONTOLOGY-AND-HIERARCHY.md) — read it; this skill is the conversational lens that applies it.
+It is *informed by and updates* the project's domain model. The full method (ubiquitous language → bounded contexts → package-by-feature → screaming architecture, plus the dependency-hierarchy enforcement) lives in [../converge/references/ONTOLOGY-AND-HIERARCHY.md](../converge/references/ONTOLOGY-AND-HIERARCHY.md) — read it; this skill is the conversational lens that applies it.
 
 ## When to reach for it
 
@@ -22,7 +22,7 @@ Names feel off, the same word means different things in different places, API/DB
    - **Missing/anemic concepts** — a real domain concept represented as loose primitives or a bag of data with no behavior.
    - **Framework-screaming layout** — top-level dirs naming the stack, not the domain; feature pieces scattered across layer folders.
 3. **Propose renames and boundary moves** in the ubiquitous language. A deepened module is named for the concept it owns.
-4. **Update the glossary inline.** Naming a concept not in `CONTEXT.md`? Add it (same discipline as `/grill-with-docs` — [../grill-with-docs/references/CONTEXT-FORMAT.md](../grill-with-docs/references/CONTEXT-FORMAT.md)). Sharpening a fuzzy term? Fix it there. The glossary is the durable artifact that makes the alignment stick.
+4. **Update the glossary inline.** Naming a concept not in `CONTEXT.md`? Add it (same discipline as `/grill-with-docs` — [../grill-with-docs/references/DOMAIN-FORMAT.md](../grill-with-docs/references/DOMAIN-FORMAT.md)). Sharpening a fuzzy term? Fix it there. The glossary is the durable artifact that makes the alignment stick.
 5. **Ratchet structural wins into contracts.** Once a bounded context is cleanly separated, encode the layering/forbidden-import rule (import-linter / dependency-cruiser / ArchUnit) so it can't re-tangle — see ONTOLOGY-AND-HIERARCHY.md.
 
 ## Antagonists
@@ -33,4 +33,4 @@ Names feel off, the same word means different things in different places, API/DB
 When an alignment move contradicts a recorded ADR, surface it for reopening rather than re-litigating silently.
 
 ## Sources
-- Evans, *Domain-Driven Design* (ubiquitous language, bounded contexts); Fowler, *BoundedContext*; Martin, *Screaming Architecture*; package-by-feature literature. Method detail and dependency-hierarchy enforcement in [ONTOLOGY-AND-HIERARCHY.md](../improve-codebase-architecture/references/ONTOLOGY-AND-HIERARCHY.md).
+- Evans, *Domain-Driven Design* (ubiquitous language, bounded contexts); Fowler, *BoundedContext*; Martin, *Screaming Architecture*; package-by-feature literature. Method detail and dependency-hierarchy enforcement in [ONTOLOGY-AND-HIERARCHY.md](../converge/references/ONTOLOGY-AND-HIERARCHY.md).

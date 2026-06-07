@@ -5,7 +5,7 @@ metadata:
   source_url: https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnose/SKILL.md
   source_commit: 733d312884b3878a9a9cff693c5886943753a741
   ported_at: 2026-05-07
-  adaptations: Verbatim port. Cross-references to `/improve-codebase-architecture` and project glossary/ADRs left intact (resolve once Phase 2 + grill-with-docs land).
+  adaptations: Verbatim port. Cross-references to `/converge` and project glossary/ADRs left intact (resolve once Phase 2 + grill-with-docs land).
 ---
 
 # Diagnose
@@ -119,7 +119,7 @@ Required before declaring done:
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message — so the next debugger learns
 
-**Then ask: what would have prevented this bug?** If the answer involves architectural change (no good test seam, tangled callers, hidden coupling) hand off to the `/improve-codebase-architecture` skill with the specifics. Make the recommendation **after** the fix is in, not before — you have more information now than when you started.
+**Then ask: what would have prevented this bug?** If the answer involves architectural change (no good test seam, tangled callers, hidden coupling) hand off to the `/converge` skill with the specifics. Make the recommendation **after** the fix is in, not before — you have more information now than when you started.
 
 ## Sources
 - Adapted from [mattpocock/skills/engineering/diagnose](https://github.com/mattpocock/skills/blob/733d312/skills/engineering/diagnose/SKILL.md) (ported 2026-05-07, MIT). Verbatim port.

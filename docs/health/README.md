@@ -2,7 +2,7 @@
 
 Durable, committed memory for the code-health skill book so passes are **stateful
 and convergent across runs** instead of re-discovering the same findings. The
-`improve-codebase-architecture` / `code-health` skills read this before diagnosing
+`converge` / `code-health` skills read this before diagnosing
 and write to it after.
 
 ## Layout
