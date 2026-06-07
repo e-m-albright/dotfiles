@@ -33,7 +33,7 @@ def setup_pi(
     runner: ProcessRunner,
     home: Path,
     dotfiles_dir: Path,
-    which: Callable[[str], str | None] = shutil.which,  # type: ignore[assignment]
+    which: Callable[[str], str | None] = shutil.which,
 ) -> list[StepResult]:
     """Configure Pi terminal agent. Returns a list of StepResult."""
     results: list[StepResult] = []

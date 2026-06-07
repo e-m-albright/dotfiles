@@ -53,7 +53,7 @@ def setup_claude(
     runner: ProcessRunner,
     home: Path,
     dotfiles_dir: Path,
-    which: Callable[[str], str | None] = shutil.which,  # type: ignore[assignment]
+    which: Callable[[str], str | None] = shutil.which,
     clean: bool = False,
     reset_mcp: bool = False,
 ) -> list[StepResult]:

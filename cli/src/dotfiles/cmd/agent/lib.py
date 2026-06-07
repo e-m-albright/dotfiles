@@ -205,7 +205,7 @@ def deploy_skills(
     dotfiles_dir: Path,
     agent: str,
     *,
-    which: Callable[[str], str | None] = shutil.which,  # type: ignore[assignment]
+    which: Callable[[str], str | None] = shutil.which,
 ) -> StepResult:
     """Run ``npx skills add`` to deploy ``ai/skills`` for *agent*.
 

@@ -36,7 +36,7 @@ def setup_gemini(
     home: Path,
     dotfiles_dir: Path,
     reset_mcp: bool = False,
-    which: Callable[[str], str | None] = shutil.which,  # type: ignore[assignment]
+    which: Callable[[str], str | None] = shutil.which,
 ) -> list[StepResult]:
     """Configure Gemini CLI. Returns a list of StepResult (one per step)."""
     if which("gemini") is None:

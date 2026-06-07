@@ -38,7 +38,7 @@ def setup_codex(
     runner: ProcessRunner,
     home: Path,
     dotfiles_dir: Path,
-    which: Callable[[str], str | None] = shutil.which,  # type: ignore[assignment]
+    which: Callable[[str], str | None] = shutil.which,
 ) -> list[StepResult]:
     """Configure Codex CLI. Returns a list of StepResult (one per step)."""
     codex_home = home / ".codex"
