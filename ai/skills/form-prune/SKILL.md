@@ -1,13 +1,13 @@
 ---
-name: prune
-description: The minimalism/deletion lens of the code-health portfolio — improve a codebase by removing rather than adding. Hunts dead code, speculative abstraction, unused flags/config, premature generality, redundant layers, and features nobody uses, then deletes them safely. The one lens with an honest hard metric — net LOC and feature count go down. Use when the user says "what can we delete", "this is over-engineered", "YAGNI", "remove dead code", "make it smaller", "simplify by removing", "trim this", or "prune". SKIP for diff-scoped quality cleanup (/simplify), bug-finding (/review), or adding structure (deepen/align).
+name: form-prune
+description: The minimalism/deletion lens of the code-health portfolio — improve a codebase by removing rather than adding. Hunts dead code, speculative abstraction, unused flags/config, premature generality, redundant layers, and features nobody uses, then deletes them safely. The one lens with an honest hard metric — net LOC and feature count go down. Use when the user says "what can we delete", "this is over-engineered", "YAGNI", "remove dead code", "make it smaller", "simplify by removing", "trim this", or "prune". SKIP for diff-scoped quality cleanup (/simplify), bug-finding (/review), or adding structure (form-deepen/form-align).
 ---
 
 # Prune
 
 The **deletion lens** — worse-is-better, YAGNI, "the best code is no code." Every other lens can add (abstraction, types, comments, structure); this one only asks **what can be removed without losing behavior the system actually needs?** It's the counterweight that keeps the portfolio from accreting, and it's grounded by the GitClear finding that AI assistants overwhelmingly *add* and rarely consolidate.
 
-It is codebase-scoped and deletion-first — distinct from the built-in `/simplify` (which cleans the current diff) and from `tidy` (which restructures). Prune's success metric is honest and visible: **net lines and surface area go down**, achieved by real removal, never by compressing or laundering (no comment-stripping — that's gaming, see [METRICS.md](../converge/references/METRICS.md)).
+It is codebase-scoped and deletion-first — distinct from the built-in `/simplify` (which cleans the current diff) and from `form-tidy` (which restructures). Prune's success metric is honest and visible: **net lines and surface area go down**, achieved by real removal, never by compressing or laundering (no comment-stripping — that's gaming, see [METRICS.md](../converge/references/METRICS.md)).
 
 ## When to reach for it
 
@@ -28,8 +28,8 @@ The code is bloated: defensive checks the types make impossible, abstractions wi
 
 ## Antagonists
 
-- **vs `deepen` / `align` / `purify`:** they add structure; you remove it. Tiebreak: **delete first, then deepen/model what genuinely remains** — it's cheaper to add structure to less code than to restructure code you were about to delete.
-- **vs `clarify`:** comments and structural indexes are lines too. Tiebreak: keep the *why* comments and navigation aids; cut redundant restating and ceremony.
+- **vs `form-deepen` / `form-align` / `form-purify`:** they add structure; you remove it. Tiebreak: **delete first, then deepen/model what genuinely remains** — it's cheaper to add structure to less code than to restructure code you were about to delete.
+- **vs `form-clarify`:** comments and structural indexes are lines too. Tiebreak: keep the *why* comments and navigation aids; cut redundant restating and ceremony.
 - **vs DRY:** sometimes the smallest code keeps a little duplication rather than a shared abstraction. Tiebreak: prefer duplication over the wrong abstraction (Metz); abstract only at the rule of three with a stable shape.
 
 A deletion that reverses a recorded "keep this for reason X" ADR must be surfaced, not silently re-done.

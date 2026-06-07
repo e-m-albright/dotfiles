@@ -1,6 +1,6 @@
 ---
 name: code-health
-description: The entry point and router for the code-health skill portfolio — diagnoses what a codebase needs and dispatches to the right lens, or sequences several for a full pass. Knows the form lenses (deepen, converge, tidy, clarify, align, prune, purify) and the function/safety/speed lenses (/review, /security-review, diagnose, performance-engineer), their antagonists, and which are safe to run unattended. Use when the user says "improve code health", "where do I start", "do a full health pass", "audit and improve this repo", "which refactoring should I do here", or isn't sure which lens fits. SKIP when the user already named a specific lens — invoke that one directly.
+description: The entry point and router for the code-health skill portfolio — diagnoses what a codebase needs and dispatches to the right lens, or sequences several for a full pass. Knows the form lenses (form-deepen, converge, form-tidy, form-clarify, form-align, form-prune, form-purify) and the function/safety/speed lenses (/review, /security-review, diagnose, performance-engineer), their antagonists, and which are safe to run unattended. Use when the user says "improve code health", "where do I start", "do a full health pass", "audit and improve this repo", "which refactoring should I do here", or isn't sure which lens fits. SKIP when the user already named a specific lens — invoke that one directly.
 ---
 
 # Code Health
@@ -22,13 +22,13 @@ State this to the user when they ask for "unimpeachable" code: the book guarante
 
 | Symptom / request | Lens | Axis |
 |---|---|---|
-| "this area's design feels wrong", coupled, shallow modules, conversational | **deepen** | taste · divergent |
+| "this area's design feels wrong", coupled, shallow modules, conversational | **form-deepen** | taste · divergent |
 | whole-repo, measured, ratchet down, reduce LOC, converge over passes | **converge** | measured · convergent |
-| "clean up this function", extract, flatten conditionals, a known transform | **tidy** | mechanical · convergent |
-| "hard to follow", naming, comments, newcomer/agent comprehension | **clarify** | taste · readability |
-| names don't match the business, leaked API names, wrong boundaries | **align** | conceptual · divergent |
-| over-engineered, dead code, YAGNI, "make it smaller" | **prune** | minimalist · convergent |
-| "can only test end-to-end", tame side effects, illegal states | **purify** | testability · structural |
+| "clean up this function", extract, flatten conditionals, a known transform | **form-tidy** | mechanical · convergent |
+| "hard to follow", naming, comments, newcomer/agent comprehension | **form-clarify** | taste · readability |
+| names don't match the business, leaked API names, wrong boundaries | **form-align** | conceptual · divergent |
+| over-engineered, dead code, YAGNI, "make it smaller" | **form-prune** | minimalist · convergent |
+| "can only test end-to-end", tame side effects, illegal states | **form-purify** | testability · structural |
 
 For a **single area**, route to one lens. For a **full pass**, sequence them (next section).
 
@@ -36,11 +36,11 @@ For a **single area**, route to one lens. For a **full pass**, sequence them (ne
 
 Lenses have a natural order that minimizes rework:
 
-1. **prune** — delete first; never restructure code you could remove. Smaller surface for everything after.
-2. **align** + **deepen** — get the concepts and boundaries right (diverge: find the real design).
-3. **purify** — isolate effects so what remains is testable.
-4. **tidy** — execute the mechanical transforms safely.
-5. **clarify** — final readability and navigation pass.
+1. **form-prune** — delete first; never restructure code you could remove. Smaller surface for everything after.
+2. **form-align** + **form-deepen** — get the concepts and boundaries right (diverge: find the real design).
+3. **form-purify** — isolate effects so what remains is testable.
+4. **form-tidy** — execute the mechanical transforms safely.
+5. **form-clarify** — final readability and navigation pass.
 6. **converge** — measure, ratchet the gains into CI contracts, and re-grade. This is what makes the pass *stick* and *converge* rather than re-rot.
 7. **Tier B** — `/review`, `/security-review`, `diagnose`, `performance-engineer` for the pillars refactoring can't reach.
 
@@ -57,8 +57,8 @@ The lenses genuinely contradict (dedup↔decouple, deepen↔prune, DDD-richness�
 
 Generative, structural refactoring on a weekly cron, auto-merged, is an anti-pattern — empirically it produces cosmetic churn with no measured health gain and a review backlog. So:
 
-- **Safe unattended (weekly):** the `scorecard`/audit **detection** run that opens an issue or draft PR (never auto-merge); **ratchet enforcement** in CI (block regressions); deterministic **codemods** (`tidy`'s ast-grep/OpenRewrite transforms).
-- **Interactive / human-gated:** `deepen`, `align`, `prune`, `purify`, and the engine's structural moves; all of Tier B. These are judgment- and conflict-heavy; they need a human and the arbitration rules above.
+- **Safe unattended (weekly):** the `scorecard`/audit **detection** run that opens an issue or draft PR (never auto-merge); **ratchet enforcement** in CI (block regressions); deterministic **codemods** (`form-tidy`'s ast-grep/OpenRewrite transforms).
+- **Interactive / human-gated:** `form-deepen`, `form-align`, `form-prune`, `form-purify`, and the engine's structural moves; all of Tier B. These are judgment- and conflict-heavy; they need a human and the arbitration rules above.
 
 This mirrors how `ai/audits/` already run on a cadence: schedule the *finding*, gate the *fixing*.
 

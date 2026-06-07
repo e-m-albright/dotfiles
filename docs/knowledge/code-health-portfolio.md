@@ -21,13 +21,13 @@ Code quality has four source-measurable pillars (CISQ/ISO 5055): **Reliability, 
 
 | Skill | School / lineage | Axis | Primary antagonist + tiebreak |
 |---|---|---|---|
-| **deepen** | Ousterhout — deep modules | taste · divergent | vs tidy/Clean-Code over-decomposition → prefer depth |
+| **form-deepen** | Ousterhout — deep modules | taste · divergent | vs tidy/Clean-Code over-decomposition → prefer depth |
 | **converge** | empirical SE — fitness functions, ratchet | measured · convergent | the orchestrator; ratchets the rest in |
-| **tidy** | Fowler/Beck — refactoring catalog, two-hats | mechanical · convergent | vs deepen → extract for a real seam, not a line target |
-| **clarify** | Buse-Weimer + Scalabrino — readability | taste · readability | vs prune → keep the *why*, cut restating |
-| **align** | Evans DDD — ubiquitous language, contexts | conceptual · divergent | vs YAGNI → richness only in the core subdomain |
-| **prune** | minimalism — YAGNI, worse-is-better, Tigerstyle | minimalist · convergent | vs structure-adders → delete first, then build |
-| **purify** | FP/hexagonal — pure core, parse-don't-validate | testability · structural | vs YAGNI → isolate effects only where they block testing |
+| **form-tidy** | Fowler/Beck — refactoring catalog, two-hats | mechanical · convergent | vs deepen → extract for a real seam, not a line target |
+| **form-clarify** | Buse-Weimer + Scalabrino — readability | taste · readability | vs prune → keep the *why*, cut restating |
+| **form-align** | Evans DDD — ubiquitous language, contexts | conceptual · divergent | vs YAGNI → richness only in the core subdomain |
+| **form-prune** | minimalism — YAGNI, worse-is-better, Tigerstyle | minimalist · convergent | vs structure-adders → delete first, then build |
+| **form-purify** | FP/hexagonal — pure core, parse-don't-validate | testability · structural | vs YAGNI → isolate effects only where they block testing |
 
 ### Tier B — function / safety / speed (non-behavior-preserving, existing skills)
 
@@ -39,7 +39,7 @@ The lenses are deliberately different *kinds* of artifact, invoked differently. 
 
 | Kind | How you invoke it | Which lenses |
 |---|---|---|
-| **Skill** | name or `/name` (auto-fires on triggers) | `code-health`, `converge`, `deepen`, `tidy`, `prune`, `clarify`, `align`, `purify`, `review`, `diagnose` |
+| **Skill** | name or `/name` (auto-fires on triggers) | `code-health`, `converge`, `form-deepen`, `form-tidy`, `form-prune`, `form-clarify`, `form-align`, `form-purify`, `review`, `diagnose` |
 | **Slash command** | typed `/name` only (built-in) | `/security-review`, `/simplify` |
 | **Subagent** | dispatched via the Agent tool | `performance-engineer` |
 
@@ -53,23 +53,23 @@ The single front door is **`code-health`**. Past it, pick by what you actually w
 |---|---|---|
 | not sure — diagnose what this repo needs | **`code-health`** | router |
 | measurably converge a whole repo + ratchet it in | **`converge`** | A · measured engine |
-| think through *one area's* design, conversationally | **`deepen`** | A · taste |
-| make it smaller — delete dead/speculative code | **`prune`** | A · deletion |
-| make the code reflect the business domain | **`align`** | A · domain |
-| make a tangled unit testable (pure core / effects out) | **`purify`** | A · testability |
-| apply a known safe refactoring (extract, guard clauses…) | **`tidy`** | A · mechanical |
-| make it readable to a newcomer / navigable by an agent | **`clarify`** | A · readability |
+| think through *one area's* design, conversationally | **`form-deepen`** | A · taste |
+| make it smaller — delete dead/speculative code | **`form-prune`** | A · deletion |
+| make the code reflect the business domain | **`form-align`** | A · domain |
+| make a tangled unit testable (pure core / effects out) | **`form-purify`** | A · testability |
+| apply a known safe refactoring (extract, guard clauses…) | **`form-tidy`** | A · mechanical |
+| make it readable to a newcomer / navigable by an agent | **`form-clarify`** | A · readability |
 | find bugs + grade a diff before merge | **`review`** | B · correctness |
 | audit specifically for vulnerabilities | **`/security-review`** | B · security |
 | chase a known failing test / hard bug | **`diagnose`** | B · debugging |
 | make it faster | **`performance-engineer`** | B · speed |
 | bootstrap a repo's health backbone (baselines + ledger) | **`dotfiles agent health`** | tooling |
 
-The one overlap to know: a bare *"this feels coupled / where are the seams?"* fits **both** `converge` (whole-repo, measured) and `deepen` (one area, conversational) — add a scope word, or let the router decide.
+The one overlap to know: a bare *"this feels coupled / where are the seams?"* fits **both** `converge` (whole-repo, measured) and `form-deepen` (one area, conversational) — add a scope word, or let the router decide.
 
 ## The convergent sequence (full pass)
 
-`prune` (delete first) → `align` + `deepen` (get concepts/boundaries right) → `purify` (make it testable) → `tidy` (mechanical transforms) → `clarify` (readability) → `converge` (measure, ratchet into CI contracts, re-grade) → Tier B (pillars refactoring can't reach). Let the churn×complexity scorecard pick where effort pays; don't run all of it blindly.
+`form-prune` (delete first) → `form-align` + `form-deepen` (get concepts/boundaries right) → `form-purify` (make it testable) → `form-tidy` (mechanical transforms) → `form-clarify` (readability) → `converge` (measure, ratchet into CI contracts, re-grade) → Tier B (pillars refactoring can't reach). Let the churn×complexity scorecard pick where effort pays; don't run all of it blindly.
 
 ## Shared conventions (what keeps it convergent)
 

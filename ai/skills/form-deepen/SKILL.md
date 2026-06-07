@@ -1,5 +1,5 @@
 ---
-name: deepen
+name: form-deepen
 description: The taste-driven, conversational pole of the code-health portfolio — surface architectural friction and propose deepening opportunities that turn shallow modules into deep ones, then grill the design with the user. No metrics, no ratchet; pure judgment about depth, locality, and leverage. Use when the user wants to "deepen modules", "de-slop this module", "this feels coupled", "find the seams", "make this more testable / AI-navigable", "improve the design here", or wants to think through one area's architecture conversationally. SKIP for whole-repo measurable convergence, LOC ratchets, or static grading — that is converge; for a pre-merge diff review use /review.
 metadata:
   source_url: https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md

@@ -62,8 +62,8 @@ Ranked by how much they undercut the "self-managing gravity" claim.
    floor. Today the "floor that only rises" is a **local social contract, not a
    CI-enforced invariant**. Fix: a CI job that runs `just check` (or at least
    `just ratchet` + `just complexity`). Until then, "self-managing" is overstated.
-2. **`converge`↔`deepen` is the one ambiguous entry point.** `converge`'s
-   description claims `deepen`'s exact trigger phrases ("this feels coupled", "where
+2. **`converge`↔`form-deepen` is the one ambiguous entry point.** `converge`'s
+   description claims `form-deepen`'s exact trigger phrases ("this feels coupled", "where
    are the seams?", "deepen modules") with no scope signal in the phrase itself. The
    bodies disambiguate by scope+ratchet, but the *names* don't carry the
    measured-whole-repo vs taste-single-area distinction. This is the place a router
@@ -73,8 +73,8 @@ Ranked by how much they undercut the "self-managing gravity" claim.
    (`performance-engineer`) all "lenses" interchangeably. They're invoked
    differently, and nothing says which is which. `performance-engineer` is a
    subagent referenced as a Tier-B lens with no hint it isn't a skill.
-4. **`purify` and `converge` are the weakest names.** `purify` reads as "remove
-   impurities" — conceptually colliding with `prune` — rather than "isolate
+4. **`form-purify` and `converge` are the weakest names.** `form-purify` reads as "remove
+   impurities" — conceptually colliding with `form-prune` — rather than "isolate
    effects / extract a pure core." `converge` reads infrastructural/git rather than
    "the measured whole-repo engine." The other verbs (tidy/prune/clarify/align/
    deepen) are transparent.
@@ -116,7 +116,7 @@ the new architecture.
 You have built the best *human-gated* code-health system I've seen, and the docs
 are unusually honest about that scope. To close the distance to the "self-managing
 gravity" framing, in priority order: **(1) enforce the ratchet in CI**, (2) resolve
-the `converge`/`deepen` entry-point overlap and label the skill/command/subagent
+the `converge`/`form-deepen` entry-point overlap and label the skill/command/subagent
 substrate, (3) add language packs so "any repo" is true, (4) wire one real
 scheduled detection routine. None of these are architectural rewrites — the
 architecture is sound. They're the execution tail.

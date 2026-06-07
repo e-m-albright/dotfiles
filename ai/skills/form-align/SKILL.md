@@ -1,9 +1,9 @@
 ---
-name: align
-description: The domain/ontology lens of the code-health portfolio — make the code reflect the business domain, using DDD's ubiquitous language, bounded contexts, and screaming architecture. Detects naming drift, leaked external field names, anemic models, mis-drawn context boundaries, and a directory tree that screams the framework instead of the domain. Use when the user says "align with the domain", "ubiquitous language", "bounded context", "this name doesn't match the business", "screaming architecture", "package by feature", "the code doesn't reflect the domain", or "fix the ontology". SKIP for behavior changes, bug-finding (/review), or purely mechanical refactors (tidy).
+name: form-align
+description: The domain/ontology lens of the code-health portfolio — make the code reflect the business domain, using DDD's ubiquitous language, bounded contexts, and screaming architecture. Detects naming drift, leaked external field names, anemic models, mis-drawn context boundaries, and a directory tree that screams the framework instead of the domain. Use when the user says "align with the domain", "ubiquitous language", "bounded context", "this name doesn't match the business", "screaming architecture", "package by feature", "the code doesn't reflect the domain", or "fix the ontology". SKIP for behavior changes, bug-finding (/review), or purely mechanical refactors (form-tidy).
 ---
 
-# Domain Align
+# Align
 
 The **conceptual lens**: does the code speak the language of the domain? Structure can be clean and modules deep while the codebase still models the wrong concepts or names them after an external API. This lens aligns the code's vocabulary and boundaries with the domain — the backbone everything else hangs on, since names drive module boundaries.
 
@@ -27,8 +27,8 @@ Names feel off, the same word means different things in different places, API/DB
 
 ## Antagonists
 
-- **vs `prune`/YAGNI:** DDD richness (value objects, aggregates, explicit boundaries) reads as ceremony to a minimalist. Tiebreak: **apply richness only in the core/complex subdomain; keep supporting and generic subdomains plain.** Don't model a CRUD table like an aggregate.
-- **vs `deepen`:** mostly aligned — depth + domain naming reinforce each other. Conflict only if a "correct" boundary forces a shallow module; then prefer the deeper shape and reopen the boundary as an ADR.
+- **vs `form-prune`/YAGNI:** DDD richness (value objects, aggregates, explicit boundaries) reads as ceremony to a minimalist. Tiebreak: **apply richness only in the core/complex subdomain; keep supporting and generic subdomains plain.** Don't model a CRUD table like an aggregate.
+- **vs `form-deepen`:** mostly aligned — depth + domain naming reinforce each other. Conflict only if a "correct" boundary forces a shallow module; then prefer the deeper shape and reopen the boundary as an ADR.
 
 When an alignment move contradicts a recorded ADR, surface it for reopening rather than re-litigating silently.
 
