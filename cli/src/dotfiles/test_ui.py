@@ -64,7 +64,7 @@ def test_render_connection_info_warns_when_no_tailscale() -> None:
     )
     render_connection_info(console, info)
     out = buf.getvalue()
-    assert "Tailscale does not look connected" in out
+    assert "Tailscale not connected" in out
     assert "evan" in out
     assert "mosh --server=" in out
 

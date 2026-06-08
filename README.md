@@ -352,9 +352,11 @@ dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
 dotfiles remote on --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
                              # Enable phone access with key-only SSH
-dotfiles remote off          # Point at the Remote Login toggle (you flip it in System Settings)
+dotfiles remote off          # Open the Remote Login toggle and hold until you flip it off
 dotfiles remote off --kill-sessions
                              # Same, plus kill active SSH/Mosh sessions
+dotfiles remote on --tailscale / off --tailscale
+                             # Also bring Tailscale up / down (tailscale up|down)
 dotfiles session             # fzf-pick a live zellij session and attach
 dotfiles session ls          # list sessions
 dotfiles session new <name>  # create + attach
@@ -376,7 +378,7 @@ Full end-to-end setup (phone + laptop, Termius/Tailscale config, troubleshooting
 
 `dotfiles remote on` authorizes the phone key, hardens SSH (with `--harden-ssh`), and prints the Mosh command to paste into Termius — it connects over Tailscale/SSH and attaches to a persistent `zellij` session named `mobile` by default. `dotfiles remote status` shows whether Remote Login is on and, when it is, whether SSH accepts password logins (`key-only` vs `password allowed` — run `dotfiles remote on --harden-ssh` to lock it to keys).
 
-**Remote Login itself is toggled by hand** in System Settings → General → Sharing → Remote Login (`remote status` prints an `open …` shortcut that jumps straight there). The CLI deliberately doesn't flip it: doing so via `systemsetup` requires granting your terminal Full Disk Access on macOS 26+, a standing local-privilege grant not worth the convenience. So `dotfiles remote on` enables the key/harden parts but nudges you to turn Remote Login on; `dotfiles remote off` reminds you where to turn it off and, with `--kill-sessions`, drops already-open Termius sessions.
+**Remote Login itself is toggled by hand** in System Settings → General → Sharing → Remote Login (`remote status` prints an `open …` shortcut that jumps straight there). The CLI deliberately doesn't flip it: doing so via `systemsetup` requires granting your terminal Full Disk Access on macOS 26+, a standing local-privilege grant not worth the convenience. Instead, both `on` and `off` **open the exact Sharing pane and hold open** — a spinner waits (up to 2 min) until you flip the toggle the right way, then prints the confirmed status. So `dotfiles remote on` enables the key/harden parts, then waits for Remote Login to come on; `dotfiles remote off` opens the toggle, waits for it to go off, and with `--kill-sessions` drops already-open Termius sessions. Both show Tailscale state in their output, and `--tailscale` also brings the tailnet up (`on`) or down (`off`) — you only need Tailscale to reach the Mac from off your home Wi-Fi; on the same network Termius connects to the LAN address directly.
 
 `dotfiles session` manages zellij sessions on the current machine. The same sessions are reachable from the phone over Termius/mosh — `dotfiles remote on` also prints a picker-based Termius startup command that drops straight into the fzf session picker. Zellij is configured from `terminal/zellij/` (symlinked by `install.sh`): a minimal `config.kdl` plus a `mobile` deck layout that the `mobile` session opens with on first creation (compact status bar + a Mission Control tab). Sessions auto-serialize (including pane scrollback), so `dotfiles session attach mobile` resurrects the deck — buffers and all — after a reboot. Exited (resurrectable) sessions show up in `session ls` with their age; `session attach <name>` brings one back. To keep them from piling up, a guarded retention sweep runs at most once a day when a session list loads (in the TUI or `session ls`), dropping exited sessions older than 14 days or beyond the newest 20. Run `dotfiles session prune` to force it, or `--dry-run` to preview.
 

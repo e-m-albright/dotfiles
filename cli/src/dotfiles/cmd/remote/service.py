@@ -1,6 +1,7 @@
 """Remote-shell setup/disable logic. Pure decisions over the ProcessRunner port."""
 
 import shutil
+import time
 from collections.abc import Callable
 from functools import cached_property
 from pathlib import Path
@@ -16,6 +17,8 @@ _KEY_PREFIXES = ("ssh-ed25519 ", "ssh-rsa ", "ecdsa-sha2-")
 # is a standing local-privilege grant we'd rather not require. So we read the state
 # and point at the toggle instead of mutating it.
 SHARING_HINT = "System Settings → General → Sharing → Remote Login"
+# Breadcrumb for the field-column layout (System Settings is implied by context).
+SHARING_PATH = "General → Sharing → Remote Login"
 _SHARING_URL = "x-apple.systempreferences:com.apple.Sharing-Settings.extension"
 SHARING_OPEN = f'open "{_SHARING_URL}"'
 
@@ -48,11 +51,17 @@ class RemoteService:
         interactive: bool,
         home: Path,
         which: Callable[[str], str | None] = shutil.which,
+        sleep: Callable[[float], None] = time.sleep,
+        monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
         self._runner = runner
         self._interactive = interactive
         self._home = home
         self._which = which
+        # Injectable clock/sleep so the toggle-poll loop is unit-testable without
+        # real waiting (a fake runner flips its scripted state across calls).
+        self._sleep = sleep
+        self._monotonic = monotonic
 
     def _line(self, command: tuple[str, ...]) -> str:
         result = self._runner.run(command)
@@ -73,7 +82,7 @@ class RemoteService:
             return "/opt/homebrew/bin/mosh-server"
         return self._which("mosh-server") or "/opt/homebrew/bin/mosh-server"
 
-    def _remote_login_on(self) -> bool:
+    def remote_login_on(self) -> bool:
         # `systemsetup -getremotelogin` needs admin on macOS 26+ (without sudo it
         # prints "You need administrator access…" and we'd misread it as off).
         # The launchd override is the same state the Sharing pane toggles and is
@@ -81,6 +90,48 @@ class RemoteService:
         return '"com.openssh.sshd" => enabled' in self._line(
             ("launchctl", "print-disabled", "system")
         )
+
+    def open_sharing_pane(self) -> None:
+        """Open the System Settings → Sharing pane so the toggle is one tap away.
+
+        We can't flip Remote Login ourselves (needs Full Disk Access), so both
+        `on` and `off` surface the exact pane instead of a buried path.
+        """
+        self._runner.run(("open", _SHARING_URL))
+
+    def wait_until_remote_login(
+        self, target: bool, *, timeout: float = 120.0, poll: float = 1.0
+    ) -> bool:
+        """Block until Remote Login reaches *target*. True if it flipped, False on timeout.
+
+        Returns immediately when already at *target* (no sleep). The clock and
+        sleep are injected, so tests drive this without real time passing.
+        """
+        deadline = self._monotonic() + timeout
+        while True:
+            if self.remote_login_on() is target:
+                return True
+            if self._monotonic() >= deadline:
+                return False
+            self._sleep(poll)
+
+    def tailscale_up(self, *, dry_run: bool) -> StepResult:
+        """Bring the tailnet up so the Mac is reachable away from its home Wi-Fi."""
+        if dry_run:
+            return StepResult(level="info", message="DRY RUN: tailscale up")
+        result = self._runner.run(("tailscale", "up"))
+        if result.ok:
+            return StepResult(level="success", message="Tailscale up")
+        return StepResult(level="error", message=f"tailscale up failed: {result.stderr.strip()}")
+
+    def tailscale_down(self, *, dry_run: bool) -> StepResult:
+        """Bring the tailnet down (LAN access over Wi-Fi is unaffected)."""
+        if dry_run:
+            return StepResult(level="info", message="DRY RUN: tailscale down")
+        result = self._runner.run(("tailscale", "down"))
+        if result.ok:
+            return StepResult(level="success", message="Tailscale down")
+        return StepResult(level="error", message=f"tailscale down failed: {result.stderr.strip()}")
 
     def _ssh_password_auth(self) -> bool | None:
         # True if SSH permits password login (password OR keyboard-interactive),
@@ -110,7 +161,7 @@ class RemoteService:
     def status(self) -> RemoteStatus:
         connected, ip = self._tailscale
         return RemoteStatus(
-            remote_login_on=self._remote_login_on(),
+            remote_login_on=self.remote_login_on(),
             tailscale_connected=connected,
             tailnet_ip=ip,
             host=self._host,
@@ -204,16 +255,13 @@ class RemoteService:
         return out
 
     def _enable_remote_login(self, *, dry_run: bool) -> StepResult:
-        if self._remote_login_on():
+        if self.remote_login_on():
             return StepResult(level="success", message="Remote Login already enabled")
-        # We can't flip the toggle (needs Full Disk Access), but we can open the
-        # exact Settings pane so it's one tap away instead of a buried path.
         if not dry_run:
-            self._runner.run(("open", _SHARING_URL))
+            self.open_sharing_pane()
         return StepResult(
             level="warn",
             message="Remote Login is off — opened System Settings; flip the Remote Login toggle",
-            details=SHARING_HINT,
         )
 
     def _harden(self, harden: bool, *, dry_run: bool) -> list[StepResult]:
@@ -281,6 +329,15 @@ class RemoteService:
         self._runner.run(("pkill", "-u", user, "sshd"))
         return [StepResult(level="success", message="Existing Mosh/SSH sessions killed")]
 
+    def disable_intro(self, *, dry_run: bool, kill_sessions: bool) -> list[StepResult]:
+        """Side-effect steps for `off`: optionally kill live sessions.
+
+        The Remote Login status line + Settings/Tailscale fields are presentation,
+        rendered by the CLI from a status snapshot — this returns only the
+        action steps (session teardown) so the command stays declarative.
+        """
+        return self._kill_sessions(dry_run=dry_run) if kill_sessions else []
+
     def web_status(self) -> StepResult:
         """Report whether the zellij web server is running (experimental)."""
         result = self._runner.run(("zellij", "web", "--status"))
@@ -309,19 +366,3 @@ class RemoteService:
         if result.ok:
             return StepResult(level="success", message=result.stdout.strip() or "Token created")
         return StepResult(level="error", message=f"Could not create token: {result.stderr.strip()}")
-
-    def disable(self, *, dry_run: bool, kill_sessions: bool) -> list[StepResult]:
-        steps: list[StepResult] = []
-        if self._remote_login_on():
-            steps.append(
-                StepResult(
-                    level="warn",
-                    message="Remote Login is on — turn it off to stop new SSH/Mosh logins",
-                    details=f"{SHARING_HINT}  ·  {SHARING_OPEN}",
-                )
-            )
-        else:
-            steps.append(StepResult(level="success", message="Remote Login already disabled"))
-        if kill_sessions:
-            steps.extend(self._kill_sessions(dry_run=dry_run))
-        return steps

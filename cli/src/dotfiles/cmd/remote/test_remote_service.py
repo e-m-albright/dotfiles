@@ -257,49 +257,123 @@ def test_setup_without_sudo_access_warns_instead_of_running(tmp_path: Path) -> N
     assert any("Needs sudo" in s.message for s in steps)
 
 
-def test_disable_when_already_off_optionally_kills_sessions(tmp_path: Path) -> None:
+def test_disable_intro_kills_sessions_when_requested(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-un"), stdout="evan\n")
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+
+    steps = service.disable_intro(dry_run=False, kill_sessions=True)
+
+    assert ("pkill", "-u", "evan", "mosh-server") in runner.calls
+    assert ("pkill", "-u", "evan", "sshd") in runner.calls
+    assert any(s.level == "success" for s in steps)
+
+
+def test_disable_intro_no_kill_returns_no_steps(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-un"), stdout="evan\n")
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+
+    steps = service.disable_intro(dry_run=False, kill_sessions=False)
+
+    assert steps == []
+    assert ("pkill", "-u", "evan", "mosh-server") not in runner.calls
+
+
+def test_disable_intro_dry_run_does_not_pkill(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-un"), stdout="evan\n")
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+
+    steps = service.disable_intro(dry_run=True, kill_sessions=True)
+
+    assert ("pkill", "-u", "evan", "mosh-server") not in runner.calls
+    assert all("DRY RUN" in s.message for s in steps)
+
+
+def test_open_sharing_pane_runs_open(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    RemoteService(runner=runner, interactive=True, home=tmp_path).open_sharing_pane()
+    assert any(c[0] == "open" and "Sharing" in c[1] for c in runner.calls)
+
+
+def test_tailscale_up_down_report_state(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+
+    assert service.tailscale_up(dry_run=False).level == "success"
+    assert ("tailscale", "up") in runner.calls
+    assert service.tailscale_down(dry_run=False).level == "success"
+    assert ("tailscale", "down") in runner.calls
+
+
+def test_tailscale_up_surfaces_failure(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("tailscale", "up"), exit_code=1, stderr="needs login\n")
+    step = RemoteService(runner=runner, interactive=True, home=tmp_path).tailscale_up(dry_run=False)
+    assert step.level == "error"
+    assert "needs login" in step.message
+
+
+def test_tailscale_dry_run_makes_no_calls(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+    assert "DRY RUN" in service.tailscale_down(dry_run=True).message
+    assert ("tailscale", "down") not in runner.calls
+
+
+class _FlippingRunner(FakeProcessRunner):
+    """A runner whose Remote Login state flips to `enabled` after `flip_after` reads."""
+
+    def __init__(self, flip_after: int) -> None:
+        super().__init__()
+        self._reads = 0
+        self._flip_after = flip_after
+
+    def run(self, command, **kwargs):  # type: ignore[no-untyped-def]
+        if tuple(command) == ("launchctl", "print-disabled", "system"):
+            self._reads += 1
+            state = "enabled" if self._reads > self._flip_after else "disabled"
+            self.calls.append(tuple(command))
+            from dotfiles.adapters.ports import CommandResult
+
+            return CommandResult(
+                command=tuple(command),
+                exit_code=0,
+                stdout=f'\t"com.openssh.sshd" => {state}\n',
+                stderr="",
+            )
+        return super().run(command, **kwargs)
+
+
+def test_wait_until_remote_login_returns_true_when_it_flips(tmp_path: Path) -> None:
+    runner = _FlippingRunner(flip_after=2)  # disabled, disabled, then enabled
+    slept: list[float] = []
+    service = RemoteService(
+        runner=runner,
+        interactive=True,
+        home=tmp_path,
+        sleep=slept.append,
+        monotonic=lambda: 0.0,
+    )
+    assert service.wait_until_remote_login(True, timeout=60, poll=1) is True
+    assert slept == [1, 1]  # polled twice before the flip, no real waiting
+
+
+def test_wait_until_remote_login_times_out(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(
         ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => disabled\n'
     )
-    runner.script(("id", "-un"), stdout="evan\n")
-    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
-
-    steps = service.disable(dry_run=False, kill_sessions=True)
-
-    assert any("already disabled" in s.message for s in steps)
-    assert ("pkill", "-u", "evan", "mosh-server") in runner.calls
-    assert ("pkill", "-u", "evan", "sshd") in runner.calls
-
-
-def test_disable_nudges_to_sharing_pane_when_on(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(
-        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
+    clock = iter([0.0, 1.0, 2.0, 3.0])  # crosses the 2.0 deadline
+    service = RemoteService(
+        runner=runner,
+        interactive=True,
+        home=tmp_path,
+        sleep=lambda _s: None,
+        monotonic=lambda: next(clock),
     )
-    runner.script(("id", "-un"), stdout="evan\n")
-    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
-
-    steps = service.disable(dry_run=False, kill_sessions=False)
-
-    # Never flips it itself — surfaces the manual toggle instead.
-    assert ("sudo", "systemsetup", "-setremotelogin", "-f", "off") not in runner.calls
-    assert any(s.level == "warn" and "Remote Login is on" in s.message for s in steps)
-
-
-def test_disable_dry_run_makes_no_changes(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(
-        ("launchctl", "print-disabled", "system"), stdout='\t"com.openssh.sshd" => enabled\n'
-    )
-    runner.script(("id", "-un"), stdout="evan\n")
-    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
-
-    steps = service.disable(dry_run=True, kill_sessions=True)
-
-    assert ("sudo", "systemsetup", "-setremotelogin", "-f", "off") not in runner.calls
-    assert ("pkill", "-u", "evan", "mosh-server") not in runner.calls
-    assert any("DRY RUN" in s.message for s in steps)
+    assert service.wait_until_remote_login(True, timeout=2, poll=1) is False
 
 
 def test_ensure_tool_reports_brew_install_failure(tmp_path: Path) -> None:

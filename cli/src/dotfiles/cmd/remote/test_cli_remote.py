@@ -84,17 +84,44 @@ def test_remote_setup_bad_key_exits_nonzero(tmp_path: Path) -> None:
 
 def test_remote_setup_warns_when_tailscale_disconnected() -> None:
     fake = make_fake_context(runner=_runner_with_status(), interactive=True)
-    result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake)
+    result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
-    assert "Tailscale does not look connected" in result.output
+    assert "Tailscale not connected" in result.output
+
+
+def test_remote_on_tailscale_flag_brings_tailnet_up() -> None:
+    fake = make_fake_context(runner=_runner_with_status(), interactive=True)
+    result = runner.invoke(
+        app, ["remote", "on", "--dry-run", "--tailscale"], obj=fake, env={"COLUMNS": "200"}
+    )
+    assert result.exit_code == 0
+    assert "DRY RUN: tailscale up" in _flat(result.output)
 
 
 def test_remote_off_nudges_to_sharing_pane_when_on() -> None:
-    fake = make_fake_context(runner=_runner_with_status("On"), interactive=True)
+    r = _runner_with_status("On")
+    fake = make_fake_context(runner=r, interactive=True)
     result = runner.invoke(app, ["remote", "off"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0  # nudges, never errors — it doesn't flip the toggle
-    assert "Remote Login is on" in result.output
+    assert "Remote Login is ON" in result.output
     assert "Sharing" in result.output
+    # `off` now opens the exact pane too (it didn't before).
+    assert any(c[0] == "open" and "Sharing" in c[1] for c in r.calls)
+
+
+def test_remote_off_already_disabled_says_so() -> None:
+    fake = make_fake_context(runner=_runner_with_status("Off"), interactive=True)
+    result = runner.invoke(app, ["remote", "off"], obj=fake, env={"COLUMNS": "200"})
+    assert result.exit_code == 0
+    assert "already disabled" in result.output
+
+
+def test_remote_off_tailscale_flag_brings_tailnet_down() -> None:
+    r = _runner_with_status("On")
+    fake = make_fake_context(runner=r, interactive=True)
+    result = runner.invoke(app, ["remote", "off", "--tailscale"], obj=fake, env={"COLUMNS": "200"})
+    assert result.exit_code == 0
+    assert ("tailscale", "down") in r.calls
 
 
 def test_remote_off_kill_sessions_dry_run() -> None:
@@ -104,8 +131,10 @@ def test_remote_off_kill_sessions_dry_run() -> None:
     assert "DRY RUN" in result.output
 
 
-def test_remote_status_shows_sharing_toggle_hint() -> None:
+def test_remote_status_shows_fields() -> None:
     fake = make_fake_context(runner=_runner_with_status("On"), interactive=True)
     result = runner.invoke(app, ["remote", "status"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
     assert "Sharing" in result.output
+    assert "Tailscale" in result.output
+    assert "Remote Login is on" in result.output

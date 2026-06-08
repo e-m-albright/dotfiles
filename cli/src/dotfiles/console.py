@@ -29,6 +29,37 @@ def render_steps(console: Console, steps: Iterable[StepResult]) -> None:
         console.print(line)
 
 
+# --- House style: shared visual language across commands -------------------
+#
+# Three primitives give every command the same literal + visual grammar: a
+# compact titled rule, glyph status lines (with an optional indented sub-line),
+# and an aligned label column. Keep lines short — a title rule caps at
+# _SECTION_WIDTH, values that must stay copyable (long commands) opt into
+# soft_wrap instead of wrapping mid-token.
+
+_SECTION_WIDTH = 42
+_FIELD_WIDTH = 10
+
+
+def print_title(console: Console, title: str) -> None:
+    """A compact left-titled rule: ``── Title ───────``, capped at _SECTION_WIDTH."""
+    lead = f"── {title} "
+    dashes = "─" * max(3, _SECTION_WIDTH - len(lead))
+    console.print(f"\n[bold cyan]{escape(lead)}{dashes}[/]")
+
+
+def print_status(console: Console, level: StepLevel, message: str, sub: str | None = None) -> None:
+    """A glyph status line, with an optional dimmed continuation on its own line."""
+    console.print(f"  {_GLYPH[level]} {escape(message)}")
+    if sub:
+        console.print(f"    [dim]{escape(sub)}[/]")
+
+
+def print_field(console: Console, label: str, value: str, *, soft_wrap: bool = False) -> None:
+    """An aligned ``label   value`` row (dim label). soft_wrap keeps long values copyable."""
+    console.print(f"  [dim]{label:<{_FIELD_WIDTH}}[/] {escape(value)}", soft_wrap=soft_wrap)
+
+
 def has_errors(steps: Iterable[StepResult]) -> bool:
     return any(step.level == "error" for step in steps)
 
