@@ -33,7 +33,7 @@ from dotfiles.cmd.agent.skill_health import SkillHealthService
 from dotfiles.cmd.agent.skill_stats import SkillStat, SkillUsageReport, SkillUsageService
 from dotfiles.cmd.agent.skills import validate_skill_files
 from dotfiles.cmd.agent.web_chat import GeminiChunksService, GeminiError
-from dotfiles.console import console, render_steps
+from dotfiles.console import console, print_section, print_status, print_title, render_steps
 from dotfiles.result import StepResult
 
 agent_app = typer.Typer(help="Agentic setup for this machine and web chats.")
@@ -98,7 +98,7 @@ def _render_validation(v: FileValidation) -> None:
 
 def _render_mcp(rows: Iterable[McpRow]) -> None:
     console.print()
-    console.print("[bold blue]MCP Servers[/]")
+    console.print("[bold]MCP Servers[/]")
     rows_list = list(rows)
     if not rows_list:
         console.print("  [dim](none)[/]")
@@ -122,7 +122,7 @@ def _render_mcp(rows: Iterable[McpRow]) -> None:
 
 def _render_hooks(rows: Iterable[HookRow]) -> None:
     console.print()
-    console.print("[bold blue]Hooks[/]")
+    console.print("[bold]Hooks[/]")
     rows_list = list(rows)
     if not rows_list:
         console.print("  [dim](none)[/]")
@@ -144,7 +144,7 @@ def _render_hooks(rows: Iterable[HookRow]) -> None:
 
 def _render_agents(rows: Iterable[SubagentRow]) -> None:
     console.print()
-    console.print("[bold blue]Subagents[/]")
+    console.print("[bold]Subagents[/]")
     rows_list = list(rows)
     if not rows_list:
         console.print("  [dim](none)[/]")
@@ -166,7 +166,7 @@ def _render_agents(rows: Iterable[SubagentRow]) -> None:
 
 def _render_permissions(rows: Iterable[PermissionRow]) -> None:
     console.print()
-    console.print("[bold blue]Permissions[/]")
+    console.print("[bold]Permissions[/]")
     rows_list = list(rows)
     if not rows_list:
         console.print("  [dim](none)[/]")
@@ -180,7 +180,7 @@ def _render_permissions(rows: Iterable[PermissionRow]) -> None:
 
 def _render_vendor_surfaces(surfaces: Iterable[AgentSurface]) -> None:
     console.print()
-    console.print("[bold blue]Agent Surfaces[/]")
+    console.print("[bold]Agent Surfaces[/]")
     first = True
     for agent, group in groupby(surfaces, key=lambda s: s.agent):
         if not first:
@@ -198,12 +198,13 @@ def _render_vendor_surfaces(surfaces: Iterable[AgentSurface]) -> None:
 
 def _render_overview(data: AgentOverview) -> None:
     """Render all overview sections."""
+    print_title(console, "agent", "overview")
     _render_mcp(data.mcp)
     _render_hooks(data.hooks)
 
     s = data.skills
     console.print()
-    console.print("[bold blue]Skills[/]")
+    console.print("[bold]Skills[/]")
     console.print(
         f"  Canonical: {s.canonical_skills}"
         f"  Claude deployed: {s.claude_deployed}"
@@ -214,7 +215,7 @@ def _render_overview(data: AgentOverview) -> None:
 
     r = data.rules
     console.print()
-    console.print("[bold blue]Rules[/]")
+    console.print("[bold]Rules[/]")
     console.print(
         f"  Canonical: {r.canonical_rules}"
         f"  Claude deployed: {r.claude_deployed}"
@@ -234,7 +235,7 @@ def _render_overview(data: AgentOverview) -> None:
 def _render_setup_results(agent: str, results: list[StepResult]) -> None:
     """Print step results for one agent under its vendor header."""
     header = _VENDOR_HEADERS.get(agent, agent)
-    console.print(f"\n[bold blue]── {header} ──[/]")
+    console.print(f"\n[bold]── {header} ──[/]")
     render_steps(console, results)
 
 
@@ -304,9 +305,9 @@ def setup(
 
     console.print()
     if any(result.failed for result in results):
-        console.print("[red]Agent setup completed with errors.[/]")
+        print_status(console, "error", "Agent setup completed with errors.")
         raise typer.Exit(1)
-    console.print("[green]Agent setup complete.[/]")
+    print_status(console, "success", "Agent setup complete.")
 
 
 @agent_app.command()
@@ -329,6 +330,7 @@ def lint(ctx: typer.Context) -> None:
 
     results = validate_skill_files(app_ctx.dotfiles_dir)
 
+    print_title(console, "agent", "lint")
     for v in results:
         _render_validation(v)
 
@@ -336,8 +338,7 @@ def lint(ctx: typer.Context) -> None:
     n_warn = sum(1 for v in results if v.status == "warn")
     n_ok = sum(1 for v in results if v.status == "ok")
 
-    console.print()
-    console.print("[dim]── Summary ──[/]")
+    print_section(console, "Summary")
     console.print(f"  [green]{n_ok} passed[/]")
     if n_warn:
         console.print(f"  [yellow]{n_warn} with warnings[/]")
@@ -370,9 +371,9 @@ def stats(
 
 def _render_stats(report: SkillUsageReport) -> None:
     days = (report.now - report.since).days
-    console.print()
+    print_title(console, "agent", "stats")
     console.print(
-        f"[bold blue]Skill Usage[/]  [dim]{report.projects} projects · "
+        f"[bold]Skill Usage[/]  [dim]{report.projects} projects · "
         f"{report.total_fires} fires · {report.sessions} sessions · last {days}d[/]"
     )
     _render_leaderboard(report.leaderboard)
@@ -386,7 +387,7 @@ def _render_stats(report: SkillUsageReport) -> None:
 
 def _render_leaderboard(rows: tuple[SkillStat, ...]) -> None:
     console.print()
-    console.print("[bold blue]Leaderboard[/]")
+    console.print("[bold]Leaderboard[/]")
     if not rows:
         console.print("  [dim](no skill invocations in window)[/]")
         return
@@ -405,9 +406,7 @@ def _render_weak_triggers(rows: tuple[SkillStat, ...]) -> None:
     if not rows:
         return
     console.print()
-    console.print(
-        "[bold blue]⚠ Trigger health[/] [dim]— reached mostly by typing the slash command[/]"
-    )
+    console.print("[bold]⚠ Trigger health[/] [dim]— reached mostly by typing the slash command[/]")
     for s in rows:
         console.print(
             f"  [yellow]{escape(s.skill)}[/]  {s.fires} fires / {s.explicit} explicit"
@@ -420,7 +419,7 @@ def _render_dead(dead: tuple[str, ...]) -> None:
         return
     console.print()
     console.print(
-        f"[bold blue]🪦 Dead[/] [dim]— deployed, 0 fires in window ({len(dead)} candidates)[/]"
+        f"[bold]🪦 Dead[/] [dim]— deployed, 0 fires in window ({len(dead)} candidates)[/]"
     )
     console.print("  [dim]" + " · ".join(escape(d) for d in dead) + "[/]")
 
@@ -429,7 +428,7 @@ def _render_sequences(sequences: tuple[tuple[tuple[str, str], int], ...]) -> Non
     if not sequences:
         return
     console.print()
-    console.print("[bold blue]🔗 Sequences[/] [dim]— skills that chain[/]")
+    console.print("[bold]🔗 Sequences[/] [dim]— skills that chain[/]")
     for (first, second), count in sequences[:8]:
         console.print(f"  [dim]{escape(first)} → {escape(second)}[/]  ({count}x)")
 
@@ -437,7 +436,7 @@ def _render_sequences(sequences: tuple[tuple[tuple[str, str], int], ...]) -> Non
 def _render_vendors(counts: tuple[tuple[str, int], ...]) -> None:
     console.print()
     parts = "  ".join(f"{escape(v)} {n}" for v, n in counts) or "[dim](none)[/]"
-    console.print(f"[bold blue]Vendors[/]  {parts}  [dim]· Cursor — (GUI, no logs)[/]")
+    console.print(f"[bold]Vendors[/]  {parts}  [dim]· Cursor — (GUI, no logs)[/]")
     if any(v == "codex" for v, _ in counts):
         console.print(
             "  [dim]Codex fires = SKILL.md opens per session"
@@ -516,8 +515,8 @@ def health(
 
 
 def _render_health(r: HealthBootstrap) -> None:
-    console.print()
-    console.print(f"[bold blue]Code-health backbone[/]  [dim]scope: {escape(r.scope)}[/]")
+    print_title(console, "agent", "health")
+    console.print(f"[bold]Code-health backbone[/]  [dim]scope: {escape(r.scope)}[/]")
     console.print(f"  repo  [dim]{escape(r.target)}[/]")
     console.print(f"  LOC {r.scorecard.loc}   suppressions {r.total_suppressions}")
     if r.created:
@@ -540,7 +539,7 @@ def _render_hotspots(rows: tuple[Hotspot, ...]) -> None:
     if not rows:
         return
     console.print()
-    console.print("[bold blue]Hotspots[/] [dim]— churn*LOC; spend refactor effort here first[/]")
+    console.print("[bold]Hotspots[/] [dim]— churn*LOC; spend refactor effort here first[/]")
     tbl = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
     tbl.add_column("score", justify="right")
     tbl.add_column("churn", justify="right")
@@ -561,7 +560,7 @@ def catechism(ctx: typer.Context) -> None:
 def _render_catechism(entries: tuple[CatechismEntry, ...]) -> None:
     console.print()
     console.print(
-        "[bold blue]The Catechism[/] [dim]— believe the Canon, practice this. "
+        "[bold]The Catechism[/] [dim]— believe the Canon, practice this. "
         "Front door: [/][bold]code-health[/][dim].[/]"
     )
     tbl = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
@@ -608,7 +607,7 @@ def web_copy(
 
 def _gemini_list(svc: GeminiChunksService) -> None:
     chunks = svc.chunks()
-    console.print("[bold blue]Gemini chunks[/] (target: ~1500 chars each)\n")
+    console.print("[bold]Gemini chunks[/] (target: ~1500 chars each)\n")
     for chunk in chunks:
         console.print(f"  {chunk.char_count:>4} chars  {escape(chunk.name)}")
 
@@ -616,7 +615,7 @@ def _gemini_list(svc: GeminiChunksService) -> None:
 def _gemini_step(svc: GeminiChunksService) -> None:
     chunks = svc.chunks()
     console.print(
-        "[bold blue]Interactive mode[/]: copy each chunk, paste into Gemini Saved Info,"
+        "[bold]Interactive mode[/]: copy each chunk, paste into Gemini Saved Info,"
         " then press enter."
     )
     console.print("Open https://gemini.google.com/saved-info in another window.\n")
@@ -633,9 +632,7 @@ def _gemini_step(svc: GeminiChunksService) -> None:
 
 def _gemini_flycut(svc: GeminiChunksService) -> None:
     chunks = svc.chunks()
-    console.print(
-        f"[bold blue]Loading {len(chunks)} chunks into clipboard history (for Flycut)…[/]"
-    )
+    console.print(f"[bold]Loading {len(chunks)} chunks into clipboard history (for Flycut)…[/]")
     for chunk in reversed(chunks):
         svc.copy(chunk.content)
         console.print(f"  [green]✓[/]  {escape(chunk.name)} ({chunk.char_count} chars)")

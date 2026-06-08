@@ -6,7 +6,7 @@ from rich.markup import escape
 from dotfiles.app.context import AppContext, app_context
 from dotfiles.cmd.benchmark.models import BenchResult
 from dotfiles.cmd.benchmark.service import LMStudioService
-from dotfiles.console import console
+from dotfiles.console import console, print_section, print_status, print_title
 
 benchmark_app = typer.Typer(
     help="Benchmark local LM Studio models for your hardware (list|bench|estimate|compare)."
@@ -23,16 +23,14 @@ def _service(app_ctx: AppContext) -> LMStudioService:
 
 def _render_bench(result: BenchResult) -> None:
     """Render a BenchResult in the llm-bench.sh format."""
-    console.print()
-    console.print("  Throughput")
+    print_section(console, "Throughput")
     console.print(f"    Token gen (tg):       {result.tg_tps:6.2f} tok/s   \\[{result.tier}]")
     console.print(
         f"    Prompt eval (pp):     {result.pp_tps:6.2f} tok/s"
         f"   ({result.pp_tokens} tokens / {result.pp_wall:.2f}s)"
     )
     console.print(f"    TTFT (warm):          {result.ttft:6.3f}s")
-    console.print()
-    console.print("  Reasoning-mode check")
+    print_section(console, "Reasoning-mode check")
     console.print(f"    Reasoning tokens:     {result.reasoning_tokens}")
     console.print(f"    Visible content len:  {result.content_len} chars")
     if result.reasoning_tokens > 0:
@@ -47,7 +45,7 @@ def list_models(ctx: typer.Context) -> None:
     try:
         output = _service(app_ctx).list_loaded()
     except RuntimeError as exc:
-        console.print(f"[red]Error:[/] {escape(str(exc))}")
+        print_status(console, "error", escape(str(exc)))
         raise typer.Exit(1) from exc
     console.print(output, end="", markup=False)
 
@@ -59,10 +57,11 @@ def bench(
 ) -> None:
     """Benchmark a model: throughput, TTFT, and reasoning-mode check."""
     app_ctx = app_context(ctx)
+    print_title(console, "benchmark", "bench")
     try:
         result = _service(app_ctx).bench(model)
     except RuntimeError as exc:
-        console.print(f"[red]Error:[/] {escape(str(exc))}")
+        print_status(console, "error", escape(str(exc)))
         raise typer.Exit(1) from exc
     _render_bench(result)
 
@@ -78,7 +77,7 @@ def estimate(
     try:
         output = _service(app_ctx).estimate(model, ctx_size)
     except RuntimeError as exc:
-        console.print(f"[red]Error:[/] {escape(str(exc))}")
+        print_status(console, "error", escape(str(exc)))
         raise typer.Exit(1) from exc
     console.print(output, markup=False)
     console.print()
@@ -95,12 +94,13 @@ def compare(
     app_ctx = app_context(ctx)
     svc = _service(app_ctx)
 
-    console.print(f"[blue]Head-to-head: {escape(model_a)} vs {escape(model_b)}[/]")
+    print_title(console, "benchmark", "compare")
+    console.print(f"  [dim]{escape(model_a)} vs {escape(model_b)}[/]")
 
     try:
         result_a = svc.bench(model_a)
     except RuntimeError as exc:
-        console.print(f"[red]Error benchmarking {escape(model_a)}:[/] {escape(str(exc))}")
+        print_status(console, "error", f"benchmarking {escape(model_a)}: {escape(str(exc))}")
         raise typer.Exit(1) from exc
     _render_bench(result_a)
 
@@ -109,7 +109,7 @@ def compare(
     try:
         result_b = svc.bench(model_b)
     except RuntimeError as exc:
-        console.print(f"[red]Error benchmarking {escape(model_b)}:[/] {escape(str(exc))}")
+        print_status(console, "error", f"benchmarking {escape(model_b)}: {escape(str(exc))}")
         raise typer.Exit(1) from exc
     _render_bench(result_b)
 

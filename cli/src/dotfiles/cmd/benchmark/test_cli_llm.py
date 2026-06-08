@@ -258,7 +258,7 @@ def test_llm_compare_output_contains_head_to_head() -> None:
 
     ctx = make_fake_context(runner=proc, http=http)
     result = runner.invoke(app, ["benchmark", "compare", "model-a", "model-b"], obj=ctx)
-    assert "Head-to-head" in result.output
+    assert "model-a vs model-b" in result.output  # the title-rule matchup line
 
 
 def test_llm_compare_output_contains_both_throughput_blocks() -> None:
