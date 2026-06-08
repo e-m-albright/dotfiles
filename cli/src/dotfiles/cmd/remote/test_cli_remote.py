@@ -135,6 +135,16 @@ def test_remote_status_shows_fields() -> None:
     fake = make_fake_context(runner=_runner_with_status("On"), interactive=True)
     result = runner.invoke(app, ["remote", "status"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
-    assert "Sharing" in result.output
+    assert "Remote Login" in result.output
     assert "Tailscale" in result.output
-    assert "Remote Login is on" in result.output
+    # Settings/Shortcut nest beneath Remote Login as owned tree-branch children.
+    assert "└─ Shortcut" in result.output
+    assert "Sharing" in result.output  # in the nested Settings path
+
+
+def test_remote_status_off_has_no_ssh_auth_child() -> None:
+    fake = make_fake_context(runner=_runner_with_status("Off"), interactive=True)
+    result = runner.invoke(app, ["remote", "status"], obj=fake, env={"COLUMNS": "200"})
+    assert result.exit_code == 0
+    assert "├─ Settings" in result.output  # Settings is the first child when off
+    assert "SSH auth" not in result.output  # only shown when Remote Login is on

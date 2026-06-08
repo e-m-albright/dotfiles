@@ -38,7 +38,8 @@ def render_steps(console: Console, steps: Iterable[StepResult]) -> None:
 # soft_wrap instead of wrapping mid-token.
 
 _SECTION_WIDTH = 42
-_FIELD_WIDTH = 10
+_FIELD_WIDTH = 12
+_CHILD_LABEL_WIDTH = 8
 # House title separator: joins the parts of a section title (── Remote ⇒ status ──).
 _TITLE_SEP = "⇒"
 
@@ -55,21 +56,9 @@ def print_title(console: Console, *parts: str) -> None:
     console.print(f"\n[bold cyan]{escape(lead)}{dashes}[/]")
 
 
-def print_status(
-    console: Console,
-    level: StepLevel,
-    message: str,
-    sub: str | None = None,
-    *,
-    glyph: str | None = None,
-) -> None:
-    """A glyph status line, with an optional dimmed continuation on its own line.
-
-    *glyph* overrides the level's default mark (already-styled markup, e.g.
-    ``"[green]✶[/]"``) for lines that want a distinctive indicator.
-    """
-    mark = glyph if glyph is not None else _GLYPH[level]
-    console.print(f"  {mark} {escape(message)}")
+def print_status(console: Console, level: StepLevel, message: str, sub: str | None = None) -> None:
+    """A glyph status line, with an optional dimmed continuation on its own line."""
+    console.print(f"  {_GLYPH[level]} {escape(message)}")
     if sub:
         console.print(f"    [dim]{escape(sub)}[/]")
 
@@ -77,6 +66,16 @@ def print_status(
 def print_field(console: Console, label: str, value: str, *, soft_wrap: bool = False) -> None:
     """An aligned ``label   value`` row (dim label). soft_wrap keeps long values copyable."""
     console.print(f"  [dim]{label:<{_FIELD_WIDTH}}[/] {escape(value)}", soft_wrap=soft_wrap)
+
+
+def print_child(
+    console: Console, label: str, value: str, *, last: bool = False, soft_wrap: bool = False
+) -> None:
+    """A tree-branch row owned by the field above it: ``├─ label  value`` (└─ if last)."""
+    branch = "└─" if last else "├─"
+    console.print(
+        f"   [dim]{branch} {label:<{_CHILD_LABEL_WIDTH}}[/] {escape(value)}", soft_wrap=soft_wrap
+    )
 
 
 def has_errors(steps: Iterable[StepResult]) -> bool:

@@ -14,6 +14,7 @@ from dotfiles.cmd.remote.service import (
 from dotfiles.console import (
     console,
     has_errors,
+    print_child,
     print_field,
     print_status,
     print_title,
@@ -23,9 +24,6 @@ from dotfiles.console import (
 remote_app = typer.Typer(help="Turn phone (Termius) remote-shell access on or off.")
 
 _WAIT_TIMEOUT_MIN = 2
-# The Remote Login state line wears a six-pointed star, colored by state.
-_LOGIN_ON_GLYPH = "[green]✶[/]"
-_LOGIN_OFF_GLYPH = "[dim]✶[/]"
 
 
 def _service(ctx: typer.Context) -> RemoteService:
@@ -41,6 +39,14 @@ def _tailscale_value(status: RemoteStatus) -> str:
     if status.tailscale_connected:
         return f"connected · {status.tailnet_ip}"
     return "not connected"
+
+
+def _ssh_auth_value(status: RemoteStatus) -> str:
+    if status.ssh_password_auth is True:
+        return "password allowed (run `dfs remote on --harden-ssh`)"
+    if status.ssh_password_auth is False:
+        return "key-only"
+    return "unknown"
 
 
 def _wait_for_login(service: RemoteService, *, target: bool, interactive: bool) -> None:
@@ -205,17 +211,12 @@ def status(ctx: typer.Context) -> None:
     """Show the Mac's remote-shell entrypoint state."""
     s = _service(ctx).status()
     print_title(console, "Remote", "status")
+    # Remote Login is the category header; how-to-change-it (SSH auth when on,
+    # the Settings pane, the open shortcut) nests beneath it as owned children.
+    print_field(console, "Remote Login", "on" if s.remote_login_on else "off")
     if s.remote_login_on:
-        print_status(console, "success", "Remote Login is on", glyph=_LOGIN_ON_GLYPH)
-        if s.ssh_password_auth is True:
-            print_field(console, "SSH auth", "password allowed — run `dfs remote on --harden-ssh`")
-        elif s.ssh_password_auth is False:
-            print_field(console, "SSH auth", "key-only")
-        else:
-            print_field(console, "SSH auth", "unknown")
-    else:
-        print_status(console, "info", "Remote Login is off", glyph=_LOGIN_OFF_GLYPH)
+        print_child(console, "SSH auth", _ssh_auth_value(s))
+    print_child(console, "Settings", SHARING_PATH)
+    print_child(console, "Shortcut", SHARING_OPEN, last=True, soft_wrap=True)
     print_field(console, "Tailscale", _tailscale_value(s))
     print_field(console, "Host", f"{s.user}@{s.host}")
-    print_field(console, "Settings", SHARING_PATH)
-    print_field(console, "Shortcut", SHARING_OPEN, soft_wrap=True)
