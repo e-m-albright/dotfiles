@@ -64,6 +64,7 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 
 The curated knowledge base lives in `docs/` (see `docs/README.md`):
 - `CANON.md` (repo root) -- **the Canon & the Catechism**: the umbrella philosophy + practice (process, code health, DX, toolbelt). Start here for the whole ethos.
+- `docs/knowledge/how-we-build.md` -- the **visual defense-in-depth map**: every gate/rite by layer (author-time → pre-commit → pre-push → CI → scheduled → convergence), deterministic vs stochastic, the test pyramid, how to work within it
 - `docs/engineering-philosophy.md` -- the 12 universal code-health principles (Canon, article II)
 - `docs/knowledge/engineering-gates.md` -- how each principle is enforced mechanically (the toolbelt doctrine)
 - `docs/knowledge/code-health-portfolio.md` -- the code-health lenses + entry-point map (the Catechism); `docs/health/` holds per-scope state + the independent `ASSESSMENT.md`

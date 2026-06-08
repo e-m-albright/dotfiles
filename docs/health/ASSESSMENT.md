@@ -55,13 +55,12 @@ design.
 
 Ranked by how much they undercut the "self-managing gravity" claim.
 
-1. **CI does not enforce the ratchet (biggest gap).** `engineering-gates.md` says
-   "CI calls task-runner recipes," but `.github/workflows/ci.yml` runs *zero* Python
-   checks — ratchet, complexity, coverage all live only in local lefthook. A
-   contributor without hooks installed, or one `--no-verify`, bypasses the entire
-   floor. Today the "floor that only rises" is a **local social contract, not a
-   CI-enforced invariant**. Fix: a CI job that runs `just check` (or at least
-   `just ratchet` + `just complexity`). Until then, "self-managing" is overstated.
+1. **CI enforces the ratchet — RESOLVED (was the biggest gap).** As written, this
+   said `.github/workflows/ci.yml` ran *zero* Python checks, so the ratchet/complexity/
+   coverage floor lived only in local lefthook and was bypassable with `--no-verify`.
+   Closed by commit `f0a8186`: the `cli` CI job now runs `just check` (the same recipes
+   hooks run), so the floor is a CI-enforced invariant. Left here as a record of the
+   gap and its fix. *Remaining nuance:* CI runs the **full** suite, not yet affectedness-scoped.
 2. **`converge`↔`form-deepen` is the one ambiguous entry point.** `converge`'s
    description claims `form-deepen`'s exact trigger phrases ("this feels coupled", "where
    are the seams?", "deepen modules") with no scope signal in the phrase itself. The

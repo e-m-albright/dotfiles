@@ -65,6 +65,9 @@ once as muscle memory. **Believe the Canon; practice the Catechism.**
 ## The Catechism — the rites
 
 *Where the doctrine becomes practice. Each rite enacts one or more articles above.*
+*For the visual, layered map of **where and when** every rite fires — the shift-left
+defense-in-depth ladder, the deterministic/stochastic split, the test pyramid, and the
+full rite index — see [`docs/knowledge/how-we-build.md`](docs/knowledge/how-we-build.md).*
 
 ### The lenses — code health
 The contestable lenses for improving a codebase, routed by the [`code-health`](ai/skills/code-health/SKILL.md)
