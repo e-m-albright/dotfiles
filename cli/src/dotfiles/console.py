@@ -39,18 +39,37 @@ def render_steps(console: Console, steps: Iterable[StepResult]) -> None:
 
 _SECTION_WIDTH = 42
 _FIELD_WIDTH = 10
+# House title separator: joins the parts of a section title (── Remote ⇒ status ──).
+_TITLE_SEP = "⇒"
 
 
-def print_title(console: Console, title: str) -> None:
-    """A compact left-titled rule: ``── Title ───────``, capped at _SECTION_WIDTH."""
+def print_title(console: Console, *parts: str) -> None:
+    """A compact left-titled rule: ``── A ⇒ B ───────``, capped at _SECTION_WIDTH.
+
+    Pass the title as separate parts (``"Remote", "status"``) and they're joined
+    with the house separator, so the separator stays consistent across commands.
+    """
+    title = f" {_TITLE_SEP} ".join(parts)
     lead = f"── {title} "
     dashes = "─" * max(3, _SECTION_WIDTH - len(lead))
     console.print(f"\n[bold cyan]{escape(lead)}{dashes}[/]")
 
 
-def print_status(console: Console, level: StepLevel, message: str, sub: str | None = None) -> None:
-    """A glyph status line, with an optional dimmed continuation on its own line."""
-    console.print(f"  {_GLYPH[level]} {escape(message)}")
+def print_status(
+    console: Console,
+    level: StepLevel,
+    message: str,
+    sub: str | None = None,
+    *,
+    glyph: str | None = None,
+) -> None:
+    """A glyph status line, with an optional dimmed continuation on its own line.
+
+    *glyph* overrides the level's default mark (already-styled markup, e.g.
+    ``"[green]✶[/]"``) for lines that want a distinctive indicator.
+    """
+    mark = glyph if glyph is not None else _GLYPH[level]
+    console.print(f"  {mark} {escape(message)}")
     if sub:
         console.print(f"    [dim]{escape(sub)}[/]")
 

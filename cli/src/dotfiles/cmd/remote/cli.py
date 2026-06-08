@@ -23,6 +23,9 @@ from dotfiles.console import (
 remote_app = typer.Typer(help="Turn phone (Termius) remote-shell access on or off.")
 
 _WAIT_TIMEOUT_MIN = 2
+# The Remote Login state line wears a six-pointed star, colored by state.
+_LOGIN_ON_GLYPH = "[green]✶[/]"
+_LOGIN_OFF_GLYPH = "[dim]✶[/]"
 
 
 def _service(ctx: typer.Context) -> RemoteService:
@@ -64,7 +67,7 @@ def _wait_for_login(service: RemoteService, *, target: bool, interactive: bool) 
 
 def render_connection_info(console: Console, info: ConnectionInfo) -> None:
     """Print the Termius/Mosh connection details in the shared field-column style."""
-    print_title(console, "Termius · phone")
+    print_title(console, "Termius", "phone")
     console.print("  [dim]Enter these in the Termius app (it's a GUI, not a command):[/]")
     if info.tailnet_ip:
         print_field(console, "Address", f"{info.tailnet_ip}   (or {info.host})")
@@ -104,7 +107,7 @@ def on(
     app_ctx = app_context(ctx)
     service = _service(ctx)
     chosen = session or app_ctx.settings.default_session
-    print_title(console, "Remote · on")
+    print_title(console, "Remote", "on")
     pre_steps = [service.tailscale_up(dry_run=dry_run)] if tailscale else []
     try:
         steps = service.setup(dry_run=dry_run, add_key=add_key, harden=harden_ssh, session=chosen)
@@ -140,7 +143,7 @@ def off(
     """
     app_ctx = app_context(ctx)
     service = _service(ctx)
-    print_title(console, "Remote · off")
+    print_title(console, "Remote", "off")
 
     steps = [service.tailscale_down(dry_run=dry_run)] if tailscale else []
     on_now = service.remote_login_on()
@@ -201,9 +204,9 @@ def web(
 def status(ctx: typer.Context) -> None:
     """Show the Mac's remote-shell entrypoint state."""
     s = _service(ctx).status()
-    print_title(console, "Remote · status")
+    print_title(console, "Remote", "status")
     if s.remote_login_on:
-        print_status(console, "success", "Remote Login is on")
+        print_status(console, "success", "Remote Login is on", glyph=_LOGIN_ON_GLYPH)
         if s.ssh_password_auth is True:
             print_field(console, "SSH auth", "password allowed — run `dfs remote on --harden-ssh`")
         elif s.ssh_password_auth is False:
@@ -211,7 +214,7 @@ def status(ctx: typer.Context) -> None:
         else:
             print_field(console, "SSH auth", "unknown")
     else:
-        print_status(console, "info", "Remote Login is off")
+        print_status(console, "info", "Remote Login is off", glyph=_LOGIN_OFF_GLYPH)
     print_field(console, "Tailscale", _tailscale_value(s))
     print_field(console, "Host", f"{s.user}@{s.host}")
     print_field(console, "Settings", SHARING_PATH)
