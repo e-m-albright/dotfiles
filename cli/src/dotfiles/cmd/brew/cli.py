@@ -19,7 +19,14 @@ from dotfiles.cmd.brew.service import (
     stale_packages,
 )
 from dotfiles.cmd.brew.service import upgrade as upgrade_packages
-from dotfiles.console import console, has_errors, render_steps
+from dotfiles.console import (
+    console,
+    has_errors,
+    print_section,
+    print_status,
+    print_title,
+    render_steps,
+)
 from dotfiles.result import StepResult
 
 brew_app = typer.Typer(help="Manage Homebrew packages from packages.toml.")
@@ -62,42 +69,43 @@ def install(
     runner = app_ctx.runner
 
     all_steps: list[StepResult] = []
+    print_title(console, "brew", "install")
 
     # Taps
-    console.print("\n[bold blue]Taps[/]")
+    print_section(console, "Taps")
     tap_steps = add_taps(manifest, runner)
     render_steps(console, tap_steps)
     all_steps.extend(tap_steps)
 
     # Packages
-    console.print("\n[bold blue]Packages[/]")
+    print_section(console, "Packages")
     pkg_steps = install_packages(manifest, runner, flags_on=flags, dry_run=dry_run)
     render_steps(console, pkg_steps)
     all_steps.extend(pkg_steps)
 
     if not dry_run:
         # Rust
-        console.print("\n[bold blue]Rust (rustup)[/]")
+        print_section(console, "Rust (rustup)")
         rust_steps = install_rust(runner, home=app_ctx.home)
         render_steps(console, rust_steps)
         all_steps.extend(rust_steps)
 
         # Claude Code (ai flag)
         if "ai" in flags:
-            console.print("\n[bold blue]Claude Code[/]")
+            print_section(console, "Claude Code")
             cc_steps = install_claude_code(runner)
             render_steps(console, cc_steps)
             all_steps.extend(cc_steps)
 
         # TypeWhisper (productivity flag)
         if "productivity" in flags:
-            console.print("\n[bold blue]TypeWhisper[/]")
+            print_section(console, "TypeWhisper")
             tw_steps = install_typewhisper(runner, dotfiles_dir=app_ctx.dotfiles_dir)
             render_steps(console, tw_steps)
             all_steps.extend(tw_steps)
 
         # npm globals
-        console.print("\n[bold blue]npm globals[/]")
+        print_section(console, "npm globals")
         npm_steps = install_npm_globals(manifest, runner, flags_on=flags)
         render_steps(console, npm_steps)
         all_steps.extend(npm_steps)
@@ -111,7 +119,8 @@ def install(
 def upgrade(ctx: typer.Context) -> None:
     """Upgrade all installed packages (brew is the only version-pinning surface)."""
     app_ctx = app_context(ctx)
-    console.print("\n[bold blue]Upgrading Homebrew packages[/]")
+    print_title(console, "brew", "upgrade")
+    print_section(console, "Upgrading Homebrew packages")
     steps = upgrade_packages(app_ctx.runner)
     render_steps(console, steps)
     console.print()
@@ -129,18 +138,19 @@ def stale(ctx: typer.Context) -> None:
     stale_list = stale_packages(manifest, runner)
     missing_list = missing_packages(manifest, runner, flags_on=set(app_ctx.feature_flags))
 
-    console.print("\n[bold blue]Stale packages[/] (installed but not declared)")
+    print_title(console, "brew", "stale")
+    print_section(console, "Stale packages", "installed but not declared")
     if stale_list:
         for name in stale_list:
-            console.print(f"  [yellow]○[/] {name}  [dim]brew uninstall {name}[/]")
+            console.print(f"  [yellow]⚠[/] {name}  [dim]brew uninstall {name}[/]")
     else:
-        console.print("  [green]✓[/] None")
+        print_status(console, "success", "none")
 
-    console.print("\n[bold blue]Missing packages[/] (declared but not installed)")
+    print_section(console, "Missing packages", "declared but not installed")
     if missing_list:
         for name, kind in missing_list:
             console.print(f"  [red]✗[/] {name}  [dim]({kind})[/]")
     else:
-        console.print("  [green]✓[/] None")
+        print_status(console, "success", "none")
 
     console.print()

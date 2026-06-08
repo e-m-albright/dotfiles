@@ -10,22 +10,29 @@ import typer
 from dotfiles.app.context import app_context
 from dotfiles.cmd.doctor.models import CheckResult
 from dotfiles.cmd.doctor.service import DoctorService
-from dotfiles.console import console
+from dotfiles.console import console, print_section, print_status, print_title
 
 _GLYPH: dict[str, str] = {
     "ok": "[green]✓[/]",
     "missing": "[red]✗[/]",
-    "warn": "[yellow]○[/]",
+    "warn": "[yellow]⚠[/]",
     "fixed": "[green]→[/]",
 }
 
 
+_NAME_WIDTH = 14
+
+
 def _check_line(r: CheckResult) -> str:
     """One rendered check row: glyph + name + optional detail + optional hint."""
-    line = f"  {_GLYPH.get(r.status, '?')} {r.name}"
+    glyph = _GLYPH.get(r.status, "?")
+    show_hint = bool(r.hint) and r.status in ("missing", "warn")
+    if not r.detail and not show_hint:
+        return f"  {glyph} {r.name}"
+    line = f"  {glyph} {r.name:<{_NAME_WIDTH}}"
     if r.detail:
-        line += f"  [dim]{r.detail}[/]"
-    if r.hint and r.status in ("missing", "warn"):
+        line += f" [dim]{r.detail}[/]"
+    if show_hint:
         line += f"  [yellow]{r.hint}[/]"
     return line
 
@@ -33,7 +40,7 @@ def _check_line(r: CheckResult) -> str:
 def render_checks(results: list[CheckResult]) -> None:
     """Print results grouped by section to the shared console."""
     for section, group in groupby(results, key=lambda r: r.section):
-        console.print(f"\n[bold blue]{section}[/]")
+        print_section(console, section)
         for r in group:
             console.print(_check_line(r))
 
@@ -51,17 +58,15 @@ def doctor_command(
         fix=fix,
     )
     results = svc.run()
+    print_title(console, "doctor", "checks")
     render_checks(results)
     console.print()
 
     failures = [r for r in results if r.is_failure]
     if fix:
-        console.print("[dim]Run 'dotfiles agent setup' to redeploy agent configs.[/]")
+        console.print("  [dim]Run 'dotfiles agent setup' to redeploy agent configs.[/]")
 
     if failures:
-        console.print(
-            "[yellow]→ Some tools are missing. Run install.sh or install individually.[/]"
-        )
+        print_status(console, "warn", "Some tools are missing — run install.sh or install each.")
         raise typer.Exit(1)
-    else:
-        console.print("[green]✓ All checks passed![/]")
+    print_status(console, "success", "All checks passed!")

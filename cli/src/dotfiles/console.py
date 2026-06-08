@@ -56,6 +56,17 @@ def print_title(console: Console, *parts: str) -> None:
     console.print(f"\n[bold cyan]{escape(lead)}{dashes}[/]")
 
 
+def print_section(console: Console, title: str, hint: str | None = None) -> None:
+    """A plain bold sub-section header within a command (lighter than a title rule).
+
+    *hint* is an optional dimmed parenthetical-style note after the title.
+    """
+    line = f"\n[bold]{escape(title)}[/]"
+    if hint:
+        line += f" [dim]{escape(hint)}[/]"
+    console.print(line)
+
+
 def print_status(console: Console, level: StepLevel, message: str, sub: str | None = None) -> None:
     """A glyph status line, with an optional dimmed continuation on its own line."""
     console.print(f"  {_GLYPH[level]} {escape(message)}")
