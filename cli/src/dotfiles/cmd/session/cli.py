@@ -20,7 +20,7 @@ from dotfiles.cmd.session.service import (
     sessions_to_prune,
 )
 from dotfiles.cmd.session.zellij import SessionError, Zellij
-from dotfiles.console import console, render_and_exit
+from dotfiles.console import console, print_status, print_title, render_and_exit
 
 # Brand-gold, matching the TUI's "what's running" preview line.
 _PROGRAM_STYLE = "#cdbf80"
@@ -54,10 +54,10 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
     try:
         sessions = zellij.list_sessions()
     except SessionError as exc:
-        console.print(f"[red]zellij error:[/] {exc}")
+        print_status(console, "error", f"zellij error: {exc}")
         raise typer.Exit(code=1) from exc
     if not sessions:
-        console.print("No active zellij sessions. Use [bold]session new <name>[/] to create one.")
+        print_status(console, "info", "No active zellij sessions — `session new <name>` to create")
         return
     rows = [
         _picker_row(s, programs, agents)
@@ -157,10 +157,11 @@ def cmd_list_sessions(ctx: typer.Context) -> None:
     try:
         sessions = _zellij(app_ctx).list_sessions()
     except SessionError as exc:
-        console.print(f"[red]zellij error:[/] {exc}")
+        print_status(console, "error", f"zellij error: {exc}")
         raise typer.Exit(code=1) from exc
+    print_title(console, "session", "ls")
     if not sessions:
-        console.print("No active zellij sessions.")
+        print_status(console, "info", "No active zellij sessions")
         return
     for s, programs, agents in _enriched_rows(app_ctx, sessions):
         console.print(_ls_line(s, programs, agents))
@@ -186,7 +187,7 @@ def new(ctx: typer.Context, name: str) -> None:
     """Create a new session and attach to it (with its deck layout if one exists)."""
     app_ctx = app_context(ctx)
     if error := session_name.error(name):
-        console.print(f"[red]{error}[/]")
+        print_status(console, "error", error)
         raise typer.Exit(code=1)
     # `new` always creates: zellij `attach --create` (no layout) or `--session
     # --layout` create the session if absent.
@@ -221,15 +222,17 @@ def prune(
     try:
         sessions = zellij.list_sessions()
     except SessionError as exc:
-        console.print(f"[red]zellij error:[/] {exc}")
+        print_status(console, "error", f"zellij error: {exc}")
         raise typer.Exit(code=1) from exc
     names = sessions_to_prune(
         exited_sessions(sessions), max_age_days=max_age_days, max_count=max_count
     )
     if not names:
-        console.print("No exited sessions to prune.")
+        print_status(console, "info", "No exited sessions to prune")
         return
     if dry_run:
-        console.print(f"Would delete {len(names)} exited session(s): [bold]{', '.join(names)}[/]")
+        print_status(
+            console, "warn", f"Would delete {len(names)} exited session(s): {', '.join(names)}"
+        )
         return
     render_and_exit(console, zellij.prune(names))
