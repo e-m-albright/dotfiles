@@ -82,8 +82,38 @@ Tier verification by execution cost and place each tier where its cost belongs:
 - **"Cache eraser" anti-pattern:** if your recovery is repeatedly `rm -rf <cache>`, the tool isn't a fit — find its documented correct usage and make it permanent, or replace it.
 - Never bypass with `--no-verify`.
 
+## 10. Secrets & supply-chain gates
+
+Secrets never live in files: `.env` holds non-secret local config; real secrets are overlaid at runtime from a manager; `.env.example` is names-only — so "did we leak?" is a structural non-question. Enforce:
+
+- **gitleaks at pre-commit AND CI** (`fetch-depth: 0` so history is scanned), with the **action version pinned** — stock/unpinned versions silently ignore your `[[allowlists]]`. Allowlist surgically: path glob + content regex + a written reason.
+- **Pin third-party Actions by commit SHA, not tag.** Tags get force-pushed to malware (the trivy-action compromise, Mar 2026). Treat transport/security-default dependency bumps as manual review, not auto-merge.
+- **One `audit-<lang>` recipe per stack** (`pip-audit`, `cargo audit`, `bun audit`…), run on lockfile change; pinned ignores each carry a removal condition.
+- **Provisioning ≠ rotation.** A brand-new auth path has no hot fallback, so it gates on a mint→stage→verify→smoke checklist, not merely on merge.
+
+Full detail: [../stacks/security.md](../stacks/security.md).
+
+## 11. Fleet uniformity: one source, translated, drift-gated
+
+§6 generalized from cross-language *code* to cross-target *config/policy*. When a concern is necessarily expressed in N places (per-vendor agent configs, per-language contracts), keep **one authored source plus a test that fails if any target drifts** — never N hand-maintained copies. Example: `ai/agents/shared/deny-commands.yaml` is the source; `test_deny_commands_sync.py` asserts every deny string appears in each vendor's committed config. The instinct is the same as §2: the moment you catch yourself "also maintaining X alongside Y," the answer is a generator or a drift test, not trust. Full: [agent-fleet.md](agent-fleet.md).
+
+## 12. Reproducible, hermetic builds
+
+CI and local must agree bit-for-bit, and a build must not depend on ambient state.
+
+- **Pin toolchains exactly** (language version, action SHAs) so CI and the local agent run identical tools.
+- **Hermetic recipes:** `dotenv-load := false` on CI/test recipes so dev `.env` can't contaminate mocked tests; build against committed offline artifacts (e.g. `SQLX_OFFLINE=true` + a committed `.sqlx/`).
+- **Applied migrations are immutable** — checksum-locked, never edited; a change is always a *new* migration, never an edit to a shipped one.
+- **Change-detection deploys** (skip a service whose source didn't change) and **health-gated ordering** (deploy a dependency → wait healthy → start its clients).
+
+Full: [../stacks/infrastructure.md](../stacks/infrastructure.md).
+
+## 13. Fail loud, never silent in your own layer
+
+The recurring meta-hazard behind §6's "default-on-missing absorbs contract drift": a component that swallows a fault in the layer it lives in fails *invisibly*, and the symptom surfaces somewhere unrelated. Same class, different layers: a Pydantic/serde model defaulting a dropped column to `0` (data); a blocking telemetry exporter starving the event loop until liveness 503s every caller (runtime); OTLP metadata keys that must be lowercase or are silently dropped, taking observability dark (transport). Prefer fail-fast on missing required input, and make every swallowed error an event (philosophy §7, §9). Runtime catalog: [../stacks/infrastructure.md](../stacks/infrastructure.md).
+
 ## See also
 
 - [../engineering-philosophy.md](../engineering-philosophy.md) — the 12 principles each of these gates enforces
-- [../stacks/security.md](../stacks/security.md) — the supply-chain & secrets gates
-- [../stacks/infrastructure.md](../stacks/infrastructure.md) — CI/CD structure, build discipline
+- [../../CANON.md](../../CANON.md) — these gates are the enforcement articles of the Canon (§III)
+- [how-we-build.md](how-we-build.md) — where each gate fires in the defense-in-depth ladder

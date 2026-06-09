@@ -59,6 +59,10 @@ once as muscle memory. **Believe the Canon; practice the Catechism.**
 3. **CI calls task-runner recipes; YAML holds zero logic.** One definition, three consumers — CI, hooks, humans.
 4. **One source of truth, generated outward.** Contracts, registries, baselines: authored once, derived everywhere.
 5. **Cost-aware verification.** Tier tests by execution cost; run only what a change affects.
+6. **Secrets live outside the code; dependencies are pinned and audited.** `.env` is non-secret; secrets overlay at runtime; gitleaks at commit + CI; third-party Actions pinned by commit SHA, not tag; provisioning ≠ rotation.
+7. **One source per concern, translated, drift-gated.** When a concern must live in N places (per-vendor config, per-language contract), one authored source + a test that fails on drift — never N hand-maintained copies. (Article 4, generalized to config/policy.)
+8. **Builds are reproducible and hermetic.** Pin toolchains exactly; `dotenv-load := false` on CI/test; build against committed offline artifacts; applied migrations are immutable (a change is a new migration).
+9. **Fail loud, never silent in your own layer.** A fault swallowed where it lives surfaces somewhere unrelated; default-on-missing absorbs drift. Fail-fast on missing input; every swallowed error is an event.
 
 ---
 

@@ -22,9 +22,9 @@ Every invariant that can be checked statically, is. A type error caught in the e
 
 ### 2. Type the domain, not the plumbing
 
-`string` is not a type. `dict[str, Any]` is not a contract. Every domain concept — status values, channel types, pipeline stages — gets an enum, union, or model. Types are documentation the compiler enforces.
+`string` is not a type. `dict[str, Any]` is not a contract. Every domain concept — status values, channel types, pipeline stages — gets an enum, union, or model, never a magic string compared at call sites. And a bare literal is not a name: a number or string that carries meaning (a timeout, a limit, a status key) gets a single named constant or enum member, not a copy at each use. Types and named constants are documentation the compiler enforces.
 
-**Gate examples**: `dict[str, Any]` count ratchet; enum discipline checks; `as any` count ratchet.
+**Gate examples**: `dict[str, Any]` count ratchet; enum discipline checks; `as any` count ratchet; magic-value/magic-number lints (advisory) and the "Magic Values" structural smell in the review rubric.
 
 ### 3. One source of truth per concept
 
@@ -82,7 +82,7 @@ Tests mock at module boundaries, not internals. Fixtures are shared via factorie
 
 ### 12. Convention over configuration over code
 
-When a pattern repeats: first encode it as a convention (file naming, directory layout). If that's not enough, encode it as configuration (a registry, a typed enum). Only fall back to bespoke code when neither convention nor config can express it.
+Isolate what varies behind the cheapest stable seam. When a pattern repeats: first encode it as a convention (file naming, directory layout). If that's not enough, encode it as configuration (a registry, a typed enum, a single config file the rest imports). Only fall back to bespoke code when neither convention nor config can express it. The thing that changes lives in one declarative place; the code that consumes it stays closed to that change.
 
 **Gate examples**: registry-derivation tests (one source, many derivations); naming-convention lints.
 
