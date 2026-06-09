@@ -159,10 +159,12 @@ def _render_state_matrix(
 
 
 def _capability_cell(cell: CapabilityCell) -> str:
-    """Glyph per (intent, live): ✓ present · n/a ★ canonical ⊕ different ✗ gap."""
-    if cell.intent == "na":
+    """Glyph per (intent, live): ✓ present · ✗ closable gap · ⊘ unsupported · · n/a."""
+    if cell.intent == "na":  # intentionally absent (our choice)
         return f"[dim]{'·'.center(_COL_W)}[/]"
-    if not cell.present:  # target intent unmet by live deployment — a real gap
+    if cell.intent == "unsupported":  # vendor has no such surface — not ours to close
+        return f"[blue]{'⊘'.center(_COL_W)}[/]"
+    if not cell.present:  # target supported by the vendor but undeployed — WE can close it
         return f"[red]{'✗'.center(_COL_W)}[/]"
     glyph, color = {
         "required": ("✓", "green"),
@@ -183,8 +185,8 @@ def _render_capability_matrix(rows: Iterable[CapabilityRow]) -> None:
         pioneer = f"[dim] {escape(row.front_runner)}▸[/]" if row.front_runner else ""
         console.print(f"  {escape(row.capability):<{_LABEL_W}}{cells}{pioneer}")
     console.print(
-        f"  [dim]✓ present · ✗ gap · · n/a · [{_GOLD}]★[/{_GOLD}] Pi-canonical ·"
-        " [cyan]⊕[/cyan] different mechanism · name▸ front-runner[/]"
+        f"  [dim]✓ live · [red]✗[/red] closable gap · [blue]⊘[/blue] unsupported (vendor) ·"
+        f" · n/a · [{_GOLD}]★[/{_GOLD}] Pi-canonical · [cyan]⊕[/cyan] different · ▸ front-runner[/]"
     )
 
 

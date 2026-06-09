@@ -111,8 +111,8 @@ def test_full_deploy_lights_every_target_cell(tmp_path: Path) -> None:
     for cap in CAPABILITY_MATRIX:
         for agent, intent in cap.intents.items():
             cell = rows[cap.key].cells[agent]
-            if intent == "na":
-                assert not cell.present, f"{cap.key}/{agent} n/a should not be present"
+            if intent in ("na", "unsupported"):
+                assert not cell.present, f"{cap.key}/{agent} absent-by-design should not probe"
             else:
                 assert cell.present, f"{cap.key}/{agent} target unmet despite deploy"
 
@@ -132,7 +132,13 @@ def test_empty_home_shows_required_cells_as_gaps(tmp_path: Path) -> None:
 # Drift gate: docs/knowledge/agent-fleet.md must mirror CAPABILITY_MATRIX
 # ---------------------------------------------------------------------------
 
-_GLYPH_INTENT = {"✓": "required", "★": "canonical", "⊕": "different", "—": "na"}
+_GLYPH_INTENT = {
+    "✓": "required",
+    "★": "canonical",
+    "⊕": "different",
+    "⊘": "unsupported",
+    "—": "na",
+}
 _HEADER_AGENT = {
     "claude code": "claude",
     "codex": "codex",

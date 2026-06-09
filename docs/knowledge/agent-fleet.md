@@ -15,15 +15,17 @@ This table is the **single source of truth** — `cli/.../capability_matrix.py` 
 | Capability | Front-runner | Claude Code | Codex | Cursor | Gemini | Pi |
 |---|---|---|---|---|---|---|
 | Rules (instructions) | — | ✓ `CLAUDE.md` | ✓ `AGENTS.md` | ✓ `.mdc` | ✓ `GEMINI.md` | ✓ `AGENTS.md` |
-| Skills | Claude | ✓ `.claude/skills` | ✓ `.agents/skills` | ✓ `skills-cursor` | — *(no skills surface)* | ✓ `.agents/skills` |
-| Subagents | Claude | ✓ `.claude/agents` | ✓ `.codex/agents` | — *(no subagents)* | — *(no subagents)* | ✓ `.pi/agent/agents` |
+| Skills | Claude | ✓ `.claude/skills` | ✓ `.agents/skills` | ✓ `skills-cursor` | ⊘ *(no skills surface)* | ✓ `.agents/skills` |
+| Subagents | Claude | ✓ `.claude/agents` | ✓ `.codex/agents` | ⊘ *(no subagents)* | ⊘ *(no subagents)* | ✓ `.pi/agent/agents` |
 | MCP servers | Claude | ✓ | ✓ | ✓ | ✓ | — *(by choice — local-first)* |
-| Hooks | Claude | ✓ | ✓ | ✓ | — | — |
-| Statusline | Claude | ✓ `statusline.sh` | ✓ `statusline.toml` | — native UI | — native footer | ★ `git-status.ts` |
+| Hooks | Claude | ✓ | ✓ | ✓ | ⊘ | ⊘ *(extensions instead)* |
+| Statusline | Claude | ✓ `statusline.sh` | ✓ `statusline.toml` | ⊘ native UI | ⊘ native footer | ★ `git-status.ts` |
 | Permissions | Claude | ✓ `permissions.json` | ⊕ `default.rules` + sandbox | ✓ `cli-config.json` | ✓ `tools.exclude` | ✓ `permission-policy.json` + presets |
-| Plugins | Claude | ✓ `marketplace` | — *(no marketplace)* | — *(GUI extensions)* | — | — |
+| Plugins | Claude | ✓ `marketplace` | ⊘ *(no marketplace)* | ⊘ *(GUI extensions)* | ⊘ | ⊘ |
 
-Glyphs: **✓** present · **★** canonical (the Pi end-state we converge toward) · **⊕** different mechanism · **—** not applicable / intentionally absent. **Front-runner** = who shipped the capability first (the landscape dimension — Claude Code usually leads, the others copy, and we decide what to own in Pi).
+Glyphs encode the **closable-vs-not-closable** axis: **✓** live · **✗** closable gap (the vendor supports it; we simply haven't deployed it — *ours* to close) · **⊘** unsupported (the vendor has no such surface yet — closable only by *their* tooling development) · **—** n/a by our choice (e.g. Pi MCP, local-first) · **★** canonical (the Pi end-state we converge toward) · **⊕** different mechanism. **Front-runner** = who shipped the capability first (Claude Code usually leads, the others copy, and we decide what to own in Pi).
+
+Today's one **closable gap**: Gemini MCP (✗ in `agent overview`) — Gemini supports `mcpServers` but no server currently targets it. Everything else absent is either ⊘ (wait for the vendor) or — (our choice).
 
 Only the **terminal** agents (Claude, Codex, Pi) can render a custom statusline. Cursor and Gemini use their own status UI and are out of scope for statusline alignment.
 

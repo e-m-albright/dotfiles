@@ -82,7 +82,15 @@ def fleet_doc_stale_days(dotfiles_dir: Path, today: date) -> int | None:
 
 
 # Target intent of a (capability, vendor) cell, mirroring agent-fleet.md.
-CellIntent = Literal["required", "canonical", "different", "na"]
+# The three "absent" states are deliberately distinct — this is the
+# closable-vs-not-closable axis:
+#   required     — we want it & the vendor supports it; absent ⇒ a gap WE can close
+#   canonical    — the Pi end-state we converge toward
+#   different    — present, but via a different mechanism (⊕)
+#   unsupported  — the vendor has no such surface yet; a gap only THEY can close
+#                  (not closable by us until their tooling develops)
+#   na           — intentionally absent by our choice (e.g. Pi MCP, local-first)
+CellIntent = Literal["required", "canonical", "different", "unsupported", "na"]
 
 
 class Capability(BaseModel):
@@ -114,16 +122,18 @@ def _cap(
 
 # Mirrors the "Capability matrix (target state)" table in agent-fleet.md, row for
 # row. Grouped: context surfaces, integration, UX/safety, extensibility.
-#                  key            fr        claude     cursor     codex        gemini     pi
+#                 key          fr        claude      cursor         codex        gemini         pi
 CAPABILITY_MATRIX: tuple[Capability, ...] = (
     _cap("rules", "", "required", "required", "required", "required", "required"),
-    _cap("skills", "claude", "required", "required", "required", "na", "required"),
-    _cap("subagents", "claude", "required", "na", "required", "na", "required"),
+    _cap("skills", "claude", "required", "required", "required", "unsupported", "required"),
+    _cap("subagents", "claude", "required", "unsupported", "required", "unsupported", "required"),
     _cap("mcp", "claude", "required", "required", "required", "required", "na"),
-    _cap("hooks", "claude", "required", "required", "required", "na", "na"),
-    _cap("statusline", "claude", "required", "na", "required", "na", "canonical"),
+    _cap("hooks", "claude", "required", "required", "required", "unsupported", "unsupported"),
+    _cap("statusline", "claude", "required", "unsupported", "required", "unsupported", "canonical"),
     _cap("permissions", "claude", "required", "required", "different", "required", "required"),
-    _cap("plugins", "claude", "required", "na", "na", "na", "na"),
+    _cap(
+        "plugins", "claude", "required", "unsupported", "unsupported", "unsupported", "unsupported"
+    ),
 )
 
 
@@ -156,12 +166,15 @@ class CapabilityMatrixService:
     def rows(self) -> list[CapabilityRow]:
         """One CapabilityRow per capability, intents + live probes filled in."""
         rows: list[CapabilityRow] = []
+        # na (by choice) and unsupported (vendor has no surface) are absent by
+        # design — never probed; only the live-deployable intents get a probe.
+        absent_by_design = {"na", "unsupported"}
         for cap in CAPABILITY_MATRIX:
             cells = {
                 agent: CapabilityCell(
                     intent=cap.intents[agent],
-                    # n/a cells are never probed — they're absent by design.
-                    present=cap.intents[agent] != "na" and self._probe(cap.key, agent),
+                    present=cap.intents[agent] not in absent_by_design
+                    and self._probe(cap.key, agent),
                 )
                 for agent in AGENTS
             }
