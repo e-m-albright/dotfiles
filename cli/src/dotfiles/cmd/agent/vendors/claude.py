@@ -140,7 +140,7 @@ def _setup_marketplaces(dotfiles_dir: Path, claude_home: Path) -> list[StepResul
     ]
 
 
-def _parse_plugins_yaml(plugins_yaml: Path) -> _JsonDict:
+def parse_plugins_yaml(plugins_yaml: Path) -> _JsonDict:
     """Parse plugins.yaml and return {plugin_id: True, ...}.
 
     Bare names get ``@claude-plugins-official`` suffix; names containing ``@``
@@ -170,7 +170,7 @@ def _setup_plugins(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     src = dotfiles_dir / "ai" / "agents" / "claude" / "plugins.yaml"
     if not src.is_file():
         return []
-    plugins = _parse_plugins_yaml(src)
+    plugins = parse_plugins_yaml(src)
     settings = _load_settings(claude_home)
     updated = merge_replace(settings, ["enabledPlugins"], plugins)
     _save_settings(claude_home, updated)
@@ -412,7 +412,7 @@ def _expected_plugin_ids(dotfiles_dir: Path) -> set[str]:
     plugins_yaml = dotfiles_dir / "ai" / "agents" / "claude" / "plugins.yaml"
     if not plugins_yaml.is_file():
         return set()
-    return set(_parse_plugins_yaml(plugins_yaml).keys())
+    return set(parse_plugins_yaml(plugins_yaml).keys())
 
 
 def _clean_plugins(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:

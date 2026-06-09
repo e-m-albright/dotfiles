@@ -551,3 +551,35 @@ class TestAgentSurfaces:
         result = make_service(tmp_path / "dotfiles", tmp_path / "home").overview()
         assert isinstance(result.vendor_surfaces, tuple)
         assert len(result.vendor_surfaces) > 0
+
+
+# ---------------------------------------------------------------------------
+# Plugins — drift against the plugins.yaml allowlist
+# ---------------------------------------------------------------------------
+
+
+def _seed_plugins(dotfiles: Path, home: Path, *, declared: list[str], installed: list[str]) -> None:
+    yaml_path = dotfiles / "ai" / "agents" / "claude" / "plugins.yaml"
+    yaml_path.parent.mkdir(parents=True, exist_ok=True)
+    yaml_path.write_text("\n".join(f"- {name}" for name in declared) + "\n")
+    cfg = home / ".claude" / "plugins" / "installed_plugins.json"
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    cfg.write_text(
+        json.dumps(
+            {"plugins": {f"{n}@claude-plugins-official": [{"version": "1.0"}] for n in installed}}
+        )
+    )
+
+
+def test_plugins_flag_undeclared_drift(tmp_path: Path) -> None:
+    dotfiles, home = tmp_path / "dotfiles", tmp_path / "home"
+    _seed_plugins(dotfiles, home, declared=["superpowers"], installed=["superpowers", "notion"])
+    rows = {p.name: p for p in make_service(dotfiles, home).section_plugins()}
+    assert rows["superpowers"].declared is True
+    assert rows["notion"].declared is False
+
+
+def test_plugins_all_declared_when_allowlist_matches(tmp_path: Path) -> None:
+    dotfiles, home = tmp_path / "dotfiles", tmp_path / "home"
+    _seed_plugins(dotfiles, home, declared=["superpowers"], installed=["superpowers"])
+    assert all(p.declared for p in make_service(dotfiles, home).section_plugins())

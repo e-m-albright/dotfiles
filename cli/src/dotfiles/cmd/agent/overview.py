@@ -40,6 +40,7 @@ from dotfiles.cmd.agent.models import (
     SubagentRow,
     ValueRow,
 )
+from dotfiles.cmd.agent.vendors.claude import parse_plugins_yaml
 from dotfiles.cmd.agent.verify import AgentVerifyService
 from dotfiles.fsutil import list_dir
 
@@ -195,7 +196,7 @@ class AgentOverviewService:
     # ------------------------------------------------------------------
 
     def section_plugins(self) -> list[PluginRow]:
-        """Installed Claude Code plugins, from ~/.claude/plugins/installed_plugins.json."""
+        """Installed Claude Code plugins, flagged against the plugins.yaml allowlist."""
         config = self._home / ".claude" / "plugins" / "installed_plugins.json"
         if not config.is_file():
             return []
@@ -203,12 +204,27 @@ class AgentOverviewService:
             data = json.loads(config.read_text())
         except (OSError, json.JSONDecodeError):
             return []
+        declared = self._declared_plugin_names()
         rows: list[PluginRow] = []
         for ref, installs in data.get("plugins", {}).items():
             name, _, marketplace = str(ref).partition("@")
             version = installs[0].get("version", "") if installs else ""
-            rows.append(PluginRow(name=name, marketplace=marketplace, version=version))
+            rows.append(
+                PluginRow(
+                    name=name,
+                    marketplace=marketplace,
+                    version=version,
+                    declared=name in declared,
+                )
+            )
         return sorted(rows, key=lambda r: r.name)
+
+    def _declared_plugin_names(self) -> set[str]:
+        """Bare plugin names declared in plugins.yaml (our allowlist; '' if absent)."""
+        src = self._dotfiles / "ai" / "agents" / "claude" / "plugins.yaml"
+        if not src.is_file():
+            return set()
+        return {key.split("@", 1)[0] for key in parse_plugins_yaml(src)}
 
     # ------------------------------------------------------------------
     # Section 2: Hooks

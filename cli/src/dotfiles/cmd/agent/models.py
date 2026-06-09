@@ -42,6 +42,7 @@ class PluginRow(BaseModel):
     name: str
     marketplace: str
     version: str
+    declared: bool = True  # listed in plugins.yaml (our allowlist) vs drift
 
 
 class ValueRow(BaseModel):

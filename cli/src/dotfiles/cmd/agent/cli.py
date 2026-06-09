@@ -208,14 +208,21 @@ def _render_value_matrix(title: str, rows: Iterable[ValueRow]) -> None:
 
 def _render_plugins(rows: Iterable[PluginRow]) -> None:
     rows_list = list(rows)
-    _ov_section("Plugins", "Claude Code marketplace")
+    _ov_section("Plugins", "Claude Code marketplace · ⚠ = installed but not in plugins.yaml")
     if not rows_list:
         console.print("  [dim](none)[/]")
         return
     for p in rows_list:
+        mark = "[green]✓[/]" if p.declared else "[yellow]⚠[/]"
         console.print(
-            f"  [green]✓[/] [{_GOLD}]{escape(p.name):<26}[/] "
+            f"  {mark} [{_GOLD}]{escape(p.name):<26}[/] "
             f"{escape(p.version or '—'):<9} [dim]{escape(p.marketplace)}[/]"
+        )
+    drift = sum(1 for p in rows_list if not p.declared)
+    if drift:
+        console.print(
+            f"  [yellow]⚠ {drift} undeclared plugin(s)[/] [dim]beyond the plugins.yaml allowlist "
+            "— each ships always-on skill descriptions · prune: dfs agent setup claude --clean[/]"
         )
 
 
