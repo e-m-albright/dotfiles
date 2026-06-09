@@ -129,8 +129,8 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
     # Cursor gained subagents in 2.4 (.cursor/agents/, isolated context, nestable in 2.5).
     _cap("subagents", "claude", "required", "required", "required", "unsupported", "required"),
     # MCP intentionally minimized: only granola earns it (semantic meeting-search, no CLI),
-    # on Claude (the main driver). context7 retired for the `ctx7` CLI; nobody else runs MCP.
-    _cap("mcp", "claude", "required", "na", "na", "na", "na"),
+    # on the terminal drivers Claude + Codex. context7 retired for the `ctx7` CLI; nobody else.
+    _cap("mcp", "claude", "required", "na", "required", "na", "na"),
     _cap("hooks", "claude", "required", "required", "required", "unsupported", "unsupported"),
     _cap("statusline", "claude", "required", "unsupported", "required", "unsupported", "canonical"),
     _cap("permissions", "claude", "required", "required", "different", "required", "required"),

@@ -6,6 +6,7 @@ touched. FakeProcessRunner is used for all subprocess calls.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ from dotfiles.cmd.agent.lib import (
     build_global_instructions,
     deploy_skills,
     deploy_subagents,
+    disabled_mcp_server_names,
     mcp_servers_for,
     mcp_skip,
     merge_managed_mcp,
@@ -334,6 +336,37 @@ class TestMergeManagedMcp:
             reset_mcp=False,
         )
         assert out == {"old-managed": {"url": "stale"}, "granola": {"url": "new"}}
+
+    def test_prune_drops_retired_servers_even_without_reset(self) -> None:
+        # A retired server (context7) is pruned from live config regardless of reset.
+        out = merge_managed_mcp(
+            {"context7": {"url": "stale"}, "user-added": {"url": "keep"}},
+            {"granola": {"url": "new"}},
+            managed_keys={"granola"},
+            reset_mcp=False,
+            prune={"context7"},
+        )
+        assert out == {"user-added": {"url": "keep"}, "granola": {"url": "new"}}
+
+
+class TestDisabledMcpServerNames:
+    def test_extracts_names_from_disabled_keys(self, tmp_path: Path) -> None:
+        reg = tmp_path / "ai" / "agents" / "shared" / "mcp-servers.json"
+        reg.parent.mkdir(parents=True)
+        reg.write_text(
+            json.dumps(
+                {
+                    "$comment": "x",
+                    "granola": {"url": "y", "targets": ["claude"]},
+                    "_context7_disabled": "retired for the ctx7 CLI",
+                    "_neon_disabled": "retired",
+                }
+            )
+        )
+        assert disabled_mcp_server_names(tmp_path) == {"context7", "neon"}
+
+    def test_empty_when_registry_absent(self, tmp_path: Path) -> None:
+        assert disabled_mcp_server_names(tmp_path) == set()
 
 
 # ---------------------------------------------------------------------------

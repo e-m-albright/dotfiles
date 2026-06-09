@@ -7,8 +7,9 @@ All functions take injected ``home`` / ``dotfiles_dir`` / ``runner`` parameters.
 from __future__ import annotations
 
 import os
+import re
 import shutil
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from pathlib import Path
 from typing import cast
 
@@ -129,26 +130,44 @@ def all_mcp_server_names(dotfiles_dir: Path) -> set[str]:
     return {k for k in cast(dict[str, object], raw) if not k.startswith("$")}
 
 
+def disabled_mcp_server_names(dotfiles_dir: Path) -> set[str]:
+    """Names of servers explicitly retired in the registry (``_<name>_disabled`` keys).
+
+    A disabled entry records a server we *used* to deploy and now want **gone**.
+    These are always pruned from live configs on setup, so a retired server
+    (e.g. context7 → the ctx7 CLI) doesn't linger as "unmanaged" — keeping
+    deploy = mirror, not append.
+    """
+    names: set[str] = set()
+    for key in all_mcp_server_names(dotfiles_dir):  # includes the _<name>_disabled keys
+        match = re.fullmatch(r"_(.+)_disabled", key)
+        if match:
+            names.add(match.group(1))
+    return names
+
+
 def merge_managed_mcp(
     existing_mcp: Mapping[str, object],
     servers: Mapping[str, object],
     *,
     managed_keys: set[str],
     reset_mcp: bool,
+    prune: Collection[str] = (),
 ) -> dict[str, object]:
-    """Merge *servers* over *existing_mcp*, honouring ``--reset-mcp``.
+    """Merge *servers* over *existing_mcp*, honouring ``--reset-mcp`` and *prune*.
 
     The single source of truth for the merge/purge logic shared by every JSON
-    agent (Claude, Gemini, Cursor, Claude Desktop). When *reset_mcp* is True,
-    *managed_keys* are stripped from the existing config first so renamed or
-    removed managed servers don't linger; user-added (unmanaged) entries are
-    always preserved. Current *servers* always win on key collisions.
+    agent (Claude, Gemini, Cursor, Claude Desktop). *prune* names (retired
+    servers) are **always** dropped from the existing config. When *reset_mcp*
+    is True, *managed_keys* are also stripped so renamed/removed managed servers
+    don't linger; otherwise user-added (unmanaged) entries are preserved.
+    Current *servers* always win on key collisions.
     """
-    base = (
-        {k: v for k, v in existing_mcp.items() if k not in managed_keys}
-        if reset_mcp
-        else dict(existing_mcp)
-    )
+    base = {
+        k: v
+        for k, v in existing_mcp.items()
+        if k not in prune and not (reset_mcp and k in managed_keys)
+    }
     return {**base, **servers}
 
 

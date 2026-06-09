@@ -17,7 +17,7 @@ This table is the **single source of truth** — `cli/.../capability_matrix.py` 
 | Rules (instructions) | — | ✓ `CLAUDE.md` | ✓ `AGENTS.md` | ✓ `.mdc` | ✓ `AGENTS.md` | ✓ `AGENTS.md` |
 | Skills | Claude | ✓ `.claude/skills` | ✓ `.agents/skills` | ✓ `skills-cursor` | ⊘ *(no skills surface)* | ✓ `.agents/skills` |
 | Subagents | Claude | ✓ `.claude/agents` | ✓ `.codex/agents` | ✓ `.cursor/agents` *(2.4)* | ⊘ *(no subagents)* | ✓ `.pi/agent/agents` |
-| MCP servers | Claude | ✓ `granola` | — | — | — | — *(by choice — local-first)* |
+| MCP servers | Claude | ✓ `granola` | ✓ `granola` | — | — | — *(by choice — local-first)* |
 | Hooks | Claude | ✓ | ✓ | ✓ | ⊘ | ⊘ *(extensions instead)* |
 | Statusline | Claude | ✓ `statusline.sh` | ✓ `statusline.toml` | ⊘ native UI | ⊘ native footer | ★ `git-status.ts` |
 | Permissions | Claude | ✓ `permissions.json` | ⊕ `default.rules` + sandbox | ✓ `cli-config.json` | ✓ `tools.exclude` | ✓ `permission-policy.json` + presets |
@@ -25,7 +25,7 @@ This table is the **single source of truth** — `cli/.../capability_matrix.py` 
 
 Glyphs encode the **closable-vs-not-closable** axis: **✓** live · **✗** closable gap (the vendor supports it; we simply haven't deployed it — *ours* to close) · **⊘** unsupported (the vendor has no such surface yet — closable only by *their* tooling development) · **—** n/a by our choice (e.g. MCP everywhere but Claude) · **★** canonical (the Pi end-state we converge toward) · **⊕** different mechanism. **Front-runner** = who shipped the capability first (Claude Code usually leads, the others copy, and we decide what to own in Pi).
 
-**MCP is intentionally near-zero** (June 2026 decision): only **granola** earns a server (semantic meeting-search has no CLI), on Claude alone. **context7 was retired for the `ctx7` CLI** (`npx ctx7 library <name>` / `ctx7 docs <id>` — full parity, universal across every shell-capable agent, no per-vendor patchiness, no always-on tax). So `mcp` is `✓` on Claude and `—` (our choice) elsewhere — zero closable gaps.
+**MCP is intentionally near-zero** (June 2026 decision): only **granola** earns a server (semantic meeting-search has no CLI), on the terminal drivers **Claude + Codex** (`ctx7` is `npx`-only at first, so granola is the lone always-on MCP). **context7 was retired for the `ctx7` CLI** (`ctx7 library <name>` / `ctx7 docs <id>` — full parity, universal across every shell-capable agent, no per-vendor patchiness, no always-on tax) — and a retired server is now **auto-pruned** from live configs on setup (`disabled_mcp_server_names` → `merge_managed_mcp(prune=…)`), so it can't linger as "unmanaged." So `mcp` is `✓` on Claude + Codex and `—` (our choice) elsewhere — zero closable gaps.
 
 Only the **terminal** agents (Claude, Codex, Pi) can render a custom statusline. Cursor and Gemini use their own status UI and are out of scope for statusline alignment.
 

@@ -80,7 +80,7 @@ _AGENT_COLS: tuple[str, ...] = OVERVIEW_AGENTS
 _COL_W = 8
 _LABEL_W = 24
 # Which agents each surface applies to; others render "·" (n/a), never "✗".
-_MCP_AGENTS = {"claude", "cursor", "codex", "gemini"}
+_MCP_AGENTS = {"claude", "codex"}  # the only vendors we deploy MCP to (granola); rest n/a
 _HOOK_AGENTS = {"claude", "cursor", "codex"}
 _SUBAGENT_AGENTS = {"claude", "codex", "pi"}
 _STATUS_GLYPH = {
@@ -251,7 +251,7 @@ def _confirmations(data: AgentOverview) -> dict[str, str]:
             conf["claude"] = f"{s.quantity} resolve via the Skill tool"
     conf["codex"] = f"{sum(1 for r in data.mcp if r.codex)} MCP enabled (codex mcp list)"
     conf["cursor"] = "GUI — Cursor → Settings → MCP / Rules"
-    conf["gemini"] = "instructions in GEMINI.md (gemini is interactive)"
+    conf["gemini"] = "Antigravity (agy) — config in ~/.gemini, AGENTS.md instructions"
     conf["pi"] = "config in ~/.pi/agent (pi is interactive)"
     return conf
 
@@ -523,7 +523,9 @@ def skills_list(
     counts: dict[str, int] = {}
     for s in items:
         counts[s.origin] = counts.get(s.origin, 0) + 1
-    tally = "  ".join(f"[{_ORIGIN_STYLE[o]}]{o} {n}[/]" for o, n in sorted(counts.items()))
+    tally = "  ".join(
+        f"[{_ORIGIN_STYLE[o]}]{o} {counts[o]}[/]" for o in _ORIGIN_STYLE if o in counts
+    )
     console.print(f"  {len(items)} skills · {tally}")
     if hidden_builtin:
         console.print(f"  [dim]+ {hidden_builtin} vendor builtin hidden · --all to show[/]")

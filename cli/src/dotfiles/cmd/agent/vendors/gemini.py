@@ -26,6 +26,7 @@ from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.lib import (
     StepResult,
     build_global_instructions,
+    disabled_mcp_server_names,
     mcp_servers_for,
     mcp_skip,
     merge_managed_mcp,
@@ -95,6 +96,7 @@ def _setup_settings_and_mcp(
         servers,
         managed_keys=set(mcp_servers_for(dotfiles_dir, "gemini").keys()),
         reset_mcp=reset_mcp,
+        prune=disabled_mcp_server_names(dotfiles_dir),
     )
     updated = merge_replace(existing, ["mcpServers"], merged_mcp)
 

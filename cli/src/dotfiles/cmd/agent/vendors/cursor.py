@@ -22,6 +22,7 @@ from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.lib import (
     StepResult,
     deploy_subagents,
+    disabled_mcp_server_names,
     mcp_servers_for,
     mcp_skip,
     merge_managed_mcp,
@@ -104,6 +105,7 @@ def _setup_mcp(dotfiles_dir: Path, home: Path, *, reset_mcp: bool = False) -> li
         servers,
         managed_keys=set(mcp_servers_for(dotfiles_dir, "cursor").keys()),
         reset_mcp=reset_mcp,
+        prune=disabled_mcp_server_names(dotfiles_dir),
     )
     updated = merge_replace(existing, ["mcpServers"], merged_mcp)
     write_json_safely(mcp_file, updated)

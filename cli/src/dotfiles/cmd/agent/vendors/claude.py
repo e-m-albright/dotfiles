@@ -33,6 +33,7 @@ from dotfiles.cmd.agent.lib import (
     build_global_instructions,
     deploy_skills,
     deploy_subagents,
+    disabled_mcp_server_names,
     mcp_servers_for,
     mcp_skip,
     merge_managed_mcp,
@@ -220,6 +221,7 @@ def _setup_mcp(
         servers,
         managed_keys=set(mcp_servers_for(dotfiles_dir, "claude").keys()),
         reset_mcp=reset_mcp,
+        prune=disabled_mcp_server_names(dotfiles_dir),
     )
     updated = merge_replace(existing, ["mcpServers"], new_mcp)
     write_json_safely(claude_json, updated)
@@ -276,7 +278,11 @@ def _setup_desktop(dotfiles_dir: Path, home: Path, *, reset_mcp: bool) -> list[S
         servers, managed_keys = _desktop_servers(dotfiles_dir, home, reset_mcp=reset_mcp)
         existing_mcp = cast(_JsonDict, existing.get("mcpServers") or {})
         new_mcp = merge_managed_mcp(
-            existing_mcp, servers, managed_keys=managed_keys, reset_mcp=reset_mcp
+            existing_mcp,
+            servers,
+            managed_keys=managed_keys,
+            reset_mcp=reset_mcp,
+            prune=disabled_mcp_server_names(dotfiles_dir),
         )
         existing = merge_replace(existing, ["mcpServers"], new_mcp)
         results.append(
