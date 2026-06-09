@@ -46,6 +46,12 @@ complexity:
 ratchet *args:
     bash {{repo}}/ai/skills/converge/scripts/ratchet-check.sh {{repo}}/docs/health/cli/baselines.json {{args}}
 
+# Performance-budget ratchet (manual/nightly — benchmarks are slow + noisy, NOT in `check`).
+# `just perf --update` re-baselines to current means (lower only) on this machine.
+[group('quality')]
+perf *args:
+    bash {{repo}}/ai/skills/converge/scripts/perf-check.sh {{repo}}/docs/health/cli/perf-baselines.json {{args}}
+
 # Full static-check + test gate. `just check --fast` (or `check fast`) skips tests — pre-commit.
 [group('quality')]
 check mode='all':

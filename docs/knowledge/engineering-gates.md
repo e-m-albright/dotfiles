@@ -48,6 +48,7 @@ Set each floor a few points **below** current actual, then ratchet up in steps, 
 - Coverage: `pytest --cov-fail-under`, `vitest --coverage` line floor, `cargo llvm-cov --fail-under-lines`.
 - Complexity: `complexipy -mx N` (Python cognitive), `clippy.toml` `cognitive-complexity-threshold` calibrated just above the current worst offender (ratchet down as offenders are decomposed), CRAP-score gates on the web diff.
 - Coverage exclusions (generated/CLI-shell files) live in one shared ignore regex with per-file justifications, never scattered `# pragma: no cover`. When a single branch is hard to cover, **decompose the untested branch into a unit-testable function** rather than dodging the floor with a `no cover` pragma.
+- **Performance budgets** are a ratcheting floor too — the Performance pillar's convergent home. `perf-check.sh <perf-baselines.json>` benchmarks each command (hyperfine) and fails past `baseline_ms × (1 + tolerance_pct)`; `--update` lowers baselines to current means, so speedups lock in and a deliberate regression needs a justified bump. Two differences from the static ratchet, both forced by runtime noise: it gates on a **tolerance band**, not an exact ceiling, and it lives at **CI/nightly, not pre-commit** (benchmarks are slow and environment-specific — re-baseline per runner). `just perf` in this repo.
 
 ## 6. Contract codegen with a freshness gate
 

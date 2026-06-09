@@ -103,6 +103,7 @@ The single mechanism that makes the whole thing converge instead of drift. `ratc
 - **Gate the delta, not the backlog.** Grandfather existing debt; block regressions; ratchet ceilings *down only*.
 - **Monotonic guard.** A ceiling can only move down; raising one needs an auditable `Ratchet-Bump:` trailer + approval. `--update` lowers ceilings to current actuals, locking in every win.
 - **What it counts:** per-file line ceilings; per-family suppression counts (`# type: ignore`, `# noqa`, `except Exception`, `dict[str,Any]`, `cast`, skipped tests, TODOs…); cognitive complexity; coverage floor.
+- **A perf twin** (`perf-check.sh` / `just perf`): the same lower-only ratchet for runtime budgets, but gating on a **tolerance band** (perf is noisy) and living at **CI/nightly**, not pre-commit. The Performance pillar's convergent home.
 - **Anti-gaming** (each was a real exploit): no metric gaming / **type laundering** (`dict[str,Any]`→`dict[str,object]`); **net-≤0 per family** (a +1 paid by a −1 in the *same* family, same commit); `headroom 0` is borrowed credit (never compress unrelated code to fit); cover **every** suppression variant or none; every kept suppression carries a dated `# reason:`.
 - **Its own footguns** (dogfooded, [health/README](../health/README.md#gotchas-the-grep-based-ratchet-has-learned-by-dogfooding)): a `**` git pathspec silently skips shallow files (use `:(glob)`); a pattern catalog can match its own grep (factor alternations into groups).
 
@@ -154,7 +155,7 @@ Everything we can reach for, grouped. (`dotfiles agent catechism` prints the cod
 - **Subagents** [S] — `debugger` · `error-detective` · `performance-engineer` · `security-auditor` · `legacy-modernizer`.
 - **Session / infra / meta** [S] — `session-recovery` · `workspace-health-audit` · `workflow-closeout-learning` · `agents-overview` · `dotfiles-doctor` · `skill-creator` · `find-skills` · `dep-audit` · `migration-writer`.
 - **Builders / stack reference** [S] — MCP/Cloudflare builders + per-stack skills (`fastapi`, `axum`, `go-chi-handler`, `sqlc`, `alembic`, `tauri`, `sveltekit-svelte5-tailwind`, …).
-- **Tooling (deterministic CLI)** [D] — `dotfiles agent health · catechism · stats · lint · setup · overview · verify` · `dotfiles doctor` · `just ratchet`.
+- **Tooling (deterministic CLI)** [D] — `dotfiles agent health · catechism · stats · lint · setup · overview · verify` · `dotfiles doctor` · `just ratchet` · `just perf` (perf-budget ratchet).
 
 ---
 
@@ -191,7 +192,7 @@ This map is a living artifact, built on the shoulders of giants (Ousterhout, Fow
 
 **Known open frontiers** (where the codex should grow next):
 - **Voice gates** — the deterministic slop-phrase linter + stochastic `voice-review` proposed above are designed, not yet wired.
-- **A convergent home for Reliability & Performance** — Tier-A refactoring only moves Maintainability; "we have 0% coverage" or "make it faster" has no ratcheting lens yet (only one-shot `testing` / `performance-engineer`).
+- **A fuller convergent home for Reliability** — **Performance now has one** (`perf-check.sh` + `just perf`, the tolerance-band perf-budget ratchet); Reliability is *partly* convergent via the coverage floor + silent-catch/skipped-test suppression ratchets. The remaining gap is a richer Reliability metric (mutation score, error-path density) and wiring the perf ratchet into a nightly CI job.
 - **Wire one real scheduled detection routine** — the policy exists; the cron doesn't.
 - **Fold the siloed doctrines** (security, fleet-uniformity, build-discipline) into the Canon's enforcement articles, not just this map's pointers.
 - **Language packs** — the ratchet's suppression catalog is Python/TS/Rust-flavoured; "any repo" is really "any repo we've hand-coded patterns for."
