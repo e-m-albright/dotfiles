@@ -59,6 +59,37 @@ perf *args:
 lint-agents:
     uv run dotfiles agent lint
 
+# Voice gate (deterministic half): scan prose for banned LLM/marketing slop.
+# Delta-scoped — staged *.md by default, or the files passed (commit-msg passes
+# its message file). Excludes the doctrine files that quote the phrases. The
+# semantic half — sycophancy, hedging — is the stochastic ai/audits/voice.md.
+[group('quality')]
+lint-prose *files:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    list="{{repo}}/ai/agents/shared/slop-phrases.txt"
+    excludes='slop-phrases\.txt|rules\.md|shared-rules\.mdc|CANON\.md|how-we-build\.md|engineering-philosophy\.md|audits/voice\.md'
+    files="{{files}}"
+    [ -n "$files" ] || files=$(git diff --cached --name-only --diff-filter=ACM -- '*.md' || true)
+    [ -n "$files" ] || { echo "voice: no prose to check"; exit 0; }
+    found=0
+    for f in $files; do
+        [ -f "$f" ] || continue
+        printf '%s\n' "$f" | grep -qE "$excludes" && continue
+        while IFS= read -r phrase; do
+            case "$phrase" in ''|'#'*) continue ;; esac
+            if grep -inF -- "$phrase" "$f" >/dev/null 2>&1; then
+                grep -inF -- "$phrase" "$f" | sed "s|^|$f:|"
+                found=1
+            fi
+        done < "$list"
+    done
+    if [ "$found" -eq 1 ]; then
+        echo "voice: banned slop phrase(s) above — rephrase (see ai/agents/shared/slop-phrases.txt)" >&2
+        exit 1
+    fi
+    echo "voice OK — no slop."
+
 # Full static-check + test gate. `just check --fast` (or `check fast`) skips tests — pre-commit.
 [group('quality')]
 check mode='all':

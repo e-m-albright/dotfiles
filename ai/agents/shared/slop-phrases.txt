@@ -1,0 +1,33 @@
+# Banned LLM / marketing slop phrases — the deterministic half of the voice article.
+# Checked (case-insensitive, fixed-string) over committed prose + commit messages by
+# `just lint-prose`. Kept DELIBERATELY CONSERVATIVE: only unambiguous slop, so the
+# gate never cries wolf. Words common in legit technical writing (leverage, robust,
+# seamless) are intentionally absent. The semantic half — sycophancy, hedging,
+# overconfidence — is the stochastic ai/audits/voice.md, which a wordlist can't judge.
+#
+# Files that legitimately QUOTE these phrases are excluded by `just lint-prose`
+# (the slop list, the kernel rules, CANON.md, how-we-build.md, the voice audit).
+# One phrase per line; blank lines and #-comments ignored.
+
+Great question
+Great question!
+You're absolutely right
+You are absolutely right
+It's worth noting
+It is worth noting
+I should mention
+Let's dive in
+Let's dive into
+In conclusion,
+It's important to note
+It is important to note
+delve into
+in today's fast-paced
+look no further
+rest assured
+I hope this helps
+Without further ado
+needless to say
+when it comes to
+at the end of the day,
+a testament to

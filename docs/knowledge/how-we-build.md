@@ -120,7 +120,7 @@ The single mechanism that makes the whole thing converge instead of drift. `ratc
 
 **The bridge is the ratchet.** A stochastic win (a lens deepens a module, an audit finds slop you delete) is fragile until `converge` records the new actuals as baselines — then it's a deterministic floor the next change can't breach. *Taste, made durable.*
 
-**The canonical illustration is voice** (the kernel's "no slop / calibrate confidence" article): the **phrase blocklist** ("Great question", "it's worth noting", em-dash spam) is deterministic and blocks at commit-msg/pre-commit; **tone and confidence calibration** are irreducibly semantic, so they're a stochastic `voice-review` that only advises. One article, two enforcement classes — the whole map in miniature.
+**The canonical illustration is voice** (the kernel's "no slop / calibrate confidence" article): the **phrase blocklist** ("Great question", "it's worth noting", em-dash spam) is deterministic and blocks at commit-msg/pre-commit (`just lint-prose` over `ai/agents/shared/slop-phrases.txt`); **tone and confidence calibration** are irreducibly semantic, so they're the stochastic `ai/audits/voice.md` that only advises. One article, two enforcement classes — the whole map in miniature.
 
 ---
 
@@ -191,7 +191,7 @@ This map is a living artifact, built on the shoulders of giants (Ousterhout, Fow
 > **Every rite traces to an article; every article has a rite.** Adding a practice means naming the article it serves, or it's superstition. Adding an article means naming the rite that will enforce it, or it's a claim we can't keep.
 
 **Known open frontiers** (where the codex should grow next):
-- **Voice gates** — the deterministic slop-phrase linter + stochastic `voice-review` proposed above are designed, not yet wired.
+- **Voice gates — shipped.** `just lint-prose` (deterministic slop-phrase blocklist, wired into commit-msg + pre-commit) + `ai/audits/voice.md` (stochastic, advisory). Remaining: an em-dash-density heuristic and a commit-lint for imperative mood.
 - **A fuller convergent home for Reliability** — **Performance now has one** (`perf-check.sh` + `just perf`, the tolerance-band perf-budget ratchet); Reliability is *partly* convergent via the coverage floor + silent-catch/skipped-test suppression ratchets. The remaining gap is a richer Reliability metric (mutation score, error-path density) and wiring the perf ratchet into a nightly CI job.
 - **Wire one real scheduled detection routine** — the policy exists; the cron doesn't.
 - **Fold the siloed doctrines** (security, fleet-uniformity, build-discipline) into the Canon's enforcement articles, not just this map's pointers.

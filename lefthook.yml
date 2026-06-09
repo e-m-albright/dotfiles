@@ -34,6 +34,14 @@ pre-commit:
     agent-lint:
       glob: "ai/{skills,subagents,agents}/**/*.md"
       run: just lint-agents
+    voice:
+      glob: "*.md"
+      run: just lint-prose {staged_files}
+
+commit-msg:
+  commands:
+    voice:
+      run: just lint-prose {1}
 
 pre-push:
   commands:
