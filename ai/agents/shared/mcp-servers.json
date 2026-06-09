@@ -9,7 +9,7 @@
   "context7": {
     "type": "http",
     "url": "https://mcp.context7.com/mcp",
-    "targets": ["cursor"]
+    "targets": ["cursor", "gemini"]
   },
 
   "_playwright_disabled": "playwright MCP disabled 2026-06-09 — browser automation lives in the CLI layer instead (playwright framework for deterministic tests + agent-browser CLI for agent-driven browsing, pinchtab on standby for human-in-the-loop authed sessions). No always-on MCP context tax. (was: npx @playwright/mcp@latest, targets: claude/cursor/codex/gemini)",
