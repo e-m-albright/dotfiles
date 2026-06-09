@@ -4,8 +4,9 @@ Origin is derived from real state, never guessed:
 - **canonical** — lives in this repo's ``ai/skills/`` (the source of truth).
 - **external** — tracked in ``external-skills.txt`` (intentional third-party installs).
 - **plugin** — shipped by an installed Claude Code plugin (installed_plugins.json).
-- **untracked** — deployed in a skills dir but in none of the above (manual/registry
-  installs, or stale orphans — see ``agent prune``).
+- **builtin** — lives only in a vendor's own skills dir (e.g. ~/.cursor/skills-cursor).
+- **retired** — was once one of our canonical skills (git history), since renamed/removed.
+- **untracked** — deployed in a shared dir but unknown to us (a manual/registry install).
 
 The description is the SKILL.md frontmatter ``description:`` line, read from the
 canonical source (or the deployed/plugin copy for non-canonical skills).
@@ -20,12 +21,16 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.skill_prune import (
     canonical_skill_names,
+    classify_orphan,
+    deployed_locations,
+    ever_ours_names,
     external_skill_names,
 )
 
-SkillOrigin = Literal["canonical", "external", "plugin", "untracked"]
+SkillOrigin = Literal["canonical", "external", "plugin", "builtin", "retired", "untracked"]
 
 # Deployed skill dirs (relative to $HOME) scanned for non-canonical skills.
 _DEPLOYED_DIRS: tuple[tuple[str, ...], ...] = (
@@ -92,12 +97,14 @@ def _deployed_skill_md(home: Path) -> dict[str, Path]:
     return found
 
 
-def inventory(home: Path, dotfiles_dir: Path) -> list[SkillInfo]:
+def inventory(runner: ProcessRunner, home: Path, dotfiles_dir: Path) -> list[SkillInfo]:
     """Every known skill, alphabetical, classified by verifiable origin."""
     canonical = canonical_skill_names(dotfiles_dir)
     external = external_skill_names(dotfiles_dir)
     plugins = _plugin_skills(home)
     deployed = _deployed_skill_md(home)
+    ever_ours = ever_ours_names(runner, dotfiles_dir)
+    locations = deployed_locations(home)
 
     infos: list[SkillInfo] = []
     for name in sorted(canonical | external | set(plugins) | set(deployed)):
@@ -111,8 +118,13 @@ def inventory(home: Path, dotfiles_dir: Path) -> list[SkillInfo]:
             ref, md = plugins[name]
             origin, source = "plugin", ref
         else:
-            origin, md = "untracked", deployed.get(name)
-            source = str(md.parent) if md else ""
+            origin = classify_orphan(name, ever_ours, locations)
+            md = deployed.get(name)
+            source = (
+                "was canonical (renamed/removed)"
+                if origin == "retired"
+                else ", ".join(sorted(locations.get(name, set())))
+            )
         infos.append(
             SkillInfo(name=name, origin=origin, description=_description(md), source=source)
         )

@@ -3,11 +3,14 @@
 `deploy_skills` removes our skills *by current name* before re-adding, so a renamed
 or removed skill strands its old deployed copy forever. This reconciles that drift.
 
-A deployed skill dir is a **retired** (safe-to-delete) orphan iff it was once one of
-our canonical skills — proven by a ``*skills/<name>/SKILL.md`` path in this repo's git
-history — yet is neither currently canonical nor tracked in external-skills.txt.
-Anything never in the repo is **untracked** (an externally-installed skill); it's
-reported but never auto-deleted, so a manual `npx skills add` is safe.
+A deployed skill not in the canonical/external keep-set is classified by source:
+
+- **retired** — was once one of our canonical skills (proven by a
+  ``*skills/<name>/SKILL.md`` path in git history). Safe to delete; prune targets these.
+- **builtin** — lives only in a vendor's own skills dir (e.g. ~/.cursor/skills-cursor),
+  shipped by that CLI. Reported, never touched.
+- **untracked** — deployed in a shared dir but unknown to us (a manual/registry
+  install). Reported, never auto-deleted — add it to external-skills.txt to keep it.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from __future__ import annotations
 import re
 import shutil
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -30,9 +34,14 @@ _SKILL_DIRS: tuple[tuple[str, ...], ...] = (
     (".cursor", "skills"),
     (".cursor", "skills-cursor"),
 )
+# Dirs where our skills + external + untracked-external installs land. A skill that
+# lives ONLY outside these (in a vendor's own dir) is that vendor's built-in.
+_SHARED_LABELS = frozenset({".claude/skills", ".agents/skills"})
 
 # Matches any historical skills path: `.ai/skills/<name>/SKILL.md`, `ai/skills/...`, etc.
 _HISTORY_RE = re.compile(r"(?:^|/)skills/([^/]+)/SKILL\.md$")
+
+OrphanOrigin = Literal["retired", "builtin", "untracked"]
 
 
 class SkillOrphan(BaseModel):
@@ -43,7 +52,7 @@ class SkillOrphan(BaseModel):
     location: str  # e.g. ".agents/skills"
     name: str
     path: str
-    retired: bool  # True = was ours (safe to prune); False = untracked external
+    origin: OrphanOrigin  # retired = prune; builtin/untracked = keep
 
 
 def canonical_skill_names(dotfiles_dir: Path) -> set[str]:
@@ -87,10 +96,35 @@ def ever_ours_names(runner: ProcessRunner, dotfiles_dir: Path) -> set[str]:
     }
 
 
+def deployed_locations(home: Path) -> dict[str, set[str]]:
+    """name → the set of deployed dir labels it appears in (across all skill dirs)."""
+    locations: dict[str, set[str]] = {}
+    for parts in _SKILL_DIRS:
+        target = home.joinpath(*parts)
+        if not target.is_dir():
+            continue
+        label = "/".join(parts)
+        for sub in target.iterdir():
+            if sub.is_dir():
+                locations.setdefault(sub.name, set()).add(label)
+    return locations
+
+
+def classify_orphan(name: str, ever_ours: set[str], locations: dict[str, set[str]]) -> OrphanOrigin:
+    """retired (was ours) · builtin (only in a vendor dir) · untracked (everything else)."""
+    if name in ever_ours:
+        return "retired"
+    locs = locations.get(name, set())
+    if locs and not (locs & _SHARED_LABELS):
+        return "builtin"
+    return "untracked"
+
+
 def find_orphans(runner: ProcessRunner, home: Path, dotfiles_dir: Path) -> list[SkillOrphan]:
-    """Deployed skill dirs not in the canonical/external keep-set, classified by provenance."""
+    """Deployed skill dirs not in the canonical/external keep-set, classified by source."""
     keep = canonical_skill_names(dotfiles_dir) | external_skill_names(dotfiles_dir)
-    ours = ever_ours_names(runner, dotfiles_dir)
+    ever_ours = ever_ours_names(runner, dotfiles_dir)
+    locations = deployed_locations(home)
     orphans: list[SkillOrphan] = []
     for parts in _SKILL_DIRS:
         target = home.joinpath(*parts)
@@ -102,16 +136,19 @@ def find_orphans(runner: ProcessRunner, home: Path, dotfiles_dir: Path) -> list[
                 continue
             orphans.append(
                 SkillOrphan(
-                    location=location, name=sub.name, path=str(sub), retired=sub.name in ours
+                    location=location,
+                    name=sub.name,
+                    path=str(sub),
+                    origin=classify_orphan(sub.name, ever_ours, locations),
                 )
             )
     return orphans
 
 
 def prune_orphans(orphans: list[SkillOrphan], *, dry_run: bool) -> list[StepResult]:
-    """Delete the retired orphans (untracked ones are never touched). dry_run reports only."""
+    """Delete the retired orphans only (builtin + untracked are never touched)."""
     steps: list[StepResult] = []
-    for orphan in (o for o in orphans if o.retired):
+    for orphan in (o for o in orphans if o.origin == "retired"):
         target = f"{orphan.location}/{orphan.name}"
         if dry_run:
             steps.append(StepResult(level="info", message=f"DRY RUN: rm {target}"))

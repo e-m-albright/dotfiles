@@ -316,7 +316,7 @@ def setup(
 
     if prune:
         orphans = find_orphans(app_ctx.runner, app_ctx.home, app_ctx.dotfiles_dir)
-        retired = [o for o in orphans if o.retired]
+        retired = [o for o in orphans if o.origin == "retired"]
         if retired:
             print_section(
                 console, "Prune", "retired skills removed so deployed dirs mirror canonical"
@@ -369,55 +369,17 @@ def lint(ctx: typer.Context) -> None:
         raise typer.Exit(1)
 
 
-def _render_orphans(orphans: list[SkillOrphan]) -> tuple[list[SkillOrphan], list[SkillOrphan]]:
-    """Show retired (deletable) vs untracked (keep) orphans; return the two buckets."""
-    retired = [o for o in orphans if o.retired]
-    untracked = [o for o in orphans if not o.retired]
-    if retired:
-        print_section(console, "Retired", "were ours, renamed/removed — safe to delete")
-        for o in retired:
-            console.print(f"  [red]✗[/] [dim]{o.location}/[/]{o.name}")
-    if untracked:
-        print_section(
-            console, "Untracked", "not ours — add to external-skills.txt to keep, or remove by hand"
-        )
-        for o in untracked:
-            console.print(f"  [yellow]?[/] [dim]{o.location}/[/]{o.name}")
-    return retired, untracked
-
-
-@agent_app.command()
-def prune(
-    ctx: typer.Context,
-    apply: bool = typer.Option(
-        False, "--apply", help="Delete retired skills (default: dry-run preview)."
-    ),
-) -> None:
-    """Remove deployed skills that were ours but are no longer canonical (mirror, not append)."""
-    app_ctx = app_context(ctx)
-    orphans = find_orphans(app_ctx.runner, app_ctx.home, app_ctx.dotfiles_dir)
-    print_title(console, "agent", "prune")
-    if not orphans:
-        print_status(console, "success", "Deployed skills already mirror canonical — nothing to do")
-        return
-    retired, _ = _render_orphans(orphans)
-    if not retired:
-        return
-    if apply:
-        print_section(console, "Removed")
-        render_steps(console, prune_orphans(orphans, dry_run=False))
-    else:
-        print_status(
-            console, "info", f"{len(retired)} retired skill(s) — re-run with --apply to delete"
-        )
-
-
 _ORIGIN_STYLE: dict[str, str] = {
     "canonical": "green",
     "external": "cyan",
     "plugin": "magenta",
+    "builtin": "blue",
+    "retired": "red",
     "untracked": "yellow",
 }
+
+# `agent skills` (list) + `agent skills prune` — skills is its own sub-app.
+skills_app = typer.Typer(help="List skills by origin, and prune retired ones.")
 
 
 def _clip(text: str, width: int) -> str:
@@ -442,11 +404,13 @@ def _render_skills(skills: list[SkillInfo]) -> None:
         )
 
 
-@agent_app.command()
-def skills(ctx: typer.Context) -> None:
-    """List every skill alphabetically with its origin (canonical/external/plugin/untracked)."""
+@skills_app.callback(invoke_without_command=True)
+def skills_list(ctx: typer.Context) -> None:
+    """List every skill alphabetically with its origin and description."""
+    if ctx.invoked_subcommand is not None:
+        return
     app_ctx = app_context(ctx)
-    items = inventory(app_ctx.home, app_ctx.dotfiles_dir)
+    items = inventory(app_ctx.runner, app_ctx.home, app_ctx.dotfiles_dir)
     print_title(console, "agent", "skills")
     if not items:
         print_status(console, "info", "No skills found")
@@ -458,6 +422,53 @@ def skills(ctx: typer.Context) -> None:
     console.print(f"  {len(items)} skills · {tally}")
     console.print()
     _render_skills(items)
+
+
+# (origin, glyph-color, glyph, section hint) — the order they render in.
+_ORPHAN_BUCKETS: tuple[tuple[str, str, str, str], ...] = (
+    ("retired", "red", "✗", "were ours, renamed/removed — safe to delete"),
+    ("builtin", "blue", "·", "shipped by the vendor (Cursor/Codex) — left untouched"),
+    ("untracked", "yellow", "?", "registry/manual installs — add to external-skills.txt to keep"),
+)
+
+
+def _render_orphans(orphans: list[SkillOrphan]) -> None:
+    """Show retired / builtin / untracked orphans in labelled buckets."""
+    for origin, color, glyph, hint in _ORPHAN_BUCKETS:
+        group = [o for o in orphans if o.origin == origin]
+        if not group:
+            continue
+        print_section(console, origin.capitalize(), hint)
+        for o in group:
+            console.print(f"  [{color}]{glyph}[/] [dim]{o.location}/[/]{o.name}")
+
+
+@skills_app.command("prune")
+def skills_prune(
+    ctx: typer.Context,
+    apply: bool = typer.Option(
+        False, "--apply", help="Delete retired skills (default: dry-run preview)."
+    ),
+) -> None:
+    """Remove deployed skills that were ours but are no longer canonical (mirror, not append)."""
+    app_ctx = app_context(ctx)
+    orphans = find_orphans(app_ctx.runner, app_ctx.home, app_ctx.dotfiles_dir)
+    print_title(console, "agent", "skills", "prune")
+    if not orphans:
+        print_status(console, "success", "Deployed skills already mirror canonical — nothing to do")
+        return
+    _render_orphans(orphans)
+    retired = [o for o in orphans if o.origin == "retired"]
+    if not retired:
+        print_status(console, "info", "Nothing retired to prune")
+        return
+    if apply:
+        print_section(console, "Removed")
+        render_steps(console, prune_orphans(orphans, dry_run=False))
+    else:
+        print_status(
+            console, "info", f"{len(retired)} retired skill(s) — re-run with `--apply` to delete"
+        )
 
 
 _STATS_SINCE = typer.Option(90, "--since", help="Window in days (default 90).")
@@ -758,4 +769,5 @@ def _gemini_flycut(svc: GeminiChunksService) -> None:
     )
 
 
+agent_app.add_typer(skills_app, name="skills")
 agent_app.add_typer(web_app, name="web")

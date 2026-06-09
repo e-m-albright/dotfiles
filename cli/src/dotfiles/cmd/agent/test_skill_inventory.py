@@ -2,7 +2,16 @@ import json
 from pathlib import Path
 
 from dotfiles.cmd.agent.skill_inventory import inventory
-from dotfiles.testing.fakes import write_tree
+from dotfiles.testing.fakes import FakeProcessRunner, write_tree
+
+
+def _git_history(dotfiles: Path, *paths: str) -> FakeProcessRunner:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("git", "-C", str(dotfiles), "log", "--all", "--pretty=format:", "--name-only"),
+        stdout="\n".join(paths),
+    )
+    return runner
 
 
 def _skill_md(desc: str) -> str:
@@ -24,8 +33,12 @@ def test_inventory_classifies_origin_and_reads_description(tmp_path: Path) -> No
         {
             # external (tracked) — deployed copy carries the description
             ".claude/skills/tauri/SKILL.md": _skill_md("Cross-platform app toolkit"),
-            # untracked — deployed, in neither canonical nor external
+            # untracked — deployed in a shared dir, in neither canonical nor external
             ".agents/skills/vitest/SKILL.md": _skill_md("Vitest test framework"),
+            # retired — was ours (in git history below), since removed
+            ".agents/skills/legible/SKILL.md": _skill_md("old lens"),
+            # builtin — lives only in a vendor's own dir
+            ".cursor/skills-cursor/statusline/SKILL.md": _skill_md("Cursor statusline"),
             # a plugin shipping a skill
             ".claude/plugins/installed_plugins.json": json.dumps(
                 {
@@ -43,13 +56,16 @@ def test_inventory_classifies_origin_and_reads_description(tmp_path: Path) -> No
         {"skills/brainstorming/SKILL.md": _skill_md("Turn ideas into designs")},
     )
 
-    by_name = {s.name: s for s in inventory(home, dotfiles)}
+    runner = _git_history(dotfiles, ".ai/skills/legible/SKILL.md")
+    by_name = {s.name: s for s in inventory(runner, home, dotfiles)}
 
     assert by_name["converge"].origin == "canonical"
     assert by_name["converge"].description == "Drive a codebase toward simpler code"
     assert by_name["tauri"].origin == "external"
     assert by_name["tauri"].description == "Cross-platform app toolkit"
     assert by_name["vitest"].origin == "untracked"
+    assert by_name["legible"].origin == "retired"  # in git history, not canonical
+    assert by_name["statusline"].origin == "builtin"  # only in .cursor/skills-cursor
     assert by_name["brainstorming"].origin == "plugin"
     assert by_name["brainstorming"].source == "superpowers@official"
 
@@ -64,5 +80,6 @@ def test_inventory_is_alphabetical(tmp_path: Path) -> None:
             "ai/agents/claude/external-skills.txt": "",
         },
     )
-    names = [s.name for s in inventory(tmp_path / "home", dotfiles)]
+    runner = _git_history(dotfiles)
+    names = [s.name for s in inventory(runner, tmp_path / "home", dotfiles)]
     assert names == ["alpha", "zebra"]

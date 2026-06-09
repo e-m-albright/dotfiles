@@ -72,9 +72,9 @@ def test_find_orphans_classifies_retired_vs_untracked(tmp_path: Path) -> None:
     assert "form-align" not in by_name
     assert "review" not in by_name
     assert "tauri" not in by_name
-    # align: was ours → retired; vitest: never ours → untracked
-    assert by_name["align"].retired is True
-    assert by_name["vitest"].retired is False
+    # align: was ours → retired; vitest: never ours, in a shared dir → untracked
+    assert by_name["align"].origin == "retired"
+    assert by_name["vitest"].origin == "untracked"
 
 
 def test_prune_orphans_deletes_only_retired(tmp_path: Path) -> None:
