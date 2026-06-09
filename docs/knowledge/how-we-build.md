@@ -192,7 +192,7 @@ This map is a living artifact, built on the shoulders of giants (Ousterhout, Fow
 
 **Known open frontiers** (where the codex should grow next):
 - **Voice gates — shipped.** `just lint-prose` (deterministic slop-phrase blocklist, wired into commit-msg + pre-commit) + `ai/audits/voice.md` (stochastic, advisory). Remaining: an em-dash-density heuristic and a commit-lint for imperative mood.
-- **A fuller convergent home for Reliability** — **Performance now has one** (`perf-check.sh` + `just perf`, the tolerance-band perf-budget ratchet); Reliability is *partly* convergent via the coverage floor + silent-catch/skipped-test suppression ratchets. The remaining gap is a richer Reliability metric (mutation score, error-path density) and wiring the perf ratchet into a nightly CI job.
+- **All four CISQ pillars now have a convergent home.** Maintainability (`converge` + the ratchet), Performance (`perf-check.sh` / `just perf`), Reliability (coverage floor + **mutation score** via `just mutation` + silent-catch/skipped ratchets), Security (dep-audit + gitleaks + the suppression ratchet). The remaining work is *operational*, not architectural: **establish perf + mutation baselines and wire them into a nightly CI job** (both are slow/noisy, so they live above L3, not in it).
 - **Wire one real scheduled detection routine** — the policy exists; the cron doesn't.
 - **Fold the siloed doctrines** (security, fleet-uniformity, build-discipline) into the Canon's enforcement articles, not just this map's pointers.
 - **Language packs** — the ratchet's suppression catalog is Python/TS/Rust-flavoured; "any repo" is really "any repo we've hand-coded patterns for."

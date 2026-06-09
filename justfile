@@ -59,6 +59,14 @@ perf *args:
 lint-agents:
     uv run dotfiles agent lint
 
+# Mutation testing — the test-QUALITY reliability metric (do the tests catch an
+# injected bug, not just execute the line?). Slow: one suite run per mutant, so
+# manual/nightly and scoped via [tool.mutmut] config or mutant names. uv --with
+# means nothing to install. `just mutation` — the Reliability pillar's quality floor.
+[group('quality')]
+mutation *args:
+    uv run --with mutmut mutmut run {{args}}
+
 # Voice gate (deterministic half): scan prose for banned LLM/marketing slop.
 # Delta-scoped — staged *.md by default, or the files passed (commit-msg passes
 # its message file). Excludes the doctrine files that quote the phrases. The
