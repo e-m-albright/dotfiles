@@ -6,26 +6,25 @@ from collections.abc import Iterable
 from datetime import UTC, date, datetime
 from enum import StrEnum
 from itertools import groupby
+from pathlib import Path
 
 import typer
 from rich.markup import escape
 from rich.table import Table
 
-from dotfiles.agent import VENDORS
+from dotfiles.agent import OVERVIEW_AGENTS, VENDORS
 from dotfiles.app.context import app_context
 from dotfiles.cmd.agent.catechism import CATECHISM
 from dotfiles.cmd.agent.health import HealthBootstrap, HealthError, HealthService, git_root
 from dotfiles.cmd.agent.models import (
     AgentOverview,
-    AgentSurface,
     AgentVerify,
     CatechismEntry,
     FileValidation,
-    HookRow,
     Hotspot,
-    McpRow,
     PermissionRow,
-    SubagentRow,
+    PluginRow,
+    ValueRow,
 )
 from dotfiles.cmd.agent.overview import AgentOverviewService
 from dotfiles.cmd.agent.setup import ALL_AGENTS, run_setup
@@ -60,22 +59,23 @@ class _AgentChoice(StrEnum):
 
 # Derived from the single VENDORS registry in dotfiles.agent — don't re-list here.
 _VENDOR_HEADERS = {v.name: v.display_name for v in VENDORS}
-_CLI_CONFIRMATION = {v.name: v.cli_confirmation for v in VENDORS}
 
-_BOOL_GLYPH = {True: "[green]✓[/]", False: "[dim]—[/]"}
-
-
-def _render_surface(surface: AgentSurface) -> None:
-    status = surface.status
-    if status == "present":
-        glyph = "[green]✓[/]"
-    elif status == "empty":
-        glyph = "[yellow]○[/]"
-    elif status == "missing":
-        glyph = "[red]✗[/]"
-    else:  # skipped
-        glyph = "[dim]-[/]"
-    console.print(f"  {glyph} [dim]{escape(surface.label):<25}[/] [dim]{escape(surface.detail)}[/]")
+# Brand gold for soft attribute/value text (replaces the hard-to-read dim grey).
+_GOLD = "#cdbf80"
+# Fixed agent column order for every matrix.
+_AGENT_COLS: tuple[str, ...] = OVERVIEW_AGENTS
+_COL_W = 8
+_LABEL_W = 24
+# Which agents each surface applies to; others render "·" (n/a), never "✗".
+_MCP_AGENTS = {"claude", "cursor", "codex", "gemini"}
+_HOOK_AGENTS = {"claude", "cursor", "codex"}
+_SUBAGENT_AGENTS = {"claude", "codex", "pi"}
+_STATUS_GLYPH = {
+    "present": "[green]✓[/]",
+    "empty": "[yellow]○[/]",
+    "missing": "[red]✗[/]",
+    "skipped": "[dim]·[/]",
+}
 
 
 def _render_validation(v: FileValidation) -> None:
@@ -94,138 +94,144 @@ def _render_validation(v: FileValidation) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Section renderers (extracted to keep overview() complexity ≤ 10)
+# Overview rendering — uniform matrices (all agents) + per-agent surface tables
 # ---------------------------------------------------------------------------
 
 
-def _render_mcp(rows: Iterable[McpRow]) -> None:
-    console.print()
-    console.print("[bold]MCP Servers[/]")
+def _tilde(path: str, home: Path) -> str:
+    """Home-relative display (~/…) for a path; unchanged if outside home."""
+    try:
+        return "~/" + str(Path(path).relative_to(home))
+    except ValueError:
+        return path
+
+
+def _path_link(path: str, home: Path) -> str:
+    """A clickable file:// link, shown home-relative and dimmed."""
+    if not path:
+        return ""
+    return f"[link=file://{path}][dim]{escape(_tilde(path, home))}[/dim][/link]"
+
+
+def _matrix_header(title: str) -> None:
+    cols = "".join(a.center(_COL_W) for a in _AGENT_COLS)
+    head = f"▸ {title}"
+    pad = " " * max(1, 2 + _LABEL_W - len(head))
+    console.print(f"\n[bold]{escape(head)}[/]{pad}[dim]{cols}[/]")
+
+
+def _ov_section(title: str, hint: str | None = None) -> None:
+    line = f"\n[bold]▸ {escape(title)}[/]"
+    if hint:
+        line += f"  [dim]{escape(hint)}[/]"
+    console.print(line)
+
+
+def _state_cell(present: bool, applies: bool) -> str:
+    if not applies:  # surface doesn't exist for this agent — n/a, not a failure
+        return f"[dim]{'·'.center(_COL_W)}[/]"
+    glyph, color = ("✓", "green") if present else ("✗", "red")
+    return f"[{color}]{glyph.center(_COL_W)}[/]"
+
+
+def _render_state_matrix(
+    title: str, rows: Iterable[object], applies: set[str], label_attr: str
+) -> None:
     rows_list = list(rows)
     if not rows_list:
+        _ov_section(title)
         console.print("  [dim](none)[/]")
         return
-    tbl = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
-    tbl.add_column("Server", style="dim", min_width=20)
-    tbl.add_column("Claude", justify="center")
-    tbl.add_column("Cursor", justify="center")
-    tbl.add_column("Codex", justify="center")
-    tbl.add_column("Gemini", justify="center")
+    _matrix_header(title)
     for row in rows_list:
-        tbl.add_row(
-            escape(row.server),
-            _BOOL_GLYPH[row.claude],
-            _BOOL_GLYPH[row.cursor],
-            _BOOL_GLYPH[row.codex],
-            _BOOL_GLYPH[row.gemini],
+        label = str(getattr(row, label_attr, ""))
+        cells = "".join(
+            _state_cell(bool(getattr(row, a, False)), a in applies) for a in _AGENT_COLS
         )
-    console.print(tbl)
+        console.print(f"  {escape(label):<{_LABEL_W}}{cells}")
 
 
-def _render_hooks(rows: Iterable[HookRow]) -> None:
-    console.print()
-    console.print("[bold]Hooks[/]")
+def _render_value_matrix(title: str, rows: Iterable[ValueRow]) -> None:
     rows_list = list(rows)
     if not rows_list:
-        console.print("  [dim](none)[/]")
         return
-    tbl = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
-    tbl.add_column("Event", style="dim", min_width=20)
-    tbl.add_column("Claude", justify="center")
-    tbl.add_column("Cursor", justify="center")
-    tbl.add_column("Codex", justify="center")
+    _matrix_header(title)
     for row in rows_list:
-        tbl.add_row(
-            escape(row.event),
-            _BOOL_GLYPH[row.claude],
-            _BOOL_GLYPH[row.cursor],
-            _BOOL_GLYPH[row.codex],
-        )
-    console.print(tbl)
+        cells = "".join(f"[{_GOLD}]{row.cells.get(a, '—').center(_COL_W)}[/]" for a in _AGENT_COLS)
+        console.print(f"  {escape(row.label):<{_LABEL_W}}{cells}")
 
 
-def _render_agents(rows: Iterable[SubagentRow]) -> None:
-    console.print()
-    console.print("[bold]Subagents[/]")
+def _render_plugins(rows: Iterable[PluginRow]) -> None:
     rows_list = list(rows)
-    if not rows_list:
-        console.print("  [dim](none)[/]")
-        return
-    tbl = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
-    tbl.add_column("Name", style="dim", min_width=20)
-    tbl.add_column("Claude", justify="center")
-    tbl.add_column("Codex", justify="center")
-    tbl.add_column("Pi", justify="center")
-    for row in rows_list:
-        tbl.add_row(
-            escape(row.name),
-            _BOOL_GLYPH[row.claude],
-            _BOOL_GLYPH[row.codex],
-            _BOOL_GLYPH[row.pi],
-        )
-    console.print(tbl)
-
-
-def _render_permissions(rows: Iterable[PermissionRow]) -> None:
-    console.print()
-    console.print("[bold]Permissions[/]")
-    rows_list = list(rows)
+    _ov_section("Plugins", "Claude Code marketplace")
     if not rows_list:
         console.print("  [dim](none)[/]")
         return
     for p in rows_list:
-        if p.prefix_rules:
-            console.print(f"  [dim]{escape(p.label)}[/]  prefix_rules={p.prefix_rules}")
-        else:
-            console.print(f"  [dim]{escape(p.label)}[/]  allow={p.allow}  deny={p.deny}")
+        console.print(
+            f"  [green]✓[/] [{_GOLD}]{escape(p.name):<26}[/] "
+            f"{escape(p.version or '—'):<9} [dim]{escape(p.marketplace)}[/]"
+        )
 
 
-def _render_vendor_surfaces(surfaces: Iterable[AgentSurface]) -> None:
-    console.print()
-    console.print("[bold]Agent Surfaces[/]")
-    first = True
-    for agent, group in groupby(surfaces, key=lambda s: s.agent):
-        if not first:
-            console.print()
-        first = False
-        header = _VENDOR_HEADERS.get(agent, agent)
-        console.print(f"[blue]══ {header} ══[/]")
-        vendor_list = list(group)
-        for surface in vendor_list:
-            _render_surface(surface)
-        not_skipped = not (len(vendor_list) == 1 and vendor_list[0].status == "skipped")
-        if not_skipped and agent in _CLI_CONFIRMATION:
-            console.print(f"  [dim]{_CLI_CONFIRMATION[agent]}[/]")
+def _render_permissions(rows: Iterable[PermissionRow], home: Path) -> None:
+    rows_list = list(rows)
+    _ov_section("Permissions")
+    if not rows_list:
+        console.print("  [dim](none)[/]")
+        return
+    for p in rows_list:
+        qty = (
+            f"prefix_rules {p.prefix_rules}"
+            if p.prefix_rules
+            else f"allow {p.allow}  deny {p.deny}"
+        )
+        console.print(
+            f"  [{_GOLD}]{escape(p.label):<26}[/] {qty:<22} {_path_link(p.source_path, home)}"
+        )
 
 
-def _render_overview(data: AgentOverview) -> None:
-    """Render all overview sections."""
+def _confirmations(data: AgentOverview) -> dict[str, str]:
+    """A verifiable one-line confirm per agent, derived from the overview data."""
+    conf: dict[str, str] = {}
+    for s in data.vendor_surfaces:
+        if s.agent == "claude" and s.label == "skills" and s.quantity:
+            conf["claude"] = f"{s.quantity} resolve via the Skill tool"
+    conf["codex"] = f"{sum(1 for r in data.mcp if r.codex)} MCP enabled (codex mcp list)"
+    conf["cursor"] = "GUI — Cursor → Settings → MCP / Rules"
+    conf["gemini"] = "instructions in GEMINI.md (gemini is interactive)"
+    conf["pi"] = "config in ~/.pi/agent (pi is interactive)"
+    return conf
+
+
+def _render_agent_sections(data: AgentOverview, home: Path) -> None:
+    confirms = _confirmations(data)
+    for agent, group in groupby(data.vendor_surfaces, key=lambda s: s.agent):
+        surfaces = list(group)
+        _ov_section(_VENDOR_HEADERS.get(agent, agent))
+        if len(surfaces) == 1 and surfaces[0].status == "skipped":
+            console.print(f"  [dim]·  {escape(surfaces[0].detail)}[/]")
+            continue
+        for s in surfaces:
+            glyph = _STATUS_GLYPH.get(s.status, "[dim]·[/]")
+            console.print(
+                f"  {glyph}  [{_GOLD}]{escape(s.label):<14}[/] "
+                f"{escape(s.quantity):<12} {_path_link(s.path, home)}"
+            )
+        if agent in confirms:
+            console.print(f"  [dim]confirm[/]        [dim]{escape(confirms[agent])}[/]")
+
+
+def _render_overview(data: AgentOverview, home: Path) -> None:
+    """Render the dashboard: colocated matrices, plugins, then per-agent surfaces."""
     print_title(console, "agent", "overview")
-    _render_mcp(data.mcp)
-    _render_hooks(data.hooks)
-
-    s = data.skills
-    console.print()
-    console.print("[bold]Skills[/]")
-    console.print(
-        f"  Canonical: {s.canonical_skills}"
-        f"  Claude deployed: {s.claude_deployed}"
-        f"  Shared deployed: {s.shared_deployed}"
-    )
-
-    _render_agents(data.agents)
-
-    r = data.rules
-    console.print()
-    console.print("[bold]Rules[/]")
-    console.print(
-        f"  Canonical: {r.canonical_rules}"
-        f"  Claude deployed: {r.claude_deployed}"
-        f"  Cursor deployed: {r.cursor_deployed}"
-    )
-
-    _render_permissions(data.permissions)
-    _render_vendor_surfaces(data.vendor_surfaces)
+    _render_value_matrix("Skills & Rules", data.skills_rules)
+    _render_plugins(data.plugins)
+    _render_state_matrix("MCP servers", data.mcp, _MCP_AGENTS, "server")
+    _render_state_matrix("Subagents", data.agents, _SUBAGENT_AGENTS, "name")
+    _render_state_matrix("Hooks", data.hooks, _HOOK_AGENTS, "event")
+    _render_permissions(data.permissions, home)
+    _render_agent_sections(data, home)
     console.print()
 
 
@@ -334,7 +340,7 @@ def overview(ctx: typer.Context) -> None:
         dotfiles_dir=app_ctx.dotfiles_dir,
         home=app_ctx.home,
     )
-    _render_overview(svc.overview())
+    _render_overview(svc.overview(), app_ctx.home)
 
 
 @agent_app.command()
@@ -406,8 +412,6 @@ def prune(
         )
 
 
-# Brand gold for soft attribute/description text (matches the session preview line).
-_GOLD = "#cdbf80"
 _ORIGIN_STYLE: dict[str, str] = {
     "canonical": "green",
     "external": "cyan",

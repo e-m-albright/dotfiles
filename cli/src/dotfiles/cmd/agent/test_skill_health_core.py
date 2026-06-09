@@ -135,4 +135,4 @@ def test_skill_health_service_runs_over_empty_tree(tmp_path):
         which=lambda c: None,
     )
     verifies = svc.verify(offline=True)
-    assert {v.agent for v in verifies} == {"claude", "cursor", "codex", "gemini"}
+    assert {v.agent for v in verifies} == {"claude", "cursor", "codex", "gemini", "pi"}

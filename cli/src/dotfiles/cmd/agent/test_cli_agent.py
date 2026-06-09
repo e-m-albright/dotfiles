@@ -60,7 +60,7 @@ def test_agent_overview_exits_zero(tmp_path: Path) -> None:
 def test_agent_overview_prints_mcp_servers_header(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
     result = runner.invoke(app, ["agent", "overview"], obj=ctx)
-    assert "MCP Servers" in result.output
+    assert "MCP servers" in result.output
 
 
 def test_agent_overview_prints_skills_header(tmp_path: Path) -> None:
@@ -207,13 +207,11 @@ def test_gemini_prompt_missing_chunks_dir_exits_one(tmp_path: Path) -> None:
 
 def test_agent_overview_bracket_in_mcp_server_name_survives(tmp_path: Path) -> None:
     """MCP server name containing brackets must appear verbatim in output."""
-    dotfiles = tmp_path / "dotfiles"
-    mcp_path = dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
-    mcp_path.parent.mkdir(parents=True)
-    mcp_path.write_text(
-        json.dumps({"srv[x]": {"command": "npx", "args": [], "targets": ["claude"]}})
-    )
-    ctx = make_fake_context(dotfiles_dir=dotfiles)
+    home = tmp_path / "home"
+    claude_cfg = home / ".claude.json"
+    claude_cfg.parent.mkdir(parents=True)
+    claude_cfg.write_text(json.dumps({"mcpServers": {"srv[x]": {}}}))
+    ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles", home=home)
     result = runner.invoke(app, ["agent", "overview"], obj=ctx)
     assert result.exit_code == 0, result.output
     assert "srv[x]" in result.output

@@ -125,7 +125,9 @@ class AgentVerifyService:
 
     def _check(self, agent: Agent, label: str, path: Path) -> AgentSurface:
         if not path.exists():
-            return AgentSurface(agent=agent, label=label, status="missing", detail=str(path))
+            return AgentSurface(
+                agent=agent, label=label, status="missing", detail=str(path), path=str(path)
+            )
 
         if path.is_dir():
             n_skills = self._count_skill_md(path)
@@ -135,6 +137,8 @@ class AgentVerifyService:
                     label=label,
                     status="present",
                     detail=f"{n_skills} skills @ {path}",
+                    quantity=f"{n_skills} skills",
+                    path=str(path),
                 )
             # count all entries (ls -A equivalent)
             n_entries = len(list_dir(path))
@@ -144,12 +148,23 @@ class AgentVerifyService:
                     label=label,
                     status="present",
                     detail=f"{n_entries} entries @ {path}",
+                    quantity=f"{n_entries} entries",
+                    path=str(path),
                 )
             # empty dir
-            return AgentSurface(agent=agent, label=label, status="empty", detail=f"empty: {path}")
+            return AgentSurface(
+                agent=agent,
+                label=label,
+                status="empty",
+                detail=f"empty: {path}",
+                quantity="empty",
+                path=str(path),
+            )
 
         # plain file (or symlink that exists)
-        return AgentSurface(agent=agent, label=label, status="present", detail=str(path))
+        return AgentSurface(
+            agent=agent, label=label, status="present", detail=str(path), path=str(path)
+        )
 
     def _count_skill_md(self, path: Path) -> int:
         """Count SKILL.md files at maxdepth 2 (the dir itself + immediate subdirs)."""

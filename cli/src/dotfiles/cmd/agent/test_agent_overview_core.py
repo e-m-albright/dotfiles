@@ -37,12 +37,6 @@ def make_service_with_which(
 # ---------------------------------------------------------------------------
 
 
-def seed_mcp(dotfiles: Path, servers: dict) -> None:
-    path = dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(servers))
-
-
 def seed_claude_hooks(dotfiles: Path, hooks_dict: dict) -> None:
     path = dotfiles / "ai" / "agents" / "claude" / "hooks.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -85,63 +79,65 @@ def seed_rule(dotfiles: Path, name: str) -> None:
 # ===========================================================================
 
 
+def _service_with_runner(
+    dotfiles: Path, home: Path, runner: FakeProcessRunner
+) -> AgentOverviewService:
+    return AgentOverviewService(runner=runner, dotfiles_dir=dotfiles, home=home)
+
+
+def _runner_codex_mcp(*servers: str) -> FakeProcessRunner:
+    """A runner whose `codex mcp list` reports the given servers as enabled."""
+    runner = FakeProcessRunner()
+    body = "Name  Command  Status\n" + "\n".join(f"{s}  npx  enabled" for s in servers)
+    runner.script(("codex", "mcp", "list"), stdout=body)
+    return runner
+
+
+def _seed_mcp_config(home: Path, rel: str, servers: list[str]) -> None:
+    """Write an agent's live MCP config (mcpServers map) at home/rel."""
+    path = home / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"mcpServers": {s: {} for s in servers}}))
+
+
 class TestSectionMcp:
-    def test_empty_when_file_missing(self, tmp_path: Path) -> None:
-        svc = make_service(tmp_path / "dotfiles", tmp_path / "home")
-        assert svc.section_mcp() == []
+    def test_empty_when_nothing_configured(self, tmp_path: Path) -> None:
+        # default runner → `codex mcp list` returns empty; no agent configs on disk
+        assert make_service(tmp_path / "d", tmp_path / "home").section_mcp() == []
 
-    def test_skips_non_object_entries(self, tmp_path: Path) -> None:
-        dotfiles = tmp_path / "dotfiles"
-        seed_mcp(dotfiles, {"$comment": "ignore me", "myserver": {"targets": ["claude"]}})
-        rows = make_service(dotfiles, tmp_path / "home").section_mcp()
-        assert len(rows) == 1
-        assert rows[0].server == "myserver"
+    def test_per_agent_from_live_state(self, tmp_path: Path) -> None:
+        home = tmp_path / "home"
+        _seed_mcp_config(home, ".claude.json", ["granola", "playwright"])
+        _seed_mcp_config(home, ".cursor/mcp.json", ["context7", "playwright"])
+        _seed_mcp_config(home, ".gemini/settings.json", ["playwright"])
+        runner = _runner_codex_mcp("playwright", "granola")
 
-    def test_claude_cursor_flags(self, tmp_path: Path) -> None:
-        dotfiles = tmp_path / "dotfiles"
-        seed_mcp(
-            dotfiles,
-            {
-                "alpha": {"targets": ["claude", "cursor"]},
-                "beta": {"targets": ["codex", "gemini"]},
-            },
-        )
-        rows = make_service(dotfiles, tmp_path / "home").section_mcp()
-        alpha = next(r for r in rows if r.server == "alpha")
-        beta = next(r for r in rows if r.server == "beta")
+        rows = _service_with_runner(tmp_path / "d", home, runner).section_mcp()
+        by = {r.server: r for r in rows}
 
-        assert alpha.claude is True
-        assert alpha.cursor is True
-        assert alpha.codex is False
-        assert alpha.gemini is False
+        assert by["playwright"].claude
+        assert by["playwright"].cursor
+        assert by["playwright"].codex
+        assert by["playwright"].gemini
+        assert by["granola"].claude
+        assert by["granola"].codex
+        assert by["granola"].cursor is False
+        assert by["context7"].cursor
+        assert by["context7"].claude is False
+        # Pi has no MCP surface — always n/a (False), never a failure.
+        assert all(r.pi is False for r in rows)
 
-        assert beta.claude is False
-        assert beta.cursor is False
-        assert beta.codex is True
-        assert beta.gemini is True
+    def test_codex_servers_come_from_the_cli(self, tmp_path: Path) -> None:
+        runner = _runner_codex_mcp("playwright")
+        rows = _service_with_runner(tmp_path / "d", tmp_path / "home", runner).section_mcp()
+        assert [r.server for r in rows] == ["playwright"]
+        assert rows[0].codex is True
 
-    def test_all_four_vendors(self, tmp_path: Path) -> None:
-        dotfiles = tmp_path / "dotfiles"
-        seed_mcp(dotfiles, {"full": {"targets": ["claude", "cursor", "codex", "gemini"]}})
-        row = make_service(dotfiles, tmp_path / "home").section_mcp()[0]
-        assert row.claude
-        assert row.cursor
-        assert row.codex
-        assert row.gemini
-
-    def test_no_targets_key(self, tmp_path: Path) -> None:
-        dotfiles = tmp_path / "dotfiles"
-        seed_mcp(dotfiles, {"srv": {}})
-        rows = make_service(dotfiles, tmp_path / "home").section_mcp()
-        assert len(rows) == 1
-        assert rows[0].claude is False
-
-    def test_invalid_json_returns_empty(self, tmp_path: Path) -> None:
-        dotfiles = tmp_path / "dotfiles"
-        path = dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("NOT JSON")
-        assert make_service(dotfiles, tmp_path / "home").section_mcp() == []
+    def test_codex_cli_failure_degrades_to_empty(self, tmp_path: Path) -> None:
+        runner = FakeProcessRunner()
+        runner.script(("codex", "mcp", "list"), exit_code=1)
+        rows = _service_with_runner(tmp_path / "d", tmp_path / "home", runner).section_mcp()
+        assert rows == []
 
 
 # ===========================================================================
@@ -498,7 +494,7 @@ class TestOverviewAggregator:
         dotfiles = tmp_path / "dotfiles"
         home = tmp_path / "home"
         # Seed one item per section
-        seed_mcp(dotfiles, {"srv": {"targets": ["claude"]}})
+        _seed_mcp_config(home, ".claude.json", ["srv"])
         seed_claude_hooks(dotfiles, {"Stop": []})
         seed_skill(dotfiles, "my-skill")
         seed_agent(dotfiles, "my-agent")

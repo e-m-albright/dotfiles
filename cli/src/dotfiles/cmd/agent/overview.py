@@ -7,10 +7,13 @@ Hexagonal: imports only stdlib + pydantic + core models/ports.
 
 from __future__ import annotations
 
+import json
 import shutil
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from dotfiles.cmd.agent.config import (
     ClaudeHooksConfig,
@@ -18,7 +21,6 @@ from dotfiles.cmd.agent.config import (
     PermissionsBlock,
     SettingsWithPermissions,
     load_config,
-    load_mcp_servers,
 )
 from dotfiles.cmd.agent.models import (
     AgentOverview,
@@ -26,15 +28,25 @@ from dotfiles.cmd.agent.models import (
     HookRow,
     McpRow,
     PermissionRow,
+    PluginRow,
     RulesSummary,
     SkillsSummary,
     SubagentRow,
+    ValueRow,
 )
 from dotfiles.cmd.agent.verify import AgentVerifyService
 from dotfiles.fsutil import list_dir
 
 if TYPE_CHECKING:
     from dotfiles.adapters.ports import ProcessRunner
+
+
+class _McpServersFile(BaseModel):
+    """Just the ``mcpServers`` map of an agent's MCP config (extra keys ignored)."""
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+    mcp_servers: dict[str, object] = Field(default_factory=dict, alias="mcpServers")
 
 
 class AgentOverviewService:
@@ -70,7 +82,40 @@ class AgentOverviewService:
             rules=self.section_rules(),
             permissions=tuple(self.section_permissions()),
             vendor_surfaces=tuple(self.vendor_surfaces()),
+            plugins=tuple(self.section_plugins()),
+            skills_rules=tuple(self.section_skills_rules()),
         )
+
+    # ------------------------------------------------------------------
+    # Skills & Rules (colocated value matrix: per-agent deployment)
+    # ------------------------------------------------------------------
+
+    def section_skills_rules(self) -> list[ValueRow]:
+        """Per-agent skill counts and where each vendor's rules live (files vs embedded)."""
+        h = self._home
+        skills = {
+            "claude": str(self._count_subdirs(h / ".claude" / "skills")),
+            "cursor": str(self._count_subdirs(h / ".cursor" / "skills-cursor")),
+            "codex": str(self._count_subdirs(h / ".agents" / "skills")),
+            "gemini": "—",  # Gemini has no skills surface
+            "pi": str(self._count_subdirs(h / ".agents" / "skills")),
+        }
+        # Only Claude/Cursor read a rules directory (cell = file count); the rest
+        # carry rules embedded in their single instruction file (cell = its name).
+        rules = {
+            "claude": str(self._count_files_by_ext(h / ".claude" / "rules", ".md")),
+            "cursor": str(self._count_cursor_rules(self._cursor_rules_dir())),
+            "codex": "AGENTS" if (h / ".codex" / "AGENTS.md").exists() else "—",
+            "gemini": "GEMINI" if (h / ".gemini" / "GEMINI.md").exists() else "—",
+            "pi": "AGENTS" if (h / ".pi" / "agent" / "AGENTS.md").exists() else "—",
+        }
+        return [
+            ValueRow(label="skills", cells=skills),
+            ValueRow(label="rules", cells=rules),
+        ]
+
+    def _cursor_rules_dir(self) -> Path:
+        return self._dotfiles / "ai" / "agents" / "cursor" / "rules"
 
     # ------------------------------------------------------------------
     # Agent surfaces (delegates to AgentVerifyService)
@@ -90,19 +135,67 @@ class AgentOverviewService:
     # ------------------------------------------------------------------
 
     def section_mcp(self) -> list[McpRow]:
-        """Read agents/shared/mcp-servers.json; one McpRow per object-valued entry."""
-        shared_mcp = self._dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
-        servers = load_mcp_servers(shared_mcp)
+        """One McpRow per server, from each agent's LIVE config (codex via `codex mcp list`)."""
+        live = self._live_mcp()
+        names = sorted({name for servers in live.values() for name in servers})
         return [
             McpRow(
                 server=name,
-                claude="claude" in entry.targets,
-                cursor="cursor" in entry.targets,
-                codex="codex" in entry.targets,
-                gemini="gemini" in entry.targets,
+                claude=name in live["claude"],
+                cursor=name in live["cursor"],
+                codex=name in live["codex"],
+                gemini=name in live["gemini"],
+                pi=False,  # Pi has no MCP surface (rendered n/a, not a failure)
             )
-            for name, entry in servers.items()
+            for name in names
         ]
+
+    def _live_mcp(self) -> dict[str, set[str]]:
+        """Server names actually configured per agent, read from live state."""
+        h = self._home
+        return {
+            "claude": self._mcp_config_servers(h / ".claude.json"),
+            "cursor": self._mcp_config_servers(h / ".cursor" / "mcp.json"),
+            "gemini": self._mcp_config_servers(h / ".gemini" / "settings.json"),
+            "codex": self._codex_mcp(),
+            "pi": set(),
+        }
+
+    def _mcp_config_servers(self, path: Path) -> set[str]:
+        """The ``mcpServers`` keys in an agent's MCP config (empty if absent/invalid)."""
+        cfg = load_config(path, _McpServersFile)
+        return set(cfg.mcp_servers) if cfg is not None else set()
+
+    def _codex_mcp(self) -> set[str]:
+        """Live Codex MCP servers via `codex mcp list` (the name is the first token)."""
+        result = self._runner.run(("codex", "mcp", "list"))
+        if not result.ok:
+            return set()
+        servers: set[str] = set()
+        for line in result.stdout.splitlines():
+            if ("enabled" in line or "disabled" in line) and (parts := line.split()):
+                servers.add(parts[0])
+        return servers
+
+    # ------------------------------------------------------------------
+    # Plugins (Claude Code marketplace)
+    # ------------------------------------------------------------------
+
+    def section_plugins(self) -> list[PluginRow]:
+        """Installed Claude Code plugins, from ~/.claude/plugins/installed_plugins.json."""
+        config = self._home / ".claude" / "plugins" / "installed_plugins.json"
+        if not config.is_file():
+            return []
+        try:
+            data = json.loads(config.read_text())
+        except (OSError, json.JSONDecodeError):
+            return []
+        rows: list[PluginRow] = []
+        for ref, installs in data.get("plugins", {}).items():
+            name, _, marketplace = str(ref).partition("@")
+            version = installs[0].get("version", "") if installs else ""
+            rows.append(PluginRow(name=name, marketplace=marketplace, version=version))
+        return sorted(rows, key=lambda r: r.name)
 
     # ------------------------------------------------------------------
     # Section 2: Hooks
@@ -267,6 +360,7 @@ class AgentOverviewService:
                 label="Claude Code (deployed)",
                 allow=len(cfg.permissions.allow),
                 deny=len(cfg.permissions.deny),
+                source_path=str(path),
             )
         ]
 
@@ -280,6 +374,7 @@ class AgentOverviewService:
                 label="Claude (dotfiles source)",
                 allow=len(cfg.allow),
                 deny=len(cfg.deny),
+                source_path=str(path),
             )
         ]
 
@@ -293,6 +388,7 @@ class AgentOverviewService:
                 label="Cursor CLI",
                 allow=len(cfg.permissions.allow),
                 deny=len(cfg.permissions.deny),
+                source_path=str(path),
             )
         ]
 
@@ -305,4 +401,12 @@ class AgentOverviewService:
         except OSError:
             return []
         n = sum(1 for line in text.splitlines() if line.startswith("prefix_rule"))
-        return [PermissionRow(label="Codex (default.rules)", allow=0, deny=0, prefix_rules=n)]
+        return [
+            PermissionRow(
+                label="Codex (default.rules)",
+                allow=0,
+                deny=0,
+                prefix_rules=n,
+                source_path=str(path),
+            )
+        ]

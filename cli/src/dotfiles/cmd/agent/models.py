@@ -8,26 +8,48 @@ from dotfiles.agent import Agent
 
 
 class McpRow(BaseModel):
-    """One MCP server row in the agent overview."""
+    """One MCP server row in the agent overview (one bool per agent column)."""
 
     model_config = ConfigDict(frozen=True)
 
     server: str
-    claude: bool
-    cursor: bool
-    codex: bool
-    gemini: bool
+    claude: bool = False
+    cursor: bool = False
+    codex: bool = False
+    gemini: bool = False
+    pi: bool = False
 
 
 class HookRow(BaseModel):
-    """One hook-event row in the agent overview."""
+    """One hook-event row in the agent overview (one bool per agent column)."""
 
     model_config = ConfigDict(frozen=True)
 
     event: str
-    claude: bool
-    cursor: bool
-    codex: bool
+    claude: bool = False
+    cursor: bool = False
+    codex: bool = False
+    gemini: bool = False
+    pi: bool = False
+
+
+class PluginRow(BaseModel):
+    """One installed Claude Code plugin (from installed_plugins.json)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    marketplace: str
+    version: str
+
+
+class ValueRow(BaseModel):
+    """One labelled row whose per-agent cells hold display text (e.g. counts)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    label: str
+    cells: dict[str, str]  # keyed by agent name
 
 
 class SkillsSummary(BaseModel):
@@ -46,9 +68,11 @@ class SubagentRow(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str
-    claude: bool
-    codex: bool
-    pi: bool
+    claude: bool = False
+    cursor: bool = False
+    codex: bool = False
+    gemini: bool = False
+    pi: bool = False
 
 
 class RulesSummary(BaseModel):
@@ -71,6 +95,7 @@ class PermissionRow(BaseModel):
     deny: int
     # For codex default.rules, deny=0 and allow holds prefix_rule count.
     prefix_rules: int = 0
+    source_path: str = ""  # absolute path of the config, for a clickable link
 
 
 AgentSurfaceStatus = Literal["present", "empty", "missing", "skipped"]
@@ -85,6 +110,8 @@ class AgentSurface(BaseModel):
     label: str
     status: AgentSurfaceStatus
     detail: str = ""
+    quantity: str = ""  # the "how much/what" cell, e.g. "53 skills" or "key-only"
+    path: str = ""  # absolute path, for a clickable link (empty when not file-backed)
 
 
 FileValidationStatus = Literal["ok", "warn", "fail"]
@@ -125,6 +152,8 @@ class AgentOverview(BaseModel):
     rules: RulesSummary
     permissions: tuple[PermissionRow, ...]
     vendor_surfaces: tuple[AgentSurface, ...] = ()
+    plugins: tuple[PluginRow, ...] = ()
+    skills_rules: tuple[ValueRow, ...] = ()
 
 
 class CatechismEntry(BaseModel):

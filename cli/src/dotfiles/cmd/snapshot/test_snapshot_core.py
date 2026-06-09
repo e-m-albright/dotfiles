@@ -79,7 +79,7 @@ def test_agent_config_hashes_are_stable_and_per_vendor():
     a = agent_config_hashes(_overview())
     b = agent_config_hashes(_overview())
     assert a == b  # deterministic
-    assert set(a) == {"claude", "cursor", "codex", "gemini"}
+    assert set(a) == {"claude", "cursor", "codex", "gemini", "pi"}
     assert all(isinstance(v, str) and v for v in a.values())
 
 
@@ -115,7 +115,7 @@ def test_capture_builds_a_snapshot(tmp_path):
     )
     assert snap.brew.leaves == ("git",)
     assert snap.runtimes == {"node": "v22.3.0"}
-    assert set(snap.agent_config) == {"claude", "cursor", "codex", "gemini"}
+    assert set(snap.agent_config) == {"claude", "cursor", "codex", "gemini", "pi"}
 
 
 def test_write_then_load_and_list(tmp_path):

@@ -18,43 +18,15 @@ class Vendor:
 
     name: Agent
     display_name: str
-    in_overview: bool  # tracked by the agent-overview dashboard (its rows carry no `pi`)
-    cli_confirmation: str  # how to confirm the deploy from that tool's own CLI/GUI
+    in_overview: bool  # tracked as a column in the agent-overview dashboard
 
 
 VENDORS: tuple[Vendor, ...] = (
-    Vendor(
-        "claude",
-        "Claude Code",
-        in_overview=True,
-        cli_confirmation=(
-            "CLI confirmation: skills auto-listed in every Claude Code session via Skill tool"
-        ),
-    ),
-    Vendor(
-        "cursor",
-        "Cursor",
-        in_overview=True,
-        cli_confirmation="CLI confirmation: GUI only — Cursor → Settings → MCP / Rules",
-    ),
-    Vendor(
-        "codex",
-        "Codex",
-        in_overview=True,
-        cli_confirmation="CLI confirmation: 'codex' (interactive) — no list-skills subcommand",
-    ),
-    Vendor(
-        "gemini",
-        "Gemini",
-        in_overview=True,
-        cli_confirmation="CLI confirmation: 'gemini' (interactive)",
-    ),
-    Vendor(
-        "pi",
-        "Pi",
-        in_overview=False,
-        cli_confirmation="CLI confirmation: 'pi' (interactive, LM Studio local-first)",
-    ),
+    Vendor("claude", "Claude Code", in_overview=True),
+    Vendor("cursor", "Cursor", in_overview=True),
+    Vendor("codex", "Codex", in_overview=True),
+    Vendor("gemini", "Gemini", in_overview=True),
+    Vendor("pi", "Pi", in_overview=True),
 )
 
 AGENTS: tuple[Agent, ...] = tuple(v.name for v in VENDORS)
