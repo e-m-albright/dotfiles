@@ -47,6 +47,23 @@ Pi has no built-in permission system; `safe-git` intercepts bash calls and gates
 - `filter-output` / `security` (michalvavra/agents) — redact tokens/secrets from tool output.
 - Status-bar packages (`pi-powerline-footer`, `rytswd/pi-agent-extensions`) add subscription-usage + context-window display — feature ideas for our custom `git-status.ts`.
 
+## Pi capability roadmap — owning the end state
+
+Pi is our **canonical ideal agent**: smallest context tax, capabilities where they matter, no cruft. This is the decided list of what to build/keep, derived from the [capability matrix](knowledge/agent-fleet.md) front-runner column (where Claude Code leads and Pi should catch up) cross-referenced with the verified oh-my-pi / extension research below. Re-rank as the landscape moves.
+
+| Capability Claude front-ran | Pi today | Decision | Source / how |
+|---|---|---|---|
+| **Permissions** | ✓ `safe-git` + permission-policy | **Shipped** — keep | vendored `safe-git.ts` is Pi's missing permission model; matrix shows ✓ |
+| **Statusline rate-limit split (5h/7d)** | single quota % | **Parked** — build when Pi exposes both provider windows in response headers (confirmed for `openai-codex`, unverified for Anthropic-OAuth) | extend `git-status.ts` `quotaFromHeaders` |
+| **MCP** | none | **Won't build** — local-first is the point; stays `· n/a by choice`, not a gap | — |
+| **Hooks** | extensions | **Sufficient** — Pi's hot-reloadable extensions ARE its hook/automation surface; no `hooks.json` adapter needed | — |
+| **Second opinion** (consult Claude/Codex mid-task) | — | **Evaluate** — high leverage; lets Pi tap our other subscriptions | `oracle` (hjanuschka/shitty-extensions) |
+| **Output redaction** (secrets/tokens) | — | **Evaluate** — defense-in-depth for tool output | `filter-output`/`security` (michalvavra/agents) |
+| **Robust large-file edits** | string-replace | **Defer** — only if Edit-churn becomes painful; test on our models first | oh-my-pi hashline (side-by-side `~/.omp`) |
+| **IDE replacement** (LSP rename, DAP debug, kernels) | — | **Side-car only** — never in the fleet Pi slot (abandons minimalism); run oh-my-pi under `~/.omp` for refactor/debug sessions | `mise use -g github:can1357/oh-my-pi` |
+
+The throughline: **own what raises quality at low context cost (permissions, second-opinion, redaction, statusline), refuse what trades away the sub-1k-token minimalism that is Pi's whole advantage (32-tool harnesses, MCP, IDE bloat).** When a "build"/"evaluate" item is acted on, move it into "Packages & extensions we run" and flip the matrix cell.
+
 ## oh-my-pi vs. base Pi — decision
 
 **Verdict: stay on base Pi for the fleet slot.** oh-my-pi ([can1357/oh-my-pi](https://github.com/can1357/oh-my-pi)) is genuinely impressive but solves a different problem.
