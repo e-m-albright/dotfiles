@@ -85,8 +85,9 @@ The `cli` job is literally `just check` — **the same recipes hooks run locally
 
 ### L4 · Scheduled / async — *schedule the finding, gate the fixing*
 Runs on a cadence; **opens an issue or draft PR, never auto-merges, never auto-applies a generative refactor** (a cited anti-pattern — unattended refactoring is cosmetic, 53.9% scope-creep).
+- **Orchestration** — [`ai/routines/`](../../ai/routines/): `registry.json` (one entry per routine: cron, model, audits, output, optional `stacks` for affectedness) + `protocol.md` (the shared run loop: affectedness-gate → fresh scan branch → run audits/scorecard → synthesize → write `findings.md` → open a draft PR). The only file a routine writes is the ledger.
 - `scorecard.sh` [D] — LOC, suppression counts, churn×LOC hotspots; diff against the committed baseline.
-- audit skills [S] — `ai/audits/{god-functions, duplication, coupling, abstractions}.md` detect smells a linter can't. *P3, P4, P5.*
+- audit skills [S] — the [`ai/audits/`](../../ai/audits/) scanner library: generic (`structural`, `security`, `bug-hunt`, `duplication`, `coupling`, `abstractions`, `ai-usage`, `docs-drift`, `observability`, `god-functions`) + `stacks:`-tagged stack-specific (`rust-contracts`, `python-contracts`, `sql-contracts`, `primitive-obsession`, `sqlx-cache`, `migration-safety`) run only on a matching repo. *P3, P4, P5.*
 
 ### L5 · Convergence — the `converge` engine, on demand [S → D]
 The loop that purifies *existing* code: **measure** (scorecard) → **diagnose** (rank by churn×complexity) → **refactor** (auto-fix mechanical, grill judgment calls) → **lower the baselines**. The final step is what turns a one-off stochastic improvement into a permanent deterministic floor. Reads/writes the `docs/adr/` rejected-decision log (anti-oscillation memory) and `docs/health/<scope>/` state.
@@ -191,9 +192,9 @@ This map is a living artifact, built on the shoulders of giants (Ousterhout, Fow
 > **Every rite traces to an article; every article has a rite.** Adding a practice means naming the article it serves, or it's superstition. Adding an article means naming the rite that will enforce it, or it's a claim we can't keep.
 
 **Known open frontiers** (where the codex should grow next):
-- **Voice gates — shipped.** `just lint-prose` (deterministic slop-phrase blocklist, wired into commit-msg + pre-commit) + `ai/audits/voice.md` (stochastic, advisory). Remaining: an em-dash-density heuristic and a commit-lint for imperative mood.
+- **Voice gates — shipped.** `just lint-prose` (deterministic slop-phrase blocklist, blocking) + an **em-dash advisory** (warn, `.md`-exempt, on code + commit messages — `exit 0` per the fight-loop guardrails, promotable to blocking) + `ai/audits/voice.md` (stochastic). Remaining: a commit-lint for imperative mood.
 - **All four CISQ pillars now have a convergent home.** Maintainability (`converge` + the ratchet), Performance (`perf-check.sh` / `just perf`), Reliability (coverage floor + **mutation score** via `just mutation` + silent-catch/skipped ratchets), Security (dep-audit + gitleaks + the suppression ratchet). The remaining work is *operational*, not architectural: **establish perf + mutation baselines and wire them into a nightly CI job** (both are slow/noisy, so they live above L3, not in it).
-- **Wire one real scheduled detection routine** — the policy exists; the cron doesn't.
+- **Scheduled detection — orchestration shipped.** [`ai/routines/`](../../ai/routines/) (`registry.json` + `protocol.md`) declares the routines and the detect-only run loop, consuming the `ai/audits/` library + `scorecard.sh`. Remaining: a cron runner to execute the registry (the `schedule` builtin or a CI cron).
 - **Fold the siloed doctrines** (security, fleet-uniformity, build-discipline) into the Canon's enforcement articles, not just this map's pointers.
 - **Language packs** — the ratchet's suppression catalog is Python/TS/Rust-flavoured; "any repo" is really "any repo we've hand-coded patterns for."
 

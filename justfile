@@ -92,6 +92,16 @@ lint-prose *files:
             fi
         done < "$list"
     done
+    # Em-dash (U+2014) is an LLM tell. ADVISORY (warn, never block): *.md is exempt
+    # (docs/specs/ADRs use it legitimately); code + commit messages are flagged.
+    # Promote to blocking after a stability cycle (PREVIEW over BLOCK; gates 5).
+    for f in $files; do
+        [ -f "$f" ] || continue
+        case "$f" in *.md) continue ;; esac
+        if grep -q '—' "$f" 2>/dev/null; then
+            grep -n '—' "$f" | sed "s|^|$f (em-dash, advisory): |"
+        fi
+    done
     if [ "$found" -eq 1 ]; then
         echo "voice: banned slop phrase(s) above — rephrase (see ai/agents/shared/slop-phrases.txt)" >&2
         exit 1
