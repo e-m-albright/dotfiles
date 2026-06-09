@@ -1,6 +1,6 @@
 # Agent Fleet Uniformity
 
-> **Last reviewed**: 2026-06-01 — Refresh when a vendor changes its config schema or a new agent joins the fleet.
+> **Last reviewed**: 2026-06-09 — Refresh when a vendor changes its config schema or a new agent joins the fleet.
 
 We run five coding agents — **Claude Code, Codex, Cursor, Gemini, Pi** — from one set of dotfiles config (`ai/agents/`), deployed by the Python CLI (`dotfiles agent setup`). This doc records what "uniform" means across them, where it can't be (vendor limits), and how the two cross-cutting concerns — **statuslines** and **permissions** — are kept in sync.
 
@@ -16,18 +16,41 @@ This table is the **single source of truth** — `cli/.../capability_matrix.py` 
 |---|---|---|---|---|---|---|
 | Rules (instructions) | — | ✓ `CLAUDE.md` | ✓ `AGENTS.md` | ✓ `.mdc` | ✓ `GEMINI.md` | ✓ `AGENTS.md` |
 | Skills | Claude | ✓ `.claude/skills` | ✓ `.agents/skills` | ✓ `skills-cursor` | ⊘ *(no skills surface)* | ✓ `.agents/skills` |
-| Subagents | Claude | ✓ `.claude/agents` | ✓ `.codex/agents` | ⊘ *(no subagents)* | ⊘ *(no subagents)* | ✓ `.pi/agent/agents` |
-| MCP servers | Claude | ✓ | ✓ | ✓ | ✓ | — *(by choice — local-first)* |
+| Subagents | Claude | ✓ `.claude/agents` | ✓ `.codex/agents` | ✓ `.cursor/agents` *(2.4)* | ⊘ *(no subagents)* | ✓ `.pi/agent/agents` |
+| MCP servers | Claude | ✓ `granola` | — | — | — | — *(by choice — local-first)* |
 | Hooks | Claude | ✓ | ✓ | ✓ | ⊘ | ⊘ *(extensions instead)* |
 | Statusline | Claude | ✓ `statusline.sh` | ✓ `statusline.toml` | ⊘ native UI | ⊘ native footer | ★ `git-status.ts` |
 | Permissions | Claude | ✓ `permissions.json` | ⊕ `default.rules` + sandbox | ✓ `cli-config.json` | ✓ `tools.exclude` | ✓ `permission-policy.json` + presets |
-| Plugins | Claude | ✓ `marketplace` | ⊘ *(no marketplace)* | ⊘ *(GUI extensions)* | ⊘ | ⊘ |
+| Plugins | Claude | ✓ `marketplace` | ⊘ *(no marketplace)* | — *(marketplace 2.5, GUI-managed)* | ⊘ | ⊘ |
 
-Glyphs encode the **closable-vs-not-closable** axis: **✓** live · **✗** closable gap (the vendor supports it; we simply haven't deployed it — *ours* to close) · **⊘** unsupported (the vendor has no such surface yet — closable only by *their* tooling development) · **—** n/a by our choice (e.g. Pi MCP, local-first) · **★** canonical (the Pi end-state we converge toward) · **⊕** different mechanism. **Front-runner** = who shipped the capability first (Claude Code usually leads, the others copy, and we decide what to own in Pi).
+Glyphs encode the **closable-vs-not-closable** axis: **✓** live · **✗** closable gap (the vendor supports it; we simply haven't deployed it — *ours* to close) · **⊘** unsupported (the vendor has no such surface yet — closable only by *their* tooling development) · **—** n/a by our choice (e.g. MCP everywhere but Claude) · **★** canonical (the Pi end-state we converge toward) · **⊕** different mechanism. **Front-runner** = who shipped the capability first (Claude Code usually leads, the others copy, and we decide what to own in Pi).
 
-Today's one **closable gap**: Gemini MCP (✗ in `agent overview`) — Gemini supports `mcpServers` but no server currently targets it. Everything else absent is either ⊘ (wait for the vendor) or — (our choice).
+**MCP is intentionally near-zero** (June 2026 decision): only **granola** earns a server (semantic meeting-search has no CLI), on Claude alone. **context7 was retired for the `ctx7` CLI** (`npx ctx7 library <name>` / `ctx7 docs <id>` — full parity, universal across every shell-capable agent, no per-vendor patchiness, no always-on tax). So `mcp` is `✓` on Claude and `—` (our choice) elsewhere — zero closable gaps.
 
 Only the **terminal** agents (Claude, Codex, Pi) can render a custom statusline. Cursor and Gemini use their own status UI and are out of scope for statusline alignment.
+
+---
+
+## The fifth slot: Gemini → Antigravity (decided 2026-06-09)
+
+**Decision: drop Gemini CLI, migrate the fifth fleet slot to Google's Antigravity CLI (`agy`).** Google is [transitioning Gemini CLI to Antigravity CLI](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/); **on 2026-06-18 Gemini CLI stops serving Pro/Ultra/free individual users.** Antigravity also closes Gemini's old gaps — it ships **Skills, Subagents, Hooks, and Plugins** (Gemini Extensions rebranded), so the fifth slot goes from the weakest column to near-parity.
+
+**Status: staged, not yet executed** — `agy` is not installed on this machine and several config paths are unverified. Do **not** script the unverified surfaces until confirmed on a live `agy`.
+
+Verified Antigravity facts (sources below):
+
+| Surface | Config | Confidence |
+|---|---|---|
+| Install | `curl -fsSL https://antigravity.google/cli/install.sh \| bash` → `~/.local/bin/agy` | verified |
+| Global instructions | `~/.gemini/AGENTS.md` **and** `~/.gemini/GEMINI.md` (GEMINI.md outranks AGENTS.md). **GEMINI.md is not dead.** Prefer **AGENTS.md** for portability — both `agy` and Gemini CLI hard-code `~/.gemini/GEMINI.md`, so running both leaks rules (gemini-cli #16058, closed "not planned"). | verified |
+| Skills | global `~/.gemini/antigravity-cli/skills/<name>/SKILL.md`; project `.agents/skills/` | verified |
+| MCP | `mcp_config.json` (global `~/.gemini/antigravity-cli/`); remote uses `serverUrl` (renamed from `url`) | partial |
+| Plugins | `agy plugin` CLI; `agy plugin import gemini` to migrate Extensions | verified |
+| Subagents · Hooks · Permissions · Statusline | **paths/format unverified** — confirm on a live `agy` first | ⚠️ |
+
+**Migration plan when `agy` lands:** (1) install `agy`; (2) `agy --version` + inspect `~/.gemini/` and `~/.gemini/antigravity-cli/` to verify the unverified paths; (3) replace the `gemini` vendor in `dotfiles.agent.VENDORS` with `antigravity` (display "Antigravity"); (4) write `vendors/antigravity.py` deploying the kernel to `~/.gemini/AGENTS.md`, MCP→`mcp_config.json`, skills via the shared pipeline, and — once verified — subagents/hooks/permissions; (5) flip the matrix column gemini→antigravity and close its now-supported skills/subagents/hooks. The `dotfiles agent web copy` Gemini-web-chat command is unrelated (it pastes prompts into the Gemini *web* app) and stays.
+
+Sources: [transitioning blog](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/) · [Antigravity subagents/skills](https://developers.googleblog.com/subagents-have-arrived-in-gemini-cli/) · Gemini CLI v0.26.0 (Skills/Hooks/Subagents) · gemini-cli issue #16058.
 
 ---
 

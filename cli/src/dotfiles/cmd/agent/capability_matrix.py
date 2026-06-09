@@ -126,14 +126,17 @@ def _cap(
 CAPABILITY_MATRIX: tuple[Capability, ...] = (
     _cap("rules", "", "required", "required", "required", "required", "required"),
     _cap("skills", "claude", "required", "required", "required", "unsupported", "required"),
-    _cap("subagents", "claude", "required", "unsupported", "required", "unsupported", "required"),
-    _cap("mcp", "claude", "required", "required", "required", "required", "na"),
+    # Cursor gained subagents in 2.4 (.cursor/agents/, isolated context, nestable in 2.5).
+    _cap("subagents", "claude", "required", "required", "required", "unsupported", "required"),
+    # MCP intentionally minimized: only granola earns it (semantic meeting-search, no CLI),
+    # on Claude (the main driver). context7 retired for the `ctx7` CLI; nobody else runs MCP.
+    _cap("mcp", "claude", "required", "na", "na", "na", "na"),
     _cap("hooks", "claude", "required", "required", "required", "unsupported", "unsupported"),
     _cap("statusline", "claude", "required", "unsupported", "required", "unsupported", "canonical"),
     _cap("permissions", "claude", "required", "required", "different", "required", "required"),
-    _cap(
-        "plugins", "claude", "required", "unsupported", "unsupported", "unsupported", "unsupported"
-    ),
+    # Cursor gained a plugin marketplace in 2.5, but it's GUI/user-managed — not a
+    # surface we deploy as fleet state (na), unlike Claude's central plugins.yaml.
+    _cap("plugins", "claude", "required", "na", "unsupported", "unsupported", "unsupported"),
 )
 
 
@@ -217,6 +220,7 @@ class CapabilityMatrixService:
         dirs: dict[Agent, Path] = {
             "claude": h / ".claude" / "agents",
             "codex": h / ".codex" / "agents",
+            "cursor": h / ".cursor" / "agents",  # Cursor 2.4+ reads these
             "pi": h / ".pi" / "agent" / "agents",
         }
         path = dirs.get(agent)

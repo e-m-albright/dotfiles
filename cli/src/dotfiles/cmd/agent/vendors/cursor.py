@@ -21,6 +21,7 @@ from typing import cast
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.lib import (
     StepResult,
+    deploy_subagents,
     mcp_servers_for,
     mcp_skip,
     merge_managed_mcp,
@@ -64,6 +65,8 @@ def setup_cursor(
     results: list[StepResult] = []
     results.extend(_setup_mcp(dotfiles_dir, home, reset_mcp=reset_mcp))
     results.extend(_setup_rules(dotfiles_dir))
+    # Cursor 2.4+ reads ~/.cursor/agents — deploy our shared subagents there too.
+    results.extend(deploy_subagents(dotfiles_dir, home / ".cursor" / "agents"))
     results.extend(_setup_cli_config(dotfiles_dir, home))
     results.extend(_setup_plugin(dotfiles_dir, home))
     results.extend(_setup_cursorignore(dotfiles_dir))

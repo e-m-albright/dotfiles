@@ -88,7 +88,7 @@ def _deploy_full_home(home: Path, dotfiles: Path) -> None:
     for skills_dir in (".claude/skills", ".cursor/skills-cursor", ".agents/skills"):
         (home / skills_dir / "demo").mkdir(parents=True)
         (home / skills_dir / "demo" / "SKILL.md").write_text("---\nname: demo\n---\n")
-    for agents_dir in (".claude/agents", ".codex/agents", ".pi/agent/agents"):
+    for agents_dir in (".claude/agents", ".codex/agents", ".cursor/agents", ".pi/agent/agents"):
         (home / agents_dir).mkdir(parents=True, exist_ok=True)
         (home / agents_dir / "demo.md").write_text("# demo\n")
     (home / ".claude" / "plugins").mkdir(parents=True)
