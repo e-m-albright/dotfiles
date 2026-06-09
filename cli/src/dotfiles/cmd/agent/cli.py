@@ -405,8 +405,18 @@ def _render_skills(skills: list[SkillInfo]) -> None:
 
 
 @skills_app.callback(invoke_without_command=True)
-def skills_list(ctx: typer.Context) -> None:
-    """List every skill alphabetically with its origin and description."""
+def skills_list(
+    ctx: typer.Context,
+    show_all: bool = typer.Option(
+        False, "--all", "-a", help="Include vendor-shipped builtin skills (hidden by default)."
+    ),
+) -> None:
+    """List every skill alphabetically with its origin and description.
+
+    Vendor-shipped builtins (Cursor/Codex natives) aren't ours to manage, so
+    they're hidden by default — the listing shows what we own and decide. Pass
+    ``--all`` to include them.
+    """
     if ctx.invoked_subcommand is not None:
         return
     app_ctx = app_context(ctx)
@@ -415,11 +425,16 @@ def skills_list(ctx: typer.Context) -> None:
     if not items:
         print_status(console, "info", "No skills found")
         return
+    hidden_builtin = 0 if show_all else sum(1 for s in items if s.origin == "builtin")
+    if not show_all:
+        items = [s for s in items if s.origin != "builtin"]
     counts: dict[str, int] = {}
     for s in items:
         counts[s.origin] = counts.get(s.origin, 0) + 1
     tally = "  ".join(f"[{_ORIGIN_STYLE[o]}]{o} {n}[/]" for o, n in sorted(counts.items()))
     console.print(f"  {len(items)} skills · {tally}")
+    if hidden_builtin:
+        console.print(f"  [dim]+ {hidden_builtin} vendor builtin hidden · --all to show[/]")
     console.print()
     _render_skills(items)
 

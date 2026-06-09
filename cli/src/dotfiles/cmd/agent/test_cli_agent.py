@@ -151,6 +151,40 @@ def test_agent_lint_empty_dotfiles_exits_zero(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# agent skills (list) — builtin hiding
+# ---------------------------------------------------------------------------
+
+
+def _home_with_vendor_builtin(base: Path, name: str = "vendor-thing") -> Path:
+    """A fake $HOME with one Cursor-shipped builtin skill (only in skills-cursor)."""
+    home = base / "home"
+    skill = home / ".cursor" / "skills-cursor" / name
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text(
+        f"---\nname: {name}\ndescription: Use when the vendor ships this natively.\n---\n\n# X\n"
+    )
+    return home
+
+
+def test_agent_skills_hides_builtin_by_default(tmp_path: Path) -> None:
+    home = _home_with_vendor_builtin(tmp_path)
+    ctx = make_fake_context(home=home, dotfiles_dir=tmp_path / "dotfiles")
+    result = runner.invoke(app, ["agent", "skills"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "vendor-thing" not in result.output
+    assert "1 vendor builtin hidden" in result.output
+
+
+def test_agent_skills_all_shows_builtin(tmp_path: Path) -> None:
+    home = _home_with_vendor_builtin(tmp_path)
+    ctx = make_fake_context(home=home, dotfiles_dir=tmp_path / "dotfiles")
+    result = runner.invoke(app, ["agent", "skills", "--all"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "vendor-thing" in result.output
+    assert "builtin" in result.output
+
+
+# ---------------------------------------------------------------------------
 # agent web copy
 # ---------------------------------------------------------------------------
 

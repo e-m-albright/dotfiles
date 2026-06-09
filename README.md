@@ -344,7 +344,7 @@ dotfiles dock                # Reset Dock layout
 dotfiles profile-shell       # Profile shell startup time
 dotfiles agent overview      # Show active agentic setup (Claude Code + Cursor)
 dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean, --prune); prints the Cursor plugin checklist
-dotfiles agent skills        # List every skill alphabetically by origin (canonical/external/plugin/builtin/retired/untracked) with descriptions
+dotfiles agent skills        # List skills by origin (canonical/external/plugin/retired/untracked) with descriptions; vendor builtins hidden (--all to show)
 dotfiles agent skills prune  # Dry-run: bucket deployed skills into retired (ours, deletable) / builtin (vendor, untouched) / untracked; --apply deletes only retired
 dotfiles agent verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
 dotfiles agent stats         # Skill-usage analytics from Claude + Codex transcripts: leaderboard, dead skills, weak triggers (--since, --json)
