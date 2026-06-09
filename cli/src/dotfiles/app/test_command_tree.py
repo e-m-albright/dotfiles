@@ -13,9 +13,12 @@ command lands outside a known Rich help panel (which would render it un-grouped)
 from __future__ import annotations
 
 import re
+from io import StringIO
 from pathlib import Path
 
-from dotfiles.app.main import PANEL_AI, PANEL_CONTROL, PANEL_MACHINE, app
+from rich.console import Console
+
+from dotfiles.app.main import PANEL_AI, PANEL_CONTROL, PANEL_MACHINE, app, render_help_tree
 
 _REPO = Path(__file__).resolve().parents[4]
 _SHIM = _REPO / "bin" / "dotfiles"
@@ -63,3 +66,28 @@ def test_every_top_level_command_is_grouped_into_a_known_panel() -> None:
     the Machine/Control/AI grouping the unified help relies on."""
     ungrouped = {name: panel for name, panel in _registered().items() if panel not in _PANELS}
     assert not ungrouped, f"top-level commands outside a known help panel: {ungrouped}"
+
+
+def _render() -> str:
+    """Render the branded top-level help to a string at a fixed width."""
+    console = Console(file=StringIO(), force_terminal=False, width=120)
+    render_help_tree(console)
+    return console.file.getvalue()  # type: ignore[attr-defined]
+
+
+def test_top_level_help_nests_every_sub_apps_subcommands() -> None:
+    """The whole point of the custom renderer: a group's subcommands are visible on
+    the front door, not hidden behind one row. Sample one subcommand per sub-app —
+    each is reachable only as `dfs <group> <sub>`, so its presence proves nesting."""
+    out = _render()
+    for hidden_subcommand in ("catechism", "estimate", "prune", "status", "stale", "diff"):
+        assert hidden_subcommand in out, f"{hidden_subcommand!r} missing from the nested help tree"
+
+
+def test_subcommands_render_under_their_parent_group() -> None:
+    """`catechism` is an `agent` subcommand and `compare` a `benchmark` one; each must
+    appear after its parent and before the next group, i.e. inside the right branch."""
+    out = _render()
+    assert (
+        out.index("agent") < out.index("catechism") < out.index("benchmark") < out.index("compare")
+    )

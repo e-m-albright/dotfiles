@@ -436,6 +436,17 @@ _ORIGIN_STYLE: dict[str, str] = {
     "untracked": "yellow",
 }
 
+# Per-origin provenance + how-to-manage hint, shown in each section header so the
+# row list needs no origin column. Plugins override this with their marketplace ref.
+_ORIGIN_PROVENANCE: dict[str, str] = {
+    "canonical": "this repo, ai/skills/ — edit directly",
+    "external": "opt-in via external-skills.txt — npx skills add/remove",
+    "plugin": "Claude Code plugin — manage via /plugin",
+    "builtin": "vendor builtin (Cursor/Codex) — left untouched",
+    "retired": "was ours, removed from canonical — dfs agent skills prune",
+    "untracked": "manual/registry install — add to external-skills.txt or delete",
+}
+
 # `agent skills` (list) + `agent skills prune` — skills is its own sub-app.
 skills_app = typer.Typer(help="List skills by origin, and prune retired ones.")
 
@@ -444,22 +455,44 @@ def _clip(text: str, width: int) -> str:
     return text if len(text) <= width else text[: max(1, width - 1)] + "…"
 
 
+def _order_by_origin(skills: list[SkillInfo]) -> list[SkillInfo]:
+    """Group by origin (canonical → … → untracked, the _ORIGIN_STYLE order), then
+    alphabetically by name within each origin. Unknown origins sort last."""
+    rank = {origin: i for i, origin in enumerate(_ORIGIN_STYLE)}
+    return sorted(skills, key=lambda s: (rank.get(s.origin, len(rank)), s.name))
+
+
+def _origin_provenance(origin: str, group: list[SkillInfo]) -> str:
+    """Provenance + management hint for an origin's section header. For plugins the
+    marketplace ref is the real fingerprint, so surface the distinct ref(s)."""
+    if origin == "plugin":
+        refs = sorted({s.source for s in group if s.source})
+        if refs:
+            return f"{', '.join(refs)} — manage via /plugin"
+    return _ORIGIN_PROVENANCE.get(origin, "unknown provenance")
+
+
 def _render_skills(skills: list[SkillInfo]) -> None:
-    # Manual columns (not a Rich Table): a no-wrap description column otherwise
-    # collapses the origin column at narrow widths. Truncate to the real width.
+    # Per-origin sections (input is already grouped by _order_by_origin). The header
+    # carries origin + provenance + count, so rows drop the now-redundant origin
+    # column and hand that width to the description. Manual columns (not a Rich
+    # Table) so a no-wrap description can't collapse the name column at narrow widths.
     name_w = min(34, max((len(s.name) for s in skills), default=8) + 1)
-    origin_w = 10
-    desc_w = max(16, console.width - 2 - name_w - 1 - origin_w - 1)
-    console.print(
-        f"  [bold]{'skill':<{name_w}}[/] [bold]{'origin':<{origin_w}}[/] [bold]description[/]"
-    )
+    desc_w = max(16, console.width - 5 - name_w)
+    by_origin: dict[str, list[SkillInfo]] = {}
     for s in skills:
-        style = _ORIGIN_STYLE.get(s.origin, "dim")
-        desc = _clip(" ".join(s.description.split()), desc_w)
+        by_origin.setdefault(s.origin, []).append(s)
+    for origin, group in by_origin.items():
+        color = _ORIGIN_STYLE.get(origin, "dim")
         console.print(
-            f"  {escape(_clip(s.name, name_w).ljust(name_w))} "
-            f"[{style}]{s.origin.ljust(origin_w)}[/] [{_GOLD}]{escape(desc)}[/]"
+            f"\n  [bold {color}]{origin}[/] "
+            f"[dim]· {escape(_origin_provenance(origin, group))} · {len(group)}[/]"
         )
+        for s in group:
+            desc = _clip(" ".join(s.description.split()), desc_w)
+            console.print(
+                f"    {escape(_clip(s.name, name_w).ljust(name_w))} [{_GOLD}]{escape(desc)}[/]"
+            )
 
 
 @skills_app.callback(invoke_without_command=True)
@@ -469,7 +502,7 @@ def skills_list(
         False, "--all", "-a", help="Include vendor-shipped builtin skills (hidden by default)."
     ),
 ) -> None:
-    """List every skill alphabetically with its origin and description.
+    """List every skill grouped by origin, then alphabetically by name.
 
     Vendor-shipped builtins (Cursor/Codex natives) aren't ours to manage, so
     they're hidden by default — the listing shows what we own and decide. Pass
@@ -486,6 +519,7 @@ def skills_list(
     hidden_builtin = 0 if show_all else sum(1 for s in items if s.origin == "builtin")
     if not show_all:
         items = [s for s in items if s.origin != "builtin"]
+    items = _order_by_origin(items)
     counts: dict[str, int] = {}
     for s in items:
         counts[s.origin] = counts.get(s.origin, 0) + 1
