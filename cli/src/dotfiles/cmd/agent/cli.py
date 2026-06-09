@@ -12,7 +12,7 @@ import typer
 from rich.markup import escape
 from rich.table import Table
 
-from dotfiles.agent import OVERVIEW_AGENTS, VENDORS
+from dotfiles.agent import OVERVIEW_AGENTS, OVERVIEW_COLS, VENDORS
 from dotfiles.app.context import app_context
 from dotfiles.cmd.agent.capability_matrix import (
     FLEET_STALE_DAYS as _FLEET_STALE_DAYS,
@@ -127,7 +127,7 @@ def _path_link(path: str, home: Path) -> str:
 
 
 def _matrix_header(title: str) -> None:
-    cols = "".join(a.center(_COL_W) for a in _AGENT_COLS)
+    cols = "".join(OVERVIEW_COLS.get(a, a).center(_COL_W) for a in _AGENT_COLS)
     head = f"▸ {title}"
     pad = " " * max(1, 2 + _LABEL_W - len(head))
     console.print(f"\n[bold]{escape(head)}[/]{pad}[dim]{cols}[/]")

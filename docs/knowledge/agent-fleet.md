@@ -12,7 +12,7 @@ The guiding rule: **one source of truth per concern, translated per vendor, drif
 
 This table is the **single source of truth** — `cli/.../capability_matrix.py` mirrors it cell-for-cell, a drift test (`test_capability_matrix.py`) fails if they diverge, and `dotfiles agent overview` renders it **live** (probing what's actually deployed, so an unmet target shows as a gap, never a false green).
 
-| Capability | Front-runner | Claude Code | Codex | Cursor | Gemini | Pi |
+| Capability | Front-runner | Claude Code | Codex | Cursor | Antigravity | Pi |
 |---|---|---|---|---|---|---|
 | Rules (instructions) | — | ✓ `CLAUDE.md` | ✓ `AGENTS.md` | ✓ `.mdc` | ✓ `GEMINI.md` | ✓ `AGENTS.md` |
 | Skills | Claude | ✓ `.claude/skills` | ✓ `.agents/skills` | ✓ `skills-cursor` | ⊘ *(no skills surface)* | ✓ `.agents/skills` |

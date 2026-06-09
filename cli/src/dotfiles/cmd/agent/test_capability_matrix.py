@@ -143,7 +143,7 @@ _HEADER_AGENT = {
     "claude code": "claude",
     "codex": "codex",
     "cursor": "cursor",
-    "gemini": "gemini",
+    "antigravity": "gemini",  # doc header is the display name; the key is the ~/.gemini slot
     "pi": "pi",
 }
 
