@@ -1,0 +1,23 @@
+{
+  "language": "go",
+  "markers": ["go.mod"],
+  "files_glob": "**/*.go",
+  "run_from": ".",
+  "suppression_patterns": {
+    "nolint": "//nolint",
+    "ignored-error": "_ = ",
+    "panic": "\\bpanic\\(",
+    "skipped-test": "\\bt\\.Skip\\(",
+    "todo": "TODO|FIXME|XXX"
+  },
+  "tools": {
+    "fmt": "gofmt -l",
+    "lint": "golangci-lint run",
+    "types": "go vet ./...",
+    "test": "go test ./...",
+    "coverage": "go test -coverprofile -covermode=atomic",
+    "complexity": "gocyclo -over N",
+    "mutation": "go-mutesting",
+    "audit": "govulncheck ./..."
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "language": "typescript",
+  "markers": ["tsconfig.json", "package.json"],
+  "files_glob": "**/*.{ts,tsx}",
+  "run_from": ".",
+  "suppression_patterns": {
+    "ts-ignore": "// *@ts-(ignore|expect-error|nocheck)",
+    "lint-disable": "eslint-disable|biome-ignore|svelte-ignore",
+    "any-type": "\\bas any\\b|: *any\\b",
+    "non-null": "\\)!|\\w!\\.",
+    "skipped-test": "\\b(it|test|describe)\\.skip\\b",
+    "no-cover": "c8 ignore|istanbul ignore",
+    "todo": "TODO|FIXME|XXX"
+  },
+  "tools": {
+    "fmt": "biome format",
+    "lint": "biome lint",
+    "types": "tsc --noEmit",
+    "test": "vitest",
+    "coverage": "vitest --coverage",
+    "complexity": "eslint complexity rule",
+    "mutation": "stryker run",
+    "audit": "bun audit"
+  }
+}

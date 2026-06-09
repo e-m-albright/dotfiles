@@ -17,24 +17,12 @@ from datetime import date
 from pathlib import Path
 
 from dotfiles.adapters.ports import ProcessRunner
-from dotfiles.cmd.agent.models import HealthBootstrap, Hotspot, Scorecard
+from dotfiles.cmd.agent.lang_packs import GENERIC, detect_pack
+from dotfiles.cmd.agent.models import HealthBootstrap, Hotspot, LanguagePack, Scorecard
 
-# Canonical multi-language suppression families: name -> extended-regex.
-# Mirrors converge/scripts/scorecard.sh so scorecard counts and ratchet ceilings
-# speak ONE vocabulary; ratchet-check.sh recounts these (scoped, test-excluded).
-SUPPRESSION_PATTERNS: dict[str, str] = {
-    "type-ignore": r"# *type: *ignore|// *@ts-(ignore|expect-error)",
-    "lint-disable": r"# *noqa|# *pyright: *ignore|eslint-disable|biome-ignore|svelte-ignore",
-    "allow-attr": r"#\[allow\(",
-    # Alternation is factored into a group so this catalog file doesn't match its
-    # own grep — the one family whose naive literal form would equal its own match.
-    "broad-except": r"except (Exception|BaseException)",
-    "any-type": r"dict\[str, *Any\]|: *Any\b|\bas any\b",
-    "cast-escape": r"\bcast\(|\.unwrap\(\)",
-    "skipped-test": r"@pytest\.mark\.skip|\bit\.skip\b|\bdescribe\.skip\b|#\[ignore\]",
-    "todo": r"TODO|FIXME|XXX",
-    "no-cover": r"# *pragma: *no cover|c8 ignore|istanbul ignore",
-}
+# Back-compat alias: the generic multi-language family set. Language-specific
+# patterns come from the detected pack (ai/skills/converge/lang/).
+SUPPRESSION_PATTERNS: dict[str, str] = GENERIC.suppression_patterns
 
 # Seed high, then let `ratchet-check.sh --update` (monotonic: only lowers) write
 # the real ceilings from a scoped recount.
@@ -66,18 +54,27 @@ class HealthService:
         self._runner = runner
         self._scorecard = scripts_dir / "scorecard.sh"
         self._ratchet = scripts_dir / "ratchet-check.sh"
+        self._lang_dir = scripts_dir.parent / "lang"
 
     def bootstrap(
         self,
         *,
         target: Path,
         scope: str,
-        files_glob: str,
-        run_from: str,
         today: date,
+        files_glob: str | None = None,
+        run_from: str | None = None,
         force: bool = False,
     ) -> HealthBootstrap:
-        """Score the repo, seed (or keep) baselines.json, seed findings.md."""
+        """Score the repo, seed (or keep) baselines.json, seed findings.md.
+
+        The language is detected from marker files (overridable with files_glob /
+        run_from); the matching pack supplies the glob and suppression patterns.
+        """
+        pack = detect_pack(target, self._lang_dir)
+        glob = files_glob or pack.files_glob
+        rfrom = run_from or pack.run_from
+
         card = self._scorecard_json(target)
         scope_dir = target / "docs" / "health" / scope
         baselines = scope_dir / "baselines.json"
@@ -86,8 +83,8 @@ class HealthService:
         created = force or not baselines.exists()
         if created:
             scope_dir.mkdir(parents=True, exist_ok=True)
-            self._write_baselines(baselines, scope, files_glob, run_from, card.loc, today)
-            self._ratchet_update(baselines, target / run_from)
+            self._write_baselines(baselines, scope, glob, rfrom, card.loc, today, pack)
+            self._ratchet_update(baselines, target / rfrom)
         if not findings.exists():
             findings.parent.mkdir(parents=True, exist_ok=True)
             findings.write_text(_findings_skeleton(scope, today))
@@ -95,6 +92,7 @@ class HealthService:
         return HealthBootstrap(
             scope=scope,
             target=str(target),
+            language=pack.language,
             baselines_path=str(baselines),
             findings_path=str(findings),
             created=created,
@@ -126,16 +124,19 @@ class HealthService:
         run_from: str,
         loc: int,
         today: date,
+        pack: LanguagePack,
     ) -> None:
+        patterns = pack.suppression_patterns
         doc = {
             "scope": scope,
+            "language": pack.language,
             "files_glob": files_glob,
             "run_from": run_from,
             "updated": today.isoformat(),
             "policy": _POLICY,
             "loc_nontest": loc,
-            "suppressions": dict.fromkeys(SUPPRESSION_PATTERNS, _SEED_CEILING),
-            "suppression_patterns": dict(SUPPRESSION_PATTERNS),
+            "suppressions": dict.fromkeys(patterns, _SEED_CEILING),
+            "suppression_patterns": dict(patterns),
         }
         path.write_text(json.dumps(doc, indent=2) + "\n")
 

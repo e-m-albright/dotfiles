@@ -38,6 +38,48 @@ def _scripted_runner(scripts: Path, card: dict | None = None) -> FakeProcessRunn
     return runner
 
 
+def test_bootstrap_detects_language_pack(tmp_path: Path) -> None:
+    # scripts_dir.parent/lang is where packs live; seed a python pack there.
+    scripts = tmp_path / "converge" / "scripts"
+    lang = tmp_path / "converge" / "lang"
+    lang.mkdir(parents=True)
+    (lang / "python.json").write_text(
+        json.dumps(
+            {
+                "language": "python",
+                "markers": ["pyproject.toml"],
+                "files_glob": "**/*.py",
+                "run_from": ".",
+                "suppression_patterns": {"todo": "TODO|FIXME"},
+            }
+        )
+    )
+    runner = _scripted_runner(scripts)
+    target = tmp_path / "repo"
+    target.mkdir()
+    (target / "pyproject.toml").write_text("[project]\n")
+
+    # no --glob/--run-from: detection drives both from the python pack.
+    result = _svc(runner, scripts).bootstrap(target=target, scope="demo", today=_TODAY)
+
+    assert result.language == "python"
+    doc = json.loads((target / "docs" / "health" / "demo" / "baselines.json").read_text())
+    assert doc["language"] == "python"
+    assert doc["files_glob"] == "**/*.py"
+    assert set(doc["suppression_patterns"]) == {"todo"}
+
+
+def test_bootstrap_falls_back_to_generic(tmp_path: Path) -> None:
+    scripts = tmp_path / "scripts"  # no sibling lang/ dir → GENERIC
+    runner = _scripted_runner(scripts)
+    target = tmp_path / "repo"
+    target.mkdir()
+    result = _svc(runner, scripts).bootstrap(target=target, scope="demo", today=_TODAY)
+    assert result.language == "generic"
+    doc = json.loads((target / "docs" / "health" / "demo" / "baselines.json").read_text())
+    assert set(doc["suppression_patterns"]) == set(SUPPRESSION_PATTERNS)
+
+
 def test_bootstrap_seeds_baselines_and_findings(tmp_path: Path) -> None:
     scripts = tmp_path / "scripts"
     runner = _scripted_runner(scripts)

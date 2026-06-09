@@ -1,0 +1,27 @@
+{
+  "language": "python",
+  "markers": ["pyproject.toml", "setup.py", "setup.cfg"],
+  "files_glob": "**/*.py",
+  "run_from": ".",
+  "suppression_patterns": {
+    "type-ignore": "# *type: *ignore|# *pyright: *ignore",
+    "noqa": "# *noqa",
+    "broad-except": "except (Exception|BaseException)",
+    "any-type": "dict\\[str, *Any\\]|: *Any\\b",
+    "cast": "\\bcast\\(",
+    "skipped-test": "@pytest\\.mark\\.skip",
+    "no-cover": "# *pragma: *no cover",
+    "todo": "TODO|FIXME|XXX"
+  },
+  "tools": {
+    "fmt": "ruff format",
+    "lint": "ruff check",
+    "types": "pyright",
+    "test": "pytest",
+    "coverage": "pytest --cov --cov-fail-under=N",
+    "complexity": "complexipy src -mx N",
+    "deadcode": "vulture",
+    "mutation": "mutmut run",
+    "audit": "pip-audit"
+  }
+}
