@@ -106,6 +106,14 @@ class GeminiSettings(BaseModel):
     tools: GeminiTools = Field(default_factory=GeminiTools)
 
 
+class InstalledPlugins(BaseModel):
+    """~/.claude/plugins/installed_plugins.json — the ``plugins`` map (presence check)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    plugins: dict[str, object] = Field(default_factory=dict)
+
+
 class ClaudeSettingsProbe(BaseModel):
     """~/.claude/settings.json projected to statusline / hooks / permissions presence."""
 

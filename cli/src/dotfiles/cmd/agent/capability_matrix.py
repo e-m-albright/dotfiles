@@ -31,6 +31,7 @@ from dotfiles.agent import AGENTS, Agent
 from dotfiles.cmd.agent.config import (
     ClaudeSettingsProbe,
     GeminiSettings,
+    InstalledPlugins,
     McpServersFile,
     SettingsWithPermissions,
     load_config,
@@ -43,6 +44,18 @@ def _read_text(path: Path) -> str:
         return path.read_text()
     except OSError:
         return ""
+
+
+def _has_subdir(path: Path) -> bool:
+    """True if *path* is a directory holding at least one subdirectory."""
+    return path.is_dir() and any(child.is_dir() for child in path.iterdir())
+
+
+def _has_file_with_suffix(path: Path, suffix: str) -> bool:
+    """True if *path* is a directory holding at least one file with *suffix*."""
+    return path.is_dir() and any(
+        child.is_file() and child.suffix == suffix for child in path.iterdir()
+    )
 
 
 # The doc the matrix mirrors; we warn when its "Last reviewed" stamp goes stale.
@@ -82,64 +95,35 @@ class Capability(BaseModel):
     intents: dict[Agent, CellIntent]
 
 
-# Mirrors the "Capability matrix (target state)" table in agent-fleet.md.
-# Order: instructions first (every agent), then the cross-cutting concerns.
+def _cap(
+    key: str,
+    front_runner: str,
+    claude: CellIntent,
+    cursor: CellIntent,
+    codex: CellIntent,
+    gemini: CellIntent,
+    pi: CellIntent,
+) -> Capability:
+    """Terse constructor so the matrix reads like the doc table it mirrors."""
+    return Capability(
+        key=key,
+        front_runner=front_runner,
+        intents={"claude": claude, "cursor": cursor, "codex": codex, "gemini": gemini, "pi": pi},
+    )
+
+
+# Mirrors the "Capability matrix (target state)" table in agent-fleet.md, row for
+# row. Grouped: context surfaces, integration, UX/safety, extensibility.
+#                  key            fr        claude     cursor     codex        gemini     pi
 CAPABILITY_MATRIX: tuple[Capability, ...] = (
-    Capability(
-        key="rules",
-        front_runner="",
-        intents={
-            "claude": "required",
-            "cursor": "required",
-            "codex": "required",
-            "gemini": "required",
-            "pi": "required",
-        },
-    ),
-    Capability(
-        key="mcp",
-        front_runner="claude",
-        intents={
-            "claude": "required",
-            "cursor": "required",
-            "codex": "required",
-            "gemini": "required",
-            "pi": "na",
-        },
-    ),
-    Capability(
-        key="statusline",
-        front_runner="claude",
-        intents={
-            "claude": "required",
-            "cursor": "na",
-            "codex": "required",
-            "gemini": "na",
-            "pi": "canonical",
-        },
-    ),
-    Capability(
-        key="permissions",
-        front_runner="claude",
-        intents={
-            "claude": "required",
-            "cursor": "required",
-            "codex": "different",
-            "gemini": "required",
-            "pi": "required",
-        },
-    ),
-    Capability(
-        key="hooks",
-        front_runner="claude",
-        intents={
-            "claude": "required",
-            "cursor": "required",
-            "codex": "required",
-            "gemini": "na",
-            "pi": "na",
-        },
-    ),
+    _cap("rules", "", "required", "required", "required", "required", "required"),
+    _cap("skills", "claude", "required", "required", "required", "na", "required"),
+    _cap("subagents", "claude", "required", "na", "required", "na", "required"),
+    _cap("mcp", "claude", "required", "required", "required", "required", "na"),
+    _cap("hooks", "claude", "required", "required", "required", "na", "na"),
+    _cap("statusline", "claude", "required", "na", "required", "na", "canonical"),
+    _cap("permissions", "claude", "required", "required", "different", "required", "required"),
+    _cap("plugins", "claude", "required", "na", "na", "na", "na"),
 )
 
 
@@ -193,13 +177,46 @@ class CapabilityMatrixService:
     def _probe(self, capability: str, agent: Agent) -> bool:
         probes: dict[str, Callable[[Agent], bool]] = {
             "rules": self._has_rules,
+            "skills": self._has_skills,
+            "subagents": self._has_subagents,
             "mcp": self._has_mcp,
+            "hooks": self._has_hooks,
             "statusline": self._has_statusline,
             "permissions": self._has_permissions,
-            "hooks": self._has_hooks,
+            "plugins": self._has_plugins,
         }
         probe = probes.get(capability)
         return probe(agent) if probe is not None else False
+
+    def _has_skills(self, agent: Agent) -> bool:
+        h = self._home
+        dirs: dict[Agent, Path] = {
+            "claude": h / ".claude" / "skills",
+            "cursor": h / ".cursor" / "skills-cursor",
+            "codex": h / ".agents" / "skills",  # codex + pi read the shared dir
+            "pi": h / ".agents" / "skills",
+        }
+        path = dirs.get(agent)
+        return path is not None and _has_subdir(path)
+
+    def _has_subagents(self, agent: Agent) -> bool:
+        h = self._home
+        dirs: dict[Agent, Path] = {
+            "claude": h / ".claude" / "agents",
+            "codex": h / ".codex" / "agents",
+            "pi": h / ".pi" / "agent" / "agents",
+        }
+        path = dirs.get(agent)
+        return path is not None and _has_file_with_suffix(path, ".md")
+
+    def _has_plugins(self, agent: Agent) -> bool:
+        # Only Claude ships a managed plugin marketplace (others: n/a).
+        if agent != "claude":
+            return False
+        cfg = load_config(
+            self._home / ".claude" / "plugins" / "installed_plugins.json", InstalledPlugins
+        )
+        return cfg is not None and bool(cfg.plugins)
 
     def _has_rules(self, agent: Agent) -> bool:
         h, d = self._home, self._dotfiles

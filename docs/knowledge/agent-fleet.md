@@ -15,10 +15,13 @@ This table is the **single source of truth** — `cli/.../capability_matrix.py` 
 | Capability | Front-runner | Claude Code | Codex | Cursor | Gemini | Pi |
 |---|---|---|---|---|---|---|
 | Rules (instructions) | — | ✓ `CLAUDE.md` | ✓ `AGENTS.md` | ✓ `.mdc` | ✓ `GEMINI.md` | ✓ `AGENTS.md` |
+| Skills | Claude | ✓ `.claude/skills` | ✓ `.agents/skills` | ✓ `skills-cursor` | — *(no skills surface)* | ✓ `.agents/skills` |
+| Subagents | Claude | ✓ `.claude/agents` | ✓ `.codex/agents` | — *(no subagents)* | — *(no subagents)* | ✓ `.pi/agent/agents` |
 | MCP servers | Claude | ✓ | ✓ | ✓ | ✓ | — *(by choice — local-first)* |
+| Hooks | Claude | ✓ | ✓ | ✓ | — | — |
 | Statusline | Claude | ✓ `statusline.sh` | ✓ `statusline.toml` | — native UI | — native footer | ★ `git-status.ts` |
 | Permissions | Claude | ✓ `permissions.json` | ⊕ `default.rules` + sandbox | ✓ `cli-config.json` | ✓ `tools.exclude` | ✓ `permission-policy.json` + presets |
-| Hooks | Claude | ✓ | ✓ | ✓ | — | — |
+| Plugins | Claude | ✓ `marketplace` | — *(no marketplace)* | — *(GUI extensions)* | — | — |
 
 Glyphs: **✓** present · **★** canonical (the Pi end-state we converge toward) · **⊕** different mechanism · **—** not applicable / intentionally absent. **Front-runner** = who shipped the capability first (the landscape dimension — Claude Code usually leads, the others copy, and we decide what to own in Pi).
 

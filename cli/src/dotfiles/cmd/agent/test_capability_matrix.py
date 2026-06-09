@@ -84,6 +84,18 @@ def _deploy_full_home(home: Path, dotfiles: Path) -> None:
     (home / ".pi" / "agent" / "extensions" / "git-status.ts").write_text("export {}\n")
     (home / ".pi" / "agent" / "permission-policy.json").write_text(json.dumps({"denyCommands": []}))
 
+    # Skills (claude/cursor own dirs; codex+pi share .agents/skills) + subagents.
+    for skills_dir in (".claude/skills", ".cursor/skills-cursor", ".agents/skills"):
+        (home / skills_dir / "demo").mkdir(parents=True)
+        (home / skills_dir / "demo" / "SKILL.md").write_text("---\nname: demo\n---\n")
+    for agents_dir in (".claude/agents", ".codex/agents", ".pi/agent/agents"):
+        (home / agents_dir).mkdir(parents=True, exist_ok=True)
+        (home / agents_dir / "demo.md").write_text("# demo\n")
+    (home / ".claude" / "plugins").mkdir(parents=True)
+    (home / ".claude" / "plugins" / "installed_plugins.json").write_text(
+        json.dumps({"plugins": {"superpowers@official": [{"version": "1.0"}]}})
+    )
+
     (dotfiles / "ai" / "agents" / "cursor" / "rules").mkdir(parents=True)
     (dotfiles / "ai" / "agents" / "cursor" / "rules" / "shared-rules.mdc").write_text("x")
     (dotfiles / "ai" / "agents" / "cursor" / "hooks").mkdir(parents=True)
