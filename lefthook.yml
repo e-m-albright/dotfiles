@@ -31,6 +31,9 @@ pre-commit:
     cli-check:
       glob: "cli/**/*.py"
       run: just check --fast
+    agent-lint:
+      glob: "ai/{skills,subagents,agents}/**/*.md"
+      run: just lint-agents
 
 pre-push:
   commands:

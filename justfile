@@ -52,6 +52,13 @@ ratchet *args:
 perf *args:
     bash {{repo}}/ai/skills/converge/scripts/perf-check.sh {{repo}}/docs/health/cli/perf-baselines.json {{args}}
 
+# Validate skill/agent markdown frontmatter + body. Catches the silent
+# frontmatter-drop trap: `npx skills` discards a skill with invalid YAML, so a
+# malformed skill deploys as simply *gone*. Run at pre-commit + CI.
+[group('quality')]
+lint-agents:
+    uv run dotfiles agent lint
+
 # Full static-check + test gate. `just check --fast` (or `check fast`) skips tests — pre-commit.
 [group('quality')]
 check mode='all':

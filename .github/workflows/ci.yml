@@ -63,3 +63,5 @@ jobs:
       - uses: extractions/setup-just@v2
       - name: Health + quality gate (fmt, lint, types, deadcode, complexity, ratchet, tests)
         run: just check
+      - name: Validate skill/agent markdown (catches silent frontmatter-drop on deploy)
+        run: just lint-agents

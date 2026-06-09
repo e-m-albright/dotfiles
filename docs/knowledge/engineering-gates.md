@@ -113,6 +113,16 @@ Full: [../stacks/infrastructure.md](../stacks/infrastructure.md).
 
 The recurring meta-hazard behind §6's "default-on-missing absorbs contract drift": a component that swallows a fault in the layer it lives in fails *invisibly*, and the symptom surfaces somewhere unrelated. Same class, different layers: a Pydantic/serde model defaulting a dropped column to `0` (data); a blocking telemetry exporter starving the event loop until liveness 503s every caller (runtime); OTLP metadata keys that must be lowercase or are silently dropped, taking observability dark (transport). Prefer fail-fast on missing required input, and make every swallowed error an event (philosophy §7, §9). Runtime catalog: [../stacks/infrastructure.md](../stacks/infrastructure.md).
 
+## 14. Refactoring & deploy safety
+
+Hard-won traps from large agentic refactors. Most are judgment, not gates, so they live here as discipline — and saying so is the point ("if you cannot enforce it cleanly, don't fake a noisy gate"):
+
+- **Never blanket find/replace a token that can appear in prose, URLs, or example paths.** A bare `sed 's/old/new/'` corrupts links and docs (and BSD `sed` silently no-ops some patterns). Replace only the backtick / slash / identifier forms, then diff and link-check the change by hand. A *repo-wide* link gate is noise — illustrative `foo.md` / `./src/...` example paths dominate the false positives — so verify the **delta**, not the backlog.
+- **A rename leaves orphaned deployed artifacts.** `npx skills add --copy` skips existing dirs and never prunes old names; after a rename you must `npx skills remove <oldnames>` per vendor, then redeploy. Deploy tooling prunes by *current source names only* — deliberately, so it can't nuke externally-installed skills — so orphan cleanup on a rename is a manual step.
+- **Malformed frontmatter deploys as *nothing*** — the one that IS gated. `npx skills` silently drops a skill whose YAML is invalid, so a typo'd skill deploys as simply gone. `just lint-agents` (`dotfiles agent lint`) at pre-commit + CI catches it before deploy.
+- **Arbitrate audit findings; don't mass-execute.** Scheduled/audit output is a worklist to triage, not a script to run — *schedule the finding, gate the fixing*.
+- **Stage only your own paths.** When an owner edits in parallel, `git add <explicit paths>` — never `git add -A`, which sweeps their untracked work into your commit.
+
 ## See also
 
 - [../engineering-philosophy.md](../engineering-philosophy.md) — the 12 principles each of these gates enforces
