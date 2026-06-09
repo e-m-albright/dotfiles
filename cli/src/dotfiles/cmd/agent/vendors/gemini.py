@@ -1,9 +1,16 @@
-"""agent_setup.gemini — port of agents/gemini/setup.sh.
+"""agent_setup.gemini — the ~/.gemini-config slot (now Antigravity CLI `agy`).
 
-Configures Gemini CLI:
+Gemini CLI sunsets for Pro/Ultra/free on 2026-06-18; its successor, Google's
+Antigravity CLI (`agy`, brew cask ``antigravity-cli``), reads the **same
+~/.gemini/ config** (settings.json mcpServers + tools.exclude, AGENTS.md /
+GEMINI.md), so this module migrates by swapping the binary check and writing the
+portable AGENTS.md. (The vendor key stays "gemini" until the registry rename;
+agy is what actually consumes this config.)
+
+Configures the slot:
   - Seed ~/.gemini/settings.json from dotfiles seed if missing
-  - Merge managed MCP servers into settings.json
-  - Write ~/.gemini/GEMINI.md (the shared rules.md kernel, verbatim)
+  - Merge managed MCP servers into settings.json (+ tools.exclude blocklist)
+  - Write ~/.gemini/AGENTS.md (the shared rules.md kernel, verbatim); retire GEMINI.md
 
 All paths are injected; Path.home() MUST NOT appear here.
 """
@@ -38,9 +45,9 @@ def setup_gemini(
     reset_mcp: bool = False,
     which: Callable[[str], str | None] = shutil.which,
 ) -> list[StepResult]:
-    """Configure Gemini CLI. Returns a list of StepResult (one per step)."""
-    if which("gemini") is None:
-        return [StepResult(level="success", message="skipped — gemini not installed")]
+    """Configure the ~/.gemini slot (Antigravity `agy`). Returns a list of StepResult."""
+    if which("agy") is None and which("gemini") is None:
+        return [StepResult(level="success", message="skipped — agy/gemini not installed")]
 
     gemini_home = home / ".gemini"
     gemini_home.mkdir(parents=True, exist_ok=True)
@@ -127,10 +134,18 @@ def _managed_tool_excludes(seed: Path) -> list[str] | None:
 
 
 def _setup_instructions(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:
-    """Write ~/.gemini/GEMINI.md = core agent instructions."""
+    """Write ~/.gemini/AGENTS.md = core agent instructions (portable, agy-read).
+
+    AGENTS.md is the cross-vendor standard (Codex/Pi use it too) and what we
+    deploy. We retire any ~/.gemini/GEMINI.md so it can't out-rank AGENTS.md
+    (agy reads both; GEMINI.md wins precedence) and to keep one source of truth.
+    """
     content = build_global_instructions(dotfiles_dir)
     if content is None:
         return []
 
-    (gemini_home / "GEMINI.md").write_text(content, encoding="utf-8")
-    return [StepResult(level="success", message="Core instructions (~/.gemini/GEMINI.md)")]
+    (gemini_home / "AGENTS.md").write_text(content, encoding="utf-8")
+    stale_gemini_md = gemini_home / "GEMINI.md"
+    if stale_gemini_md.exists():
+        stale_gemini_md.unlink()
+    return [StepResult(level="success", message="Core instructions (~/.gemini/AGENTS.md)")]

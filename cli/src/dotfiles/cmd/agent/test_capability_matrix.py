@@ -74,7 +74,7 @@ def _deploy_full_home(home: Path, dotfiles: Path) -> None:
     )
 
     (home / ".gemini").mkdir(parents=True)
-    (home / ".gemini" / "GEMINI.md").write_text("# rules\n")
+    (home / ".gemini" / "AGENTS.md").write_text("# rules\n")
     (home / ".gemini" / "settings.json").write_text(
         json.dumps({"mcpServers": {"context7": {}}, "tools": {"exclude": ["run_shell_command"]}})
     )

@@ -76,7 +76,7 @@ _SURFACE_MAP: dict[str, dict[Agent, str | None]] = {
         "claude": ".claude/CLAUDE.md",
         "cursor": None,
         "codex": ".codex/AGENTS.md",
-        "gemini": ".gemini/GEMINI.md",
+        "gemini": ".gemini/AGENTS.md",
         "pi": ".pi/agent/AGENTS.md",
     },
     "settings": {

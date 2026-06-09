@@ -120,7 +120,7 @@ class AgentOverviewService:
             "claude": str(self._count_files_by_ext(h / ".claude" / "rules", ".md")),
             "cursor": str(self._count_cursor_rules(self._cursor_rules_dir())),
             "codex": "AGENTS" if (h / ".codex" / "AGENTS.md").exists() else "—",
-            "gemini": "GEMINI" if (h / ".gemini" / "GEMINI.md").exists() else "—",
+            "gemini": "AGENTS" if (h / ".gemini" / "AGENTS.md").exists() else "—",
             "pi": "AGENTS" if (h / ".pi" / "agent" / "AGENTS.md").exists() else "—",
         }
         return [

@@ -240,7 +240,7 @@ class CapabilityMatrixService:
         paths: dict[Agent, Path] = {
             "claude": h / ".claude" / "CLAUDE.md",
             "codex": h / ".codex" / "AGENTS.md",
-            "gemini": h / ".gemini" / "GEMINI.md",
+            "gemini": h / ".gemini" / "AGENTS.md",
             "pi": h / ".pi" / "agent" / "AGENTS.md",
             "cursor": d / "ai" / "agents" / "cursor" / "rules" / "shared-rules.mdc",
         }

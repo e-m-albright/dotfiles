@@ -35,20 +35,21 @@ Only the **terminal** agents (Claude, Codex, Pi) can render a custom statusline.
 
 **Decision: drop Gemini CLI, migrate the fifth fleet slot to Google's Antigravity CLI (`agy`).** Google is [transitioning Gemini CLI to Antigravity CLI](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/); **on 2026-06-18 Gemini CLI stops serving Pro/Ultra/free individual users.** Antigravity also closes Gemini's old gaps — it ships **Skills, Subagents, Hooks, and Plugins** (Gemini Extensions rebranded), so the fifth slot goes from the weakest column to near-parity.
 
-**Status: staged, not yet executed** — `agy` is not installed on this machine and several config paths are unverified. Do **not** script the unverified surfaces until confirmed on a live `agy`.
+**Status: installed + config migrated; registry-label rename pending.** `agy` is installed (brew cask `antigravity-cli` → `/opt/homebrew/bin/agy`, v1.0.6) and **verified to read the same `~/.gemini/` config as Gemini CLI** — so the migration is mostly a binary swap. Done: package source (`gemini-cli` → `antigravity-cli`); the vendor now checks for `agy` and writes the portable **`~/.gemini/AGENTS.md`** (retiring `GEMINI.md`); MCP + `tools.exclude` permissions already land in `~/.gemini/settings.json` which `agy` reads. The vendor key stays `gemini` (driving `agy`) until the cosmetic registry rename — deferred only to avoid clobbering an in-flight `cli.py` edit by a parallel agent.
 
-Verified Antigravity facts (sources below):
+Verified config (live on this machine):
 
-| Surface | Config | Confidence |
+| Surface | Config | Status |
 |---|---|---|
-| Install | `curl -fsSL https://antigravity.google/cli/install.sh \| bash` → `~/.local/bin/agy` | verified |
-| Global instructions | `~/.gemini/AGENTS.md` **and** `~/.gemini/GEMINI.md` (GEMINI.md outranks AGENTS.md). **GEMINI.md is not dead.** Prefer **AGENTS.md** for portability — both `agy` and Gemini CLI hard-code `~/.gemini/GEMINI.md`, so running both leaks rules (gemini-cli #16058, closed "not planned"). | verified |
-| Skills | global `~/.gemini/antigravity-cli/skills/<name>/SKILL.md`; project `.agents/skills/` | verified |
-| MCP | `mcp_config.json` (global `~/.gemini/antigravity-cli/`); remote uses `serverUrl` (renamed from `url`) | partial |
-| Plugins | `agy plugin` CLI; `agy plugin import gemini` to migrate Extensions | verified |
-| Subagents · Hooks · Permissions · Statusline | **paths/format unverified** — confirm on a live `agy` first | ⚠️ |
+| Install | brew cask `antigravity-cli` → `agy` (auto-updates) | ✅ done |
+| Home dir | **`~/.gemini/`** (same as Gemini CLI — settings.json, config/, oauth_creds.json…) | ✅ verified |
+| Global instructions | **`~/.gemini/AGENTS.md`** (portable; `agy` reads AGENTS.md + GEMINI.md, GEMINI.md outranks — we deploy AGENTS.md and delete GEMINI.md so it's authoritative). **GEMINI.md is not dead, just unused by us.** | ✅ done |
+| MCP | `~/.gemini/settings.json` `mcpServers` (same schema) — currently empty by choice (MCP is Claude-only) | ✅ done |
+| Permissions | `~/.gemini/settings.json` `tools.exclude` (deny-vocab) | ✅ done |
+| Plugins | `agy plugin import gemini` / `agy plugin install <x>@<mp>` | available |
+| Skills · Subagents · Hooks | `agy` **supports** all three (global skills `~/.gemini/antigravity-cli/skills/`, `/agent`, JSON hooks) but the on-disk paths aren't yet confirmed — **not wired** | ⚠️ pending |
 
-**Migration plan when `agy` lands:** (1) install `agy`; (2) `agy --version` + inspect `~/.gemini/` and `~/.gemini/antigravity-cli/` to verify the unverified paths; (3) replace the `gemini` vendor in `dotfiles.agent.VENDORS` with `antigravity` (display "Antigravity"); (4) write `vendors/antigravity.py` deploying the kernel to `~/.gemini/AGENTS.md`, MCP→`mcp_config.json`, skills via the shared pipeline, and — once verified — subagents/hooks/permissions; (5) flip the matrix column gemini→antigravity and close its now-supported skills/subagents/hooks. The `dotfiles agent web copy` Gemini-web-chat command is unrelated (it pastes prompts into the Gemini *web* app) and stays.
+**Remaining steps:** (1) rename the `gemini` vendor → `antigravity` in `dotfiles.agent.VENDORS` + the matrix/`_SURFACE_MAP`/`_AgentChoice` keys (do once `cli.py` is clear); (2) verify the skills/subagents/hooks on-disk paths on the live `agy` and wire them (flipping those matrix cells from `⊘` to `✓`); (3) the matrix column relabels gemini→antigravity. The `dotfiles agent web copy` Gemini-*web*-chat command is unrelated and stays.
 
 Sources: [transitioning blog](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/) · [Antigravity subagents/skills](https://developers.googleblog.com/subagents-have-arrived-in-gemini-cli/) · Gemini CLI v0.26.0 (Skills/Hooks/Subagents) · gemini-cli issue #16058.
 

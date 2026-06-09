@@ -121,7 +121,7 @@ def test_present_and_missing_surfaces_for_an_agent(tmp_path: Path) -> None:
     h = tmp_path / "home"
     settings = h / ".gemini" / "settings.json"
     settings.parent.mkdir(parents=True)
-    settings.write_text("{}")  # GEMINI.md deliberately absent
+    settings.write_text("{}")  # AGENTS.md deliberately absent
     by_label = {
         s.label: s
         for s in _make_svc(home=h, dotfiles_dir=tmp_path / "dotfiles").vendors()

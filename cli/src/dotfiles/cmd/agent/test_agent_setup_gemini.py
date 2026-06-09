@@ -174,20 +174,27 @@ class TestGeminiPresent:
         for cfg in data["mcpServers"].values():
             assert "targets" not in cfg
 
-    def test_writes_gemini_md(self, dotfiles: Path, home: Path) -> None:
+    def test_writes_agents_md(self, dotfiles: Path, home: Path) -> None:
         self._run(dotfiles, home)
-        md = home / ".gemini" / "GEMINI.md"
+        md = home / ".gemini" / "AGENTS.md"
         assert md.is_file()
 
-    def test_gemini_md_starts_with_header(self, dotfiles: Path, home: Path) -> None:
+    def test_agents_md_starts_with_header(self, dotfiles: Path, home: Path) -> None:
         self._run(dotfiles, home)
-        content = (home / ".gemini" / "GEMINI.md").read_text()
+        content = (home / ".gemini" / "AGENTS.md").read_text()
         assert content.startswith("# Shared Agentic Rules")
 
-    def test_gemini_md_contains_rules_md(self, dotfiles: Path, home: Path) -> None:
+    def test_agents_md_contains_rules_md(self, dotfiles: Path, home: Path) -> None:
         self._run(dotfiles, home)
-        content = (home / ".gemini" / "GEMINI.md").read_text()
+        content = (home / ".gemini" / "AGENTS.md").read_text()
         assert "Shared Agentic Rules" in content
+
+    def test_retires_stale_gemini_md(self, dotfiles: Path, home: Path) -> None:
+        # A pre-existing GEMINI.md (it out-ranks AGENTS.md in agy) is removed.
+        (home / ".gemini").mkdir(parents=True, exist_ok=True)
+        (home / ".gemini" / "GEMINI.md").write_text("stale")
+        self._run(dotfiles, home)
+        assert not (home / ".gemini" / "GEMINI.md").exists()
 
     def test_settings_result_mentions_mcp_count(self, dotfiles: Path, home: Path) -> None:
         results = self._run(dotfiles, home)
