@@ -3,7 +3,7 @@
 Configures Pi (pi.dev / earendil-works) terminal agent:
   - Auto-install pi via npm if binary is absent (match .sh self-heal)
   - Symlink settings.json + models.json from dotfiles
-  - Write ~/.pi/agent/AGENTS.md (rules.md + rendered rules)
+  - Write ~/.pi/agent/AGENTS.md (the shared rules.md kernel, verbatim)
   - Deploy subagents to ~/.pi/agent/agents/
   - Symlink agents/pi/extensions/*.ts → ~/.pi/agent/extensions/
   - pi install npm:pi-superpowers-plus + npm:mitsupi if not present
@@ -112,17 +112,13 @@ def _setup_config_symlinks(dotfiles_dir: Path, pi_home: Path) -> list[StepResult
 
 
 def _setup_instructions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
-    """Write ~/.pi/agent/AGENTS.md = rules.md header + rendered rules."""
+    """Write ~/.pi/agent/AGENTS.md = the shared rules.md kernel, verbatim."""
     content = build_global_instructions(dotfiles_dir)
     if content is None:
         return []
 
     (pi_home / "AGENTS.md").write_text(content, encoding="utf-8")
-    return [
-        StepResult(
-            level="success", message="Global instructions + rendered rules (~/.pi/agent/AGENTS.md)"
-        )
-    ]
+    return [StepResult(level="success", message="Global instructions (~/.pi/agent/AGENTS.md)")]
 
 
 def _setup_extensions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:

@@ -63,6 +63,28 @@ def test_dir_with_entries_but_no_skill_md_gives_present_n_entries(tmp_path: Path
     assert "2 entries @" in result.detail
 
 
+def test_dir_of_dangling_symlinks_is_not_present(tmp_path: Path) -> None:
+    # A dir whose entries are all broken symlinks (e.g. orphaned ~/.claude/rules
+    # links into a deleted source) must read as empty, not a healthy surface.
+    d = tmp_path / "home" / ".claude" / "rules"
+    d.mkdir(parents=True)
+    (d / "ghost.md").symlink_to(tmp_path / "gone" / "ghost.mdc")
+    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
+    result = svc._check("claude", "rules", d)
+    assert result.status == "empty"
+
+
+def test_dir_counts_only_resolving_entries(tmp_path: Path) -> None:
+    d = tmp_path / "home" / ".claude" / "rules"
+    d.mkdir(parents=True)
+    (d / "real.md").write_text("# rule")
+    (d / "ghost.md").symlink_to(tmp_path / "gone" / "ghost.mdc")
+    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
+    result = svc._check("claude", "rules", d)
+    assert result.status == "present"
+    assert "1 entries @" in result.detail
+
+
 def test_empty_dir_gives_empty_status(tmp_path: Path) -> None:
     d = tmp_path / "home" / ".claude" / "skills"
     d.mkdir(parents=True)

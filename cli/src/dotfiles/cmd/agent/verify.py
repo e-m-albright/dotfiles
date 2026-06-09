@@ -148,8 +148,9 @@ class AgentVerifyService:
                     quantity=f"{n_skills} skills",
                     path=str(path),
                 )
-            # count all entries (ls -A equivalent)
-            n_entries = len(list_dir(path))
+            # count only entries that resolve — a dir of dangling symlinks
+            # (e.g. orphaned ~/.claude/rules links) is not a healthy surface.
+            n_entries = sum(1 for e in list_dir(path) if e.exists())
             if n_entries > 0:
                 return AgentSurface(
                     agent=agent,

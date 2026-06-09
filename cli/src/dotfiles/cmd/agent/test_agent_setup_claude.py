@@ -16,6 +16,7 @@ import pytest
 from dotfiles.cmd.agent.vendors.claude import (
     _clean_mcp_permissions,
     _rewrite_http_to_mcp_remote,
+    _setup_rules,
     setup_claude,
 )
 from dotfiles.testing.fakes import FakeProcessRunner, write_tree
@@ -174,6 +175,47 @@ class TestSetupInstructions:
         _run(dotfiles, home)
         content = (home / ".claude" / "CLAUDE.md").read_text()
         assert "Agent Instructions" in content
+
+
+# ---------------------------------------------------------------------------
+# Rules dir (orphan pruning)
+# ---------------------------------------------------------------------------
+
+
+class TestSetupRules:
+    def _rules_dir(self, home: Path) -> Path:
+        d = home / ".claude" / "rules"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def test_prunes_dangling_symlink(self, home: Path) -> None:
+        rules = self._rules_dir(home)
+        (rules / "ghost.md").symlink_to(home / "nowhere" / "ghost.mdc")
+        results = _setup_rules(home / ".claude")
+        assert not (rules / "ghost.md").is_symlink()
+        assert len(results) == 1
+        assert "Pruned 1" in results[0].message
+
+    def test_keeps_resolving_symlink(self, home: Path) -> None:
+        rules = self._rules_dir(home)
+        target = home / "real.md"
+        target.write_text("# real rule\n")
+        (rules / "live.md").symlink_to(target)
+        _setup_rules(home / ".claude")
+        assert (rules / "live.md").exists()
+
+    def test_silent_when_nothing_to_prune(self, home: Path) -> None:
+        self._rules_dir(home)
+        assert _setup_rules(home / ".claude") == []
+
+    def test_noop_when_dir_absent(self, home: Path) -> None:
+        assert _setup_rules(home / ".claude") == []
+
+    def test_setup_prunes_orphans_end_to_end(self, dotfiles: Path, home: Path) -> None:
+        rules = self._rules_dir(home)
+        (rules / "ghost.md").symlink_to(home / "gone" / "ghost.mdc")
+        _run(dotfiles, home)
+        assert list(rules.iterdir()) == []
 
 
 # ---------------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 Configures Claude Code:
   - Write the core agent instructions (agents/shared/rules.md) → ~/.claude/CLAUDE.md
+  - Prune dangling ~/.claude/rules symlinks (orphans from the bash-era setup)
   - Merge marketplaces (marketplaces.json → settings.json:.extraKnownMarketplaces)
   - Merge plugins (plugins.yaml → settings.json:.enabledPlugins)
   - Replace permissions (permissions.json → settings.json:.permissions)
@@ -41,6 +42,7 @@ from dotfiles.cmd.agent.settings_merger import (
     merge_replace,
     write_json_safely,
 )
+from dotfiles.fsutil import prune_broken_symlinks
 
 _JsonDict = dict[str, Any]
 
@@ -67,6 +69,7 @@ def setup_claude(
         results.extend(_setup_clean(dotfiles_dir, home, claude_home))
 
     results.extend(_setup_instructions(dotfiles_dir, claude_home))
+    results.extend(_setup_rules(claude_home))
     results.extend(_setup_marketplaces(dotfiles_dir, claude_home))
     results.extend(_setup_plugins(dotfiles_dir, claude_home))
     results.extend(_setup_permissions(dotfiles_dir, claude_home))
@@ -105,6 +108,22 @@ def _setup_instructions(dotfiles_dir: Path, claude_home: Path) -> list[StepResul
         return [StepResult(level="error", message="No agents/shared/rules.md found")]
     (claude_home / "CLAUDE.md").write_text(content, encoding="utf-8")
     return [StepResult(level="success", message="Core instructions (~/.claude/CLAUDE.md)")]
+
+
+def _setup_rules(claude_home: Path) -> list[StepResult]:
+    """Prune dangling symlinks from ~/.claude/rules so orphans can't accumulate.
+
+    The kernel lands verbatim in CLAUDE.md, so dotfiles writes no rule files of
+    its own — but Claude Code *does* auto-load ~/.claude/rules/*.md, and a prior
+    (bash-era) setup left symlinks into a since-deleted source tree. Those broken
+    links read as a healthy surface in ``agent overview`` while contributing
+    nothing. Self-heal every run: a non-resolving entry is dead weight, period.
+    """
+    rules_dir = claude_home / "rules"
+    pruned = prune_broken_symlinks(rules_dir)
+    if pruned == 0:
+        return []
+    return [StepResult(level="success", message=f"Pruned {pruned} orphaned rule links")]
 
 
 def _setup_marketplaces(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
