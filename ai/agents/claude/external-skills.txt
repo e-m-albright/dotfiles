@@ -20,3 +20,6 @@ openai/skills@linear                                           # skills/.curated
 
 # Frontend design
 pbakaus/impeccable@impeccable                                  # design vocabulary + anti-pattern audits (claude, cursor, codex)
+
+# Skill discovery (companion to the `npx skills` CLI we already deploy with)
+vercel-labs/skills@find-skills                                 # "find a skill for X" → search skills.sh + install
