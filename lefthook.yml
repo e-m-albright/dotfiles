@@ -35,7 +35,8 @@ pre-commit:
       glob: "ai/{skills,subagents,agents}/**/*.md"
       run: just lint-agents
     voice:
-      glob: "*.md"
+      # *.md gets the slop-phrase block; code gets the em-dash advisory (warn).
+      glob: "*.{md,py,sh,ts,tsx,rs,go,js,mjs}"
       run: just lint-prose {staged_files}
 
 commit-msg:
