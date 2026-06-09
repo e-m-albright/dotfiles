@@ -55,6 +55,22 @@ Sources: [transitioning blog](https://developers.googleblog.com/an-important-upd
 
 ---
 
+## Recently adopted capabilities (June 2026 landscape sweep)
+
+What shipped across the tools lately, with our verdict. KEEP/adopt = part of the toolkit; evaluate/skip = parked with reason.
+
+| Capability | Tool | Verdict | How we use it |
+|---|---|---|---|
+| **Dynamic Workflows** — JS orchestration script the agent writes + a runtime runs; fans out to ≤1000 subagents, results stay out of context, built-in adversarial cross-check | Claude Code | **KEEP** | the right primitive for codebase-wide audits/migrations/research in this repo (orchestration as code you own + rerun). Trigger via the `workflow` keyword or ultracode. |
+| **`/usage`** — per-category token breakdown (skills / subagents / plugins / per-MCP) | Claude Code | **KEEP** | the empirical input to every context-trim decision — tells you which substrate actually costs tokens, instead of guessing. |
+| **`--safe-mode`** (`CLAUDE_CODE_SAFE_MODE`) — disables CLAUDE.md / plugins / skills / hooks / MCP | Claude Code | **KEEP** | harness troubleshooting — bisect whether our config or the base agent is the problem. |
+| **`.agents/skills/`** as the canonical cross-vendor skills path | Codex · Pi · Cursor(read) | **adopted** | already where our `npx skills` pipeline lands shared skills; the emerging portable standard. |
+| Named permission profiles + `auto_review` reviewer | Codex | **evaluate** | aligns with our `ai/.agents/` permission-profile model; revisit when we formalize Codex profiles. |
+| Auto-review Run Mode, SDK custom tools | Cursor | **skip** | only relevant if we script Cursor headless, which we don't. |
+| Subagents (2.4) + plugin marketplace (2.5) | Cursor | **adopted (subagents)** | our 5 subagents now deploy to `~/.cursor/agents`; the marketplace stays GUI-managed (not fleet state). |
+
+---
+
 ## Statuslines — Pi is canonical
 
 Pi's `git-status.ts` footer is the reference design: a warm **amber/sage** ramp (burnt amber under pressure, sage when there's headroom — never alarm red), auth-class cost (`local` / `sub %` / `api $`), granular git (staged/unstaged/untracked/conflicts/ahead/behind), and a two-line layout.
@@ -117,9 +133,30 @@ Claude's `permissions.json` keeps a broad `allow` for inner-loop dev commands (a
 
 ---
 
+## Hooks — one intent set, three events per vendor
+
+Hooks are **deterministic, harness-side automation** fired at lifecycle points. The key property: **they cost the model zero context** (they're shell commands the harness runs, not tokens the model reads), so unlike rules/MCP they aren't a budget concern — they're pure "make the floor deterministic." We run **one canonical intent set**; only the event *name* and *script* differ per vendor (each harness hands a different payload, so the scripts can't be literally shared).
+
+| Intent | Claude | Codex | Cursor | Gemini→agy | Pi |
+|---|---|---|---|---|---|
+| **Guard** destructive git/file ops | `PreToolUse` → `git-guardrails.sh` + path guard | `PreToolUse` (inline glob) | `beforeShellExecution` → `guard-destructive.sh` | ⚠️ pending | `safe-git` extension |
+| **Format** on file edit | `PostToolUse` → `format-on-save.sh` | `PostToolUse` → `format-on-save.sh` | `afterFileEdit` → `format-on-save-shim.sh` | ⚠️ pending | — |
+| **Notify** on done/idle | `Stop`+`Notification` → terminal bell | `Stop` → `terminal-notifier` | — | ⚠️ pending | — |
+
+**Deliberate divergences (not drift):**
+- **Notify is the loosest** intent — Claude rings the bell (universal, guarded by `$CURSOR_AGENT` so it's silent inside Cursor), Codex uses `terminal-notifier` (richer, needs the brew package), Cursor skips it. Acceptable: notify is quality-of-life, not a safety floor.
+- **Guard is the floor** and is everywhere it can be — the three hook-capable terminal agents plus Pi's `safe-git` extension. This is the same hard-stop posture as the [deny vocabulary](#permissions--one-vocabulary-two-surfaces), enforced a second way (at tool-call time, not just config).
+- **Gemini→agy hooks are pending** — `agy` supports a JSON hook lifecycle, but the on-disk path isn't yet confirmed; wire guard+format there when verified (closing those ⚠ cells).
+
+**To change a hook:** edit the per-vendor script (`ai/agents/<vendor>/hooks/`); the intent set above is the contract each vendor must satisfy. New hard-stop guard patterns belong in `deny-commands.yaml` *first* (the config floor), then the guard hook is the runtime backstop.
+
+---
+
 ## Adding a new agent to the fleet
 
 1. Add a `setup_<vendor>()` module under `cli/src/dotfiles/cmd/agent/vendors/`.
-2. Deploy rules (`build_global_instructions`), MCP (`mcp_servers_for`), and a permission posture.
+2. Deploy rules (`build_global_instructions` → its instruction file), MCP (`mcp_servers_for`), subagents (`deploy_subagents` if it reads an agents dir), and a permission posture.
 3. If it can express a deny list, add it as a surface in `deny-commands.yaml` + `deny_commands.py` (`SURFACES`, `SURFACE_FILES`, `deny_strings_in_config`), and hand-author the strings — the drift test will hold it in sync.
-4. If it runs through Zed/ACP, remember the two-surface rule: its in-Zed approvals are governed by `editors/zed/settings.json`, not its own config.
+4. If it supports hooks, satisfy the canonical intent set (guard / format / notify) via its event names; map them in the [Hooks](#hooks--one-intent-set-three-events-per-vendor) table.
+5. Add it to the [capability matrix](#capability-matrix-target-state) (and `capability_matrix.py` + the drift test) so its surfaces are tracked.
+6. If it runs through Zed/ACP, remember the two-surface rule: its in-Zed approvals are governed by `editors/zed/settings.json`, not its own config.
