@@ -30,6 +30,7 @@ from dotfiles.cmd.agent.models import (
 from dotfiles.cmd.agent.overview import AgentOverviewService
 from dotfiles.cmd.agent.setup import ALL_AGENTS, run_setup
 from dotfiles.cmd.agent.skill_health import SkillHealthService
+from dotfiles.cmd.agent.skill_inventory import SkillInfo, inventory
 from dotfiles.cmd.agent.skill_prune import SkillOrphan, find_orphans, prune_orphans
 from dotfiles.cmd.agent.skill_stats import SkillStat, SkillUsageReport, SkillUsageService
 from dotfiles.cmd.agent.skills import validate_skill_files
@@ -403,6 +404,56 @@ def prune(
         print_status(
             console, "info", f"{len(retired)} retired skill(s) — re-run with --apply to delete"
         )
+
+
+# Brand gold for soft attribute/description text (matches the session preview line).
+_GOLD = "#cdbf80"
+_ORIGIN_STYLE: dict[str, str] = {
+    "canonical": "green",
+    "external": "cyan",
+    "plugin": "magenta",
+    "untracked": "yellow",
+}
+
+
+def _clip(text: str, width: int) -> str:
+    return text if len(text) <= width else text[: max(1, width - 1)] + "…"
+
+
+def _render_skills(skills: list[SkillInfo]) -> None:
+    # Manual columns (not a Rich Table): a no-wrap description column otherwise
+    # collapses the origin column at narrow widths. Truncate to the real width.
+    name_w = min(34, max((len(s.name) for s in skills), default=8) + 1)
+    origin_w = 10
+    desc_w = max(16, console.width - 2 - name_w - 1 - origin_w - 1)
+    console.print(
+        f"  [bold]{'skill':<{name_w}}[/] [bold]{'origin':<{origin_w}}[/] [bold]description[/]"
+    )
+    for s in skills:
+        style = _ORIGIN_STYLE.get(s.origin, "dim")
+        desc = _clip(" ".join(s.description.split()), desc_w)
+        console.print(
+            f"  {escape(_clip(s.name, name_w).ljust(name_w))} "
+            f"[{style}]{s.origin.ljust(origin_w)}[/] [{_GOLD}]{escape(desc)}[/]"
+        )
+
+
+@agent_app.command()
+def skills(ctx: typer.Context) -> None:
+    """List every skill alphabetically with its origin (canonical/external/plugin/untracked)."""
+    app_ctx = app_context(ctx)
+    items = inventory(app_ctx.home, app_ctx.dotfiles_dir)
+    print_title(console, "agent", "skills")
+    if not items:
+        print_status(console, "info", "No skills found")
+        return
+    counts: dict[str, int] = {}
+    for s in items:
+        counts[s.origin] = counts.get(s.origin, 0) + 1
+    tally = "  ".join(f"[{_ORIGIN_STYLE[o]}]{o} {n}[/]" for o, n in sorted(counts.items()))
+    console.print(f"  {len(items)} skills · {tally}")
+    console.print()
+    _render_skills(items)
 
 
 _STATS_SINCE = typer.Option(90, "--since", help="Window in days (default 90).")
