@@ -20,18 +20,6 @@ def make_service(dotfiles: Path, home: Path) -> AgentOverviewService:
     )
 
 
-def make_service_with_which(
-    dotfiles: Path, home: Path, which: dict[str, str]
-) -> AgentOverviewService:
-    """Build service with a scripted which() for CLI-gated agent checks."""
-    return AgentOverviewService(
-        runner=FakeProcessRunner(),
-        dotfiles_dir=dotfiles,
-        home=home,
-        which=which.get,
-    )
-
-
 # ---------------------------------------------------------------------------
 # Helpers to seed filesystem
 # ---------------------------------------------------------------------------
@@ -540,7 +528,7 @@ class TestAgentSurfaces:
         settings.write_text("{}")
         surfaces = make_service(tmp_path / "dotfiles", home).vendor_surfaces()
         settings_row = next(
-            (s for s in surfaces if s.agent == "claude" and s.label == "settings.json"),
+            (s for s in surfaces if s.agent == "claude" and s.label == "settings"),
             None,
         )
         assert settings_row is not None
@@ -551,22 +539,13 @@ class TestAgentSurfaces:
         claude_surfaces = [s for s in surfaces if s.agent == "claude"]
         assert all(s.status == "missing" for s in claude_surfaces)
 
-    def test_gemini_skipped_when_cli_absent(self, tmp_path: Path) -> None:
-        svc = make_service_with_which(tmp_path / "dotfiles", tmp_path / "home", {})
-        surfaces = svc.vendor_surfaces()
+    def test_gemini_shows_uniform_checklist_with_na_rows(self, tmp_path: Path) -> None:
+        # Every agent gets the same checklist; Gemini's no-such-surface rows are n/a.
+        surfaces = make_service(tmp_path / "dotfiles", tmp_path / "home").vendor_surfaces()
         gemini = [s for s in surfaces if s.agent == "gemini"]
-        assert len(gemini) == 1
-        assert gemini[0].status == "skipped"
-
-    def test_gemini_checked_when_cli_present(self, tmp_path: Path) -> None:
-        svc = make_service_with_which(
-            tmp_path / "dotfiles",
-            tmp_path / "home",
-            {"gemini": "/usr/local/bin/gemini"},
-        )
-        surfaces = svc.vendor_surfaces()
-        gemini = [s for s in surfaces if s.agent == "gemini"]
-        assert len(gemini) > 1 or gemini[0].status != "skipped"
+        assert len(gemini) > 1
+        skills = next(s for s in gemini if s.label == "skills")
+        assert skills.status == "skipped"  # gemini has no skills surface → n/a
 
     def test_overview_vendor_surfaces_populated(self, tmp_path: Path) -> None:
         result = make_service(tmp_path / "dotfiles", tmp_path / "home").overview()

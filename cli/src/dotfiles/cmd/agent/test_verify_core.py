@@ -87,57 +87,30 @@ def test_file_path_gives_present_status(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_gemini_skipped_when_cli_absent(tmp_path: Path) -> None:
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles", which_map={})
-    surfaces = svc._gemini_surfaces()
-    assert len(surfaces) == 1
-    assert surfaces[0].status == "skipped"
-    assert "gemini" in surfaces[0].detail
+def test_na_surface_is_skipped(tmp_path: Path) -> None:
+    # Gemini has no skills surface → uniform row, status n/a (skipped).
+    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
+    g_skills = next(s for s in svc.vendors() if s.agent == "gemini" and s.label == "skills")
+    assert g_skills.status == "skipped"
+    assert g_skills.quantity == "n/a"
 
 
-def test_gemini_checked_when_cli_present(tmp_path: Path) -> None:
+def test_present_and_missing_surfaces_for_an_agent(tmp_path: Path) -> None:
     h = tmp_path / "home"
     settings = h / ".gemini" / "settings.json"
     settings.parent.mkdir(parents=True)
-    settings.write_text("{}")
-    svc = _make_svc(
-        home=h,
-        dotfiles_dir=tmp_path / "dotfiles",
-        which_map={"gemini": "/usr/bin/gemini"},
-    )
-    surfaces = svc._gemini_surfaces()
-    assert len(surfaces) == 2
-    statuses = {s.label: s.status for s in surfaces}
-    assert statuses["settings.json"] == "present"
-    assert statuses["GEMINI.md"] == "missing"
-
-
-def test_pi_skipped_when_cli_absent(tmp_path: Path) -> None:
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles", which_map={})
-    surfaces = svc._pi_surfaces()
-    assert len(surfaces) == 1
-    assert surfaces[0].status == "skipped"
-    assert "pi" in surfaces[0].detail
-
-
-def test_pi_checked_when_cli_present(tmp_path: Path) -> None:
-    h = tmp_path / "home"
-    pi_agent = h / ".pi" / "agent"
-    pi_agent.mkdir(parents=True)
-    (pi_agent / "settings.json").write_text("{}")
-    svc = _make_svc(
-        home=h,
-        dotfiles_dir=tmp_path / "dotfiles",
-        which_map={"pi": "/usr/bin/pi"},
-    )
-    surfaces = svc._pi_surfaces()
-    labels = [s.label for s in surfaces]
-    assert "settings.json" in labels
-    assert "models.json" in labels
+    settings.write_text("{}")  # GEMINI.md deliberately absent
+    by_label = {
+        s.label: s
+        for s in _make_svc(home=h, dotfiles_dir=tmp_path / "dotfiles").vendors()
+        if s.agent == "gemini"
+    }
+    assert by_label["settings"].status == "present"
+    assert by_label["instructions"].status == "missing"
 
 
 # ---------------------------------------------------------------------------
-# Full vendors() output structure
+# Full vendors() output structure — uniform checklist for every agent
 # ---------------------------------------------------------------------------
 
 
@@ -145,29 +118,16 @@ def test_vendors_returns_all_vendor_groups(tmp_path: Path) -> None:
     svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
     surfaces = svc.vendors()
     vendors_seen = {s.agent for s in surfaces}
-    assert "claude" in vendors_seen
-    assert "cursor" in vendors_seen
-    assert "codex" in vendors_seen
-    assert "gemini" in vendors_seen
-    assert "pi" in vendors_seen
+    assert vendors_seen == {"claude", "cursor", "codex", "gemini", "pi"}
 
 
-def test_claude_surfaces_count(tmp_path: Path) -> None:
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    surfaces = svc._claude_surfaces()
-    assert len(surfaces) == 6
+def test_every_agent_has_the_same_attribute_checklist(tmp_path: Path) -> None:
+    from dotfiles.cmd.agent.verify import _ATTRIBUTES
 
-
-def test_cursor_surfaces_count(tmp_path: Path) -> None:
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    surfaces = svc._cursor_surfaces()
-    assert len(surfaces) == 4
-
-
-def test_codex_surfaces_count(tmp_path: Path) -> None:
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    surfaces = svc._codex_surfaces()
-    assert len(surfaces) == 7
+    surfaces = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles").vendors()
+    for agent in ("claude", "cursor", "codex", "gemini", "pi"):
+        labels = [s.label for s in surfaces if s.agent == agent]
+        assert labels == list(_ATTRIBUTES)
 
 
 def test_multiple_skill_md_files_counted(tmp_path: Path) -> None:

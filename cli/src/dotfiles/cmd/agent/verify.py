@@ -18,9 +18,75 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
-from dotfiles.agent import Agent
+from dotfiles.agent import AGENTS, Agent
 from dotfiles.cmd.agent.models import AgentSurface
 from dotfiles.fsutil import list_dir
+
+# The uniform attribute checklist shown for every agent, in order.
+_ATTRIBUTES: tuple[str, ...] = (
+    "skills",
+    "subagents",
+    "rules",
+    "mcp",
+    "hooks",
+    "instructions",
+    "settings",
+)
+
+# attribute -> {agent: $HOME-relative path, or None when the agent has no such
+# surface (rendered n/a)}. Symlinked configs (cursor mcp/settings, pi settings)
+# resolve through, so existence checks still pass.
+_SURFACE_MAP: dict[str, dict[Agent, str | None]] = {
+    "skills": {
+        "claude": ".claude/skills",
+        "cursor": ".cursor/skills-cursor",
+        "codex": ".agents/skills",
+        "gemini": None,
+        "pi": ".agents/skills",
+    },
+    "subagents": {
+        "claude": ".claude/agents",
+        "cursor": None,
+        "codex": ".codex/agents",
+        "gemini": None,
+        "pi": ".pi/agent/agents",
+    },
+    "rules": {  # only Claude reads a rules dir; the rest embed rules in instructions
+        "claude": ".claude/rules",
+        "cursor": None,
+        "codex": None,
+        "gemini": None,
+        "pi": None,
+    },
+    "mcp": {
+        "claude": ".claude.json",
+        "cursor": ".cursor/mcp.json",
+        "codex": ".codex/config.toml",
+        "gemini": ".gemini/settings.json",
+        "pi": None,
+    },
+    "hooks": {
+        "claude": ".claude/settings.json",
+        "cursor": None,
+        "codex": ".codex/hooks.json",
+        "gemini": None,
+        "pi": None,
+    },
+    "instructions": {
+        "claude": ".claude/CLAUDE.md",
+        "cursor": None,
+        "codex": ".codex/AGENTS.md",
+        "gemini": ".gemini/GEMINI.md",
+        "pi": ".pi/agent/AGENTS.md",
+    },
+    "settings": {
+        "claude": ".claude/settings.json",
+        "cursor": ".cursor/cli-config.json",
+        "codex": ".codex/config.toml",
+        "gemini": ".gemini/settings.json",
+        "pi": ".pi/agent/settings.json",
+    },
+}
 
 
 class AgentVerifyService:
@@ -42,82 +108,24 @@ class AgentVerifyService:
     # ------------------------------------------------------------------
 
     def vendors(self) -> list[AgentSurface]:
+        """A uniform attribute checklist for every agent — same rows in the same order.
+
+        Each (agent, attribute) resolves to present / missing / empty, or n/a
+        (``skipped``) where the agent has no such surface — so you can read down
+        any agent and see exactly what it has and what it lacks.
+        """
         results: list[AgentSurface] = []
-        results.extend(self._claude_surfaces())
-        results.extend(self._cursor_surfaces())
-        results.extend(self._codex_surfaces())
-        results.extend(self._gemini_surfaces())
-        results.extend(self._pi_surfaces())
+        for agent in AGENTS:
+            for attribute in _ATTRIBUTES:
+                rel = _SURFACE_MAP[attribute].get(agent)
+                results.append(self._surface(agent, attribute, rel))
         return results
 
-    # ------------------------------------------------------------------
-    # Per-agent helpers
-    # ------------------------------------------------------------------
-
-    def _claude_surfaces(self) -> list[AgentSurface]:
-        h = self._home
-        return [
-            self._check("claude", "skills", h / ".claude" / "skills"),
-            self._check("claude", "subagents", h / ".claude" / "agents"),
-            self._check("claude", "rules", h / ".claude" / "rules"),
-            self._check("claude", "MCP config", h / ".claude.json"),
-            self._check("claude", "settings.json", h / ".claude" / "settings.json"),
-            self._check("claude", "CLAUDE.md", h / ".claude" / "CLAUDE.md"),
-        ]
-
-    def _cursor_surfaces(self) -> list[AgentSurface]:
-        h = self._home
-        d = self._dotfiles_dir
-        return [
-            self._check("cursor", "skills (legacy)", h / ".cursor" / "skills"),
-            self._check("cursor", "skills-cursor", h / ".cursor" / "skills-cursor"),
-            self._check("cursor", "MCP config", h / ".cursor" / "mcp.json"),
-            self._check("cursor", "rules (project)", d / "ai" / "agents" / "cursor" / "rules"),
-        ]
-
-    def _codex_surfaces(self) -> list[AgentSurface]:
-        h = self._home
-        return [
-            self._check("codex", "skills (agent)", h / ".codex" / "skills"),
-            self._check("codex", "skills (shared)", h / ".agents" / "skills"),
-            self._check("codex", "subagents", h / ".codex" / "agents"),
-            self._check("codex", "AGENTS.md", h / ".codex" / "AGENTS.md"),
-            self._check("codex", "config.toml", h / ".codex" / "config.toml"),
-            self._check("codex", "hooks.json", h / ".codex" / "hooks.json"),
-            self._check("codex", "default.rules", h / ".codex" / "rules" / "default.rules"),
-        ]
-
-    def _gemini_surfaces(self) -> list[AgentSurface]:
-        if not self._which("gemini"):
-            return [
-                AgentSurface(
-                    agent="gemini",
-                    label="skipped",
-                    status="skipped",
-                    detail="gemini CLI not installed",
-                )
-            ]
-        h = self._home
-        return [
-            self._check("gemini", "settings.json", h / ".gemini" / "settings.json"),
-            self._check("gemini", "GEMINI.md", h / ".gemini" / "GEMINI.md"),
-        ]
-
-    def _pi_surfaces(self) -> list[AgentSurface]:
-        if not self._which("pi"):
-            return [
-                AgentSurface(
-                    agent="pi", label="skipped", status="skipped", detail="pi CLI not installed"
-                )
-            ]
-        h = self._home
-        return [
-            self._check("pi", "settings.json", h / ".pi" / "agent" / "settings.json"),
-            self._check("pi", "models.json", h / ".pi" / "agent" / "models.json"),
-            self._check("pi", "AGENTS.md", h / ".pi" / "agent" / "AGENTS.md"),
-            self._check("pi", "subagents", h / ".pi" / "agent" / "agents"),
-            self._check("pi", "skills (shared)", h / ".agents" / "skills"),
-        ]
+    def _surface(self, agent: Agent, label: str, rel: str | None) -> AgentSurface:
+        """One uniform row: n/a when *rel* is None, else the path-existence check."""
+        if rel is None:
+            return AgentSurface(agent=agent, label=label, status="skipped", quantity="n/a")
+        return self._check(agent, label, self._home / rel)
 
     # ------------------------------------------------------------------
     # Core path-check logic (mirrors check_path() in the shell script)
