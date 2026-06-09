@@ -81,6 +81,41 @@ class SettingsWithPermissions(BaseModel):
     permissions: PermissionsBlock = PermissionsBlock()
 
 
+class McpServersFile(BaseModel):
+    """Any agent config projected to just its ``mcpServers`` map (presence check)."""
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+    mcp_servers: dict[str, object] = Field(default_factory=dict, alias="mcpServers")
+
+
+class GeminiTools(BaseModel):
+    """The ``tools`` block of ~/.gemini/settings.json (only ``exclude`` matters here)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    exclude: list[object] | None = None
+
+
+class GeminiSettings(BaseModel):
+    """~/.gemini/settings.json projected to the fields the capability probe reads."""
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+    mcp_servers: dict[str, object] = Field(default_factory=dict, alias="mcpServers")
+    tools: GeminiTools = Field(default_factory=GeminiTools)
+
+
+class ClaudeSettingsProbe(BaseModel):
+    """~/.claude/settings.json projected to statusline / hooks / permissions presence."""
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+    status_line: dict[str, object] | None = Field(default=None, alias="statusLine")
+    hooks: dict[str, object] = Field(default_factory=dict)
+    permissions: PermissionsBlock = Field(default_factory=PermissionsBlock)
+
+
 # ---------------------------------------------------------------------------
 # Generic loader
 # ---------------------------------------------------------------------------

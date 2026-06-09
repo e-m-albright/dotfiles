@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from dotfiles.agent import Agent
+from dotfiles.cmd.agent.capability_matrix import CapabilityRow
 
 
 class McpRow(BaseModel):
@@ -154,6 +155,8 @@ class AgentOverview(BaseModel):
     vendor_surfaces: tuple[AgentSurface, ...] = ()
     plugins: tuple[PluginRow, ...] = ()
     skills_rules: tuple[ValueRow, ...] = ()
+    capabilities: tuple[CapabilityRow, ...] = ()
+    fleet_doc_stale_days: int | None = None
 
 
 class CatechismEntry(BaseModel):
@@ -164,6 +167,23 @@ class CatechismEntry(BaseModel):
     symptom: str  # what you want (the question)
     rite: str  # the skill/command to reach for (the answer)
     tier: str  # where it sits in the ontology
+
+
+class LanguagePack(BaseModel):
+    """Per-language code-health config — selected by marker files at bootstrap.
+
+    `suppression_patterns` + `files_glob` drive the ratchet; `tools` is reference
+    only (the canonical per-language gate commands), not consumed by the ratchet.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    language: str
+    markers: tuple[str, ...] = ()
+    files_glob: str
+    run_from: str = "."
+    suppression_patterns: dict[str, str]
+    tools: dict[str, str] = {}
 
 
 class Hotspot(BaseModel):
@@ -195,6 +215,7 @@ class HealthBootstrap(BaseModel):
 
     scope: str
     target: str
+    language: str = "generic"  # the detected language pack (or "generic" fallback)
     baselines_path: str
     findings_path: str
     created: bool  # False when baselines already existed and were kept

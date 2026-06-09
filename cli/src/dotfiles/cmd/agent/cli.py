@@ -14,6 +14,13 @@ from rich.table import Table
 
 from dotfiles.agent import OVERVIEW_AGENTS, VENDORS
 from dotfiles.app.context import app_context
+from dotfiles.cmd.agent.capability_matrix import (
+    FLEET_STALE_DAYS as _FLEET_STALE_DAYS,
+)
+from dotfiles.cmd.agent.capability_matrix import (
+    CapabilityCell,
+    CapabilityRow,
+)
 from dotfiles.cmd.agent.catechism import CATECHISM
 from dotfiles.cmd.agent.health import HealthBootstrap, HealthError, HealthService, git_root
 from dotfiles.cmd.agent.models import (
@@ -151,6 +158,36 @@ def _render_state_matrix(
         console.print(f"  {escape(label):<{_LABEL_W}}{cells}")
 
 
+def _capability_cell(cell: CapabilityCell) -> str:
+    """Glyph per (intent, live): ✓ present · n/a ★ canonical ⊕ different ✗ gap."""
+    if cell.intent == "na":
+        return f"[dim]{'·'.center(_COL_W)}[/]"
+    if not cell.present:  # target intent unmet by live deployment — a real gap
+        return f"[red]{'✗'.center(_COL_W)}[/]"
+    glyph, color = {
+        "required": ("✓", "green"),
+        "canonical": ("★", _GOLD),
+        "different": ("⊕", "cyan"),
+    }[cell.intent]
+    return f"[{color}]{glyph.center(_COL_W)}[/]"
+
+
+def _render_capability_matrix(rows: Iterable[CapabilityRow]) -> None:
+    """Cross-vendor capability matrix: target intent vs live deployment."""
+    rows_list = list(rows)
+    if not rows_list:
+        return
+    _matrix_header("Capability matrix")
+    for row in rows_list:
+        cells = "".join(_capability_cell(row.cells[a]) for a in _AGENT_COLS)
+        pioneer = f"[dim] {escape(row.front_runner)}▸[/]" if row.front_runner else ""
+        console.print(f"  {escape(row.capability):<{_LABEL_W}}{cells}{pioneer}")
+    console.print(
+        f"  [dim]✓ present · ✗ gap · · n/a · [{_GOLD}]★[/{_GOLD}] Pi-canonical ·"
+        " [cyan]⊕[/cyan] different mechanism · name▸ front-runner[/]"
+    )
+
+
 def _render_value_matrix(title: str, rows: Iterable[ValueRow]) -> None:
     rows_list = list(rows)
     if not rows_list:
@@ -225,6 +262,12 @@ def _render_agent_sections(data: AgentOverview, home: Path) -> None:
 def _render_overview(data: AgentOverview, home: Path) -> None:
     """Render the dashboard: colocated matrices, plugins, then per-agent surfaces."""
     print_title(console, "agent", "overview")
+    _render_capability_matrix(data.capabilities)
+    if (stale := data.fleet_doc_stale_days) is not None and stale > _FLEET_STALE_DAYS:
+        console.print(
+            f"  [yellow]⚠ agent-fleet.md last reviewed {stale}d ago[/] "
+            "[dim]· re-check the landscape (new vendor features?)[/]"
+        )
     _render_value_matrix("Skills & Rules", data.skills_rules)
     _render_plugins(data.plugins)
     _render_state_matrix("MCP servers", data.mcp, _MCP_AGENTS, "server")
@@ -611,10 +654,10 @@ def _stats_json(r: SkillUsageReport) -> dict[str, object]:
 
 _HEALTH_SCOPE = typer.Option("repo", "--scope", help="Health scope name (docs/health/<scope>/).")
 _HEALTH_GLOB = typer.Option(
-    "**/*", "--glob", help="files_glob the ratchet counts over (e.g. 'src/**/*.py')."
+    "", "--glob", help="files_glob override (default: detected from the language pack)."
 )
 _HEALTH_RUN_FROM = typer.Option(
-    ".", "--run-from", help="Dir the glob is relative to (e.g. 'cli/')."
+    "", "--run-from", help="Dir the glob is relative to (default: the pack's, usually '.')."
 )
 _HEALTH_FORCE = typer.Option(
     False, "--force", help="Reseed baselines.json even if it exists (re-counts ceilings)."
@@ -640,8 +683,8 @@ def health(
         result = svc.bootstrap(
             target=target,
             scope=scope,
-            files_glob=glob,
-            run_from=run_from,
+            files_glob=glob or None,
+            run_from=run_from or None,
             today=date.today(),
             force=force,
         )
@@ -653,7 +696,10 @@ def health(
 
 def _render_health(r: HealthBootstrap) -> None:
     print_title(console, "agent", "health")
-    console.print(f"[bold]Code-health backbone[/]  [dim]scope: {escape(r.scope)}[/]")
+    console.print(
+        f"[bold]Code-health backbone[/]  [dim]scope: {escape(r.scope)} · "
+        f"lang: {escape(r.language)}[/]"
+    )
     console.print(f"  repo  [dim]{escape(r.target)}[/]")
     console.print(f"  LOC {r.scorecard.loc}   suppressions {r.total_suppressions}")
     if r.created:

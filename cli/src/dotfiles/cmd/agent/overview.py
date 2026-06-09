@@ -10,11 +10,17 @@ from __future__ import annotations
 import json
 import shutil
 from collections.abc import Callable
+from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from dotfiles.cmd.agent.capability_matrix import (
+    CapabilityMatrixService,
+    CapabilityRow,
+    fleet_doc_stale_days,
+)
 from dotfiles.cmd.agent.config import (
     ClaudeHooksConfig,
     CursorHooksConfig,
@@ -84,7 +90,14 @@ class AgentOverviewService:
             vendor_surfaces=tuple(self.vendor_surfaces()),
             plugins=tuple(self.section_plugins()),
             skills_rules=tuple(self.section_skills_rules()),
+            capabilities=tuple(self.section_capabilities()),
+            fleet_doc_stale_days=fleet_doc_stale_days(self._dotfiles, date.today()),
         )
+
+    def section_capabilities(self) -> list[CapabilityRow]:
+        """The cross-vendor capability matrix (target intent + live probe)."""
+        svc = CapabilityMatrixService(home=self._home, dotfiles_dir=self._dotfiles)
+        return svc.rows()
 
     # ------------------------------------------------------------------
     # Skills & Rules (colocated value matrix: per-agent deployment)
