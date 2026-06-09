@@ -174,7 +174,7 @@ The superpowers plugin provides a structured pipeline for feature development. Y
 | `/commit-push-pr` | Commit + push + open PR |
 | `/review-pr` | Comprehensive PR review with specialized agents |
 | `/doctor` | Run dotfiles doctor |
-| `/agents-overview` | Show all active MCP, hooks, skills |
+| `dotfiles agent overview` | Show all active MCP, hooks, skills, capability matrix (a command, not a skill) |
 
 ### Plugins Working in the Background
 

@@ -154,7 +154,7 @@ Everything we can reach for, grouped. (`dotfiles agent catechism` prints the cod
 - **Git / PR workflow** [S] — `github-workflow` · `pr-summary` · `pr-greenlight-cycle` · `hook-failure-triage` · `git-worktree-manager` · `commit-commands:*`.
 - **Frontend** [S] — `impeccable` · `design-review` · `browser-tooling` · `agentic-e2e-debugging`.
 - **Subagents** [S] — `debugger` · `error-detective` · `performance-engineer` · `security-auditor` · `legacy-modernizer`.
-- **Session / infra / meta** [S] — `session-recovery` · `workspace-health-audit` · `workflow-closeout-learning` · `agents-overview` · `dotfiles-doctor` · `skill-creator` · `find-skills` · `dep-audit` · `migration-writer`.
+- **Session / infra / meta** [S] — `session-recovery` · `workspace-health-audit` · `workflow-closeout-learning` · `dotfiles-doctor` · `skill-creator` · `find-skills` · `dep-audit` · `migration-writer`. (Agentic-setup snapshots are the `dotfiles agent overview` command, not a skill.)
 - **Builders / stack reference** [S] — MCP/Cloudflare builders + per-stack skills (`fastapi`, `axum`, `go-chi-handler`, `sqlc`, `alembic`, `tauri`, `sveltekit-svelte5-tailwind`, …).
 - **Tooling (deterministic CLI)** [D] — `dotfiles agent health · catechism · stats · lint · setup · overview · verify` · `dotfiles doctor` · `just ratchet` · `just perf` (perf-budget ratchet).
 
