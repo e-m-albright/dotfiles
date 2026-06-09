@@ -1,66 +1,67 @@
 ---
 name: browser-tooling
-description: Pick the right browser/UI tool for the job — routes between Playwright tests, agent-browser, pinchtab, Playwright MCP, Chrome DevTools MCP, and Stagehand. Use when user reports a UI bug, asks to verify a deployed page, wants WebRTC/Daily testing, asks for E2E coverage, says "look at this page", "did the deploy work", "check the UI", "automate the browser", or "drive Chrome".
+description: Pick the right browser/UI tool for the job — routes between Playwright tests (deterministic), the agent-browser CLI (default for agent-driven browsing), and pinchtab (human-in-the-loop authed sessions). Use when user reports a UI bug, asks to verify a deployed page, wants E2E coverage, says "look at this page", "did the deploy work", "check the UI", "automate the browser", or "drive Chrome".
 ---
 
 # Browser Tooling Router
 
-The dotfiles install five categories of browser/UI tools with different cost shapes. Use this skill to pick the cheapest one that does the job, and to remember what's available.
+These tools sit at **different layers of the stack**, not in competition:
+
+```
+AI Agent  →  control layer (agent-browser / pinchtab)  →  CDP  →  Chrome
+              automation framework (Playwright)  ──────────┘
+```
+
+- **Playwright** — automation *framework*. You (or a test) write code that says exactly what to do. Most reliable; the testing/scraping/production foundation. Not agent-native (the LLM must emit Playwright code).
+- **agent-browser** (Vercel Labs) — agent-native browser *CLI*. Compact text/a11y representations, `agent-browser open … / click @e2 / fill @e3 "…"`. Token-efficient, fast, shells out — **no MCP context tax.**
+- **pinchtab** — agent-oriented control *server*: a persistent, logged-in, watchable browser over a lightweight HTTP API + accessibility snapshots. Best when a human watches/intervenes on an authed site.
+
+**The stack we run (your endorsement): Playwright + agent-browser for ~90% of work; pinchtab on standby for human-in-the-loop authed sessions.** Chrome DevTools is **not** an explicitly-supported standing tool, and there are **no browser MCP servers loaded** — the CLI layer gives the same agent-native control (a11y snapshots, persistent session) without paying a per-session context tax.
 
 ## Decision tree
 
-**"Look at this page" / "Did the deploy work?" / smoke check** → **Tier 2 CLI**
-- `agent-browser` (Vercel Labs) — ~200–400 tokens/page. First choice for one-shot inspection.
-- `pinchtab` — ~800 tokens/page via accessibility tree. HTTP API, good for short interactive sessions: `pinchtab serve --port 9867` then `curl localhost:9867/snapshot`.
-- Both shell out — no per-session MCP context cost.
+**"Look at this page" / "Did the deploy work?" / smoke check / drive a flow** → **agent-browser CLI** (default)
+- `agent-browser open <url>`, then `click @e2` / `fill @e3 "…"` / snapshot. ~200–400 tokens/page.
+- First choice for almost everything an agent does in a browser.
 
-**"Reproduce a bug, click around, screenshot it"** → **Tier 3a Playwright MCP**
-- Loaded MCP. ~13.7k context. Drive a real headed/headless browser.
-- Use when the task needs real input simulation, persistent state across steps, or WebRTC (`--use-fake-device-for-media-stream`, `--use-fake-ui-for-media-stream`).
+**Human-in-the-loop on a logged-in site (you watch, agent drives)** → **pinchtab** (standby)
+- `pinchtab serve --port 9867` then `curl localhost:9867/snapshot`. ~800 tokens/page.
+- Reach for it only when agent-browser's headless model isn't enough — i.e. you need a persistent, visible, authenticated browser.
 
-**"Why is this slow / what error fired / network looks wrong"** → **Tier 4 Chrome DevTools MCP**
-- ~18k context. Network, console, perf traces. Can attach to a running Chrome.
-- Don't load alongside Playwright MCP unless both are genuinely needed — context tax stacks.
-
-**"Catch this regression forever"** → **Tier 1 Playwright tests**
+**"Catch this regression forever" / deterministic scrape / production workflow** → **Playwright tests**
 - Free per run. Write tests in the project's `web/tests/e2e/`. Use Daily fake-media flags for WebRTC.
-- After root-causing a bug with a Tier 3/4 MCP, write a Tier 1 test so the bug can never silently regress.
+- After root-causing a bug with the CLI, write a Playwright test so it can never silently regress.
 
-**"Long agentic flow that spans 20 screens"** → **Tier 5 Stagehand (per-project)**
-- `@browserbasehq/stagehand` — natural-language `act`/`extract`/`observe`. Selectors don't rot.
-- Costs LLM tokens per test run. Reach for it only when selector-based tests rot faster than they catch bugs.
-- Install per-project: `npm install @browserbasehq/stagehand` (not a global tool).
+**"Long agentic flow across 20 screens where selectors rot"** → **Stagehand** (per-project)
+- `@browserbasehq/stagehand` — natural-language `act`/`extract`/`observe`. Costs LLM tokens per run. Install per-project, not global.
+
+**"Why is this slow / what error fired / network looks wrong"** → no standing tool
+- We dropped the Chrome DevTools MCP (overlap + context tax). If you genuinely need perf/network/console traces, launch `npx chrome-devtools-mcp@latest` ad-hoc for that one session, then drop it — don't make it standing.
 
 ## Token budget reference
 
-| Tier | Tool | Cost shape |
-|------|------|------------|
-| 1 | Playwright tests in CI | 0 / run (one-time write cost) |
-| 2 | agent-browser CLI | ~200–400 tokens / page |
-| 2 | pinchtab CLI | ~800 tokens / page |
-| 3a | Playwright MCP | ~13.7k context loaded |
-| 4 | Chrome DevTools MCP | ~18k context loaded |
-| 5 | Stagehand | LLM tokens / test run |
+| Tool | Layer | Cost shape |
+|------|-------|------------|
+| Playwright tests in CI | framework | 0 / run (one-time write cost) |
+| agent-browser CLI | agent control | ~200–400 tokens / page · no MCP tax |
+| pinchtab CLI/server | agent control | ~800 tokens / page · no MCP tax |
+| Stagehand | agent framework | LLM tokens / test run |
+| ~~Playwright MCP~~ | dropped | was ~13.7k always-on context |
+| ~~Chrome DevTools MCP~~ | dropped | was ~18k always-on context · launch ad-hoc if ever needed |
+
+## Why CLI, not MCP, for browser control
+
+An MCP server taxes every session's context with its tool schemas whether or not you browse. The agent-native value of Playwright-MCP / pinchtab-MCP — **structured a11y snapshots + a persistent browser session** — is exactly what `agent-browser` (CLI) and `pinchtab` (server) already give you on demand, at zero standing cost. Note Playwright-the-framework (tests) is a *different layer* from Playwright-MCP (agent control); we keep the former, drop the latter. So nothing is lost by removing the browser MCPs.
 
 ## Workflow patterns
 
 **Bug report → permanent test:**
-1. Reproduce with Playwright MCP (Tier 3a).
-2. If perf/network smells → switch to Chrome DevTools MCP (Tier 4).
-3. Once root-caused, write a Playwright test (Tier 1) so it's protected forever.
+1. Reproduce/poke with `agent-browser` (or pinchtab if you need to watch a logged-in session).
+2. Once root-caused, write a Playwright test so it's protected forever.
 
-**"Check the page looks right":**
-- Default to `agent-browser` (Tier 2). Don't load an MCP for this.
-
-**WebRTC / Daily.co:**
-- Tier 1 or Tier 3a. Both support `--use-fake-device-for-media-stream` via Chromium launch args.
-- Reference: Daily.co "headless robot" pattern — `--use-file-for-fake-audio-capture=path.wav`, `--use-file-for-fake-video-capture=path.y4m`.
-
-## Loading MCPs on-demand
-
-Playwright MCP and Chrome DevTools MCP are configured in `agents/shared/mcp-servers.json`. They load with each Claude Code session. If they're not needed for a session and you want to save context, the user can disable per-session via `MCP_SKIP=playwright,chrome-devtools` before launch, or use `claude mcp disable`.
+**WebRTC / Daily.co:** Playwright tests — `--use-fake-device-for-media-stream`, `--use-fake-ui-for-media-stream`, `--use-file-for-fake-audio-capture=path.wav`, `--use-file-for-fake-video-capture=path.y4m`.
 
 ## See also
 
 - Full guide with examples: `prompts/guides/browser-tooling.md`
-- Existing skill: `playwright-e2e-testing` (covers writing the actual Tier 1 tests)
+- `playwright-e2e-testing` skill — writing the actual deterministic tests

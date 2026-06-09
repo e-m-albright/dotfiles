@@ -11,12 +11,8 @@
     "url": "https://mcp.context7.com/mcp",
     "targets": ["cursor"]
   },
-  "playwright": {
-    "command": "npx",
-    "args": ["-y", "@playwright/mcp@latest"],
-    "targets": ["claude", "cursor", "codex", "gemini"]
-  },
 
+  "_playwright_disabled": "playwright MCP disabled 2026-06-09 — browser automation lives in the CLI layer instead (playwright framework for deterministic tests + agent-browser CLI for agent-driven browsing, pinchtab on standby for human-in-the-loop authed sessions). No always-on MCP context tax. (was: npx @playwright/mcp@latest, targets: claude/cursor/codex/gemini)",
   "_linear_disabled": "Linear MCP disabled 2026-05-07 — re-enable if needed (was: https://mcp.linear.app/mcp, targets: claude/cursor/codex)",
   "_notion_disabled": "Notion MCP disabled 2026-05-07 — re-enable if needed (was: https://mcp.notion.com/mcp, targets: claude/cursor/codex)",
   "_datadog_disabled": "Datadog MCP disabled 2026-05-07 — re-enable if needed (was: https://mcp.datadoghq.com/api/unstable/mcp-server/mcp, headers DD_API_KEY/DD_APPLICATION_KEY, targets: cursor)",
