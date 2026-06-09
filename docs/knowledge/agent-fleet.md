@@ -14,7 +14,7 @@ This table is the **single source of truth** — `cli/.../capability_matrix.py` 
 
 | Capability | Front-runner | Claude Code | Codex | Cursor | Antigravity | Pi |
 |---|---|---|---|---|---|---|
-| Rules (instructions) | — | ✓ `CLAUDE.md` | ✓ `AGENTS.md` | ✓ `.mdc` | ✓ `GEMINI.md` | ✓ `AGENTS.md` |
+| Rules (instructions) | — | ✓ `CLAUDE.md` | ✓ `AGENTS.md` | ✓ `.mdc` | ✓ `AGENTS.md` | ✓ `AGENTS.md` |
 | Skills | Claude | ✓ `.claude/skills` | ✓ `.agents/skills` | ✓ `skills-cursor` | ⊘ *(no skills surface)* | ✓ `.agents/skills` |
 | Subagents | Claude | ✓ `.claude/agents` | ✓ `.codex/agents` | ✓ `.cursor/agents` *(2.4)* | ⊘ *(no subagents)* | ✓ `.pi/agent/agents` |
 | MCP servers | Claude | ✓ `granola` | — | — | — | — *(by choice — local-first)* |
@@ -35,23 +35,23 @@ Only the **terminal** agents (Claude, Codex, Pi) can render a custom statusline.
 
 **Decision: drop Gemini CLI, migrate the fifth fleet slot to Google's Antigravity CLI (`agy`).** Google is [transitioning Gemini CLI to Antigravity CLI](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/); **on 2026-06-18 Gemini CLI stops serving Pro/Ultra/free individual users.** Antigravity also closes Gemini's old gaps — it ships **Skills, Subagents, Hooks, and Plugins** (Gemini Extensions rebranded), so the fifth slot goes from the weakest column to near-parity.
 
-**Status: installed + config migrated; registry-label rename pending.** `agy` is installed (brew cask `antigravity-cli` → `/opt/homebrew/bin/agy`, v1.0.6) and **verified to read the same `~/.gemini/` config as Gemini CLI** — so the migration is mostly a binary swap. Done: package source (`gemini-cli` → `antigravity-cli`); the vendor now checks for `agy` and writes the portable **`~/.gemini/AGENTS.md`** (retiring `GEMINI.md`); MCP + `tools.exclude` permissions already land in `~/.gemini/settings.json` which `agy` reads. The vendor key stays `gemini` (driving `agy`) until the cosmetic registry rename — deferred only to avoid clobbering an in-flight `cli.py` edit by a parallel agent.
+**Status: installed (v1.0.7) + rules/MCP/permissions wired & verified; UI relabeled to Antigravity/`agy`.** `agy` is installed (brew cask `antigravity-cli` → `/opt/homebrew/bin/agy`) and **verified to read the same `~/.gemini/` config as Gemini CLI** — so the migration was a binary swap. The vendor checks for `agy` and writes the portable **`~/.gemini/AGENTS.md`** (retiring `GEMINI.md`); MCP + `tools.exclude` permissions land in `~/.gemini/settings.json` which `agy` reads. The internal vendor key stays `gemini` **on purpose** — it's literally agy's config dir (`~/.gemini`); the display name is **Antigravity** and the matrix column shows **`agy`**.
 
-Verified config (live on this machine):
+Verified config (probed live on v1.0.7):
 
 | Surface | Config | Status |
 |---|---|---|
-| Install | brew cask `antigravity-cli` → `agy` (auto-updates) | ✅ done |
-| Home dir | **`~/.gemini/`** (same as Gemini CLI — settings.json, config/, oauth_creds.json…) | ✅ verified |
-| Global instructions | **`~/.gemini/AGENTS.md`** (portable; `agy` reads AGENTS.md + GEMINI.md, GEMINI.md outranks — we deploy AGENTS.md and delete GEMINI.md so it's authoritative). **GEMINI.md is not dead, just unused by us.** | ✅ done |
-| MCP | `~/.gemini/settings.json` `mcpServers` (same schema) — currently empty by choice (MCP is Claude-only) | ✅ done |
+| Install | brew cask `antigravity-cli` → `agy` v1.0.7 (auto-updates) | ✅ done |
+| Home dir | **`~/.gemini/`** (settings.json, config/, antigravity-cli/, oauth_creds.json…) | ✅ verified |
+| Global instructions | **`~/.gemini/AGENTS.md`** (we deploy it; GEMINI.md deleted) | ✅ done |
+| MCP | `~/.gemini/settings.json` `mcpServers` + an (empty) `~/.gemini/config/mcp_config.json` agy now seeds — empty by choice (MCP is Claude-only) | ✅ done |
 | Permissions | `~/.gemini/settings.json` `tools.exclude` (deny-vocab) | ✅ done |
-| Plugins | `agy plugin import gemini` / `agy plugin install <x>@<mp>` | available |
-| Skills · Subagents · Hooks | `agy` **supports** all three (global skills `~/.gemini/antigravity-cli/skills/`, `/agent`, JSON hooks) but the on-disk paths aren't yet confirmed — **not wired** | ⚠️ pending |
+| Plugins | `agy plugin import gemini\|claude` / `install <x>@<mp>` | available |
+| Skills · Subagents · Hooks | **No deployable surface on v1.0.7** — verified: `agy --help` exposes only `changelog/install/models/plugin/update`; no `skills`/`agents`/`hooks` subcommands and no global deploy dirs (`~/.gemini/antigravity-cli/` is runtime-only: cache/brain/builtin). The blog's Skills/Subagents/Hooks are a **future build**. | ⊘ not yet (correct) |
 
-**Remaining steps:** (1) rename the `gemini` vendor → `antigravity` in `dotfiles.agent.VENDORS` + the matrix/`_SURFACE_MAP`/`_AgentChoice` keys (do once `cli.py` is clear); (2) verify the skills/subagents/hooks on-disk paths on the live `agy` and wire them (flipping those matrix cells from `⊘` to `✓`); (3) the matrix column relabels gemini→antigravity. The `dotfiles agent web copy` Gemini-*web*-chat command is unrelated and stays.
+**This is why the matrix shows `⊘` for Antigravity skills/subagents/hooks — it's accurate, not a gap we can close.** Two caveats for later: (a) **re-probe after an `agy` update** that adds those surfaces, then wire skills (likely `.agents/skills/<name>/SKILL.md`) + hooks (`hooks.json`); (b) **static subagent dirs may never come** — Google frames Antigravity subagents as *dynamic* `/agent` dispatch and calls on-disk subagent dirs obsolete, so don't plan to port `ai/subagents/*.md` there. The `dotfiles agent web copy` Gemini-*web*-chat command is unrelated and stays.
 
-Sources: [transitioning blog](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/) · [Antigravity subagents/skills](https://developers.googleblog.com/subagents-have-arrived-in-gemini-cli/) · Gemini CLI v0.26.0 (Skills/Hooks/Subagents) · gemini-cli issue #16058.
+Sources: [transitioning blog](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/) · live `agy --version`/`--help`/filesystem probe (2026-06-09, v1.0.7) · gemini-cli issue #16058.
 
 ---
 
@@ -68,6 +68,13 @@ What shipped across the tools lately, with our verdict. KEEP/adopt = part of the
 | Named permission profiles + `auto_review` reviewer | Codex | **evaluate** | aligns with our `ai/.agents/` permission-profile model; revisit when we formalize Codex profiles. |
 | Auto-review Run Mode, SDK custom tools | Cursor | **skip** | only relevant if we script Cursor headless, which we don't. |
 | Subagents (2.4) + plugin marketplace (2.5) | Cursor | **adopted (subagents)** | our 5 subagents now deploy to `~/.cursor/agents`; the marketplace stays GUI-managed (not fleet state). |
+| **`fallbackModel`** (up to 3, tried in order on overload) + `--fallback-model` | Claude Code | **adopt** | free resilience — set a fallback (e.g. Sonnet) so an Opus overload doesn't stall. *Needs your fallback-model pick before wiring into settings.* |
+| `disableBundledSkills` / `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` | Claude Code | **evaluate** | hide vendor-bundled skills from the model — fits our aggressive skill curation. |
+| `Stop`/`SubagentStop` hooks return `additionalContext` (feedback w/o erroring); hook-condition `$()`/`$VAR`/`$HOME` bugfix | Claude Code | **note** | the bugfix validates our deny-vocab guard approach; `additionalContext` is a future option for the guard hooks. |
+| **2.6 "MCP Apps"** + CLI hooks (`beforeSubmitPrompt`/Pre/PostToolUse/stop) + nested subagents + `local.customTools` | Cursor | **note** | past 2.5; CLI hooks mean Cursor could satisfy the canonical hook intents natively if we ever script it headless. |
+| **0.79.0** + **Project Trust** gating (`--approve`/`project_trust`); repo moved → `earendil-works/pi`; stale `./hooks` subpath removed (confirms no-hooks stance) | Pi | **note** | Project Trust aligns with our security posture; `Gondolin` (route built-in tools into a local micro-VM) is a sandboxed-exec adopt-candidate. |
+
+Flagged **unverified, do NOT cite**: "Claude Fable 5 / Mythos-class" model (no Anthropic corroboration; appears in Pi's `[Unreleased]` too — noise until confirmed); Codex "native subagents/hooks/skills" (secondary sources only — don't flip matrix cells); Cursor "3.x" numbers (app builds, not a feature line past 2.6).
 
 ---
 

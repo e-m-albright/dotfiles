@@ -11,7 +11,7 @@ A minimal, aggressively-extensible terminal coding agent by Mario Zechner (badlo
 - **Mid-session provider/model swap**, session trees, headless modes (`pi -p`, `--mode rpc`, SDK).
 - It's the harness under Peter Steinberger's OpenClaw and Armin Ronacher's daily driver.
 
-Docs: [pi.dev/docs](https://pi.dev/docs/latest) · monorepo [badlogic/pi-mono](https://github.com/badlogic/pi-mono) · curated [awesome-pi-agent](https://github.com/qualisero/awesome-pi-agent).
+Docs: [pi.dev/docs](https://pi.dev/docs/latest) · monorepo [earendil-works/pi](https://github.com/earendil-works/pi) (moved from `badlogic/pi-mono`; old URL still redirects) · curated [awesome-pi-agent](https://github.com/qualisero/awesome-pi-agent). Current: **v0.79.0** (2026-06).
 
 ## How it plugs into our multi-agent fleet (the key advantage)
 
@@ -96,4 +96,4 @@ If you want Pi to **replace your IDE + debugger** (live LSP rename/diagnostics, 
 
 ### Sources
 
-[oh-my-pi repo](https://github.com/can1357/oh-my-pi) · [CHANGELOG](https://github.com/can1357/oh-my-pi/blob/main/packages/coding-agent/CHANGELOG.md) · [DeepWiki hashline](https://deepwiki.com/can1357/oh-my-pi/8.1-hashline-mode) / [config](https://deepwiki.com/can1357/oh-my-pi/13-configuration-reference) · [self.md review](https://self.md/tools/oh-my-pi/) · base Pi [pi.dev](https://pi.dev) / [README](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/README.md)
+[oh-my-pi repo](https://github.com/can1357/oh-my-pi) · [CHANGELOG](https://github.com/can1357/oh-my-pi/blob/main/packages/coding-agent/CHANGELOG.md) · [DeepWiki hashline](https://deepwiki.com/can1357/oh-my-pi/8.1-hashline-mode) / [config](https://deepwiki.com/can1357/oh-my-pi/13-configuration-reference) · [self.md review](https://self.md/tools/oh-my-pi/) · base Pi [pi.dev](https://pi.dev) / [README](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/README.md)
