@@ -29,7 +29,7 @@ Project-specific rules live in the project's hand-written `AGENTS.md` (with `CLA
 ## Context & testing
 
 - **Respect existing conventions** (formatter, linter, package manager, hook system).
-- **Check the current date** before researching libraries; search for latest docs first.
+- **Check the current date** before researching libraries; search for latest docs first. For library/API docs, prefer `ctx7` (Context7 CLI: `ctx7 library <name>` → ID, then `ctx7 docs <id> "<query>"`).
 - **TDD when tests exist.** Write/update tests with new logic, refactors, and bug fixes. Run only what's relevant to the change unless asked for the full suite.
 
 ## Voice

@@ -267,6 +267,11 @@ flag = "ai"
 note = "Browser-automation CLI for AI agents (Tier 2 — shell out, no MCP overhead)"
 
 [[npm_package]]
+name = "ctx7"
+flag = "ai"
+note = "Context7 docs-lookup CLI (replaces the context7 MCP — `ctx7 library <name>` / `ctx7 docs <id> <query>`, no MCP context tax, universal across agents)"
+
+[[npm_package]]
 name = "pinchtab"
 flag = "ai"
 note = "Browser automation CLI for AI agents"
