@@ -296,11 +296,34 @@ def test_agent_health_outside_repo_exits_one(tmp_path: Path) -> None:
     assert "not inside a git repo" in result.output
 
 
-def test_agent_catechism_prints_routing(tmp_path: Path) -> None:
+def test_agent_catechism_prints_backbone_and_routing(tmp_path: Path) -> None:
     ctx = make_fake_context(dotfiles_dir=tmp_path / "dotfiles")
     result = runner.invoke(app, ["agent", "catechism"], obj=ctx)
     assert result.exit_code == 0, result.output
-    assert "The Catechism" in result.output
-    # a representative rite from each tier is present
+    # the three layers: doctrine hierarchy, health baselines, router
+    for section in ("Doctrine", "Canon", "Health baselines", "Router"):
+        assert section in result.output
     for rite in ("code-health", "form-prune", "diagnose"):
         assert rite in result.output
+
+
+def test_agent_catechism_shows_live_scope_health(tmp_path: Path) -> None:
+    dotfiles = tmp_path / "dotfiles"
+    scope = dotfiles / "docs" / "health" / "cli"
+    scope.mkdir(parents=True)
+    (scope / "baselines.json").write_text(
+        json.dumps(
+            {
+                "scope": "cli/src",
+                "loc_nontest": 1234,
+                "complexity": {"cognitive_max": 9, "functions_over_9": 0},
+                "suppressions": {"cast": 35},
+                "updated": "2026-06-07",
+            }
+        )
+    )
+    ctx = make_fake_context(dotfiles_dir=dotfiles)
+    result = runner.invoke(app, ["agent", "catechism"], obj=ctx)
+    assert "cli/src" in result.output
+    assert "1234 LOC" in result.output
+    assert "cast 35" in result.output

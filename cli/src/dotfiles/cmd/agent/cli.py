@@ -21,7 +21,13 @@ from dotfiles.cmd.agent.capability_matrix import (
     CapabilityCell,
     CapabilityRow,
 )
-from dotfiles.cmd.agent.catechism import CATECHISM
+from dotfiles.cmd.agent.catechism import (
+    CATECHISM,
+    DOCTRINE,
+    DoctrineLayer,
+    ScopeHealth,
+    read_scope_health,
+)
 from dotfiles.cmd.agent.health import HealthBootstrap, HealthError, HealthService, git_root
 from dotfiles.cmd.agent.models import (
     AgentOverview,
@@ -737,17 +743,46 @@ def _render_hotspots(rows: tuple[Hotspot, ...]) -> None:
 
 @agent_app.command()
 def catechism(ctx: typer.Context) -> None:
-    """The code-health Catechism: symptom → the rite to reach for (the entry-point map)."""
-    app_context(ctx)  # validate context; the catechism itself is static
+    """The code-health backbone: doctrine hierarchy + live ratchet floor + symptom→rite router."""
+    app_ctx = app_context(ctx)
+    print_title(console, "agent", "catechism")
+    _render_doctrine(DOCTRINE)
+    _render_scope_health(read_scope_health(app_ctx.dotfiles_dir))
     _render_catechism(CATECHISM)
+    console.print(
+        "\n[dim]The doctrine: CANON.md · the theory: code-health-portfolio.md · "
+        "verify live: just check (ratchet-check.sh)[/]"
+    )
+
+
+def _render_doctrine(layers: tuple[DoctrineLayer, ...]) -> None:
+    _ov_section("Doctrine", "the backbone — outermost → innermost")
+    width = max((len(layer.name) for layer in layers), default=8)
+    for layer in layers:
+        console.print(
+            f"  [{_GOLD}]{escape(layer.name):<{width}}[/]  {escape(layer.role)}\n"
+            f"  {' ' * width}  [dim]{escape(layer.doc)}[/]"
+        )
+
+
+def _render_scope_health(scopes: list[ScopeHealth]) -> None:
+    _ov_section("Health baselines", "the ratchet floor — every ceiling may only DECREASE")
+    if not scopes:
+        console.print("  [dim](no docs/health/<scope>/baselines.json yet)[/]")
+        return
+    for s in scopes:
+        supp = " · ".join(f"{k} {v}" for k, v in s.suppressions.items())
+        cx = f"≤{s.complexity_max}"
+        cx += " ✓" if s.complexity_over == 0 else f" [red]({s.complexity_over} over)[/]"
+        console.print(
+            f"  [{_GOLD}]{escape(s.scope)}[/]  [dim]{s.loc} LOC · complexity {cx} · "
+            f"updated {escape(s.updated)}[/]"
+        )
+        console.print(f"    [dim]suppressions:[/] {escape(supp)}")
 
 
 def _render_catechism(entries: tuple[CatechismEntry, ...]) -> None:
-    console.print()
-    console.print(
-        "[bold]The Catechism[/] [dim]— believe the Canon, practice this. "
-        "Front door: [/][bold]code-health[/][dim].[/]"
-    )
+    _ov_section("Router", "symptom → the rite to reach for · front door: code-health")
     tbl = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
     tbl.add_column("You want to…", style="dim", max_width=48)
     tbl.add_column("Reach for")
@@ -755,9 +790,6 @@ def _render_catechism(entries: tuple[CatechismEntry, ...]) -> None:
     for e in entries:
         tbl.add_row(escape(e.symptom), f"[bold]{escape(e.rite)}[/]", escape(e.tier))
     console.print(tbl)
-    console.print(
-        "\n[dim]The doctrine behind it: CANON.md · the theory: code-health-portfolio.md[/]"
-    )
 
 
 @web_app.command("copy")

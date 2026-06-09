@@ -349,7 +349,7 @@ dotfiles agent skills prune  # Dry-run: bucket deployed skills into retired (our
 dotfiles agent verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
 dotfiles agent stats         # Skill-usage analytics from Claude + Codex transcripts: leaderboard, dead skills, weak triggers (--since, --json)
 dotfiles agent health        # Bootstrap a repo's code-health backbone: scorecard → docs/health/<scope>/baselines.json + findings.md (--scope, --glob, --run-from, --force)
-dotfiles agent catechism     # Print the code-health Catechism: symptom → the rite to reach for (the entry-point map; see CANON.md)
+dotfiles agent catechism     # The code-health backbone: doctrine hierarchy (Canon→Philosophy→Gates→Portfolio) + live ratchet floor per scope + symptom→rite router
 dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
 dotfiles remote on --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh
