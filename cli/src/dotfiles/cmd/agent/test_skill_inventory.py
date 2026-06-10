@@ -83,3 +83,29 @@ def test_inventory_is_alphabetical(tmp_path: Path) -> None:
     runner = _git_history(dotfiles)
     names = [s.name for s in inventory(runner, tmp_path / "home", dotfiles)]
     assert names == ["alpha", "zebra"]
+
+
+def test_description_resolves_block_scalars_and_falls_back(tmp_path: Path) -> None:
+    """Block-scalar descriptions (`|`/`>`) resolve to their text, collapsed to one
+    line; frontmatter too loose for YAML falls back to the first description line."""
+    from dotfiles.cmd.agent.skill_inventory import _description
+
+    def md(name: str, frontmatter: str) -> Path:
+        p = tmp_path / name
+        p.write_text(f"---\nname: x\n{frontmatter}\n---\n\nbody\n")
+        return p
+
+    literal = md(
+        "LITERAL.md", "description: |\n  Builds remote MCP servers\n  with OAuth and deploy."
+    )
+    assert _description(literal) == "Builds remote MCP servers with OAuth and deploy."
+
+    folded = md("FOLDED.md", "description: >-\n  Create a hook for\n  the harness.")
+    assert _description(folded) == "Create a hook for the harness."
+
+    plain = md("PLAIN.md", "description: Just a normal one-liner.")
+    assert _description(plain) == "Just a normal one-liner."
+
+    # Unquoted ': ' mid-value is invalid YAML (reads as a nested map) — regex fallback.
+    loose = md("LOOSE.md", "description: net LOC: goes down, features removed.")
+    assert _description(loose) == "net LOC: goes down, features removed."

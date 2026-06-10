@@ -15,7 +15,6 @@ canonical source (or the deployed/plugin copy for non-canonical skills).
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Literal
 
@@ -40,7 +39,9 @@ _DEPLOYED_DIRS: tuple[tuple[str, ...], ...] = (
     (".cursor", "skills-cursor"),
 )
 
-_DESC_RE = re.compile(r"^description:\s*(.+?)\s*$", re.MULTILINE)
+# YAML block-scalar markers — when ``description:`` carries one of these, the text
+# lives on the following indented lines, not after the colon.
+_BLOCK_SCALAR_MARKERS = frozenset({"|", ">", "|-", ">-", "|+", ">+"})
 
 
 class SkillInfo(BaseModel):
@@ -54,16 +55,53 @@ class SkillInfo(BaseModel):
     source: str  # repo path, external-skills.txt, or marketplace ref
 
 
+def _scalar_value(value: str, rest: list[str]) -> str | None:
+    """Resolve a frontmatter scalar: an inline value, or a ``|``/``>`` block scalar
+    whose text is the following indented lines (joined into one line)."""
+    if value not in _BLOCK_SCALAR_MARKERS:
+        return value.strip("\"'") or None
+    out: list[str] = []
+    for line in rest:
+        if line.strip() and not line[:1].isspace():
+            break  # a non-indented line is the next key — the block scalar ended
+        if line.strip():
+            out.append(line.strip())
+    return " ".join(out) or None
+
+
+def _frontmatter_description(text: str) -> str | None:
+    """The ``description`` from the leading ``---`` frontmatter, resolving a block
+    scalar to its text. None when there's no frontmatter or no ``description`` key.
+
+    A hand parse (not a YAML load) so a value containing an unquoted ``: `` — which
+    a strict YAML parser rejects — still yields its text instead of nothing.
+    """
+    lines = text.splitlines()
+    if not lines or lines[0].rstrip() != "---":
+        return None
+    for i, line in enumerate(lines[1:], start=1):
+        if line.rstrip() == "---":
+            return None
+        key, sep, value = line.partition(":")
+        if sep and key.strip() == "description":
+            return _scalar_value(value.strip(), lines[i + 1 :])
+    return None
+
+
 def _description(skill_md: Path | None) -> str:
-    """The frontmatter description line of a SKILL.md (empty if unreadable/absent)."""
+    """The frontmatter ``description`` of a SKILL.md, collapsed to one line.
+
+    Resolves multi-line block scalars (``description: |`` / ``>``) to their text;
+    a naive single-line read captures the bare ``|``/``>`` marker instead.
+    """
     if skill_md is None or not skill_md.is_file():
         return ""
     try:
         text = skill_md.read_text()
     except OSError:
         return ""
-    match = _DESC_RE.search(text)
-    return match.group(1).strip().strip("\"'") if match else ""
+    desc = _frontmatter_description(text)
+    return " ".join(desc.split()) if desc else ""
 
 
 def _plugin_skills(home: Path) -> dict[str, tuple[str, Path]]:
