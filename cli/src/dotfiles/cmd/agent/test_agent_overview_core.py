@@ -205,6 +205,42 @@ class TestSectionHooks:
         assert all(not r.claude for r in rows)
 
 
+_ENFORCED_TIER_NAMES = ["rules", "skills", "subagents", "statusline", "permissions", "hooks"]
+
+
+class TestSectionUniformity:
+    def test_rows_are_the_enforced_tier(self, tmp_path: Path) -> None:
+        rows = make_service(tmp_path / "d", tmp_path / "home").section_uniformity()
+        assert [r.capability for r in rows] == _ENFORCED_TIER_NAMES
+
+    def test_supported_but_undeployed_is_a_gap(self, tmp_path: Path) -> None:
+        # Empty home: claude supports rules (matrix) but nothing is deployed -> gap.
+        rows = {
+            r.capability: r
+            for r in make_service(tmp_path / "d", tmp_path / "home").section_uniformity()
+        }
+        assert rows["rules"].cells["claude"] == "gap"
+        assert rows["hooks"].cells["claude"] == "gap"
+
+    def test_deployed_capability_is_active(self, tmp_path: Path) -> None:
+        home = tmp_path / "home"
+        (home / ".claude").mkdir(parents=True)
+        (home / ".claude" / "CLAUDE.md").write_text("kernel")
+        (home / ".claude" / "settings.json").write_text('{"statusLine": {}, "permissions": {}}')
+        rows = {r.capability: r for r in make_service(tmp_path / "d", home).section_uniformity()}
+        assert rows["rules"].cells["claude"] == "active"
+        assert rows["statusline"].cells["claude"] == "active"
+        assert rows["permissions"].cells["claude"] == "active"
+
+    def test_hooks_active_when_shared_script_wired(self, tmp_path: Path) -> None:
+        dotfiles = tmp_path / "d"
+        _seed_claude_intents(dotfiles, ["guard-file"])
+        rows = {
+            r.capability: r for r in make_service(dotfiles, tmp_path / "home").section_uniformity()
+        }
+        assert rows["hooks"].cells["claude"] == "active"
+
+
 # ===========================================================================
 # Section 3: Skills
 # ===========================================================================

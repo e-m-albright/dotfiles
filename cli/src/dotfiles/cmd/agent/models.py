@@ -143,6 +143,23 @@ class GeminiChunk(BaseModel):
     content: str
 
 
+CoverageState = Literal["active", "gap", "na"]
+
+
+class UniformityRow(BaseModel):
+    """One enforced-tier capability across vendors, classified by deployment.
+
+    Cross-references vendor SUPPORT (the capability matrix) with our live
+    DEPLOYMENT: ``active`` = supported and deployed, ``gap`` = supported but not
+    yet deployed (closable), ``na`` = the vendor doesn't support it.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    capability: str
+    cells: dict[str, CoverageState]  # keyed by agent name
+
+
 class AgentOverview(BaseModel):
     """Complete snapshot of the agentic setup, from AgentOverviewService.overview()."""
 
@@ -158,6 +175,7 @@ class AgentOverview(BaseModel):
     plugins: tuple[PluginRow, ...] = ()
     skills_rules: tuple[ValueRow, ...] = ()
     capabilities: tuple[CapabilityRow, ...] = ()
+    uniformity: tuple[UniformityRow, ...] = ()
     fleet_doc_stale_days: int | None = None
 
 

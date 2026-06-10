@@ -34,12 +34,14 @@ from dotfiles.cmd.agent.catechism import (
 from dotfiles.cmd.agent.health import HealthBootstrap, HealthError, HealthService, git_root
 from dotfiles.cmd.agent.models import (
     AgentOverview,
+    AgentSurface,
     AgentVerify,
     CatechismEntry,
     FileValidation,
     Hotspot,
     PermissionRow,
     PluginRow,
+    UniformityRow,
     ValueRow,
 )
 from dotfiles.cmd.agent.overview import AgentOverviewService
@@ -204,6 +206,33 @@ def _render_capability_matrix(rows: Iterable[CapabilityRow]) -> None:
     )
 
 
+_COVERAGE_GLYPH: dict[str, tuple[str, str]] = {
+    "active": ("✓", "green"),  # supported AND deployed
+    "gap": ("✗", "red"),  # supported but not yet deployed (closable)
+    "na": ("·", "dim"),  # vendor doesn't support it
+}
+
+
+def _coverage_cell(state: str) -> str:
+    glyph, color = _COVERAGE_GLYPH.get(state, ("·", "dim"))
+    return f"[{color}]{glyph.center(_COL_W)}[/]"
+
+
+def _render_uniformity_matrix(rows: Iterable[UniformityRow]) -> None:
+    """Enforced-tier coverage: deployed (✓) vs a closable gap (✗) vs n/a (·)."""
+    rows_list = list(rows)
+    if not rows_list:
+        return
+    _matrix_header("Uniformity (enforced)")
+    for row in rows_list:
+        cells = "".join(_coverage_cell(row.cells.get(a, "na")) for a in _AGENT_COLS)
+        console.print(f"  {escape(row.capability):<{_LABEL_W}}{cells}")
+    console.print(
+        "  [dim][green]✓[/green] deployed · [red]✗[/red] supported but missing "
+        "(closable gap) · · n/a[/]"
+    )
+
+
 def _render_value_matrix(title: str, rows: Iterable[ValueRow]) -> None:
     rows_list = list(rows)
     if not rows_list:
@@ -264,28 +293,45 @@ def _confirmations(data: AgentOverview) -> dict[str, str]:
     return conf
 
 
+def _render_agent_gaps(data: AgentOverview, agent: str) -> None:
+    """A per-vendor line listing capabilities the vendor supports but we haven't deployed."""
+    gaps = [r.capability for r in data.uniformity if r.cells.get(agent) == "gap"]
+    if gaps:
+        console.print(
+            f"  [red]gaps[/]           [dim]{escape(', '.join(gaps))} "
+            "— supported, not yet deployed[/]"
+        )
+
+
+def _render_one_agent_section(
+    agent: str, surfaces: list[AgentSurface], data: AgentOverview, home: Path
+) -> None:
+    _ov_section(_VENDOR_HEADERS.get(agent, agent))
+    if len(surfaces) == 1 and surfaces[0].status == "skipped":
+        console.print(f"  [dim]·  {escape(surfaces[0].detail)}[/]")
+        return
+    for s in surfaces:
+        glyph = _STATUS_GLYPH.get(s.status, "[dim]·[/]")
+        console.print(
+            f"  {glyph}  [{_GOLD}]{escape(s.label):<14}[/] "
+            f"{escape(s.quantity):<12} {_path_link(s.path, home)}"
+        )
+    _render_agent_gaps(data, agent)
+    confirm = _confirmations(data).get(agent)
+    if confirm:
+        console.print(f"  [dim]confirm[/]        [dim]{escape(confirm)}[/]")
+
+
 def _render_agent_sections(data: AgentOverview, home: Path) -> None:
-    confirms = _confirmations(data)
     for agent, group in groupby(data.vendor_surfaces, key=lambda s: s.agent):
-        surfaces = list(group)
-        _ov_section(_VENDOR_HEADERS.get(agent, agent))
-        if len(surfaces) == 1 and surfaces[0].status == "skipped":
-            console.print(f"  [dim]·  {escape(surfaces[0].detail)}[/]")
-            continue
-        for s in surfaces:
-            glyph = _STATUS_GLYPH.get(s.status, "[dim]·[/]")
-            console.print(
-                f"  {glyph}  [{_GOLD}]{escape(s.label):<14}[/] "
-                f"{escape(s.quantity):<12} {_path_link(s.path, home)}"
-            )
-        if agent in confirms:
-            console.print(f"  [dim]confirm[/]        [dim]{escape(confirms[agent])}[/]")
+        _render_one_agent_section(agent, list(group), data, home)
 
 
 def _render_overview(data: AgentOverview, home: Path) -> None:
     """Render the dashboard: colocated matrices, plugins, then per-agent surfaces."""
     print_title(console, "agent", "overview")
     _render_capability_matrix(data.capabilities)
+    _render_uniformity_matrix(data.uniformity)
     if (stale := data.fleet_doc_stale_days) is not None and stale > _FLEET_STALE_DAYS:
         console.print(
             f"  [yellow]⚠ agent-fleet.md last reviewed {stale}d ago[/] "

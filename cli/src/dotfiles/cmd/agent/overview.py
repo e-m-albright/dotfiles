@@ -16,7 +16,9 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from dotfiles.agent import AGENTS
 from dotfiles.cmd.agent.capability_matrix import (
+    CAPABILITY_MATRIX,
     CapabilityRow,
     capability_rows,
     fleet_doc_stale_days,
@@ -29,6 +31,7 @@ from dotfiles.cmd.agent.config import (
 from dotfiles.cmd.agent.models import (
     AgentOverview,
     AgentSurface,
+    CoverageState,
     HookRow,
     McpRow,
     PermissionRow,
@@ -36,6 +39,7 @@ from dotfiles.cmd.agent.models import (
     RulesSummary,
     SkillsSummary,
     SubagentRow,
+    UniformityRow,
     ValueRow,
 )
 from dotfiles.cmd.agent.vendors.claude import parse_plugins_yaml
@@ -55,6 +59,24 @@ _HOOK_INTENTS: tuple[tuple[str, str], ...] = (
     ("format", "format-on-save.sh"),
     ("notify", "notify.sh"),
 )
+
+# Capabilities we hold every vendor to a uniform standard on (the rest are
+# tracked but not enforced). Each name must be a key in the capability matrix.
+_ENFORCED_TIER: tuple[str, ...] = (
+    "rules",
+    "skills",
+    "subagents",
+    "statusline",
+    "permissions",
+    "hooks",
+)
+
+
+def _coverage(supported: bool, deployed: bool) -> CoverageState:
+    """Classify one (capability, vendor) cell: na / active / gap."""
+    if not supported:
+        return "na"
+    return "active" if deployed else "gap"
 
 
 class _McpServersFile(BaseModel):
@@ -101,12 +123,118 @@ class AgentOverviewService:
             plugins=tuple(self.section_plugins()),
             skills_rules=tuple(self.section_skills_rules()),
             capabilities=tuple(self.section_capabilities()),
+            uniformity=tuple(self.section_uniformity()),
             fleet_doc_stale_days=fleet_doc_stale_days(self._dotfiles, date.today()),
         )
 
     def section_capabilities(self) -> list[CapabilityRow]:
         """The cross-vendor capability matrix (vendor support + provenance)."""
         return capability_rows()
+
+    def section_uniformity(self) -> list[UniformityRow]:
+        """Per-vendor coverage of the enforced tier: support (matrix) vs deployment.
+
+        active = the vendor supports it AND we've deployed it; gap = supported but
+        not yet deployed (a closable gap); na = the vendor doesn't support it.
+        """
+        support = {cap.key: cap.cells for cap in CAPABILITY_MATRIX}
+        deployed = self._deployment_state()
+        return [
+            UniformityRow(
+                capability=cap,
+                cells={
+                    agent: _coverage(
+                        support[cap][agent].status in ("yes", "beta", "ext"),
+                        deployed[agent].get(cap, False),
+                    )
+                    for agent in AGENTS
+                },
+            )
+            for cap in _ENFORCED_TIER
+        ]
+
+    def _deployment_state(self) -> dict[str, dict[str, bool]]:
+        """For each vendor, whether OUR deployment of each enforced capability is live.
+
+        Pure path/config probes against $HOME — nothing asserted, everything checked.
+        """
+        per_cap = {
+            "rules": self._deploy_rules(),
+            "skills": self._deploy_skills(),
+            "subagents": self._deploy_subagents(),
+            "statusline": self._deploy_statusline(),
+            "permissions": self._deploy_permissions(),
+            "hooks": self._deploy_hooks(),
+        }
+        return {agent: {cap: states[agent] for cap, states in per_cap.items()} for agent in AGENTS}
+
+    def _deploy_rules(self) -> dict[str, bool]:
+        h = self._home
+        return {
+            "claude": (h / ".claude" / "CLAUDE.md").exists(),
+            "cursor": self._count_cursor_rules(self._cursor_rules_dir()) > 0,
+            "codex": (h / ".codex" / "AGENTS.md").exists(),
+            "gemini": (h / ".gemini" / "AGENTS.md").exists(),
+            "pi": (h / ".pi" / "agent" / "AGENTS.md").exists(),
+        }
+
+    def _deploy_skills(self) -> dict[str, bool]:
+        h = self._home
+        return {
+            "claude": self._count_subdirs(h / ".claude" / "skills") > 0,
+            "cursor": self._count_subdirs(h / ".cursor" / "skills") > 0,
+            "codex": self._count_subdirs(h / ".agents" / "skills") > 0,
+            "gemini": False,  # no skills surface
+            "pi": self._count_subdirs(h / ".agents" / "skills") > 0,
+        }
+
+    def _deploy_subagents(self) -> dict[str, bool]:
+        h = self._home
+        return {
+            "claude": self._has_md(h / ".claude" / "agents"),
+            "cursor": self._has_md(h / ".cursor" / "agents"),
+            "codex": self._has_md(h / ".codex" / "agents"),
+            "gemini": False,  # supported, but no .md-dir convention yet (inline)
+            "pi": self._has_md(h / ".pi" / "agent" / "agents"),
+        }
+
+    def _deploy_statusline(self) -> dict[str, bool]:
+        h = self._home
+        return {
+            "claude": self._file_contains(h / ".claude" / "settings.json", "statusLine"),
+            "cursor": False,  # beta; no stable deploy mechanism yet
+            "codex": self._file_contains(h / ".codex" / "config.toml", "status_line"),
+            "gemini": False,  # supported; deploy path TBD
+            "pi": (h / ".pi" / "agent" / "extensions" / "git-status.ts").exists(),
+        }
+
+    def _deploy_permissions(self) -> dict[str, bool]:
+        h = self._home
+        return {
+            "claude": self._file_contains(h / ".claude" / "settings.json", "permissions"),
+            "cursor": (h / ".cursor" / "cli-config.json").exists(),
+            "codex": (h / ".codex" / "rules" / "default.rules").exists(),
+            "gemini": (h / ".gemini" / "settings.json").exists(),
+            "pi": (h / ".pi" / "agent" / "permission-policy.json").exists(),
+        }
+
+    def _deploy_hooks(self) -> dict[str, bool]:
+        rows = self.section_hooks()
+        return {
+            "claude": any(r.claude for r in rows),
+            "cursor": any(r.cursor for r in rows),
+            "codex": any(r.codex for r in rows),
+            "gemini": False,  # no hooks deployed
+            "pi": False,  # hooks only via the safe-git extension, not our shared set
+        }
+
+    def _has_md(self, path: Path) -> bool:
+        """True when *path* is a dir holding at least one ``.md`` file."""
+        return path.is_dir() and any(p.suffix == ".md" for p in list_dir(path))
+
+    def _file_contains(self, path: Path, needle: str) -> bool:
+        """True when *path* exists and its text contains *needle*."""
+        return needle in self._read_text(path)
 
     # ------------------------------------------------------------------
     # Skills & Rules (colocated value matrix: per-agent deployment)
