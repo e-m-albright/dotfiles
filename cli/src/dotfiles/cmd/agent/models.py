@@ -143,15 +143,20 @@ class GeminiChunk(BaseModel):
     content: str
 
 
-CoverageState = Literal["active", "gap", "na"]
+CoverageState = Literal["active", "gap", "local", "na"]
 
 
 class UniformityRow(BaseModel):
     """One enforced-tier capability across vendors, classified by deployment.
 
     Cross-references vendor SUPPORT (the capability matrix) with our live
-    DEPLOYMENT: ``active`` = supported and deployed, ``gap`` = supported but not
-    yet deployed (closable), ``na`` = the vendor doesn't support it.
+    DEPLOYMENT, splitting gaps into closable vs not:
+    - ``active`` — supported and deployed (or native to the vendor).
+    - ``gap`` — supported, not deployed, and CLOSABLE by a global deploy.
+    - ``local`` — supported but only at a scope we don't globally control
+      (workspace-local config, an extension, or a beta with no stable API) —
+      a real gap, but not one a global dotfiles deploy can close.
+    - ``na`` — the vendor doesn't support it.
     """
 
     model_config = ConfigDict(frozen=True)

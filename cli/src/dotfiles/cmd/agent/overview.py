@@ -72,11 +72,26 @@ _ENFORCED_TIER: tuple[str, ...] = (
 )
 
 
-def _coverage(supported: bool, deployed: bool) -> CoverageState:
-    """Classify one (capability, vendor) cell: na / active / gap."""
+# (capability, vendor) pairs that the vendor supports but ONLY at a scope we can't
+# reach with a global deploy — workspace-local config, an extension, or a beta with
+# no stable API. These render as a not-globally-closable gap, not a red action item.
+_LOCAL_ONLY: frozenset[tuple[str, str]] = frozenset(
+    {
+        ("subagents", "gemini"),  # agy: workspace .agents/ agent-scripts, no global dir
+        ("hooks", "gemini"),  # agy: hook registration is workspace-local
+        ("hooks", "pi"),  # pi: hooks come from the safe-git extension, not a global set
+        ("statusline", "cursor"),  # cursor: statusline is beta, no stable deploy mechanism
+    }
+)
+
+
+def _coverage(capability: str, agent: str, supported: bool, deployed: bool) -> CoverageState:
+    """Classify one (capability, vendor) cell: na / active / local / gap."""
     if not supported:
         return "na"
-    return "active" if deployed else "gap"
+    if deployed:
+        return "active"
+    return "local" if (capability, agent) in _LOCAL_ONLY else "gap"
 
 
 class _McpServersFile(BaseModel):
@@ -144,6 +159,8 @@ class AgentOverviewService:
                 capability=cap,
                 cells={
                     agent: _coverage(
+                        cap,
+                        agent,
                         support[cap][agent].status in ("yes", "beta", "ext"),
                         deployed[agent].get(cap, False),
                     )
@@ -184,7 +201,7 @@ class AgentOverviewService:
             "claude": self._count_subdirs(h / ".claude" / "skills") > 0,
             "cursor": self._count_subdirs(h / ".cursor" / "skills") > 0,
             "codex": self._count_subdirs(h / ".agents" / "skills") > 0,
-            "gemini": False,  # no skills surface
+            "gemini": self._count_subdirs(h / ".gemini" / "antigravity-cli" / "skills") > 0,
             "pi": self._count_subdirs(h / ".agents" / "skills") > 0,
         }
 
@@ -204,7 +221,9 @@ class AgentOverviewService:
             "claude": self._file_contains(h / ".claude" / "settings.json", "statusLine"),
             "cursor": False,  # beta; no stable deploy mechanism yet
             "codex": self._file_contains(h / ".codex" / "config.toml", "status_line"),
-            "gemini": False,  # supported; deploy path TBD
+            # agy ships a native, always-on statusline (no file to deploy); the
+            # presence of its config root proves agy is set up and the bar is shown.
+            "gemini": (h / ".gemini" / "antigravity-cli").is_dir(),
             "pi": (h / ".pi" / "agent" / "extensions" / "git-status.ts").exists(),
         }
 

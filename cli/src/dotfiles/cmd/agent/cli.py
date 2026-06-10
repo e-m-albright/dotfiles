@@ -207,8 +207,9 @@ def _render_capability_matrix(rows: Iterable[CapabilityRow]) -> None:
 
 
 _COVERAGE_GLYPH: dict[str, tuple[str, str]] = {
-    "active": ("✓", "green"),  # supported AND deployed
-    "gap": ("✗", "red"),  # supported but not yet deployed (closable)
+    "active": ("✓", "green"),  # supported AND deployed (or native to the vendor)
+    "gap": ("✗", "red"),  # supported, not deployed, CLOSABLE by a global deploy
+    "local": ("○", "yellow"),  # supported but only workspace-local/extension/beta
     "na": ("·", "dim"),  # vendor doesn't support it
 }
 
@@ -219,7 +220,7 @@ def _coverage_cell(state: str) -> str:
 
 
 def _render_uniformity_matrix(rows: Iterable[UniformityRow]) -> None:
-    """Enforced-tier coverage: deployed (✓) vs a closable gap (✗) vs n/a (·)."""
+    """Enforced-tier coverage: deployed (✓) vs closable gap (✗) vs not-globally-closable (○)."""
     rows_list = list(rows)
     if not rows_list:
         return
@@ -228,8 +229,8 @@ def _render_uniformity_matrix(rows: Iterable[UniformityRow]) -> None:
         cells = "".join(_coverage_cell(row.cells.get(a, "na")) for a in _AGENT_COLS)
         console.print(f"  {escape(row.capability):<{_LABEL_W}}{cells}")
     console.print(
-        "  [dim][green]✓[/green] deployed · [red]✗[/red] supported but missing "
-        "(closable gap) · · n/a[/]"
+        "  [dim][green]✓[/green] deployed · [red]✗[/red] closable gap · "
+        "[yellow]○[/yellow] supported but workspace-local/ext/beta · · n/a[/]"
     )
 
 
@@ -294,12 +295,18 @@ def _confirmations(data: AgentOverview) -> dict[str, str]:
 
 
 def _render_agent_gaps(data: AgentOverview, agent: str) -> None:
-    """A per-vendor line listing capabilities the vendor supports but we haven't deployed."""
+    """Per-vendor lines: closable gaps (we can deploy) vs not-globally-closable ones."""
     gaps = [r.capability for r in data.uniformity if r.cells.get(agent) == "gap"]
+    local = [r.capability for r in data.uniformity if r.cells.get(agent) == "local"]
     if gaps:
         console.print(
             f"  [red]gaps[/]           [dim]{escape(', '.join(gaps))} "
-            "— supported, not yet deployed[/]"
+            "— supported, deployable, not yet done[/]"
+        )
+    if local:
+        console.print(
+            f"  [yellow]not closable[/]   [dim]{escape(', '.join(local))} "
+            "— supported only workspace-local/ext/beta[/]"
         )
 
 

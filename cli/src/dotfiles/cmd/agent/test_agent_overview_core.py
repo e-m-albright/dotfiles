@@ -240,6 +240,18 @@ class TestSectionUniformity:
         }
         assert rows["hooks"].cells["claude"] == "active"
 
+    def test_workspace_local_capabilities_are_not_closable_gaps(self, tmp_path: Path) -> None:
+        # agy subagents/hooks (workspace-local), pi hooks (extension), and cursor
+        # statusline (beta) are supported but not closable by a global deploy -> "local".
+        rows = {
+            r.capability: r
+            for r in make_service(tmp_path / "d", tmp_path / "home").section_uniformity()
+        }
+        assert rows["subagents"].cells["gemini"] == "local"
+        assert rows["hooks"].cells["gemini"] == "local"
+        assert rows["hooks"].cells["pi"] == "local"
+        assert rows["statusline"].cells["cursor"] == "local"
+
 
 # ===========================================================================
 # Section 3: Skills

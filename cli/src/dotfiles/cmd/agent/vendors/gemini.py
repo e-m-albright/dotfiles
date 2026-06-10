@@ -36,6 +36,7 @@ from dotfiles.cmd.agent.settings_merger import (
     merge_replace,
     write_json_safely,
 )
+from dotfiles.fsutil import prune_broken_symlinks, symlink
 
 
 def setup_gemini(
@@ -56,6 +57,7 @@ def setup_gemini(
     results: list[StepResult] = []
     results.extend(_setup_settings_and_mcp(dotfiles_dir, gemini_home, reset_mcp=reset_mcp))
     results.extend(_setup_instructions(dotfiles_dir, gemini_home))
+    results.extend(_setup_skills(dotfiles_dir, gemini_home))
     return results
 
 
@@ -133,6 +135,29 @@ def _managed_tool_excludes(seed: Path) -> list[str] | None:
     if not isinstance(exclude, list):
         return None
     return [str(item) for item in cast("list[object]", exclude)]
+
+
+def _setup_skills(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:
+    """Symlink canonical skills into agy's global skills dir.
+
+    Antigravity reads global Agent Skills (the SKILL.md standard — same as the rest
+    of the fleet) from ``~/.gemini/antigravity-cli/skills/``, so link the canonical
+    source of truth there. (Workspace skills live in ``.agents/skills/``; this is
+    the global root.)
+    """
+    src = dotfiles_dir / "ai" / "skills"
+    if not src.is_dir():
+        return []
+    dest = gemini_home / "antigravity-cli" / "skills"
+    dest.mkdir(parents=True, exist_ok=True)
+    prune_broken_symlinks(dest)
+    count = 0
+    for skill_md in sorted(src.glob("*/SKILL.md")):
+        symlink(skill_md.parent, dest / skill_md.parent.name)
+        count += 1
+    return [
+        StepResult(level="success", message=f"Linked {count} skills (agy → antigravity-cli/skills)")
+    ]
 
 
 def _setup_instructions(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:

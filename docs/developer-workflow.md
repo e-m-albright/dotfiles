@@ -15,7 +15,7 @@
 │  Claude Code │    Cursor    │       Ghostty                  │
 │  (agentic)   │  (IDE)       │  (terminal)                    │
 ├──────────────┴──────────────┴───────────────────────────────┤
-│  Superpowers Skills · Plugins · MCP Servers · Hooks         │
+│  Repo-owned Skills · Plugins · MCP Servers · Hooks          │
 ├─────────────────────────────────────────────────────────────┤
 │  just · lefthook · uv/bun/cargo/go · ruff/biome · ty/tsc   │
 ├─────────────────────────────────────────────────────────────┤
@@ -378,11 +378,11 @@ The review also evaluates five dimensions: **Correctness**, **Security**, **API 
 - **Encode criteria, not personas.** "Act as a security engineer" is theater. Listing the actual checks (SQL injection, XSS, auth bypass, path traversal) changes behavior. Our `code-review.mdc` uses explicit checklists, not role-playing.
 - **Bisectable commits** — Order commits by dependency: infrastructure → models → controllers → tests. Each commit should be independently valid.
 
-### From Superpowers
+### From repo-owned workflow skills
 
-- **Skills are composable** — Chain them: brainstorm → plan → worktree → execute → review → finish
-- **Override anything** — Place a SKILL.md with the same name in `.claude/skills/` to override plugin behavior for a specific project
-- **Descriptions are triggers** — Keep skill descriptions focused on WHEN to trigger, not WHAT the workflow does. Claude reads the description to decide whether to invoke.
+- **Skills are composable** — Chain them: scope → write a plan → execute → review → close out.
+- **Own the process layer** — Durable workflow discipline lives in `ai/skills/`, not in external agent packages.
+- **Descriptions are triggers** — Keep skill descriptions focused on WHEN to trigger, not WHAT the workflow does. Agents read the description to decide whether to invoke.
 
 ---
 
