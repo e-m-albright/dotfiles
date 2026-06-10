@@ -113,11 +113,12 @@ class AgentOverviewService:
             "gemini": "—",  # Gemini has no skills surface
             "pi": str(self._count_subdirs(h / ".agents" / "skills")),
         }
-        # Only Claude/Cursor read a rules directory (cell = file count); the rest
-        # carry rules embedded in their single instruction file (cell = its name).
+        # The kernel (rules.md) is deployed verbatim to each vendor's instruction
+        # file — the cell names that file, consistently, so every vendor reads the
+        # same rules via its own convention (Claude=CLAUDE.md, Cursor=.mdc, rest=AGENTS.md).
         rules = {
-            "claude": str(self._count_files_by_ext(h / ".claude" / "rules", ".md")),
-            "cursor": str(self._count_cursor_rules(self._cursor_rules_dir())),
+            "claude": "CLAUDE" if (h / ".claude" / "CLAUDE.md").exists() else "—",
+            "cursor": ".mdc" if self._count_cursor_rules(self._cursor_rules_dir()) > 0 else "—",
             "codex": "AGENTS" if (h / ".codex" / "AGENTS.md").exists() else "—",
             "gemini": "AGENTS" if (h / ".gemini" / "AGENTS.md").exists() else "—",
             "pi": "AGENTS" if (h / ".pi" / "agent" / "AGENTS.md").exists() else "—",
