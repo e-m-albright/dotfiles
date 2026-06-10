@@ -1,13 +1,23 @@
 {
   "hooks": [
     {
-      "event": "afterFileEdit",
-      "command": "~/dotfiles/ai/agents/cursor/hooks/format-on-save-shim.sh",
-      "matcher": "*.sh|*.ts|*.tsx|*.js|*.jsx|*.py|*.rs|*.go|*.json"
+      "event": "preToolUse",
+      "command": "~/dotfiles/ai/agents/shared/hooks/guard-sensitive-file.sh",
+      "matcher": "Write|Edit"
     },
     {
       "event": "beforeShellExecution",
-      "command": "~/dotfiles/ai/agents/cursor/hooks/guard-destructive.sh",
+      "command": "~/dotfiles/ai/agents/shared/hooks/guard-destructive-shell.sh",
+      "matcher": "*"
+    },
+    {
+      "event": "afterFileEdit",
+      "command": "~/dotfiles/ai/agents/shared/hooks/format-on-save.sh",
+      "matcher": "*.sh|*.ts|*.tsx|*.js|*.jsx|*.py|*.rs|*.go|*.json"
+    },
+    {
+      "event": "stop",
+      "command": "~/dotfiles/ai/agents/shared/hooks/notify.sh",
       "matcher": "*"
     }
   ]

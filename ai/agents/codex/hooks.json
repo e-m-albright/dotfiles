@@ -6,7 +6,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); case \"$FILE\" in */credentials*|*id_rsa*|*id_ed25519*) echo 'BLOCK: Sensitive file — edit manually'; exit 2;; esac",
+            "command": "~/dotfiles/ai/agents/shared/hooks/guard-sensitive-file.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/dotfiles/ai/agents/shared/hooks/guard-destructive-shell.sh",
             "timeout": 5
           }
         ]
@@ -18,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/dotfiles/ai/agents/codex/hooks/format-on-save.sh",
+            "command": "~/dotfiles/ai/agents/shared/hooks/format-on-save.sh",
             "timeout": 30
           }
         ]
@@ -30,7 +40,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title \"Codex · $(basename \"$(pwd)\")\" -message 'Done — ready for input' -sound Glass 2>/dev/null || true"
+            "command": "~/dotfiles/ai/agents/shared/hooks/notify.sh"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "NOTIFY_MESSAGE='Permission needed' NOTIFY_SOUND=Basso ~/dotfiles/ai/agents/shared/hooks/notify.sh"
           }
         ]
       }

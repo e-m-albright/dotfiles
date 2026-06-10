@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
-# Auto-format files after Claude Code edits them.
-# Called as a PostToolUse hook on Edit/Write operations.
-# Reads tool input JSON from stdin to get the file path.
+# Auto-format a file after an agent edits it (post-edit hook).
+# Vendor-agnostic: reads the path from whichever JSON key the harness uses
+# (Claude/Codex: .tool_input.file_path · Cursor afterFileEdit: .filePath / .file_path).
+# Always exits 0 — formatting is best-effort and must never block the agent.
+#
+# Deployed verbatim to every hook-capable vendor so formatting is uniform.
 
 set -eo pipefail
 
-FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null)
+INPUT=$(cat 2>/dev/null || true)
+FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // .filePath // .file_path // empty' 2>/dev/null || true)
 [[ -z "$FILE" || ! -f "$FILE" ]] && exit 0
 
 case "$FILE" in
     *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.json|*.jsonc)
-        # Biome if configured, otherwise skip
         if [[ -f "biome.json" || -f "biome.jsonc" ]]; then
             npx biome check --fix "$FILE" 2>/dev/null || true
         elif command -v prettier >/dev/null 2>&1; then

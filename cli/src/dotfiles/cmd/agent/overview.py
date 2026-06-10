@@ -22,8 +22,6 @@ from dotfiles.cmd.agent.capability_matrix import (
     fleet_doc_stale_days,
 )
 from dotfiles.cmd.agent.config import (
-    ClaudeHooksConfig,
-    CursorHooksConfig,
     PermissionsBlock,
     SettingsWithPermissions,
     load_config,
@@ -46,6 +44,17 @@ from dotfiles.fsutil import list_dir
 
 if TYPE_CHECKING:
     from dotfiles.adapters.ports import ProcessRunner
+
+
+# The uniform hook contract: each intent maps to the shared script every
+# hook-capable vendor wires. Presence is proven by the basename appearing in a
+# vendor's hooks config (so the matrix compares intents, not raw event names).
+_HOOK_INTENTS: tuple[tuple[str, str], ...] = (
+    ("guard-file", "guard-sensitive-file.sh"),
+    ("guard-shell", "guard-destructive-shell.sh"),
+    ("format", "format-on-save.sh"),
+    ("notify", "notify.sh"),
+)
 
 
 class _McpServersFile(BaseModel):
@@ -231,47 +240,34 @@ class AgentOverviewService:
     # ------------------------------------------------------------------
 
     def section_hooks(self) -> list[HookRow]:
-        """Union of hook events across claude/cursor/codex; one HookRow per event."""
+        """Per-vendor hook coverage by intent, not raw native event name.
+
+        Every hook-capable vendor wires the same shared scripts through different
+        native events. An intent is present for a vendor when its script basename
+        appears in that vendor's hook config.
+        """
         agents_dir = self._dotfiles / "ai" / "agents"
-        claude_path = agents_dir / "claude" / "hooks.json"
-        cursor_path = agents_dir / "cursor" / "hooks" / "hooks.json"
-        codex_path = agents_dir / "codex" / "hooks.json"
-
-        claude_events = self._claude_hook_events(claude_path)
-        cursor_events = self._cursor_hook_events(cursor_path)
-        codex_events = self._codex_hook_events(codex_path)
-
-        all_events = sorted(claude_events | cursor_events | codex_events)
+        texts = {
+            "claude": self._read_text(agents_dir / "claude" / "hooks.json"),
+            "cursor": self._read_text(agents_dir / "cursor" / "hooks" / "hooks.json"),
+            "codex": self._read_text(agents_dir / "codex" / "hooks.json"),
+        }
         return [
             HookRow(
-                event=evt,
-                claude=evt in claude_events,
-                cursor=evt in cursor_events,
-                codex=evt in codex_events,
+                event=intent,
+                claude=script in texts["claude"],
+                cursor=script in texts["cursor"],
+                codex=script in texts["codex"],
             )
-            for evt in all_events
+            for intent, script in _HOOK_INTENTS
         ]
 
-    def _claude_hook_events(self, path: Path) -> set[str]:
-        """Keys of .hooks dict in claude/hooks.json."""
-        cfg = load_config(path, ClaudeHooksConfig)
-        if cfg is None:
-            return set()
-        return {k for k in cfg.hooks if k}
-
-    def _codex_hook_events(self, path: Path) -> set[str]:
-        """Keys of .hooks dict in codex/hooks.json."""
-        cfg = load_config(path, ClaudeHooksConfig)
-        if cfg is None:
-            return set()
-        return {k for k in cfg.hooks if k}
-
-    def _cursor_hook_events(self, path: Path) -> set[str]:
-        """Values of .hooks[].event in cursor/hooks/hooks.json."""
-        cfg = load_config(path, CursorHooksConfig)
-        if cfg is None:
-            return set()
-        return {h.event for h in cfg.hooks if h.event}
+    def _read_text(self, path: Path) -> str:
+        """File text, or '' when absent/unreadable."""
+        try:
+            return path.read_text()
+        except OSError:
+            return ""
 
     # ------------------------------------------------------------------
     # Section 3: Skills

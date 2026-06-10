@@ -31,13 +31,6 @@ def seed_claude_hooks(dotfiles: Path, hooks_dict: dict) -> None:
     path.write_text(json.dumps({"hooks": hooks_dict}))
 
 
-def seed_cursor_hooks(dotfiles: Path, events: list[str]) -> None:
-    path = dotfiles / "ai" / "agents" / "cursor" / "hooks" / "hooks.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    hooks = [{"event": e, "command": "cmd"} for e in events]
-    path.write_text(json.dumps({"hooks": hooks}))
-
-
 def seed_codex_hooks(dotfiles: Path, hooks_dict: dict) -> None:
     path = dotfiles / "ai" / "agents" / "codex" / "hooks.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -133,61 +126,83 @@ class TestSectionMcp:
 # ===========================================================================
 
 
+_SHARED = "~/dotfiles/ai/agents/shared/hooks"
+_INTENT_SCRIPT = {
+    "guard-file": f"{_SHARED}/guard-sensitive-file.sh",
+    "guard-shell": f"{_SHARED}/guard-destructive-shell.sh",
+    "format": f"{_SHARED}/format-on-save.sh",
+    "notify": f"{_SHARED}/notify.sh",
+}
+
+
+def _seed_claude_intents(dotfiles: Path, intents: list[str]) -> None:
+    cmds = [{"matcher": "", "hooks": [{"command": _INTENT_SCRIPT[i]}]} for i in intents]
+    seed_claude_hooks(dotfiles, {"PreToolUse": cmds})
+
+
+def _seed_cursor_intents(dotfiles: Path, intents: list[str]) -> None:
+    path = dotfiles / "ai" / "agents" / "cursor" / "hooks" / "hooks.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    hooks = [{"event": "preToolUse", "command": _INTENT_SCRIPT[i]} for i in intents]
+    path.write_text(json.dumps({"hooks": hooks}))
+
+
+def _seed_codex_intents(dotfiles: Path, intents: list[str]) -> None:
+    cmds = [{"matcher": "", "hooks": [{"command": _INTENT_SCRIPT[i]}]} for i in intents]
+    seed_codex_hooks(dotfiles, {"PreToolUse": cmds})
+
+
+_INTENT_NAMES = ["guard-file", "guard-shell", "format", "notify"]
+
+
 class TestSectionHooks:
-    def test_empty_when_no_hook_files(self, tmp_path: Path) -> None:
-        svc = make_service(tmp_path / "dotfiles", tmp_path / "home")
-        assert svc.section_hooks() == []
+    def test_four_intent_rows_even_with_no_hook_files(self, tmp_path: Path) -> None:
+        rows = make_service(tmp_path / "dotfiles", tmp_path / "home").section_hooks()
+        assert [r.event for r in rows] == _INTENT_NAMES
+        assert all(not (r.claude or r.cursor or r.codex) for r in rows)
 
-    def test_union_of_events_sorted(self, tmp_path: Path) -> None:
+    def test_intent_present_when_its_shared_script_is_wired(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        seed_claude_hooks(dotfiles, {"Stop": [], "PreToolUse": []})
-        seed_cursor_hooks(dotfiles, ["afterFileEdit"])
+        _seed_claude_intents(dotfiles, ["guard-file", "guard-shell", "format", "notify"])
         rows = make_service(dotfiles, tmp_path / "home").section_hooks()
-        events = [r.event for r in rows]
-        assert events == sorted(events)
-        assert set(events) == {"Stop", "PreToolUse", "afterFileEdit"}
+        assert all(r.claude for r in rows)
+        assert all(not r.cursor and not r.codex for r in rows)
 
-    def test_claude_flag_set_only_for_claude_events(self, tmp_path: Path) -> None:
+    def test_per_vendor_intent_detection(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        seed_claude_hooks(dotfiles, {"Stop": []})
-        seed_cursor_hooks(dotfiles, ["afterFileEdit"])
-        rows = make_service(dotfiles, tmp_path / "home").section_hooks()
-        stop_row = next(r for r in rows if r.event == "Stop")
-        after_row = next(r for r in rows if r.event == "afterFileEdit")
-        assert stop_row.claude is True
-        assert stop_row.cursor is False
-        assert after_row.claude is False
-        assert after_row.cursor is True
+        _seed_cursor_intents(dotfiles, ["format", "guard-shell"])
+        _seed_codex_intents(dotfiles, ["guard-file", "notify"])
+        rows = {r.event: r for r in make_service(dotfiles, tmp_path / "home").section_hooks()}
+        assert rows["format"].cursor
+        assert not rows["format"].codex
+        assert rows["guard-shell"].cursor
+        assert rows["guard-file"].codex
+        assert not rows["guard-file"].cursor
+        assert rows["notify"].codex
 
-    def test_codex_events_included(self, tmp_path: Path) -> None:
+    def test_uniform_intent_across_all_three_vendors(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
-        seed_codex_hooks(dotfiles, {"PostToolUse": [], "Stop": []})
-        rows = make_service(dotfiles, tmp_path / "home").section_hooks()
-        events = {r.event for r in rows}
-        assert "PostToolUse" in events
-        stop_row = next(r for r in rows if r.event == "Stop")
-        assert stop_row.codex is True
-        assert stop_row.claude is False
-
-    def test_shared_event_across_all_three_vendors(self, tmp_path: Path) -> None:
-        dotfiles = tmp_path / "dotfiles"
-        seed_claude_hooks(dotfiles, {"Stop": []})
-        seed_cursor_hooks(dotfiles, ["Stop"])
-        seed_codex_hooks(dotfiles, {"Stop": []})
-        rows = make_service(dotfiles, tmp_path / "home").section_hooks()
-        assert len(rows) == 1
-        row = rows[0]
-        assert row.event == "Stop"
-        assert row.claude
-        assert row.cursor
-        assert row.codex
+        _seed_claude_intents(dotfiles, ["notify"])
+        _seed_cursor_intents(dotfiles, ["notify"])
+        _seed_codex_intents(dotfiles, ["notify"])
+        notify = next(
+            r
+            for r in make_service(dotfiles, tmp_path / "home").section_hooks()
+            if r.event == "notify"
+        )
+        assert notify.claude
+        assert notify.cursor
+        assert notify.codex
 
     def test_invalid_json_graceful(self, tmp_path: Path) -> None:
+        # The section greps text, so even unparseable JSON yields four all-False rows.
         dotfiles = tmp_path / "dotfiles"
         path = dotfiles / "ai" / "agents" / "claude" / "hooks.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("BAD")
-        assert make_service(dotfiles, tmp_path / "home").section_hooks() == []
+        rows = make_service(dotfiles, tmp_path / "home").section_hooks()
+        assert [r.event for r in rows] == _INTENT_NAMES
+        assert all(not r.claude for r in rows)
 
 
 # ===========================================================================
@@ -505,7 +520,7 @@ class TestOverviewAggregator:
 
         result = make_service(dotfiles, home).overview()
         assert len(result.mcp) == 1
-        assert len(result.hooks) == 1
+        assert len(result.hooks) == 4  # one row per hook intent
         assert result.skills.canonical_skills == 1
         assert len(result.agents) == 1
         assert result.rules.canonical_rules == 1

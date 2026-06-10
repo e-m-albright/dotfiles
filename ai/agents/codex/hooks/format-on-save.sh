@@ -1,1 +1,0 @@
-../../claude/hooks/format-on-save.sh
