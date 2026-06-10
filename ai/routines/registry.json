@@ -59,6 +59,15 @@
       "audits": ["sql-contracts", "migration-safety"],
       "output": "issue",
       "description": "Runs only on repos with SQL/migrations (affectedness)."
+    },
+    {
+      "name": "agent-fleet-drift-weekly",
+      "cron": "0 9 * * 0",
+      "model": "sonnet",
+      "kind": "audit",
+      "audits": ["agent-fleet-drift"],
+      "output": "issue",
+      "description": "Re-prove the cross-vendor capability matrix against reality: `dotfiles agent capabilities --verify` drift, vendor features shipped since last review, and uniformity regressions. Keeps the matrix tethered as vendors evolve."
     }
   ]
 }
