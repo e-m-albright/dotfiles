@@ -17,8 +17,8 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, ConfigDict, Field
 
 from dotfiles.cmd.agent.capability_matrix import (
-    CapabilityMatrixService,
     CapabilityRow,
+    capability_rows,
     fleet_doc_stale_days,
 )
 from dotfiles.cmd.agent.config import (
@@ -96,9 +96,8 @@ class AgentOverviewService:
         )
 
     def section_capabilities(self) -> list[CapabilityRow]:
-        """The cross-vendor capability matrix (target intent + live probe)."""
-        svc = CapabilityMatrixService(home=self._home, dotfiles_dir=self._dotfiles)
-        return svc.rows()
+        """The cross-vendor capability matrix (vendor support + provenance)."""
+        return capability_rows()
 
     # ------------------------------------------------------------------
     # Skills & Rules (colocated value matrix: per-agent deployment)

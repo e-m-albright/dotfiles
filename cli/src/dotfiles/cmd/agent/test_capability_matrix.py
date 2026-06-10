@@ -1,223 +1,172 @@
-"""Tests for the cross-vendor capability matrix + its drift gate.
+"""Tests for the provenance-backed capability matrix.
 
-Two halves:
-- **Probes** — a fully-deployed fake home lights every target cell; an empty
-  home shows every required cell as a gap. No real home is touched.
-- **Drift** — the prose table in docs/knowledge/agent-fleet.md is parsed and
-  asserted equal to CAPABILITY_MATRIX, cell for cell, so the doc and the code
-  can never silently diverge (same discipline as test_deny_commands_sync.py).
+Three halves:
+- **Invariants** — every capability covers all 5 agents; every supported cell
+  carries a receipt (a local probe and/or a source URL); the agy corrections hold.
+- **Tethering** — a live probe runs against an installed binary (skipped if absent)
+  to prove the matrix matches reality, not a page.
+- **Drift** — docs/knowledge/agent-fleet.md mirrors the matrix status tokens.
 """
 
 from __future__ import annotations
 
-import json
-import re
+import shutil
+import subprocess
 from datetime import date
 from pathlib import Path
+
+import pytest
 
 from dotfiles.agent import AGENTS
 from dotfiles.cmd.agent.capability_matrix import (
     CAPABILITY_MATRIX,
-    CapabilityMatrixService,
+    capability_rows,
     fleet_doc_stale_days,
+    receipts,
 )
 
 _REPO = Path(__file__).resolve().parents[5]
 
 # ---------------------------------------------------------------------------
-# Data shape
+# Invariants
 # ---------------------------------------------------------------------------
 
 
-def test_every_capability_covers_every_agent() -> None:
+def test_every_capability_covers_all_agents() -> None:
     for cap in CAPABILITY_MATRIX:
-        assert set(cap.intents) == set(AGENTS), f"{cap.key} missing an agent"
+        assert set(cap.cells) == set(AGENTS), f"{cap.key} missing an agent"
 
 
-def test_pi_is_the_only_canonical_statusline() -> None:
-    statusline = next(c for c in CAPABILITY_MATRIX if c.key == "statusline")
-    assert statusline.intents["pi"] == "canonical"
-    assert statusline.intents["claude"] == "required"
+def test_expected_capability_set() -> None:
+    keys = {c.key for c in CAPABILITY_MATRIX}
+    # the 8 surfaces + the 2026-era categories the user asked for
+    for expected in (
+        "rules",
+        "skills",
+        "subagents",
+        "mcp",
+        "hooks",
+        "statusline",
+        "permissions",
+        "plugins",
+        "dynamic-workflows",
+        "memory",
+        "output-styles",
+        "slash-commands",
+        "sandboxing",
+        "model-routing",
+    ):
+        assert expected in keys, f"missing capability row: {expected}"
 
 
-# ---------------------------------------------------------------------------
-# Probes
-# ---------------------------------------------------------------------------
-
-
-def _deploy_full_home(home: Path, dotfiles: Path) -> None:
-    """Write one artifact per target cell so every probe should fire."""
-    (home / ".claude").mkdir(parents=True)
-    (home / ".claude" / "CLAUDE.md").write_text("# rules\n")
-    (home / ".claude" / "settings.json").write_text(
-        json.dumps(
-            {
-                "statusLine": {"type": "command", "command": "x"},
-                "hooks": {"Stop": []},
-                "permissions": {"allow": [], "deny": ["Bash(rm:*)"]},
-            }
-        )
-    )
-    (home / ".claude.json").write_text(json.dumps({"mcpServers": {"granola": {}}}))
-
-    (home / ".codex").mkdir(parents=True)
-    (home / ".codex" / "AGENTS.md").write_text("# rules\n")
-    (home / ".codex" / "config.toml").write_text("[tui]\ntheme='x'\n[mcp_servers.granola]\n")
-    (home / ".codex" / "hooks.json").write_text(json.dumps({"hooks": {}}))
-    (home / ".codex" / "rules").mkdir()
-    (home / ".codex" / "rules" / "default.rules").write_text("prefix_rule x\n")
-
-    (home / ".cursor").mkdir(parents=True)
-    (home / ".cursor" / "mcp.json").write_text(json.dumps({"mcpServers": {"context7": {}}}))
-    (home / ".cursor" / "cli-config.json").write_text(
-        json.dumps({"permissions": {"allow": [], "deny": ["Shell(rm)"]}})
-    )
-
-    (home / ".gemini").mkdir(parents=True)
-    (home / ".gemini" / "AGENTS.md").write_text("# rules\n")
-    (home / ".gemini" / "settings.json").write_text(
-        json.dumps({"mcpServers": {"context7": {}}, "tools": {"exclude": ["run_shell_command"]}})
-    )
-
-    (home / ".pi" / "agent" / "extensions").mkdir(parents=True)
-    (home / ".pi" / "agent" / "AGENTS.md").write_text("# rules\n")
-    (home / ".pi" / "agent" / "extensions" / "git-status.ts").write_text("export {}\n")
-    (home / ".pi" / "agent" / "permission-policy.json").write_text(json.dumps({"denyCommands": []}))
-
-    # Skills (claude/cursor own dirs; codex+pi share .agents/skills) + subagents.
-    for skills_dir in (".claude/skills", ".cursor/skills-cursor", ".agents/skills"):
-        (home / skills_dir / "demo").mkdir(parents=True)
-        (home / skills_dir / "demo" / "SKILL.md").write_text("---\nname: demo\n---\n")
-    for agents_dir in (".claude/agents", ".codex/agents", ".cursor/agents", ".pi/agent/agents"):
-        (home / agents_dir).mkdir(parents=True, exist_ok=True)
-        (home / agents_dir / "demo.md").write_text("# demo\n")
-    (home / ".claude" / "plugins").mkdir(parents=True)
-    (home / ".claude" / "plugins" / "installed_plugins.json").write_text(
-        json.dumps({"plugins": {"superpowers@official": [{"version": "1.0"}]}})
-    )
-
-    (dotfiles / "ai" / "agents" / "cursor" / "rules").mkdir(parents=True)
-    (dotfiles / "ai" / "agents" / "cursor" / "rules" / "shared-rules.mdc").write_text("x")
-    (dotfiles / "ai" / "agents" / "cursor" / "hooks").mkdir(parents=True)
-    (dotfiles / "ai" / "agents" / "cursor" / "hooks" / "hooks.json").write_text("{}")
-
-
-def test_full_deploy_lights_every_target_cell(tmp_path: Path) -> None:
-    home, dotfiles = tmp_path / "home", tmp_path / "dotfiles"
-    _deploy_full_home(home, dotfiles)
-    rows = {
-        r.capability: r for r in CapabilityMatrixService(home=home, dotfiles_dir=dotfiles).rows()
-    }
+def test_supported_cells_carry_a_receipt() -> None:
+    """No hand-asserted support: every yes/beta/ext cell has a probe OR a source."""
     for cap in CAPABILITY_MATRIX:
-        for agent, intent in cap.intents.items():
-            cell = rows[cap.key].cells[agent]
-            if intent in ("na", "unsupported"):
-                assert not cell.present, f"{cap.key}/{agent} absent-by-design should not probe"
-            else:
-                assert cell.present, f"{cap.key}/{agent} target unmet despite deploy"
+        for agent, cell in cap.cells.items():
+            if cell.status in ("yes", "beta", "ext"):
+                assert cell.test or cell.src, f"{cap.key}/{agent} = {cell.status} with no receipt"
 
 
-def test_empty_home_shows_required_cells_as_gaps(tmp_path: Path) -> None:
-    home, dotfiles = tmp_path / "home", tmp_path / "dotfiles"
-    rows = {
-        r.capability: r for r in CapabilityMatrixService(home=home, dotfiles_dir=dotfiles).rows()
-    }
-    for cap in CAPABILITY_MATRIX:
-        for agent, intent in cap.intents.items():
-            assert not rows[cap.key].cells[agent].present
-            assert rows[cap.key].cells[agent].intent == intent
+def test_antigravity_corrections_hold() -> None:
+    """The cells I wrongly marked unsupported are now 'yes', proven by agy's binary."""
+    by_key = {c.key: c for c in CAPABILITY_MATRIX}
+    for key in ("skills", "subagents", "hooks", "statusline"):
+        cell = by_key[key].cells["gemini"]  # the ~/.gemini slot = Antigravity
+        assert cell.status == "yes", f"agy {key} should be yes, is {cell.status}"
+        assert cell.test, f"agy {key} should carry a local probe"
+
+
+def test_claude_dynamic_workflows_is_yes() -> None:
+    # local proof wins over the doc-less web result
+    dw = next(c for c in CAPABILITY_MATRIX if c.key == "dynamic-workflows")
+    assert dw.cells["claude"].status == "yes"
+
+
+def test_receipts_returns_only_cells_with_proof() -> None:
+    for _cap, _agent, cell in receipts():
+        assert cell.test or cell.src
 
 
 # ---------------------------------------------------------------------------
-# Drift gate: docs/knowledge/agent-fleet.md must mirror CAPABILITY_MATRIX
+# Tethering — prove a claim against a real installed binary (skip if absent)
 # ---------------------------------------------------------------------------
 
-_GLYPH_INTENT = {
-    "✓": "required",
-    "★": "canonical",
-    "⊕": "different",
-    "⊘": "unsupported",
-    "—": "na",
-}
+
+@pytest.mark.skipif(shutil.which("agy") is None, reason="agy not installed")
+def test_agy_statusline_probe_actually_passes() -> None:
+    """The matrix says agy statusline = yes; prove it on the installed binary."""
+    agy = shutil.which("agy")
+    assert agy is not None
+    out = subprocess.run(
+        ["strings", str(Path(agy).resolve())], capture_output=True, text=True, check=False
+    )
+    assert "statusline" in out.stdout.lower(), "agy binary should reference statusline"
+
+
+# ---------------------------------------------------------------------------
+# Drift gate: agent-fleet.md matrix tokens mirror the code
+# ---------------------------------------------------------------------------
+
 _HEADER_AGENT = {
-    "claude code": "claude",
+    "claude": "claude",
     "codex": "codex",
     "cursor": "cursor",
-    "antigravity": "gemini",  # doc header is the display name; the key is the ~/.gemini slot
+    "antigravity": "gemini",
     "pi": "pi",
 }
 
 
-def _cells(line: str) -> list[str]:
-    return [c.strip() for c in line.strip().strip("|").split("|")]
-
-
-def _lead_glyph(cell: str) -> str:
-    for ch in cell:
-        if ch in _GLYPH_INTENT:
-            return ch
-    raise AssertionError(f"no glyph in doc cell: {cell!r}")
-
-
-def _contiguous_table(lines: list[str], start: int) -> list[list[str]]:
-    """Parsed cells of consecutive ``| … |`` rows starting at *start*."""
-    out: list[list[str]] = []
-    for row in lines[start:]:
-        if not row.startswith("|"):
-            break
-        out.append(_cells(row))
-    return out
-
-
-def _parse_doc_table(text: str) -> tuple[list[str], list[list[str]]]:
-    """Return (header_cells, data_rows) of the capability table in agent-fleet.md."""
+def _matrix_rows(text: str) -> tuple[list[str], list[list[str]]]:
     lines = text.splitlines()
-    headers = [
-        i for i, ln in enumerate(lines) if ln.startswith("| Capability") and "Claude Code" in ln
-    ]
-    if not headers:
-        raise AssertionError("capability table not found in agent-fleet.md")
-    top = headers[0]
-    return _cells(lines[top]), _contiguous_table(lines, top + 2)  # +2 skips |---| separator
+    header_idx = next(
+        i for i, ln in enumerate(lines) if ln.startswith("| Capability") and "Antigravity" in ln
+    )
+    header = [c.strip().lower() for c in lines[header_idx].strip("|").split("|")]
+    rows = []
+    for ln in lines[header_idx + 2 :]:
+        if not ln.startswith("|"):
+            break
+        rows.append([c.strip() for c in ln.strip("|").split("|")])
+    return header, rows
 
 
-def test_real_fleet_doc_has_a_review_stamp() -> None:
-    # The live doc must carry a parseable 'Last reviewed' date for the warn.
-    days = fleet_doc_stale_days(_REPO, date(2099, 1, 1))
-    assert days is not None
-    assert days > 0
+def test_doc_table_mirrors_matrix_status() -> None:
+    text = (_REPO / "docs" / "knowledge" / "agent-fleet.md").read_text()
+    header, rows = _matrix_rows(text)
+    col = {_HEADER_AGENT[h]: i for i, h in enumerate(header) if h in _HEADER_AGENT}
+    assert set(col) == set(AGENTS), "doc matrix missing a vendor column"
+    by_key = {c.key: c for c in CAPABILITY_MATRIX}
+    seen: set[str] = set()
+    for cells in rows:
+        key = cells[0].strip().lower()
+        if key not in by_key:
+            continue
+        seen.add(key)
+        for agent, idx in col.items():
+            token = cells[idx].strip().lower().split()[0]  # leading status word
+            assert token == by_key[key].cells[agent].status, (
+                f"drift: {key}/{agent} doc={token} code={by_key[key].cells[agent].status}"
+            )
+    assert seen == set(by_key), f"doc rows {seen} != matrix keys {set(by_key)}"
+
+
+# ---------------------------------------------------------------------------
+# Doc staleness helpers
+# ---------------------------------------------------------------------------
+
+
+def test_staleness_counts_days(tmp_path: Path) -> None:
+    doc = tmp_path / "docs" / "knowledge" / "agent-fleet.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text("> **Last reviewed**: 2026-06-01\n")
+    assert fleet_doc_stale_days(tmp_path, date(2026, 6, 9)) == 8
 
 
 def test_staleness_none_without_stamp(tmp_path: Path) -> None:
     assert fleet_doc_stale_days(tmp_path, date(2026, 6, 9)) is None
 
 
-def test_staleness_counts_days(tmp_path: Path) -> None:
-    doc = tmp_path / "docs" / "knowledge" / "agent-fleet.md"
-    doc.parent.mkdir(parents=True)
-    doc.write_text("> **Last reviewed**: 2026-06-01 — refresh when…\n")
-    assert fleet_doc_stale_days(tmp_path, date(2026, 6, 9)) == 8
-
-
-def test_doc_table_mirrors_matrix() -> None:
-    text = (_REPO / "docs" / "knowledge" / "agent-fleet.md").read_text()
-    header, rows = _parse_doc_table(text)
-    # Map each vendor column index by its header name.
-    col_for_agent = {
-        _HEADER_AGENT[h.lower()]: idx for idx, h in enumerate(header) if h.lower() in _HEADER_AGENT
-    }
-    assert set(col_for_agent) == set(AGENTS), "doc table is missing a vendor column"
-
-    by_key = {cap.key: cap for cap in CAPABILITY_MATRIX}
-    seen: set[str] = set()
-    for cells in rows:
-        key = re.split(r"\W+", cells[0].lower())[0]  # "Rules (instructions)" -> "rules"
-        if key not in by_key:
-            continue
-        seen.add(key)
-        for agent, col in col_for_agent.items():
-            intent = _GLYPH_INTENT[_lead_glyph(cells[col])]
-            assert intent == by_key[key].intents[agent], (
-                f"drift: {key}/{agent} doc={intent} code={by_key[key].intents[agent]}"
-            )
-    assert seen == set(by_key), f"doc table rows {seen} != matrix keys {set(by_key)}"
+def test_capability_rows_render_shape() -> None:
+    rows = capability_rows()
+    assert len(rows) == len(CAPABILITY_MATRIX)
+    assert all(set(r.cells) == set(AGENTS) for r in rows)

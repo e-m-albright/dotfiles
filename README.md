@@ -342,7 +342,8 @@ dotfiles brew upgrade        # Upgrade all installed packages (brew is the versi
 dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
 dotfiles profile-shell       # Profile shell startup time
-dotfiles agent overview      # Live cross-vendor dashboard: capability matrix (rules/mcp/statusline/permissions/hooks × 5 agents), MCP, hooks, skills, subagents, permissions
+dotfiles agent overview      # Live cross-vendor dashboard: capability matrix (14 capabilities × 5 agents), MCP, hooks, skills, subagents, permissions
+dotfiles agent capabilities  # The capability matrix with receipts (a probe and/or source URL per cell); --verify runs the probes to confirm the matrix matches reality
 dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean, --prune); prints the Cursor plugin checklist
 dotfiles agent skills        # List skills by origin (canonical/external/plugin/retired/untracked) with descriptions; vendor builtins hidden (--all to show)
 dotfiles agent skills prune  # Dry-run: bucket deployed skills into retired (ours, deletable) / builtin (vendor, untouched) / untracked; --apply deletes only retired

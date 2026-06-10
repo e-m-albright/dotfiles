@@ -12,14 +12,17 @@ import typer
 from rich.markup import escape
 from rich.table import Table
 
+from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.agent import OVERVIEW_AGENTS, OVERVIEW_COLS, VENDORS
 from dotfiles.app.context import app_context
 from dotfiles.cmd.agent.capability_matrix import (
     FLEET_STALE_DAYS as _FLEET_STALE_DAYS,
 )
 from dotfiles.cmd.agent.capability_matrix import (
-    CapabilityCell,
     CapabilityRow,
+    Cell,
+    capability_rows,
+    receipts,
 )
 from dotfiles.cmd.agent.catechism import (
     CATECHISM,
@@ -164,35 +167,33 @@ def _render_state_matrix(
         console.print(f"  {escape(label):<{_LABEL_W}}{cells}")
 
 
-def _capability_cell(cell: CapabilityCell) -> str:
-    """Glyph per (intent, live): ✓ present · ✗ closable gap · ⊘ unsupported · · n/a."""
-    if cell.intent == "na":  # intentionally absent (our choice)
-        return f"[dim]{'·'.center(_COL_W)}[/]"
-    if cell.intent == "unsupported":  # vendor has no such surface — not ours to close
-        return f"[blue]{'⊘'.center(_COL_W)}[/]"
-    if not cell.present:  # target supported by the vendor but undeployed — WE can close it
-        return f"[red]{'✗'.center(_COL_W)}[/]"
-    glyph, color = {
-        "required": ("✓", "green"),
-        "canonical": ("★", _GOLD),
-        "different": ("⊕", "cyan"),
-    }[cell.intent]
+_CAP_GLYPH: dict[str, tuple[str, str]] = {
+    "yes": ("✓", "green"),  # supported (GA) — receipt in the cell
+    "beta": ("◐", "yellow"),  # preview / partial / auto-only
+    "ext": ("⊕", "cyan"),  # supported only via an extension (Pi)
+    "no": ("✗", "red"),  # proven absent (with evidence)
+    "unverified": ("?", "dim"),  # no first-party source AND not locally probeable
+}
+
+
+def _capability_cell(cell: Cell) -> str:
+    glyph, color = _CAP_GLYPH.get(cell.status, ("?", "dim"))
     return f"[{color}]{glyph.center(_COL_W)}[/]"
 
 
 def _render_capability_matrix(rows: Iterable[CapabilityRow]) -> None:
-    """Cross-vendor capability matrix: target intent vs live deployment."""
+    """Cross-vendor capability matrix — vendor support, each cell provenance-backed."""
     rows_list = list(rows)
     if not rows_list:
         return
     _matrix_header("Capability matrix")
     for row in rows_list:
         cells = "".join(_capability_cell(row.cells[a]) for a in _AGENT_COLS)
-        pioneer = f"[dim] {escape(row.front_runner)}▸[/]" if row.front_runner else ""
-        console.print(f"  {escape(row.capability):<{_LABEL_W}}{cells}{pioneer}")
+        console.print(f"  {escape(row.capability):<{_LABEL_W}}{cells}")
     console.print(
-        f"  [dim]✓ live · [red]✗[/red] closable gap · [blue]⊘[/blue] unsupported (vendor) ·"
-        f" · n/a · [{_GOLD}]★[/{_GOLD}] Pi-canonical · [cyan]⊕[/cyan] different · ▸ front-runner[/]"
+        "  [dim][green]✓[/green] supported · [yellow]◐[/yellow] beta/partial · "
+        "[cyan]⊕[/cyan] via extension · [red]✗[/red] absent (proven) · ? unverified[/]\n"
+        "  [dim]receipts (probe / source per cell): dotfiles agent capabilities[/]"
     )
 
 
@@ -399,6 +400,61 @@ def overview(ctx: typer.Context) -> None:
         home=app_ctx.home,
     )
     _render_overview(svc.overview(), app_ctx.home)
+
+
+@agent_app.command()
+def capabilities(
+    ctx: typer.Context,
+    verify: bool = typer.Option(
+        False, "--verify", help="Run each cell's local probe and report proven/failed."
+    ),
+) -> None:
+    """The capability matrix with its receipts — a probe and/or source URL per cell.
+
+    The matrix is provenance-backed: `--verify` runs the on-machine probes so the
+    claims stay tethered to what's actually installed.
+    """
+    app_ctx = app_context(ctx)
+    print_title(console, "agent", "capabilities")
+    _render_capability_matrix(capability_rows())
+    print_section(console, "Receipts", "probe (on-machine) · source (documentary) per cell")
+    for cap, agent, cell in receipts():
+        proof = cell.test or cell.src
+        kind = "probe" if cell.test else "src"
+        console.print(
+            f"  [{_GOLD}]{escape(cap):<18}[/] [dim]{escape(agent):<7}[/] "
+            f"[{_CAP_GLYPH.get(cell.status, ('?', 'dim'))[1]}]{cell.status:<10}[/] "
+            f"[dim]{kind}:[/] {escape(proof)}"
+        )
+    if verify:
+        _verify_capability_probes(app_ctx.runner)
+
+
+def _verify_capability_probes(runner: ProcessRunner) -> None:
+    """Run each cell's probe and check it AGREES with the claimed status — the tether.
+
+    A supported claim (yes/beta/ext) expects the probe to exit 0; a proven-absent
+    claim (no) expects it to exit non-zero (the capability really isn't there). A
+    mismatch means the matrix has drifted from reality.
+    """
+    print_section(console, "Verify", "probe agrees with claim · ✗ = matrix drifted from reality")
+    agree = drift = skipped = 0
+    for cap, agent, cell in receipts():
+        if not cell.test:
+            skipped += 1
+            continue
+        present = runner.run(("bash", "-lc", cell.test), check=False).exit_code == 0
+        expect_present = cell.status in ("yes", "beta", "ext")
+        ok = present == expect_present
+        agree += ok
+        drift += not ok
+        mark = "[green]✓ agrees[/]" if ok else "[red]✗ DRIFT[/]"
+        verdict = "present" if present else "absent"
+        console.print(
+            f"  {mark}  [dim]{escape(cap)}·{escape(agent)}[/] "
+            f"claim={cell.status} probe={verdict}  [dim]{escape(cell.test[:46])}[/]"
+        )
+    console.print(f"\n  [dim]{agree} agree · {drift} DRIFT · {skipped} no-probe (source-only)[/]")
 
 
 @agent_app.command()

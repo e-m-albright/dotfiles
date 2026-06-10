@@ -1,67 +1,272 @@
-"""The cross-vendor capability matrix: what each of the 5 agents supports.
+"""The cross-vendor capability matrix — provenance-backed, not hand-asserted.
 
-The machine-readable source of the vendor x capability table in
-docs/knowledge/agent-fleet.md (the prose doc mirrors this; a drift test holds
-them in sync). Printed inside ``dotfiles agent overview``.
+Every cell is a VENDOR-CAPABILITY claim (does the tool support X?) that carries
+its **receipt**: a local probe (a command that proves it on this machine — binary
+`strings`, `--help` grep, config check) and/or a source URL. Nothing here is
+"written on a page" — each `yes`/`beta` is either tested live or cited.
 
-Two layers:
-- **Intent** (this module's data) — the *target state* per (capability, vendor),
-  hand-authored to match agent-fleet.md: required / canonical (the Pi end-state
-  we converge toward) / different-mechanism / n-a.
-- **Liveness** (the service) — a verifiable probe of what's actually deployed,
-  so a target that isn't met shows as a gap (✗), never a false green. This is
-  the "single live truth, reconciled to the doc" the fleet work is built on.
+Reconciliation rule when a local probe and a doc disagree: **the local probe
+wins** (it's what's installed). E.g. Claude dynamic-workflows is `yes` because
+its binary ships `dynamic workflow`/`ultracode` strings (and we drive it via the
+Workflow tool), even though there's no public feature doc.
 
-The ``front_runner`` field records who pioneered each capability — the landscape
-dimension: Claude Code tends to ship first, the others copy, and Pi is where we
-want to own the end state. It feeds the feature-map / Pi-decision work.
+Status: yes (GA) · beta (preview/partial/auto-only) · ext (only via an
+extension, e.g. Pi) · no (proven absent, with evidence) · unverified (no
+first-party source AND not locally probeable). Glyphs render in
+``dotfiles agent overview``; the full receipts live in docs/knowledge/agent-fleet.md.
+
+Run the local probes with ``dotfiles agent capabilities --verify`` to keep the
+matrix tethered to reality.
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from dotfiles.agent import AGENTS, Agent
-from dotfiles.cmd.agent.config import (
-    ClaudeSettingsProbe,
-    GeminiSettings,
-    InstalledPlugins,
-    McpServersFile,
-    SettingsWithPermissions,
-    load_config,
+from dotfiles.agent import AGENTS
+
+CellStatus = Literal["yes", "beta", "ext", "no", "unverified"]
+
+
+class Cell(BaseModel):
+    """One (capability, vendor) claim plus its receipt(s)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    status: CellStatus
+    test: str = ""  # a shell command that PROVES the claim on this machine
+    src: str = ""  # a source URL (documentary receipt) where no local test fits
+
+
+class Capability(BaseModel):
+    """One capability row: what it is + a cell per vendor."""
+
+    model_config = ConfigDict(frozen=True)
+
+    key: str
+    note: str  # one line: what the capability is
+    cells: dict[str, Cell]
+
+
+def _row(
+    key: str,
+    note: str,
+    claude: Cell,
+    codex: Cell,
+    cursor: Cell,
+    antigravity: Cell,
+    pi: Cell,
+) -> Capability:
+    return Capability(
+        key=key,
+        note=note,
+        cells={
+            "claude": claude,
+            "codex": codex,
+            "cursor": cursor,
+            "gemini": antigravity,  # the ~/.gemini slot is Antigravity (agy)
+            "pi": pi,
+        },
+    )
+
+
+def _c(status: CellStatus, test: str = "", src: str = "") -> Cell:
+    return Cell(status=status, test=test, src=src)
+
+
+# 14 capabilities x 5 vendors. Order: context surfaces, integration, UX/safety,
+# extensibility, then the 2026-era categories.
+CAPABILITY_MATRIX: tuple[Capability, ...] = (
+    _row(
+        "rules",
+        "always-on instruction file (CLAUDE.md/AGENTS.md/.mdc)",
+        _c("yes", "test -f ~/.claude/CLAUDE.md"),
+        _c("yes", "test -f ~/.codex/AGENTS.md"),
+        _c("yes", "test -d ~/.cursor", "https://cursor.com/docs/cli/using"),
+        _c("yes", "test -f ~/.gemini/AGENTS.md"),
+        _c("yes", "pi --help | grep -q -- --no-context-files"),
+    ),
+    _row(
+        "skills",
+        "portable SKILL.md capability packs",
+        _c("yes", "test -d ~/.claude/skills"),
+        _c("yes", "strings $(which codex) | grep -qi SKILL.md"),
+        _c("yes", "test -d ~/.cursor/skills-cursor", "https://cursor.com/changelog/2-4"),
+        _c("yes", "strings $(which agy) | grep -qi /skills"),
+        _c("yes", "pi --help | grep -q -- --skill"),
+    ),
+    _row(
+        "subagents",
+        "isolated-context delegated agents",
+        _c("yes", "strings $(which claude) | grep -qi subagent"),
+        _c("yes", "strings $(which codex) | grep -qi subagent"),
+        _c("yes", "test -d ~/.cursor/agents", "https://cursor.com/docs/subagents"),
+        _c("yes", "strings $(which agy) | grep -qi subagent"),
+        _c("ext", "", "https://github.com/nicobailon/pi-subagents"),
+    ),
+    _row(
+        "mcp",
+        "Model Context Protocol servers",
+        _c("yes", "claude --help | grep -qi mcp"),
+        _c("yes", "codex --help | grep -qi mcp"),
+        _c("yes", "test -f ~/.cursor/mcp.json"),
+        _c("yes", "test -f ~/.gemini/config/mcp_config.json"),
+        _c("no", "pi --help | grep -qi mcp", "https://github.com/earendil-works/pi"),
+    ),
+    _row(
+        "hooks",
+        "deterministic lifecycle shell hooks",
+        _c("yes", "grep -q hooks ~/.claude/settings.json"),
+        _c("yes", "strings $(which codex) | grep -qi /hooks"),
+        _c("yes", "", "https://cursor.com/docs/hooks"),
+        _c("yes", "strings $(which agy) | grep -qi /hooks"),
+        _c(
+            "ext",
+            "test -f ~/.pi/agent/extensions/safe-git.ts",
+            "https://pi.dev/docs/latest/extensions",
+        ),
+    ),
+    _row(
+        "statusline",
+        "custom terminal status footer",
+        _c("yes", "strings $(which claude) | grep -qi statusline"),
+        _c("yes", "grep -q status_line ~/.codex/config.toml"),
+        _c("beta", "", "https://cursor.com/changelog/04-14-26"),
+        _c("yes", "strings $(which agy) | grep -qi statusline"),
+        _c("ext", "test -f ~/.pi/agent/extensions/git-status.ts"),
+    ),
+    _row(
+        "permissions",
+        "tool/command allow-deny gating",
+        _c("yes", "grep -q permissions ~/.claude/settings.json"),
+        _c("yes", "codex --help | grep -qi sandbox"),
+        _c("yes", "test -f ~/.cursor/cli-config.json"),
+        _c("yes", "grep -q exclude ~/.gemini/settings.json"),
+        _c("ext", "test -f ~/.pi/agent/permission-policy.json"),
+    ),
+    _row(
+        "plugins",
+        "first-party plugin/marketplace",
+        _c("yes", "claude --help | grep -qi plugin"),
+        _c("yes", "strings $(which codex) | grep -qi plugin"),
+        _c("yes", "", "https://cursor.com/changelog/2-5"),
+        _c("yes", "agy plugin list"),
+        _c("yes", "pi list"),
+    ),
+    _row(
+        "dynamic-workflows",
+        "agent-authored JS orchestration over many subagents",
+        _c("yes", "strings $(which claude) | grep -qi 'dynamic workflow'"),
+        _c("no", "", "https://developers.openai.com/codex/changelog"),
+        _c("unverified", ""),
+        _c("no", "", "https://antigravity.google/docs/rules-workflows"),
+        _c("yes", "pi --help | grep -qi extension", "https://pi.dev/docs/latest/extensions"),
+    ),
+    _row(
+        "memory",
+        "persistent cross-session memory",
+        _c("yes", "strings $(which claude) | grep -qi memory"),
+        _c("beta", "", "https://developers.openai.com/codex/changelog"),
+        _c("unverified", ""),
+        _c("yes", "strings $(which agy) | grep -qi /memory"),
+        _c("yes", "pi --help | grep -q -- --resume"),
+    ),
+    _row(
+        "output-styles",
+        "configurable response style/persona",
+        _c(
+            "beta",
+            "strings $(which claude) | grep -qi outputstyle",
+            "https://docs.claude.com/en/docs/claude-code/output-styles",
+        ),
+        _c("yes", "strings $(which codex) | grep -qi personality"),
+        _c("no", "", "https://cursor.com/docs/cli/reference"),
+        _c("no", ""),
+        _c("yes", "pi --help | grep -qi theme"),
+    ),
+    _row(
+        "slash-commands",
+        "custom /command files",
+        _c("yes", "claude --help | grep -qi slash"),
+        _c("yes", "strings $(which codex) | grep -qi ARGUMENTS"),
+        _c("yes", "", "https://cursor.com/docs/cli/reference/slash-commands"),
+        _c("yes", "strings $(which agy) | grep -qi /agents"),
+        _c("yes", "", "https://pi.dev/docs/latest/prompt-templates"),
+    ),
+    _row(
+        "sandboxing",
+        "built-in command sandbox",
+        _c("yes", "claude --help | grep -qi sandbox"),
+        _c("yes", "codex --help | grep -qi sandbox"),
+        _c("yes", "cursor-agent --help | grep -qi sandbox"),
+        _c("yes", "agy --help 2>&1 | grep -qi sandbox"),
+        _c("no", "pi --help | grep -qi sandbox", "https://pi.dev/docs/latest/security"),
+    ),
+    _row(
+        "model-routing",
+        "fallback chain / multi-model routing",
+        _c("yes", "claude --help | grep -q -- --fallback-model"),
+        _c("yes", "codex --help | grep -qi model"),
+        _c("beta", "cursor-agent --help | grep -q -- --model"),
+        _c("beta", "agy --help 2>&1 | grep -qi model"),
+        _c("beta", "pi --help | grep -q -- --models"),
+    ),
 )
 
 
+# ---------------------------------------------------------------------------
+# Render rows (consumed by the overview)
+# ---------------------------------------------------------------------------
+
+
+class CapabilityRow(BaseModel):
+    """One capability across all vendors, for rendering."""
+
+    model_config = ConfigDict(frozen=True)
+
+    capability: str
+    note: str
+    cells: dict[str, Cell]
+
+
+def capability_rows() -> list[CapabilityRow]:
+    """The matrix as render rows (static — provenance carried per cell)."""
+    return [
+        CapabilityRow(capability=cap.key, note=cap.note, cells=dict(cap.cells))
+        for cap in CAPABILITY_MATRIX
+    ]
+
+
+def receipts() -> list[tuple[str, str, Cell]]:
+    """(capability, agent, cell) for every cell that has a test or source — the receipts."""
+    out: list[tuple[str, str, Cell]] = []
+    for cap in CAPABILITY_MATRIX:
+        for agent in AGENTS:
+            cell = cap.cells[agent]
+            if cell.test or cell.src:
+                out.append((cap.key, agent, cell))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Doc staleness (agent-fleet.md mirrors this matrix; warn when its review lapses)
+# ---------------------------------------------------------------------------
+
+FLEET_DOC_REL = ("docs", "knowledge", "agent-fleet.md")
+FLEET_STALE_DAYS = 90
+_REVIEWED_RE = re.compile(r"Last reviewed\D*(\d{4})-(\d{2})-(\d{2})")
+
+
 def _read_text(path: Path) -> str:
-    """The file's text, or '' if it's absent or unreadable."""
     try:
         return path.read_text()
     except OSError:
         return ""
-
-
-def _has_subdir(path: Path) -> bool:
-    """True if *path* is a directory holding at least one subdirectory."""
-    return path.is_dir() and any(child.is_dir() for child in path.iterdir())
-
-
-def _has_file_with_suffix(path: Path, suffix: str) -> bool:
-    """True if *path* is a directory holding at least one file with *suffix*."""
-    return path.is_dir() and any(
-        child.is_file() and child.suffix == suffix for child in path.iterdir()
-    )
-
-
-# The doc the matrix mirrors; we warn when its "Last reviewed" stamp goes stale.
-FLEET_DOC_REL = ("docs", "knowledge", "agent-fleet.md")
-FLEET_STALE_DAYS = 90
-_REVIEWED_RE = re.compile(r"Last reviewed\D*(\d{4})-(\d{2})-(\d{2})")
 
 
 def fleet_doc_reviewed(dotfiles_dir: Path) -> date | None:
@@ -79,226 +284,3 @@ def fleet_doc_stale_days(dotfiles_dir: Path, today: date) -> int | None:
     """Days since agent-fleet.md was last reviewed, or None if unstamped."""
     reviewed = fleet_doc_reviewed(dotfiles_dir)
     return None if reviewed is None else (today - reviewed).days
-
-
-# Target intent of a (capability, vendor) cell, mirroring agent-fleet.md.
-# The three "absent" states are deliberately distinct — this is the
-# closable-vs-not-closable axis:
-#   required     — we want it & the vendor supports it; absent ⇒ a gap WE can close
-#   canonical    — the Pi end-state we converge toward
-#   different    — present, but via a different mechanism (⊕)
-#   unsupported  — the vendor has no such surface yet; a gap only THEY can close
-#                  (not closable by us until their tooling develops)
-#   na           — intentionally absent by our choice (e.g. Pi MCP, local-first)
-CellIntent = Literal["required", "canonical", "different", "unsupported", "na"]
-
-
-class Capability(BaseModel):
-    """One capability row: who pioneered it + the target intent per vendor."""
-
-    model_config = ConfigDict(frozen=True)
-
-    key: str
-    front_runner: str  # who shipped it first ("" = universal / no clear pioneer)
-    intents: dict[Agent, CellIntent]
-
-
-def _cap(
-    key: str,
-    front_runner: str,
-    claude: CellIntent,
-    cursor: CellIntent,
-    codex: CellIntent,
-    gemini: CellIntent,
-    pi: CellIntent,
-) -> Capability:
-    """Terse constructor so the matrix reads like the doc table it mirrors."""
-    return Capability(
-        key=key,
-        front_runner=front_runner,
-        intents={"claude": claude, "cursor": cursor, "codex": codex, "gemini": gemini, "pi": pi},
-    )
-
-
-# Mirrors the "Capability matrix (target state)" table in agent-fleet.md, row for
-# row. Grouped: context surfaces, integration, UX/safety, extensibility.
-#                 key          fr        claude      cursor         codex        gemini         pi
-CAPABILITY_MATRIX: tuple[Capability, ...] = (
-    _cap("rules", "", "required", "required", "required", "required", "required"),
-    _cap("skills", "claude", "required", "required", "required", "unsupported", "required"),
-    # Cursor gained subagents in 2.4 (.cursor/agents/, isolated context, nestable in 2.5).
-    _cap("subagents", "claude", "required", "required", "required", "unsupported", "required"),
-    # MCP intentionally minimized: only granola earns it (semantic meeting-search, no CLI),
-    # on the terminal drivers Claude + Codex. context7 retired for the `ctx7` CLI; nobody else.
-    _cap("mcp", "claude", "required", "na", "required", "na", "na"),
-    _cap("hooks", "claude", "required", "required", "required", "unsupported", "unsupported"),
-    _cap("statusline", "claude", "required", "unsupported", "required", "unsupported", "canonical"),
-    _cap("permissions", "claude", "required", "required", "different", "required", "required"),
-    # Cursor gained a plugin marketplace in 2.5, but it's GUI/user-managed — not a
-    # surface we deploy as fleet state (na), unlike Claude's central plugins.yaml.
-    _cap("plugins", "claude", "required", "na", "unsupported", "unsupported", "unsupported"),
-)
-
-
-class CapabilityCell(BaseModel):
-    """One rendered cell: the target intent and whether it's live-deployed."""
-
-    model_config = ConfigDict(frozen=True)
-
-    intent: CellIntent
-    present: bool
-
-
-class CapabilityRow(BaseModel):
-    """One capability across all vendors, with live probe results per cell."""
-
-    model_config = ConfigDict(frozen=True)
-
-    capability: str
-    front_runner: str
-    cells: dict[str, CapabilityCell]
-
-
-class CapabilityMatrixService:
-    """Compose the target-intent matrix with live deployment probes."""
-
-    def __init__(self, *, home: Path, dotfiles_dir: Path) -> None:
-        self._home = home
-        self._dotfiles = dotfiles_dir
-
-    def rows(self) -> list[CapabilityRow]:
-        """One CapabilityRow per capability, intents + live probes filled in."""
-        rows: list[CapabilityRow] = []
-        # na (by choice) and unsupported (vendor has no surface) are absent by
-        # design — never probed; only the live-deployable intents get a probe.
-        absent_by_design = {"na", "unsupported"}
-        for cap in CAPABILITY_MATRIX:
-            cells = {
-                agent: CapabilityCell(
-                    intent=cap.intents[agent],
-                    present=cap.intents[agent] not in absent_by_design
-                    and self._probe(cap.key, agent),
-                )
-                for agent in AGENTS
-            }
-            rows.append(
-                CapabilityRow(capability=cap.key, front_runner=cap.front_runner, cells=cells)
-            )
-        return rows
-
-    # ------------------------------------------------------------------
-    # Liveness probes — each returns True iff the capability is deployed.
-    # ------------------------------------------------------------------
-
-    def _probe(self, capability: str, agent: Agent) -> bool:
-        probes: dict[str, Callable[[Agent], bool]] = {
-            "rules": self._has_rules,
-            "skills": self._has_skills,
-            "subagents": self._has_subagents,
-            "mcp": self._has_mcp,
-            "hooks": self._has_hooks,
-            "statusline": self._has_statusline,
-            "permissions": self._has_permissions,
-            "plugins": self._has_plugins,
-        }
-        probe = probes.get(capability)
-        return probe(agent) if probe is not None else False
-
-    def _has_skills(self, agent: Agent) -> bool:
-        h = self._home
-        dirs: dict[Agent, Path] = {
-            "claude": h / ".claude" / "skills",
-            "cursor": h / ".cursor" / "skills-cursor",
-            "codex": h / ".agents" / "skills",  # codex + pi read the shared dir
-            "pi": h / ".agents" / "skills",
-        }
-        path = dirs.get(agent)
-        return path is not None and _has_subdir(path)
-
-    def _has_subagents(self, agent: Agent) -> bool:
-        h = self._home
-        dirs: dict[Agent, Path] = {
-            "claude": h / ".claude" / "agents",
-            "codex": h / ".codex" / "agents",
-            "cursor": h / ".cursor" / "agents",  # Cursor 2.4+ reads these
-            "pi": h / ".pi" / "agent" / "agents",
-        }
-        path = dirs.get(agent)
-        return path is not None and _has_file_with_suffix(path, ".md")
-
-    def _has_plugins(self, agent: Agent) -> bool:
-        # Only Claude ships a managed plugin marketplace (others: n/a).
-        if agent != "claude":
-            return False
-        cfg = load_config(
-            self._home / ".claude" / "plugins" / "installed_plugins.json", InstalledPlugins
-        )
-        return cfg is not None and bool(cfg.plugins)
-
-    def _has_rules(self, agent: Agent) -> bool:
-        h, d = self._home, self._dotfiles
-        paths: dict[Agent, Path] = {
-            "claude": h / ".claude" / "CLAUDE.md",
-            "codex": h / ".codex" / "AGENTS.md",
-            "gemini": h / ".gemini" / "AGENTS.md",
-            "pi": h / ".pi" / "agent" / "AGENTS.md",
-            "cursor": d / "ai" / "agents" / "cursor" / "rules" / "shared-rules.mdc",
-        }
-        path = paths.get(agent)
-        return path is not None and path.exists()
-
-    def _has_mcp(self, agent: Agent) -> bool:
-        h = self._home
-        if agent == "codex":
-            return "[mcp_servers" in _read_text(h / ".codex" / "config.toml")
-        json_paths: dict[Agent, Path] = {
-            "claude": h / ".claude.json",
-            "cursor": h / ".cursor" / "mcp.json",
-            "gemini": h / ".gemini" / "settings.json",
-        }
-        path = json_paths.get(agent)
-        if path is None:
-            return False
-        cfg = load_config(path, McpServersFile)
-        return cfg is not None and bool(cfg.mcp_servers)
-
-    def _has_statusline(self, agent: Agent) -> bool:
-        h = self._home
-        if agent == "claude":
-            cfg = load_config(h / ".claude" / "settings.json", ClaudeSettingsProbe)
-            return cfg is not None and cfg.status_line is not None
-        if agent == "codex":
-            return "[tui]" in _read_text(h / ".codex" / "config.toml")
-        if agent == "pi":
-            return (h / ".pi" / "agent" / "extensions" / "git-status.ts").exists()
-        return False
-
-    def _has_permissions(self, agent: Agent) -> bool:
-        h = self._home
-        if agent == "claude":
-            cfg = load_config(h / ".claude" / "settings.json", ClaudeSettingsProbe)
-            return cfg is not None and bool(cfg.permissions.deny or cfg.permissions.allow)
-        if agent == "cursor":
-            cur = load_config(h / ".cursor" / "cli-config.json", SettingsWithPermissions)
-            return cur is not None and bool(cur.permissions.deny or cur.permissions.allow)
-        if agent == "codex":
-            return (h / ".codex" / "rules" / "default.rules").exists()
-        if agent == "gemini":
-            gem = load_config(h / ".gemini" / "settings.json", GeminiSettings)
-            return gem is not None and gem.tools.exclude is not None
-        if agent == "pi":
-            return (h / ".pi" / "agent" / "permission-policy.json").exists()
-        return False
-
-    def _has_hooks(self, agent: Agent) -> bool:
-        h, d = self._home, self._dotfiles
-        if agent == "claude":
-            cfg = load_config(h / ".claude" / "settings.json", ClaudeSettingsProbe)
-            return cfg is not None and bool(cfg.hooks)
-        if agent == "codex":
-            return (h / ".codex" / "hooks.json").exists()
-        if agent == "cursor":
-            # Cursor hooks ship through its plugin, which references the repo
-            # source rather than a copied home file.
-            return (d / "ai" / "agents" / "cursor" / "hooks" / "hooks.json").exists()
-        return False

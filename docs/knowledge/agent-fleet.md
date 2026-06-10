@@ -1,6 +1,6 @@
 # Agent Fleet Uniformity
 
-> **Last reviewed**: 2026-06-09 — Refresh when a vendor changes its config schema or a new agent joins the fleet.
+> **Last reviewed**: 2026-06-10 — Refresh when a vendor changes its config schema or a new agent joins the fleet.
 
 We run five coding agents — **Claude Code, Codex, Cursor, Gemini, Pi** — from one set of dotfiles config (`ai/agents/`), deployed by the Python CLI (`dotfiles agent setup`). This doc records what "uniform" means across them, where it can't be (vendor limits), and how the two cross-cutting concerns — **statuslines** and **permissions** — are kept in sync.
 
@@ -8,26 +8,36 @@ The guiding rule: **one source of truth per concern, translated per vendor, drif
 
 ---
 
-## Capability matrix (target state)
+## Capability matrix (vendor support — provenance-backed)
 
-This table is the **single source of truth** — `cli/.../capability_matrix.py` mirrors it cell-for-cell, a drift test (`test_capability_matrix.py`) fails if they diverge, and `dotfiles agent overview` renders it **live** (probing what's actually deployed, so an unmet target shows as a gap, never a false green).
+This is the **VENDOR-CAPABILITY** matrix: does each tool *support* the capability? It's the single source of truth — `capability_matrix.py` mirrors it cell-for-cell, a drift test fails if they diverge, and **every supported cell carries a receipt** (a probe that proves it on this machine, and/or a source URL — see the Receipts table). Run the probes with `dotfiles agent capabilities --verify`. *(What WE have deployed/active is the per-agent checklist in `dotfiles agent overview`, a separate layer.)*
 
-| Capability | Front-runner | Claude Code | Codex | Cursor | Antigravity | Pi |
-|---|---|---|---|---|---|---|
-| Rules (instructions) | — | ✓ `CLAUDE.md` | ✓ `AGENTS.md` | ✓ `.mdc` | ✓ `AGENTS.md` | ✓ `AGENTS.md` |
-| Skills | Claude | ✓ `.claude/skills` | ✓ `.agents/skills` | ✓ `skills-cursor` | ⊘ *(no skills surface)* | ✓ `.agents/skills` |
-| Subagents | Claude | ✓ `.claude/agents` | ✓ `.codex/agents` | ✓ `.cursor/agents` *(2.4)* | ⊘ *(no subagents)* | ✓ `.pi/agent/agents` |
-| MCP servers | Claude | ✓ `granola` | ✓ `granola` | — | — | — *(by choice — local-first)* |
-| Hooks | Claude | ✓ | ✓ | ✓ | ⊘ | ⊘ *(extensions instead)* |
-| Statusline | Claude | ✓ `statusline.sh` | ✓ `statusline.toml` | ⊘ native UI | ⊘ native footer | ★ `git-status.ts` |
-| Permissions | Claude | ✓ `permissions.json` | ⊕ `default.rules` + sandbox | ✓ `cli-config.json` | ✓ `tools.exclude` | ✓ `permission-policy.json` + presets |
-| Plugins | Claude | ✓ `marketplace` | ⊘ *(no marketplace)* | — *(marketplace 2.5, GUI-managed)* | ⊘ | ⊘ |
+Status tokens: **yes** = generally available · **beta** = preview/partial/auto-only · **ext** = only via an extension (Pi) · **no** = proven absent (with evidence) · **unverified** = no first-party source AND not locally probeable. Reconciliation rule: when a local probe and a doc disagree, **the probe wins** (it's what's installed).
 
-Glyphs encode the **closable-vs-not-closable** axis: **✓** live · **✗** closable gap (the vendor supports it; we simply haven't deployed it — *ours* to close) · **⊘** unsupported (the vendor has no such surface yet — closable only by *their* tooling development) · **—** n/a by our choice (e.g. MCP everywhere but Claude) · **★** canonical (the Pi end-state we converge toward) · **⊕** different mechanism. **Front-runner** = who shipped the capability first (Claude Code usually leads, the others copy, and we decide what to own in Pi).
+| Capability | Claude | Codex | Cursor | Antigravity | Pi |
+|---|---|---|---|---|---|
+| rules | yes | yes | yes | yes | yes |
+| skills | yes | yes | yes | yes | yes |
+| subagents | yes | yes | yes | yes | ext |
+| mcp | yes | yes | yes | yes | no |
+| hooks | yes | yes | yes | yes | ext |
+| statusline | yes | yes | beta | yes | ext |
+| permissions | yes | yes | yes | yes | ext |
+| plugins | yes | yes | yes | yes | yes |
+| dynamic-workflows | yes | no | unverified | no | yes |
+| memory | yes | beta | unverified | yes | yes |
+| output-styles | beta | yes | no | no | yes |
+| slash-commands | yes | yes | yes | yes | yes |
+| sandboxing | yes | yes | yes | yes | no |
+| model-routing | yes | yes | beta | beta | beta |
 
-**MCP is intentionally near-zero** (June 2026 decision): only **granola** earns a server (semantic meeting-search has no CLI), on the terminal drivers **Claude + Codex** (`ctx7` is `npx`-only at first, so granola is the lone always-on MCP). **context7 was retired for the `ctx7` CLI** (`ctx7 library <name>` / `ctx7 docs <id>` — full parity, universal across every shell-capable agent, no per-vendor patchiness, no always-on tax) — and a retired server is now **auto-pruned** from live configs on setup (`disabled_mcp_server_names` → `merge_managed_mcp(prune=…)`), so it can't linger as "unmanaged." So `mcp` is `✓` on Claude + Codex and `—` (our choice) elsewhere — zero closable gaps.
+**Proven absences** (`no` with positive evidence, not "didn't find"): Pi MCP ("No MCP" by design, README); Pi sandboxing ("Pi does not include a built-in sandbox" — use Docker); Codex dynamic-workflows (`js_repl` removed, `code_mode` WIP); Antigravity dynamic-workflows (its `/workflow` is markdown step-guides, not JS orchestration); Antigravity + Cursor output-styles (no style surface). The **agy `⊘`→`yes` corrections** (skills/subagents/hooks/statusline) were proven by the installed binary's own strings — see Receipts.
 
-Only the **terminal** agents (Claude, Codex, Pi) can render a custom statusline. Cursor and Gemini use their own status UI and are out of scope for statusline alignment.
+### Receipts (probe / source per supported cell)
+
+The full per-cell provenance lives in `capability_matrix.py` (the `test` = on-machine probe, `src` = source URL) and prints via `dotfiles agent capabilities`. Examples of the on-machine probes: `strings $(which agy) | grep -qi 'Toggle the statusline'` (agy statusline), `strings $(which claude) | grep -qi 'dynamic workflow'` (Claude dynamic-workflows), `pi --help | grep -- --skill` (Pi skills), `claude mcp list` (Claude MCP). `--verify` runs them all and reports proven/failed.
+
+**MCP is intentionally near-zero in OUR deployment** (separate from vendor support above): only **granola** earns a server (semantic meeting-search has no CLI), on **Claude + Codex**; **context7 was retired for the `ctx7` CLI** and is auto-pruned on setup (`disabled_mcp_server_names` → `merge_managed_mcp(prune=…)`).
 
 ---
 
@@ -47,9 +57,9 @@ Verified config (probed live on v1.0.7):
 | MCP | `~/.gemini/settings.json` `mcpServers` + an (empty) `~/.gemini/config/mcp_config.json` agy now seeds — empty by choice (MCP is Claude-only) | ✅ done |
 | Permissions | `~/.gemini/settings.json` `tools.exclude` (deny-vocab) | ✅ done |
 | Plugins | `agy plugin import gemini\|claude` / `install <x>@<mp>` | available |
-| Skills · Subagents · Hooks | **No deployable surface on v1.0.7** — verified: `agy --help` exposes only `changelog/install/models/plugin/update`; no `skills`/`agents`/`hooks` subcommands and no global deploy dirs (`~/.gemini/antigravity-cli/` is runtime-only: cache/brain/builtin). The blog's Skills/Subagents/Hooks are a **future build**. | ⊘ not yet (correct) |
+| Skills · Subagents · Hooks | **Supported by agy** (proven: its binary ships `/skills`, `/agents`, `/hooks`, "Subagents", "Toggle the statusline") — the capability matrix is `yes`. What's unconfirmed is the **global on-disk deploy path** for OUR skills: agy reads project `.agents/skills/<name>/SKILL.md`, but a v1.0.7 install exposes no top-level `skills`/`agents`/`hooks` subcommand and `~/.gemini/antigravity-cli/` is runtime-only (cache/brain/builtin). | supported; our global deploy TBD |
 
-**This is why the matrix shows `⊘` for Antigravity skills/subagents/hooks — it's accurate, not a gap we can close.** Two caveats for later: (a) **re-probe after an `agy` update** that adds those surfaces, then wire skills (likely `.agents/skills/<name>/SKILL.md`) + hooks (`hooks.json`); (b) **static subagent dirs may never come** — Google frames Antigravity subagents as *dynamic* `/agent` dispatch and calls on-disk subagent dirs obsolete, so don't plan to port `ai/subagents/*.md` there. The `dotfiles agent web copy` Gemini-*web*-chat command is unrelated and stays.
+**So agy *supports* skills/subagents/hooks (matrix = `yes`); we just haven't wired OUR skills into a global agy path yet** (the matrix is vendor-capability; deployment is the per-agent checklist). Caveats: (a) re-probe after an `agy` update for a global skills dir, then deploy; (b) static subagent *dirs* may never come — Google frames agy subagents as *dynamic* `/agent` dispatch, so don't plan to port `ai/subagents/*.md` there. The `dotfiles agent web copy` Gemini-*web*-chat command is unrelated and stays.
 
 Sources: [transitioning blog](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/) · live `agy --version`/`--help`/filesystem probe (2026-06-09, v1.0.7) · gemini-cli issue #16058.
 
