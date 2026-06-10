@@ -4,7 +4,6 @@
 
 # Official / first-party
 fastapi/fastapi@fastapi                                        # .agents/skills/fastapi/SKILL.md
-cloudflare/skills@building-mcp-server-on-cloudflare
 
 # Framework skills
 hairyf/skills@tauri
