@@ -303,7 +303,7 @@ def test_agent_catechism_prints_backbone_and_routing(tmp_path: Path) -> None:
     # the three layers: doctrine hierarchy, health baselines, router
     for section in ("Doctrine", "Canon", "Health baselines", "Router"):
         assert section in result.output
-    for rite in ("code-health", "form-prune", "diagnose"):
+    for rite in ("code-health", "form-prune", "systematic-debugging"):
         assert rite in result.output
 
 

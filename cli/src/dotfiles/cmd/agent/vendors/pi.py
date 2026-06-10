@@ -6,7 +6,7 @@ Configures Pi (pi.dev / earendil-works) terminal agent:
   - Write ~/.pi/agent/AGENTS.md (the shared rules.md kernel, verbatim)
   - Deploy subagents to ~/.pi/agent/agents/
   - Symlink agents/pi/extensions/*.ts → ~/.pi/agent/extensions/
-  - pi install npm:pi-superpowers-plus + npm:mitsupi if not present
+  - Pi packages are user-managed in settings.json; setup does not auto-install external bundles
 
 All paths are injected; Path.home() MUST NOT appear here.
 """
@@ -52,7 +52,6 @@ def setup_pi(
     results.extend(_setup_instructions(dotfiles_dir, pi_home))
     results.extend(deploy_subagents(dotfiles_dir, pi_home / "agents"))
     results.extend(_setup_extensions(dotfiles_dir, pi_home))
-    results.extend(_install_pi_packages(runner, which))
 
     return results
 
@@ -138,34 +137,4 @@ def _setup_extensions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
         symlink(ts_file, ext_dest / ts_file.name)
         results.append(StepResult(level="success", message=f"Linked Pi extension {ts_file.name}"))
 
-    return results
-
-
-def _pi_package_present(runner: ProcessRunner, pkg_name: str) -> bool:
-    """Return True if `pi list` output contains pkg_name."""
-    result = runner.run(("pi", "list"), check=False)
-    return pkg_name in result.stdout
-
-
-def _install_pi_packages(
-    runner: ProcessRunner,
-    which: Callable[[str], str | None],
-) -> list[StepResult]:
-    """Install pi-superpowers-plus and mitsupi if not already installed."""
-    results: list[StepResult] = []
-    for pkg in ("pi-superpowers-plus", "mitsupi"):
-        if _pi_package_present(runner, pkg):
-            results.append(StepResult(level="success", message=f"{pkg} already installed"))
-            continue
-        install = runner.run(("pi", "install", f"npm:{pkg}"), check=False)
-        if install.exit_code == 0:
-            results.append(StepResult(level="success", message=f"Installed {pkg}"))
-        else:
-            results.append(
-                StepResult(
-                    level="error",
-                    message=f"Install failed — run manually: pi install npm:{pkg}",
-                    details=install.stderr,
-                )
-            )
     return results

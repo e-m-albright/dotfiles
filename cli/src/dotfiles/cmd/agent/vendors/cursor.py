@@ -150,18 +150,35 @@ def _setup_skills(dotfiles_dir: Path, home: Path) -> list[StepResult]:
     machine, so use explicit symlinks from the dotfiles source of truth.
     """
     src = dotfiles_dir / "ai" / "skills"
-    if not src.is_dir():
+    shared = home / ".agents" / "skills"
+    if not src.is_dir() and not shared.is_dir():
         return []
 
     dest = home / ".cursor" / "skills"
     dest.mkdir(parents=True, exist_ok=True)
     prune_broken_symlinks(dest)
 
+    # Canonical repo skills first, then any shared/external skills not already linked.
+    linked: set[str] = set()
+    return [
+        *_link_skills_into(src, dest, "skill", linked),
+        *_link_skills_into(shared, dest, "external skill", linked),
+    ]
+
+
+def _link_skills_into(source: Path, dest: Path, label: str, linked: set[str]) -> list[StepResult]:
+    """Symlink each ``*/SKILL.md`` dir under *source* into *dest*, skipping names
+    already in *linked* (and recording new ones there so later sources don't double-link)."""
+    if not source.is_dir():
+        return []
     results: list[StepResult] = []
-    for skill_md in sorted(src.glob("*/SKILL.md")):
-        skill_dir = skill_md.parent
-        symlink(skill_dir, dest / skill_dir.name)
-        results.append(StepResult(level="success", message=f"Linked Cursor skill {skill_dir.name}"))
+    for skill_md in sorted(source.glob("*/SKILL.md")):
+        name = skill_md.parent.name
+        if name in linked:
+            continue
+        symlink(skill_md.parent, dest / name)
+        linked.add(name)
+        results.append(StepResult(level="success", message=f"Linked Cursor {label} {name}"))
     return results
 
 
@@ -200,9 +217,9 @@ def _plugin_reminder(dotfiles_dir: Path) -> list[StepResult]:
     return [
         StepResult(
             level="info",
-            message="Marketplace plugins are manual — in Cursor chat run "
-            "/add-plugin superpowers, then context7-plugin",
-            details=f"parallel optional · full matrix: {plugins_doc}",
+            message="Marketplace plugins are manual — no required Cursor plugins; "
+            "install /add-plugin parallel only when needed",
+            details=f"full matrix: {plugins_doc}",
         )
     ]
 

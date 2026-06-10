@@ -1,6 +1,6 @@
 # Pi power setup
 
-Reference for the [Pi coding agent](https://pi.dev) as managed in this repo (`agents/pi/`), the packages we run, and the standing **oh-my-pi vs. base Pi** decision. Decisions live in [ADR-0005](adr/0005-re-add-pi-as-local-first-agent.md) and [ADR-0006](adr/0006-pi-power-packages-mitsupi-and-safe-git.md); this is the practical companion. See also the current customization audit: [`docs/knowledge/pi-customization-audit.md`](knowledge/pi-customization-audit.md).
+Reference for the [Pi coding agent](https://pi.dev) as managed in this repo (`agents/pi/`), the repo-owned extensions we run, and the standing **oh-my-pi vs. base Pi** decision. Decisions live in [ADR-0005](adr/0005-re-add-pi-as-local-first-agent.md) and [ADR-0006](adr/0006-pi-power-packages-mitsupi-and-safe-git.md); this is the practical companion. See also the current customization audit: [`docs/knowledge/pi-customization-audit.md`](knowledge/pi-customization-audit.md).
 
 ## What Pi is
 
@@ -23,14 +23,18 @@ Pi inherits our shared config for free — no Pi-specific duplication:
 
 Keep using `~/.agents/skills` + `AGENTS.md` as the canonical sources — that's what makes the fleet behave consistently.
 
-## Packages & extensions we run
+## Extensions we run
+
+External Pi packages are intentionally disabled by default. We own the process skills in `ai/skills/` and keep Pi's runtime surface small; third-party packages are reference material, not active workflow authorities.
 
 | Name | Type | Source | What it gives us |
 |------|------|--------|------------------|
-| `pi-superpowers-plus` | npm package | ADR-0005 | Superpowers port: TDD/verification gating + subagents (parity with Claude superpowers) |
-| `mitsupi` | npm package | ADR-0006 | Armin Ronacher's kit: `/review`, `/answer`, `/todos`, `/handoff`, `loop`, `notify`, ~19 skills |
 | `safe-git` | vendored extension | `agents/pi/extensions/safe-git.ts` | Approval gate for destructive git/gh — Pi's missing permission model |
 | `git-status.ts` | vendored extension | `agents/pi/extensions/git-status.ts` | Git-aware footer status |
+| `permission-policy.ts` | vendored extension | `agents/pi/extensions/permission-policy.ts` | Regex/preset policy gate from `permission-policy.json` |
+| `presets.ts` | vendored extension | `agents/pi/extensions/presets.ts` | Named Pi presets from `presets.json` |
+
+Previously evaluated but now disabled: `pi-superpowers-plus` (too much process authority / stale workflow state) and `mitsupi` (useful toolbox, but it injects overlapping skills/extensions). In-source only the pieces we decide to own.
 
 ### safe-git — usage & the headless caveat
 

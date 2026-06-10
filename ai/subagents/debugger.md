@@ -1,6 +1,6 @@
 ---
 name: debugger
-description: Deep root-cause analysis — code-path tracing, git bisect automation, dependency drift, hypothesis testing for production bugs. Use when user says "find the root cause", "what's causing this", "bisect this", "trace this bug"; reports a hard production bug they can't reproduce locally; or wants a structured RCA for a regression. Complements the `diagnose` skill (which is the IC-style discipline) — use this agent when you want a dispatched specialist working in isolated context.
+description: Deep root-cause analysis — code-path tracing, git bisect automation, dependency drift, hypothesis testing for production bugs. Use when user says "find the root cause", "what's causing this", "bisect this", "trace this bug"; reports a hard production bug they can't reproduce locally; or wants a structured RCA for a regression. Complements the `systematic-debugging` skill (which is the IC-style discipline) — use this agent when you want a dispatched specialist working in isolated context.
 model: sonnet
 ---
 
@@ -44,4 +44,4 @@ Structured findings:
 - **Regression test sketch** — proposed seam + assertion shape for locking the bug down.
 
 ## Sources
-- Adapted from [wshobson/agents/plugins/incident-response/agents/debugger.md](https://github.com/wshobson/agents/blob/ece811f/plugins/incident-response/agents/debugger.md) (ported 2026-05-07, MIT). Description rewritten with literal triggers + complementarity note vs `diagnose` skill. Body gained explicit `Output Format` section (wshobson's was implicit).
+- Adapted from [wshobson/agents/plugins/incident-response/agents/debugger.md](https://github.com/wshobson/agents/blob/ece811f/plugins/incident-response/agents/debugger.md) (ported 2026-05-07, MIT). Description rewritten with literal triggers + complementarity note vs `systematic-debugging` skill. Body gained explicit `Output Format` section (wshobson's was implicit).

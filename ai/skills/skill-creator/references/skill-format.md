@@ -68,7 +68,7 @@ Skills ported or substantially adapted from upstream MUST include attribution:
 1. **Frontmatter** under `metadata`:
    ```yaml
    metadata:
-     source_url: https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnose/SKILL.md
+     source_url: https://github.com/mattpocock/skills/blob/main/skills/engineering/systematic-debugging/SKILL.md
      source_commit: 733d312884b3878a9a9cff693c5886943753a741
      ported_at: 2026-05-07
      adaptations: Removed CLAUDE.md-specific references; tightened phase 4 example.
@@ -77,7 +77,7 @@ Skills ported or substantially adapted from upstream MUST include attribution:
 2. **Body footer** at end of SKILL.md:
    ```markdown
    ## Sources
-   - Adapted from [mattpocock/skills/engineering/diagnose](https://github.com/mattpocock/skills/blob/733d312/skills/engineering/diagnose/SKILL.md) (ported 2026-05-07).
+   - Adapted from [mattpocock/skills/engineering/systematic-debugging](https://github.com/mattpocock/skills/blob/733d312/skills/engineering/systematic-debugging/SKILL.md) (ported 2026-05-07).
    ```
 
 3. **Central registry** at `docs/skills-sources.md` — single source of truth for cross-skill review. Add a row when porting; refresh when re-reviewing upstream.

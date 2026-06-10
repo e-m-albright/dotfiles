@@ -8,9 +8,6 @@
     "promptLevel": "medium",
     "enabledByDefault": true
   },
-  "packages": [
-    "npm:pi-superpowers-plus",
-    "npm:mitsupi"
-  ],
+  "packages": [],
   "lastChangelogVersion": "0.79.1"
 }

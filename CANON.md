@@ -77,7 +77,7 @@ full rite index — see [`docs/knowledge/how-we-build.md`](docs/knowledge/how-we
 The contestable lenses for improving a codebase, routed by the [`code-health`](ai/skills/code-health/SKILL.md)
 skill: the form lenses (`form-deepen`, `form-tidy`, `form-prune`, `form-clarify`, `form-align`,
 `form-purify`), the measured engine (`converge`), and the function/safety/speed tier
-(`review`, `/security-review`, `diagnose`, `performance-engineer`). The full theory —
+(`review`, `/security-review`, `systematic-debugging`, `performance-engineer`). The full theory —
 two-axis model, antagonist tiebreaks, the convergent sequence — is the
 [portfolio](docs/knowledge/code-health-portfolio.md).
 **Call-and-response:** `dotfiles agent catechism` (or the

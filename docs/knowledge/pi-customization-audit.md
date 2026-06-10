@@ -7,12 +7,12 @@
 | Surface | Current source | Assessment |
 |---|---|---|
 | Global instructions | `~/.pi/agent/AGENTS.md`, generated from `ai/agents/shared/rules.md` | Good. Shared kernel stays portable across the fleet. |
-| Skills | `~/.agents/skills` for canonical repo skills; Pi packages also contribute package skills | Good base, but package skills create overlap. Prefer repo-owned process skills. |
+| Skills | `~/.agents/skills` for canonical repo skills | Good. Prefer repo-owned process skills; package skills are disabled by default. |
 | Subagents | `~/.pi/agent/agents`, deployed from `ai/subagents/` | Fine. Pi gets subagents via extension/package support, not base core. |
-| Extensions | `ai/agents/pi/extensions/*.ts` plus package extensions from `pi-superpowers-plus` and `mitsupi` | Strongest customization surface. Our local set is useful but still thin. |
+| Extensions | `ai/agents/pi/extensions/*.ts` | Strongest customization surface. Our local set is useful but still thin. |
 | Permissions | `permission-policy.ts` + `permission-policy.json`; `safe-git.ts` for git/gh prompts | Adequate terminal safety for git/gh. Not a sandbox. Zed/ACP does not bridge Pi prompts. |
 | Status/footer | `git-status.ts` | Good canonical statusline. Missing 5h/7d split and context attribution. |
-| Packages | `npm:pi-superpowers-plus`, `npm:mitsupi` in `ai/agents/pi/settings.json` | Useful, but both inject skills. Superpowers also injects workflow state/gates. |
+| Packages | none in `ai/agents/pi/settings.json` | External package bundles are disabled by default; in-source only the pieces we choose to own. |
 
 ## What Pi is doing behind the scenes
 
@@ -25,25 +25,25 @@ Customize around the harness, not inside it:
 - Use TypeScript extensions for deterministic behavior that should not cost model tokens: statuslines, permission gates, redaction, tool wrappers, session commands, and routing commands.
 - Avoid always-on natural-language rules for things that can be enforced deterministically.
 
-## Current package breakdown
+## Package decision log
 
-### `pi-superpowers-plus`
+### `pi-superpowers-plus` (disabled)
 
 Includes:
 
 - Skills: `brainstorming`, `writing-plans`, `executing-plans`, `subagent-driven-development`, `test-driven-development`, `systematic-debugging`, `verification-before-completion`, `requesting-code-review`, `receiving-code-review`, `finishing-a-development-branch`, `using-git-worktrees`, `dispatching-parallel-agents`.
 - Extensions: workflow monitor, plan tracker, subagent tool.
 
-Assessment: useful enforcement ideas, but it is currently too much process authority for this repo. The stale workflow HUD is a symptom. Prefer owning the skills and selectively keeping only extension behavior we want.
+Assessment: useful enforcement ideas, but too much process authority for this repo. The stale workflow HUD was a symptom. We in-sourced the preferred process-skill names (`test-driven-development`, `systematic-debugging`, `writing-plans`, `executing-plans`) and disabled the package.
 
-### `mitsupi`
+### `mitsupi` (disabled)
 
 Includes:
 
 - Skills: web/search/browser/github/uv/tmux/sentry/summarize/mermaid/etc.
 - Extensions: `/answer`, `/btw`, context breakdown, files UI, split-fork, loop, multi-edit, notify, review, session breakdown, todos, uv helpers, prompt editor, whimsical status.
 
-Assessment: more of a toolbox than a process framework. Good ideas to study or selectively in-source. `multi-edit`, context breakdown, split-fork, notify, session breakdown, and prompt editor are more interesting than most of the bundled skills.
+Assessment: more of a toolbox than a process framework. Good ideas to study or selectively in-source. `multi-edit`, context breakdown, split-fork, notify, session breakdown, and prompt editor are more interesting than most of the bundled skills. Disabled for now to keep active Pi behavior repo-owned.
 
 ## Skill collision audit
 
@@ -53,17 +53,14 @@ Added command:
 dotfiles agent skills audit
 ```
 
-It scans repo-owned skills against installed Pi package skills and flags conservative name/domain overlaps. Current notable collisions are expected:
+It scans repo-owned skills against active Pi package skills and flags conservative name/domain overlaps. With external Pi packages disabled, the expected report is clean:
 
-- `tdd-vertical-slices` vs `test-driven-development`
-- `diagnose` / `agentic-e2e-debugging` vs `systematic-debugging`
-- `planning` / `collaborative-ideation` vs Superpowers planning/brainstorming
-- `review` / `design-review` vs Superpowers code-review skills
-- `browser-tooling` vs `web-browser`
-- `github-workflow` / PR skills vs `github`
-- `git-worktree-manager` vs `using-git-worktrees`
+```text
+33 canonical skills · 0 Pi-package skills scanned
+No local/Pi-package skill collisions found
+```
 
-Recommendation: keep repo-owned process skills; in-source or drop package skills that compete.
+If a package is re-enabled, use this audit before accepting its skills into the active surface. Prefer repo-owned process skills; in-source or drop package skills that compete.
 
 ## Cursor skill parity
 

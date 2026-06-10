@@ -46,7 +46,7 @@ The thesis in one line: **catch each class of defect at the cheapest layer that 
        │
        ▼
    L5  CONVERGENCE      the `converge` engine, on demand:                  [S → D]
-   ▒▒▒▒▒▒▒▒▒▒▒▒         measure → diagnose → refactor → LOWER THE BASELINES
+   ▒▒▒▒▒▒▒▒▒▒▒▒         measure → systematic-debugging → refactor → LOWER THE BASELINES
                         purifies existing code; ratchets the win in
 
    ════════════════════════════════════════════════════════════════════════
@@ -71,7 +71,7 @@ The cheapest layer: the invariant never enters the tree.
 - **The AI pair** [S] — rules + skills loaded into Claude Code / Cursor / Codex. The author reaches for a rite via the **Catechism** (`dotfiles agent catechism`):
   - *form lenses* — `form-deepen`, `form-tidy`, `form-prune`, `form-clarify`, `form-align`, `form-purify` (behavior-preserving), routed by `code-health`.
   - *pre-code judgment* — `planning`, `collaborative-ideation`, `grill-with-docs`, `prototype`.
-  - *TDD* — `tdd-vertical-slices` (write the test first; deep modules). *P11.*
+  - *TDD* — `test-driven-development` (write the test first; deep modules). *P11.*
   - *frontend* — `impeccable`, `design-review`, `browser-tooling`.
 
 ### L1 · Pre-commit — `just check --fast` (lefthook, staged files only) [all D]
@@ -93,7 +93,7 @@ Runs on a cadence; **opens an issue or draft PR, never auto-merges, never auto-a
 The loop that purifies *existing* code: **measure** (scorecard) → **diagnose** (rank by churn×complexity) → **refactor** (auto-fix mechanical, grill judgment calls) → **lower the baselines**. The final step is what turns a one-off stochastic improvement into a permanent deterministic floor. Reads/writes the `docs/adr/` rejected-decision log (anti-oscillation memory) and `docs/health/<scope>/` state.
 
 ### On-demand review (any time before merge) [S]
-`review` (`/review`) fans out correctness/security/data-integrity/ops threads + the health rubric → one verdict + letter grade; `/security-review`; `diagnose` (hard bugs); `performance-engineer` (bottlenecks). These change or judge behavior — they are not refactors (Tier B).
+`review` (`/review`) fans out correctness/security/data-integrity/ops threads + the health rubric → one verdict + letter grade; `/security-review`; `systematic-debugging` (hard bugs); `performance-engineer` (bottlenecks). These change or judge behavior — they are not refactors (Tier B).
 
 ---
 
@@ -147,9 +147,9 @@ Selection is **affectedness-based**: one `.affected.yml` maps path globs → `{s
 Everything we can reach for, grouped. (`dotfiles agent catechism` prints the code-health routing; this is the complete set.)
 
 - **Code-health form lenses** [S] — `code-health` (router) · `converge` (engine) · `form-deepen` `form-tidy` `form-prune` `form-clarify` `form-align` `form-purify`.
-- **Review / safety / speed (Tier B)** [S] — `review` · `/security-review` · `diagnose` · `performance-engineer`.
+- **Review / safety / speed (Tier B)** [S] — `review` · `/security-review` · `systematic-debugging` · `performance-engineer`.
 - **Audits** [S] — `god-functions` · `duplication` · `coupling` · `abstractions`.
-- **Testing** [S] — `testing` (taxonomy) · `tdd-vertical-slices` · framework skills (`vitest`, `playwright-e2e-testing`).
+- **Testing** [S] — `testing` (taxonomy) · `test-driven-development` · framework skills (`vitest`, `playwright-e2e-testing`).
 - **Planning / ideation** [S] — `planning` · `collaborative-ideation` · `grill-with-docs` · `prototype`.
 - **Git / PR workflow** [S] — `github-workflow` · `pr-summary` · `pr-greenlight-cycle` · `hook-failure-triage` · `git-worktree-manager` · `commit-commands:*`.
 - **Frontend** [S] — `impeccable` · `design-review` · `browser-tooling` · `agentic-e2e-debugging`.

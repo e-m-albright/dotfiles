@@ -1,6 +1,6 @@
 ---
 name: review
-description: Pre-merge review of a diff, branch, PR, or chunk of work that fans out parallelizable audit threads (correctness, security, data-integrity, operations, plus a health rubric), then synthesizes them into one verdict — fix-first bug hunt (auto-fix the mechanical, flag the judgment calls) PLUS a letter-graded health report card. Use when the user says "review this PR/branch/diff", "review before merge", "is this safe to merge/ship", "what could break", "audit this change", "code review", "grade this PR", or wants a focused pass over a change about to land. NOT for chasing a known failing test (use diagnose/systematic-debugging) and NOT for a dedicated exhaustive security-only audit (use security-review).
+description: Pre-merge review of a diff, branch, PR, or chunk of work that fans out parallelizable audit threads (correctness, security, data-integrity, operations, plus a health rubric), then synthesizes them into one verdict — fix-first bug hunt (auto-fix the mechanical, flag the judgment calls) PLUS a letter-graded health report card. Use when the user says "review this PR/branch/diff", "review before merge", "is this safe to merge/ship", "what could break", "audit this change", "code review", "grade this PR", or wants a focused pass over a change about to land. NOT for chasing a known failing test (use systematic-debugging) and NOT for a dedicated exhaustive security-only audit (use security-review).
 allowed-tools: Read Grep Glob Bash(git:*) Bash(gh:*) Bash(rg:*) Bash(wc:*) Agent
 metadata:
   source: Merged from premerge-review (fix-first bug hunt) and code-quality-audit (graded health rubric). Criteria live in references/bug-hunt-criteria.md and references/health-rubric.md.
@@ -20,11 +20,11 @@ Fan the audit threads out in parallel, synthesize, then report both the fixed/fl
 
 - Reviewing your own branch before opening a PR, or a teammate's PR before approving
 - "Is this safe to ship?" / "what could break here?" / "review this diff" / "grade this PR"
-- A final pass after `tdd-vertical-slices` / feature work, before `finishing-a-development-branch`
+- A final pass after `test-driven-development` / feature work, before PR/merge closeout
 - Periodic health check on a module or directory (run the rubric threads, skip the diff-scoped ones)
 
 **When NOT to use:**
-- **`diagnose` / `systematic-debugging`** — when something is *already* broken and you need the root cause. This skill reviews changes that (as far as anyone knows) work.
+- **`systematic-debugging`** — when something is *already* broken and you need the root cause. This skill reviews changes that (as far as anyone knows) work.
 - **`security-review`** — when you want a dedicated, exhaustive security audit. This skill covers high-frequency security misses inline; a security-only deep dive is its own pass.
 
 ## Workflow
@@ -57,7 +57,7 @@ Read the philosophy first if present: `docs/engineering-philosophy.md` (project-
 
 ### 4. Fan out the audit threads (parallelize)
 
-Dispatch these independent threads — on Claude Code via the **Agent tool** (`subagent_type=Explore`), one per thread; otherwise walk them sequentially. Each thread gets the scope, the surface, and a pointer to its criteria. They have no shared state, so they run in parallel cleanly (see `superpowers:dispatching-parallel-agents`).
+Dispatch these independent threads — on Claude Code via the **Agent tool** (`subagent_type=Explore`), one per thread; otherwise walk them sequentially. Each thread gets the scope, the surface, and a pointer to its criteria. They have no shared state, so they run in parallel cleanly (see `dispatching-parallel-agents`).
 
 | # | Thread | Lens | Criteria |
 |---|--------|------|----------|
@@ -134,4 +134,4 @@ Below a **B** overall should not merge without addressing the top action items. 
 
 ## Composition
 
-On Claude Code, the `ccr` alias drives a multi-agent flow (`/review-pr` locally, `/code-review` plugin for PRs with GitHub comments). This skill is the single shared rubric those agents and any other vendor (Codex, Cursor, Pi) use — invoke it directly for one focused pass, or let it back the multi-agent orchestration. The thread fan-out in step 4 is itself a parallel-agent dispatch (see `superpowers:dispatching-parallel-agents`).
+On Claude Code, the `ccr` alias drives a multi-agent flow (`/review-pr` locally, `/code-review` plugin for PRs with GitHub comments). This skill is the single shared rubric those agents and any other vendor (Codex, Cursor, Pi) use — invoke it directly for one focused pass, or let it back the multi-agent orchestration. The thread fan-out in step 4 is itself a parallel-agent dispatch (see `dispatching-parallel-agents`).

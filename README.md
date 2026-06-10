@@ -183,7 +183,7 @@ Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs
 | **Claude Desktop** | Anthropic | active | Claude macOS app |
 | **Cursor** | Cursor | active | AI-native editor with shared MCP servers, hooks, skills, agents |
 | **Codex CLI** | OpenAI | active | Terminal coding agent (open-source, o4-mini default) |
-| **Pi** | earendil-works | active | Local-first lightweight terminal agent (shares `~/.agents/skills`); packages `pi-superpowers-plus` + `mitsupi`, vendored `safe-git` guardrail. See [docs/pi-power-setup.md](docs/pi-power-setup.md) |
+| **Pi** | earendil-works | active | Local-first lightweight terminal agent (shares `~/.agents/skills`); repo-owned extensions and vendored `safe-git` guardrail, no external Pi package dependency. See [docs/pi-power-setup.md](docs/pi-power-setup.md) |
 | **Copilot CLI** | GitHub | disabled | Terminal coding agent (fleet mode, cloud delegation) |
 | **Codex Desktop** | OpenAI | disabled | macOS app for parallel coding agents |
 | **GWS CLI** | Google | active | Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin) |

@@ -138,6 +138,14 @@ class _PackageJson(BaseModel):
     pi: _PiManifest | None = None
 
 
+class _PiSettings(BaseModel):
+    """The Pi settings keys relevant to package activation."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    packages: list[str] | None = None
+
+
 def _package_skill_roots(package_dir: Path) -> list[Path]:
     cfg = load_config(package_dir / "package.json", _PackageJson)
     if cfg is None or cfg.pi is None:
@@ -164,19 +172,41 @@ def _surfaces_in_package(package_dir: Path, home: Path) -> list[SkillSurface]:
     return out
 
 
+def _active_pi_package_names(home: Path) -> set[str] | None:
+    """Active package names from Pi settings, or None when settings is absent.
+
+    ``None`` keeps audits useful in synthetic/test homes without a settings file;
+    an explicit empty package list means no package skills are active.
+    """
+    cfg = load_config(home / ".pi" / "agent" / "settings.json", _PiSettings)
+    if cfg is None or cfg.packages is None:
+        return None
+    names: set[str] = set()
+    for item in cfg.packages:
+        name = item.removeprefix("npm:")
+        if name:
+            names.add(name)
+    return names
+
+
 def pi_package_skill_surfaces(home: Path) -> list[SkillSurface]:
-    """Skills shipped by installed Pi npm packages.
+    """Skills shipped by active Pi npm packages.
 
     Scans package metadata instead of every dependency, so transitive packages do
-    not look like agent skills just because they contain Markdown.
+    not look like agent skills just because they contain Markdown. If Pi settings
+    has a ``packages`` array, only those active packages are scanned.
     """
     packages_root = home / ".pi" / "agent" / "npm" / "node_modules"
     if not packages_root.is_dir():
         return []
+    active_packages = _active_pi_package_names(home)
     out: list[SkillSurface] = []
     for package_dir in sorted(p for p in packages_root.iterdir() if p.is_dir()):
-        if not package_dir.name.startswith("."):
-            out.extend(_surfaces_in_package(package_dir, home))
+        if package_dir.name.startswith("."):
+            continue
+        if active_packages is not None and package_dir.name not in active_packages:
+            continue
+        out.extend(_surfaces_in_package(package_dir, home))
     return out
 
 

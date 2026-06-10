@@ -42,7 +42,7 @@ Code quality has four source-measurable pillars (CISQ/ISO 5055): **Reliability, 
 
 ### Tier B — function / safety / speed (non-behavior-preserving, existing skills)
 
-`/review` (correctness, defects, health grade) · `/security-review` (vulnerabilities) · `diagnose` (hard bugs, regressions) · `performance-engineer` (bottlenecks). These find or change behavior; they are not refactors.
+`/review` (correctness, defects, health grade) · `/security-review` (vulnerabilities) · `systematic-debugging` (hard bugs, regressions) · `performance-engineer` (bottlenecks). These find or change behavior; they are not refactors.
 
 ## Substrate legend (what kind of thing each lens is)
 
@@ -50,7 +50,7 @@ The lenses are deliberately different *kinds* of artifact, invoked differently. 
 
 | Kind | How you invoke it | Which lenses |
 |---|---|---|
-| **Skill** | name or `/name` (auto-fires on triggers) | `code-health`, `converge`, `form-deepen`, `form-tidy`, `form-prune`, `form-clarify`, `form-align`, `form-purify`, `review`, `diagnose` |
+| **Skill** | name or `/name` (auto-fires on triggers) | `code-health`, `converge`, `form-deepen`, `form-tidy`, `form-prune`, `form-clarify`, `form-align`, `form-purify`, `review`, `systematic-debugging` |
 | **Slash command** | typed `/name` only (built-in) | `/security-review`, `/simplify` |
 | **Subagent** | dispatched via the Agent tool | `performance-engineer` |
 
@@ -62,7 +62,7 @@ The call-and-response of the system: a symptom on the left, the rite to reach fo
 
 | You want to… | Reach for | Tier · kind |
 |---|---|---|
-| not sure — diagnose what this repo needs | **`code-health`** | router |
+| not sure — systematic-debugging what this repo needs | **`code-health`** | router |
 | measurably converge a whole repo + ratchet it in | **`converge`** | A · measured engine |
 | think through *one area's* design, conversationally | **`form-deepen`** | A · taste |
 | make it smaller — delete dead/speculative code | **`form-prune`** | A · deletion |
@@ -72,7 +72,7 @@ The call-and-response of the system: a symptom on the left, the rite to reach fo
 | make it readable to a newcomer / navigable by an agent | **`form-clarify`** | A · readability |
 | find bugs + grade a diff before merge | **`review`** | B · correctness |
 | audit specifically for vulnerabilities | **`/security-review`** | B · security |
-| chase a known failing test / hard bug | **`diagnose`** | B · debugging |
+| chase a known failing test / hard bug | **`systematic-debugging`** | B · debugging |
 | make it faster | **`performance-engineer`** | B · speed |
 | bootstrap a repo's health backbone (baselines + ledger) | **`dotfiles agent health`** | tooling |
 

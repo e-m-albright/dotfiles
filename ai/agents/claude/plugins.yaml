@@ -17,7 +17,9 @@
 
 # Workflow essentials
 - commit-commands
-- superpowers
+# Superpowers is intentionally disabled: we own process skills in ai/skills.
+# Enable per-session only if comparing upstream behavior.
+# - superpowers
 
 # Docs lookup: the context7 plugin (which ships the Context7 MCP) is retired —
 # we use the `ctx7` CLI instead (no always-on MCP tax). See ai/agents/shared/mcp-servers.json.

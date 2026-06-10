@@ -126,7 +126,9 @@ def read_scope_health(dotfiles_dir: Path) -> list[ScopeHealth]:
 # Ordered front-door-first, then Tier A (form), then Tier B (function), then tooling.
 CATECHISM: tuple[CatechismEntry, ...] = (
     CatechismEntry(
-        symptom="not sure — diagnose what this repo needs", rite="code-health", tier="router"
+        symptom="not sure — systematic-debugging what this repo needs",
+        rite="code-health",
+        tier="router",
     ),
     CatechismEntry(
         symptom="measurably converge a whole repo + ratchet it in",
@@ -170,7 +172,9 @@ CATECHISM: tuple[CatechismEntry, ...] = (
         tier="B · security",
     ),
     CatechismEntry(
-        symptom="chase a known failing test / hard bug", rite="diagnose", tier="B · debugging"
+        symptom="chase a known failing test / hard bug",
+        rite="systematic-debugging",
+        tier="B · debugging",
     ),
     CatechismEntry(symptom="make it faster", rite="performance-engineer", tier="B · speed"),
     CatechismEntry(

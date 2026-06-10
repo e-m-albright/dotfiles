@@ -18,24 +18,27 @@ def test_local_skill_surfaces_reads_canonical_skills(tmp_path: Path) -> None:
         dotfiles,
         {
             "ai/skills/review/SKILL.md": _skill_md("review", "Review a PR or diff"),
-            "ai/skills/diagnose/SKILL.md": _skill_md("diagnose", "Debug a failing test"),
+            "ai/skills/systematic-debugging/SKILL.md": _skill_md(
+                "systematic-debugging", "Debug a failing test"
+            ),
         },
     )
 
     skills = local_skill_surfaces(dotfiles)
 
     assert [(s.name, s.source_kind) for s in skills] == [
-        ("diagnose", "canonical"),
         ("review", "canonical"),
+        ("systematic-debugging", "canonical"),
     ]
-    assert skills[0].path == "ai/skills/diagnose/SKILL.md"
+    assert skills[1].path == "ai/skills/systematic-debugging/SKILL.md"
 
 
-def test_pi_package_skill_surfaces_reads_installed_pi_packages(tmp_path: Path) -> None:
+def test_pi_package_skill_surfaces_reads_active_pi_packages(tmp_path: Path) -> None:
     home = tmp_path / "home"
     write_tree(
         home,
         {
+            ".pi/agent/settings.json": '{"packages": ["npm:some-pack"]}',
             ".pi/agent/npm/node_modules/some-pack/package.json": """
             {
               "name": "some-pack",
@@ -59,14 +62,32 @@ def test_pi_package_skill_surfaces_reads_installed_pi_packages(tmp_path: Path) -
     assert skills[0].source == "some-pack"
 
 
+def test_pi_package_skill_surfaces_ignores_inactive_installed_packages(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    write_tree(
+        home,
+        {
+            ".pi/agent/settings.json": '{"packages": []}',
+            ".pi/agent/npm/node_modules/mitsupi/package.json": """
+            { "name": "mitsupi", "pi": { "skills": ["skills"] } }
+            """,
+            ".pi/agent/npm/node_modules/mitsupi/skills/github/SKILL.md": _skill_md(
+                "github", "GitHub CLI helper"
+            ),
+        },
+    )
+
+    assert pi_package_skill_surfaces(home) == []
+
+
 def test_collision_report_flags_local_external_domain_overlap(tmp_path: Path) -> None:
     dotfiles = tmp_path / "dotfiles"
     home = tmp_path / "home"
     write_tree(
         dotfiles,
         {
-            "ai/skills/tdd-vertical-slices/SKILL.md": _skill_md(
-                "tdd-vertical-slices", "Vertical-slice red-green-refactor TDD for feature work"
+            "ai/skills/test-driven-development/SKILL.md": _skill_md(
+                "test-driven-development", "Vertical-slice red-green-refactor TDD for feature work"
             ),
             "ai/skills/review/SKILL.md": _skill_md(
                 "review", "Pre-merge review of a diff, branch, or PR"
@@ -91,7 +112,8 @@ def test_collision_report_flags_local_external_domain_overlap(tmp_path: Path) ->
     report = collision_report(home=home, dotfiles_dir=dotfiles)
 
     assert [c.domain for c in report.collisions] == ["tdd"]
-    assert report.collisions[0].local.name == "tdd-vertical-slices"
+    assert report.collisions[0].kind == "same-name"
+    assert report.collisions[0].local.name == "test-driven-development"
     assert report.collisions[0].external.name == "test-driven-development"
 
 

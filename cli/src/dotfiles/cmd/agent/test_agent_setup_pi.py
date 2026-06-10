@@ -248,41 +248,19 @@ class TestExtensions:
 
 
 # ---------------------------------------------------------------------------
-# pi present — pi package installs
+# pi present — packages are user-managed, not auto-installed
 # ---------------------------------------------------------------------------
 
 
 class TestPiPackageInstalls:
-    def test_calls_pi_install_for_superpowers(self, dotfiles: Path, home: Path) -> None:
+    def test_does_not_auto_install_external_packages(self, dotfiles: Path, home: Path) -> None:
         r = _runner_pi_present()
-        setup_pi(runner=r, home=home, dotfiles_dir=dotfiles, which=_which_pi)
-        assert ("pi", "install", "npm:pi-superpowers-plus") in r.calls
-
-    def test_calls_pi_install_for_mitsupi(self, dotfiles: Path, home: Path) -> None:
-        r = _runner_pi_present()
-        setup_pi(runner=r, home=home, dotfiles_dir=dotfiles, which=_which_pi)
-        assert ("pi", "install", "npm:mitsupi") in r.calls
-
-    def test_skips_install_when_already_present(self, dotfiles: Path, home: Path) -> None:
-        r = _runner_pi_packages_installed()
         results = setup_pi(runner=r, home=home, dotfiles_dir=dotfiles, which=_which_pi)
-        pkg_results = [res for res in results if "already installed" in res.message]
-        assert len(pkg_results) == 2
-
-    def test_no_pi_install_calls_when_packages_present(self, dotfiles: Path, home: Path) -> None:
-        r = _runner_pi_packages_installed()
-        setup_pi(runner=r, home=home, dotfiles_dir=dotfiles, which=_which_pi)
-        pi_installs = [c for c in r.calls if c[:2] == ("pi", "install")]
-        assert pi_installs == []
-
-    def test_install_failure_reported(self, dotfiles: Path, home: Path) -> None:
-        r = FakeProcessRunner()
-        r.script(("pi", "list"), stdout="")
-        r.script(("pi", "install", "npm:pi-superpowers-plus"), exit_code=1, stderr="err")
-        r.script(("pi", "install", "npm:mitsupi"), exit_code=1, stderr="err")
-        results = setup_pi(runner=r, home=home, dotfiles_dir=dotfiles, which=_which_pi)
-        failed = [res for res in results if not res.ok and "run manually" in res.message]
-        assert len(failed) == 2
+        pi_calls = [c for c in r.calls if c[0] == "pi"]
+        assert pi_calls == []
+        assert not any(
+            "pi-superpowers-plus" in res.message or "mitsupi" in res.message for res in results
+        )
 
 
 # ---------------------------------------------------------------------------

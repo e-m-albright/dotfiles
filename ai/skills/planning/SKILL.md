@@ -1,6 +1,6 @@
 ---
 name: planning
-description: This repo owner's pre-code scope-and-judgment criteria — should-we-build-this, define non-goals and "done", one-way vs two-way doors, complexity budget, a named red-flag list, plus execution discipline (standing refactor license, don't-overengineer-before-core, multi-pass cadence, operational simplicity while strapped). Use when deciding whether/how to build something and you want THIS take — "should we build this", "what's the smallest version", "what are the non-goals", "scope this", "is this a one-way door", "am I overengineering", "what are the red flags here", "is this worth it". Complements superpowers:writing-plans (which produces a step-by-step implementation plan); reach for this for the upstream scope/effort/reversibility judgment that decides what — and whether — to plan at all.
+description: This repo owner's pre-code scope-and-judgment criteria — should-we-build-this, define non-goals and "done", one-way vs two-way doors, complexity budget, a named red-flag list, plus execution discipline (standing refactor license, don't-overengineer-before-core, multi-pass cadence, operational simplicity while strapped). Use when deciding whether/how to build something and you want THIS take — "should we build this", "what's the smallest version", "what are the non-goals", "scope this", "is this a one-way door", "am I overengineering", "what are the red flags here", "is this worth it". Complements `writing-plans` (which produces a step-by-step implementation plan); reach for this for the upstream scope/effort/reversibility judgment that decides what — and whether — to plan at all.
 metadata:
   source: Promoted from the retired .ai/rules/process/planning.mdc; this skill is now the canonical home for that content.
 ---
@@ -16,7 +16,7 @@ Apply these criteria during brainstorming, planning, and spec review — before 
 - Choosing between approaches on effort / reversibility / complexity / maintenance grounds.
 
 **When NOT to use:**
-- **`superpowers:writing-plans`** — when the *what* and *whether* are settled and you need a concrete, step-by-step implementation plan. That skill writes the plan; this one decides what (and whether) to plan.
+- **`writing-plans`** — when the *what* and *whether* are settled and you need a concrete, step-by-step implementation plan. That skill writes the plan; this one decides what (and whether) to plan.
 - **`collaborative-ideation`** — when you want adversarial critique of an idea rather than scope/effort triage. The two pair well: ideate to pressure-test, then plan to scope.
 
 ## Should We Build This?

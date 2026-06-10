@@ -95,7 +95,7 @@ Ranked by how much they undercut the "self-managing gravity" claim.
 9. **No lens owns "speed" or "write tests."** A user who says "improve code health"
    but means "we have 0% coverage" is correctly *warned* (Tier A can't deliver
    robustness) but has nowhere in the portfolio to be handed to; `testing` /
-   `tdd-vertical-slices` / `performance-engineer` live outside it.
+   `test-driven-development` / `performance-engineer` live outside it.
 
 ## No ground lost vs past incarnations (confirmed + fixed)
 

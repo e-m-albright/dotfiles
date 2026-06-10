@@ -18,7 +18,7 @@ scout (agent-browser) → break early, cheap signals
   ↓
 read service logs while UI runs
   ↓
-identify root cause (don't shotgun fixes — see superpowers:systematic-debugging)
+identify root cause (don't shotgun fixes — see systematic-debugging)
   ↓
 fix code (small, focused diff)
   ↓
@@ -251,9 +251,9 @@ reproducers.
 ## Skill stack-up
 
 - `browser-tooling` — pick the right single tool for one job.
-- `superpowers:systematic-debugging` — root-cause discipline (don't
+- `systematic-debugging` — root-cause discipline (don't
   shotgun, reproduce first, hypothesize, test).
-- `superpowers:verification-before-completion` — never claim a fix works
+- `verification-before-completion` — never claim a fix works
   without seeing the verified output.
 - `playwright-e2e-testing` — write the Tier-1 lock-in tests.
 - This skill — runs the loop that ties all four together.

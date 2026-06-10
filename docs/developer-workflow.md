@@ -136,35 +136,29 @@ just hooks-install   # Set up git hooks
 
 ## The AI-Assisted Development Loop
 
-### Superpowers Workflow
+### Repo-owned workflow skills
 
-The superpowers plugin provides a structured pipeline for feature development. You don't have to use every step, but the full flow is:
+We no longer delegate process discipline to the Superpowers plugin. The canonical workflow lives in `ai/skills/` and is deployed across agents. Use the full loop only when the work deserves it:
 
 ```
- /brainstorm  →  /write-plan  →  /worktree  →  /execute-plan  →  /request-review  →  /finish-branch
-     │               │              │               │                   │                   │
-  Explore         Break into      Isolate         Execute            Review             Merge &
-  requirements    tasks with      on a new        in batches         against            clean up
-  & design        file paths      branch          with checkpoints   spec
+ collaborative-ideation/planning → writing-plans → executing-plans → test-driven-development → review → closeout
 ```
 
 #### When to Use Each Skill
 
 | Skill | Trigger | What Happens |
 |-------|---------|-------------|
-| `/brainstorm` | Before any non-trivial feature | Socratic Q&A to refine requirements, explores alternatives, saves design doc |
-| `/write-plan` | After design is approved | Breaks work into 2-5 minute tasks with exact file paths and code snippets |
-| `/worktree` | Before starting implementation | Creates isolated git worktree on a new branch |
-| `/execute-plan` | When plan is ready | Runs tasks in batches, pauses for human review between batches |
-| `/subagent-dev` | For parallel implementation | Dispatches independent tasks to subagents with two-stage review |
-| `/dispatch` | For any parallel work | Spawns subagents for independent queries or tasks |
-| `/debug` | When something breaks | 4-phase: reproduce → hypothesize → investigate → fix |
-| `/tdd` | When writing new logic | Red-green-refactor cycles |
-| `/request-review` | Before merging | Agent reviews changes against spec |
-| `/receive-review` | After getting feedback | Structured process for addressing review comments |
-| `/finish-branch` | After review passes | Merge, clean up worktree, prune branches |
+| `collaborative-ideation` | Stress-testing an idea | Steel-man, push back, propose alternatives |
+| `planning` | Deciding whether/what to build | Scope, non-goals, reversibility, risks |
+| `writing-plans` | After scope is settled | Concrete implementation plan with files, steps, tests, risks |
+| `executing-plans` | When a plan is ready | Work through tasks with checkpoints and verification |
+| `git-worktree-manager` | Need isolated branch/worktree | Creates/lists/cleans worktrees explicitly |
+| `systematic-debugging` | When something breaks | Feedback loop → reproduce → hypotheses → instrumentation → fix |
+| `test-driven-development` | Writing new logic or bug regression | One test → one implementation → refactor |
+| `review` | Before merging/shipping | Multi-lens correctness/security/health review |
+| `workflow-closeout-learning` | Long-session wrap-up | Capture verification, learnings, and next-chat handoff |
 
-**Shortcut for small tasks**: Skip straight to implementation. Superpowers detects when work is trivial and won't force you through the full pipeline.
+**Shortcut for small tasks**: Skip ceremony. A trivial edit needs verification, not a full workflow.
 
 ### Other Useful Skills
 
@@ -332,9 +326,9 @@ description: When to trigger this skill (trigger conditions, not workflow summar
 2. Step two
 ```
 
-Use `/write-skill` (from superpowers) to create new skills with TDD — it watches an agent fail without the skill first, then writes the skill to fix the gap.
+Use the repo-owned `skill-creator` skill to create or revise skills. Prefer a small failing workflow/example first, then write the skill that would have prevented the failure.
 
-**Priority**: Project skills (`.claude/skills/`) > Personal skills (`~/.claude/skills/`) > Plugin skills.
+**Priority**: Project skills (`.claude/skills/`) > Personal skills (`~/.claude/skills/`) > Plugin skills. Plugin process skills are disabled by default; repo-owned skills should win.
 
 ### Editing the rule kernel
 

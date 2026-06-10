@@ -154,7 +154,7 @@ Then check the termination conditions (CONVERGENCE-LOOP.md), one of which is **n
 
 **Default: a bounded hotspot set.** Pick the top-N churn×complexity hotspots (or a path the user names) and converge *those* to target, then report. Bounded, reviewable, and repeatable — run again for the next set, the way large orgs shard big changes. Don't try to fix the whole repo in one invocation by default.
 
-**Escalation: whole-codebase sweep.** When the user explicitly asks for a full sweep (or the repo is small), widen scope to the entire codebase. For a large repo this is the natural place to escalate to a multi-agent `Workflow` (fan out diagnose across the tree → dedup → verify → ratchet) — but only when the user opts into that, since Workflow is Claude-Code-only. The inline subagent path is the portable default.
+**Escalation: whole-codebase sweep.** When the user explicitly asks for a full sweep (or the repo is small), widen scope to the entire codebase. For a large repo this is the natural place to escalate to a multi-agent `Workflow` (fan out systematic-debugging across the tree → dedup → verify → ratchet) — but only when the user opts into that, since Workflow is Claude-Code-only. The inline subagent path is the portable default.
 
 ## References
 

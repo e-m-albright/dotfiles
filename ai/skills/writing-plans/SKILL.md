@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: Convert an agreed scope/spec into a concrete, reviewable implementation plan with files, steps, tests, risks, and checkpoints. Use after planning/collaborative-ideation has settled what to build; when user says "write a plan", "implementation plan", "break this down", "plan the work", or for any 3+ step coding task before touching code. Complements `planning`, which decides whether and what to build.
+description: Convert an agreed scope/spec into a concrete, reviewable implementation plan with files, steps, tests, risks, and checkpoints. Use when planning/collaborative-ideation has settled what to build; when user says "write a plan", "implementation plan", "break this down", "plan the work", or for any 3+ step coding task before touching code. Complements `planning`, which decides whether and what to build.
 metadata:
   source: In-sourced local replacement for Superpowers-style writing-plans, adapted to this repo's selective-discipline workflow.
 ---

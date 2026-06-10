@@ -1,6 +1,6 @@
 ---
 name: code-health
-description: The entry point and router for the code-health skill portfolio — diagnoses what a codebase needs and dispatches to the right lens, or sequences several for a full pass. Knows the form lenses (form-deepen, converge, form-tidy, form-clarify, form-align, form-prune, form-purify) and the function/safety/speed lenses (/review, /security-review, diagnose, performance-engineer), their antagonists, and which are safe to run unattended. Use when the user says "improve code health", "where do I start", "do a full health pass", "audit and improve this repo", "which refactoring should I do here", or isn't sure which lens fits. SKIP when the user already named a specific lens — invoke that one directly.
+description: The entry point and router for the code-health skill portfolio — diagnoses what a codebase needs and dispatches to the right lens, or sequences several for a full pass. Knows the form lenses (form-deepen, converge, form-tidy, form-clarify, form-align, form-prune, form-purify) and the function/safety/speed lenses (/review, /security-review, systematic-debugging, performance-engineer), their antagonists, and which are safe to run unattended. Use when the user says "improve code health", "where do I start", "do a full health pass", "audit and improve this repo", "which refactoring should I do here", or isn't sure which lens fits. SKIP when the user already named a specific lens — invoke that one directly.
 ---
 
 # Code Health
@@ -14,7 +14,7 @@ Read this first, because it sets honest expectations. Code quality has four sour
 So the portfolio is two tiers, and a real "health pass" needs both:
 
 - **Tier A — form (behavior-preserving refactor lenses):** make it well-structured, idiomatic, legible, minimal.
-- **Tier B — function / safety / speed (non-behavior-preserving):** find defects, vulnerabilities, and bottlenecks. These are existing skills — `/review`, `/security-review`, `diagnose`, `performance-engineer` — not refactors. **Robustness comes from Tier B plus real test coverage, never from Tier A alone.**
+- **Tier B — function / safety / speed (non-behavior-preserving):** find defects, vulnerabilities, and bottlenecks. These are existing skills — `/review`, `/security-review`, `systematic-debugging`, `performance-engineer` — not refactors. **Robustness comes from Tier B plus real test coverage, never from Tier A alone.**
 
 State this to the user when they ask for "unimpeachable" code: the book guarantees form; correctness and safety rest on Tier B and tests.
 
@@ -42,7 +42,7 @@ Lenses have a natural order that minimizes rework:
 4. **form-tidy** — execute the mechanical transforms safely.
 5. **form-clarify** — final readability and navigation pass.
 6. **converge** — measure, ratchet the gains into CI contracts, and re-grade. This is what makes the pass *stick* and *converge* rather than re-rot.
-7. **Tier B** — `/review`, `/security-review`, `diagnose`, `performance-engineer` for the pillars refactoring can't reach.
+7. **Tier B** — `/review`, `/security-review`, `systematic-debugging`, `performance-engineer` for the pillars refactoring can't reach.
 
 Don't run all seven blindly — let the Tier-A routing table and the scorecard pick where effort actually pays (churn × complexity hotspots).
 
