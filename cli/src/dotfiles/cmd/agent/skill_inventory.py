@@ -36,6 +36,7 @@ _DEPLOYED_DIRS: tuple[tuple[str, ...], ...] = (
     (".claude", "skills"),
     (".agents", "skills"),
     (".codex", "skills"),
+    (".cursor", "skills"),
     (".cursor", "skills-cursor"),
 )
 
@@ -88,7 +89,7 @@ def _frontmatter_description(text: str) -> str | None:
     return None
 
 
-def _description(skill_md: Path | None) -> str:
+def description(skill_md: Path | None) -> str:
     """The frontmatter ``description`` of a SKILL.md, collapsed to one line.
 
     Resolves multi-line block scalars (``description: |`` / ``>``) to their text;
@@ -164,6 +165,6 @@ def inventory(runner: ProcessRunner, home: Path, dotfiles_dir: Path) -> list[Ski
                 else ", ".join(sorted(locations.get(name, set())))
             )
         infos.append(
-            SkillInfo(name=name, origin=origin, description=_description(md), source=source)
+            SkillInfo(name=name, origin=origin, description=description(md), source=source)
         )
     return infos

@@ -75,7 +75,10 @@ def _overview(*, claude_deployed=21, canonical=21) -> AgentOverview:
         mcp=(),
         hooks=(),
         skills=SkillsSummary(
-            canonical_skills=canonical, claude_deployed=claude_deployed, shared_deployed=canonical
+            canonical_skills=canonical,
+            claude_deployed=claude_deployed,
+            cursor_deployed=canonical,
+            shared_deployed=canonical,
         ),
         agents=(
             SubagentRow(name="debugger", claude=True, codex=True, pi=False),

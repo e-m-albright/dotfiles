@@ -88,7 +88,7 @@ def test_inventory_is_alphabetical(tmp_path: Path) -> None:
 def test_description_resolves_block_scalars_and_falls_back(tmp_path: Path) -> None:
     """Block-scalar descriptions (`|`/`>`) resolve to their text, collapsed to one
     line; frontmatter too loose for YAML falls back to the first description line."""
-    from dotfiles.cmd.agent.skill_inventory import _description
+    from dotfiles.cmd.agent.skill_inventory import description
 
     def md(name: str, frontmatter: str) -> Path:
         p = tmp_path / name
@@ -98,14 +98,14 @@ def test_description_resolves_block_scalars_and_falls_back(tmp_path: Path) -> No
     literal = md(
         "LITERAL.md", "description: |\n  Builds remote MCP servers\n  with OAuth and deploy."
     )
-    assert _description(literal) == "Builds remote MCP servers with OAuth and deploy."
+    assert description(literal) == "Builds remote MCP servers with OAuth and deploy."
 
     folded = md("FOLDED.md", "description: >-\n  Create a hook for\n  the harness.")
-    assert _description(folded) == "Create a hook for the harness."
+    assert description(folded) == "Create a hook for the harness."
 
     plain = md("PLAIN.md", "description: Just a normal one-liner.")
-    assert _description(plain) == "Just a normal one-liner."
+    assert description(plain) == "Just a normal one-liner."
 
     # Unquoted ': ' mid-value is invalid YAML (reads as a nested map) — regex fallback.
     loose = md("LOOSE.md", "description: net LOC: goes down, features removed.")
-    assert _description(loose) == "net LOC: goes down, features removed."
+    assert description(loose) == "net LOC: goes down, features removed."

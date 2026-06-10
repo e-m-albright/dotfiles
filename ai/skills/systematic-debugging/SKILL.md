@@ -1,14 +1,14 @@
 ---
-name: diagnose
-description: Disciplined diagnosis loop for hard bugs and performance regressions. Reproduce → minimise → hypothesise → instrument → fix → regression-test. Use when user says "diagnose this" / "debug this", reports a bug, says something is broken/throwing/failing, or describes a performance regression.
+name: systematic-debugging
+description: Disciplined systematic debugging loop for hard bugs and performance regressions. Build feedback loop → reproduce → hypothesise → instrument → fix → regression-test. Use when user says "debug this", "diagnose this", "systematic debugging", reports a bug, says something is broken/throwing/failing, or describes a performance regression.
 metadata:
   source_url: https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnose/SKILL.md
   source_commit: 733d312884b3878a9a9cff693c5886943753a741
   ported_at: 2026-05-07
-  adaptations: Verbatim port. Cross-references to `/converge` and project glossary/ADRs left intact (resolve once Phase 2 + grill-with-docs land).
+  adaptations: Renamed from upstream `diagnose` to `systematic-debugging` for explicit portable skill naming. Cross-references to `/converge` and project glossary/ADRs left intact.
 ---
 
-# Diagnose
+# Systematic Debugging
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
@@ -122,4 +122,4 @@ Required before declaring done:
 **Then ask: what would have prevented this bug?** If the answer involves architectural change (no good test seam, tangled callers, hidden coupling) hand off to the `/converge` skill with the specifics. Make the recommendation **after** the fix is in, not before — you have more information now than when you started.
 
 ## Sources
-- Adapted from [mattpocock/skills/engineering/diagnose](https://github.com/mattpocock/skills/blob/733d312/skills/engineering/diagnose/SKILL.md) (ported 2026-05-07, MIT). Verbatim port.
+- Adapted from [mattpocock/skills/engineering/diagnose](https://github.com/mattpocock/skills/blob/733d312/skills/engineering/diagnose/SKILL.md) (ported 2026-05-07, MIT). Renamed to `systematic-debugging`.

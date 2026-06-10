@@ -271,6 +271,23 @@ class TestCliConfig:
 # ---------------------------------------------------------------------------
 
 
+class TestSkills:
+    def test_deploys_canonical_skills_when_source_exists(self, dotfiles: Path, home: Path) -> None:
+        write_tree(
+            dotfiles, {"ai/skills/review/SKILL.md": "---\nname: review\ndescription: Review\n---\n"}
+        )
+        setup_cursor(runner=FakeProcessRunner(), home=home, dotfiles_dir=dotfiles)
+
+        link = home / ".cursor" / "skills" / "review"
+        assert link.is_symlink()
+        assert link.resolve() == (dotfiles / "ai" / "skills" / "review").resolve()
+
+    def test_skips_skill_deploy_when_no_source_dir(self, dotfiles: Path, home: Path) -> None:
+        setup_cursor(runner=FakeProcessRunner(), home=home, dotfiles_dir=dotfiles)
+
+        assert not (home / ".cursor" / "skills").exists()
+
+
 class TestPlugin:
     def test_plugin_symlinked_in_home(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)

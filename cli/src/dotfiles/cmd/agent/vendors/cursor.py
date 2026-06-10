@@ -32,7 +32,7 @@ from dotfiles.cmd.agent.settings_merger import (
     merge_replace,
     write_json_safely,
 )
-from dotfiles.fsutil import symlink
+from dotfiles.fsutil import prune_broken_symlinks, symlink
 
 _CURSORIGNORE_HEADER = """\
 # Cursor ignore file
@@ -66,6 +66,7 @@ def setup_cursor(
     results: list[StepResult] = []
     results.extend(_setup_mcp(dotfiles_dir, home, reset_mcp=reset_mcp))
     results.extend(_setup_rules(dotfiles_dir))
+    results.extend(_setup_skills(dotfiles_dir, home))
     # Cursor 2.4+ reads ~/.cursor/agents — deploy our shared subagents there too.
     results.extend(deploy_subagents(dotfiles_dir, home / ".cursor" / "agents"))
     results.extend(_setup_cli_config(dotfiles_dir, home))
@@ -138,6 +139,30 @@ def _setup_rules(dotfiles_dir: Path) -> list[StepResult]:
 
     (rules_dir / "shared-rules.mdc").write_text(content, encoding="utf-8")
     return [StepResult(level="success", message="Generated rules/shared-rules.mdc")]
+
+
+def _setup_skills(dotfiles_dir: Path, home: Path) -> list[StepResult]:
+    """Symlink canonical skills into Cursor's user skill dir.
+
+    Cursor's vendor built-ins live in ~/.cursor/skills-cursor. Our portable,
+    repo-owned skills belong in ~/.cursor/skills. The public `skills` CLI does
+    not currently mirror all canonical skills for Cursor reliably on this
+    machine, so use explicit symlinks from the dotfiles source of truth.
+    """
+    src = dotfiles_dir / "ai" / "skills"
+    if not src.is_dir():
+        return []
+
+    dest = home / ".cursor" / "skills"
+    dest.mkdir(parents=True, exist_ok=True)
+    prune_broken_symlinks(dest)
+
+    results: list[StepResult] = []
+    for skill_md in sorted(src.glob("*/SKILL.md")):
+        skill_dir = skill_md.parent
+        symlink(skill_dir, dest / skill_dir.name)
+        results.append(StepResult(level="success", message=f"Linked Cursor skill {skill_dir.name}"))
+    return results
 
 
 def _setup_cli_config(dotfiles_dir: Path, home: Path) -> list[StepResult]:

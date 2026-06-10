@@ -1,11 +1,11 @@
 ---
-name: tdd-vertical-slices
-description: Vertical-slice red-green-refactor TDD with Ousterhout deep-modules discipline — one test → one impl → repeat, never write all tests first. Use when user wants to TDD a feature or bug fix; says "red-green-refactor", "vertical slice", "tracer bullet", "deep modules", "TDD this"; or asks to design testable interfaces. Complements `superpowers:test-driven-development` — this skill is the opinionated Pocock-style discipline.
+name: test-driven-development
+description: Vertical-slice red-green-refactor TDD with Ousterhout deep-modules discipline — one test → one implementation → repeat, never write all tests first. Use when user wants to TDD a feature or bug fix; says "test-driven development", "red-green-refactor", "vertical slice", "tracer bullet", "deep modules", "TDD this"; or asks to design testable interfaces.
 metadata:
   source_url: https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md
   source_commit: 733d312884b3878a9a9cff693c5886943753a741
   ported_at: 2026-05-07
-  adaptations: Renamed from `tdd` to `tdd-vertical-slices` to avoid namespace collision with `superpowers:test-driven-development`. Refs (`tests.md`, `mocking.md`, `deep-modules.md`, `interface-design.md`, `refactoring.md`) moved into `references/` per Anthropic spec. Description rewritten with literal-phrase triggers and explicit complementarity note.
+  adaptations: Renamed from upstream `tdd` to `test-driven-development` for explicit portable skill naming. Refs (`tests.md`, `mocking.md`, `deep-modules.md`, `interface-design.md`, `refactoring.md`) moved into `references/` per Anthropic spec. Description rewritten with literal-phrase triggers.
 ---
 
 # Vertical-Slice TDD
@@ -114,4 +114,4 @@ After all tests pass, look for [refactor candidates](references/refactoring.md):
 ```
 
 ## Sources
-- Adapted from [mattpocock/skills/engineering/tdd](https://github.com/mattpocock/skills/blob/733d312/skills/engineering/tdd/SKILL.md) (ported 2026-05-07, MIT). Renamed for namespace clarity; refs moved into `references/`.
+- Adapted from [mattpocock/skills/engineering/tdd](https://github.com/mattpocock/skills/blob/733d312/skills/engineering/tdd/SKILL.md) (ported 2026-05-07, MIT). Renamed to `test-driven-development`; refs moved into `references/`.

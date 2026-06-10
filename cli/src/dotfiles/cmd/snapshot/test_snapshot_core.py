@@ -68,7 +68,9 @@ def _overview() -> AgentOverview:
     return AgentOverview(
         mcp=(McpRow(server="granola", claude=True, cursor=False, codex=False, gemini=False),),
         hooks=(HookRow(event="PostToolUse", claude=True, cursor=True, codex=False),),
-        skills=SkillsSummary(canonical_skills=21, claude_deployed=21, shared_deployed=21),
+        skills=SkillsSummary(
+            canonical_skills=21, claude_deployed=21, cursor_deployed=21, shared_deployed=21
+        ),
         agents=(),
         rules=RulesSummary(canonical_rules=31, claude_deployed=31, cursor_deployed=31),
         permissions=(),

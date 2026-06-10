@@ -108,7 +108,7 @@ class AgentOverviewService:
         h = self._home
         skills = {
             "claude": str(self._count_subdirs(h / ".claude" / "skills")),
-            "cursor": str(self._count_subdirs(h / ".cursor" / "skills-cursor")),
+            "cursor": str(self._count_subdirs(h / ".cursor" / "skills")),
             "codex": str(self._count_subdirs(h / ".agents" / "skills")),
             "gemini": "—",  # Gemini has no skills surface
             "pi": str(self._count_subdirs(h / ".agents" / "skills")),
@@ -289,12 +289,16 @@ class AgentOverviewService:
         claude_dir = self._home / ".claude" / "skills"
         claude_deployed = self._count_subdirs(claude_dir)
 
+        cursor_dir = self._home / ".cursor" / "skills"
+        cursor_deployed = self._count_subdirs(cursor_dir)
+
         shared_dir = self._home / ".agents" / "skills"
         shared_deployed = self._count_subdirs(shared_dir)
 
         return SkillsSummary(
             canonical_skills=canonical,
             claude_deployed=claude_deployed,
+            cursor_deployed=cursor_deployed,
             shared_deployed=shared_deployed,
         )
 
@@ -314,8 +318,12 @@ class AgentOverviewService:
         if not agents_root.exists() or not agents_root.is_dir():
             return []
 
+        # One dir per vendor that reads a `.md` subagents directory. Cursor 2.4+
+        # reads ~/.cursor/agents (we deploy there); agy has no confirmed .md dir
+        # convention yet (it defines subagents inline), so it's an honest gap.
         claude_agents = self._home / ".claude" / "agents"
         codex_agents = self._home / ".codex" / "agents"
+        cursor_agents = self._home / ".cursor" / "agents"
         pi_agents = self._home / ".pi" / "agent" / "agents"
 
         rows: list[SubagentRow] = []
@@ -328,6 +336,7 @@ class AgentOverviewService:
                     name=name,
                     claude=(claude_agents / f"{name}.md").exists(),
                     codex=(codex_agents / f"{name}.md").exists(),
+                    cursor=(cursor_agents / f"{name}.md").exists(),
                     pi=(pi_agents / f"{name}.md").exists(),
                 )
             )

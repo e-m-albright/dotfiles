@@ -47,6 +47,8 @@ def _vendor_counts(overview: AgentOverview, agent: Agent) -> tuple[int, int, int
     canonical = overview.skills.canonical_skills
     if agent == "claude":
         skills_dep, skills_exp = overview.skills.claude_deployed, canonical
+    elif agent == "cursor":
+        skills_dep, skills_exp = overview.skills.cursor_deployed, canonical
     elif agent == "codex":
         skills_dep, skills_exp = overview.skills.shared_deployed, canonical
     else:

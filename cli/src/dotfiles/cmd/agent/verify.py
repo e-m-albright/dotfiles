@@ -39,7 +39,7 @@ _ATTRIBUTES: tuple[str, ...] = (
 _SURFACE_MAP: dict[str, dict[Agent, str | None]] = {
     "skills": {
         "claude": ".claude/skills",
-        "cursor": ".cursor/skills-cursor",
+        "cursor": ".cursor/skills",
         "codex": ".agents/skills",
         "gemini": None,
         "pi": ".agents/skills",

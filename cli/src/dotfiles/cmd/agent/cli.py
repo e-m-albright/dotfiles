@@ -44,6 +44,11 @@ from dotfiles.cmd.agent.models import (
 )
 from dotfiles.cmd.agent.overview import AgentOverviewService
 from dotfiles.cmd.agent.setup import ALL_AGENTS, run_setup
+from dotfiles.cmd.agent.skill_collision import (
+    SkillCollision,
+    SkillCollisionReport,
+    collision_report,
+)
 from dotfiles.cmd.agent.skill_health import SkillHealthService
 from dotfiles.cmd.agent.skill_inventory import SkillInfo, inventory
 from dotfiles.cmd.agent.skill_prune import SkillOrphan, find_orphans, prune_orphans
@@ -85,7 +90,9 @@ _LABEL_W = 24
 # Which agents each surface applies to; others render "·" (n/a), never "✗".
 _MCP_AGENTS = {"claude", "codex"}  # the only vendors we deploy MCP to (granola); rest n/a
 _HOOK_AGENTS = {"claude", "cursor", "codex"}
-_SUBAGENT_AGENTS = {"claude", "codex", "pi"}
+# Vendors with a `.md` subagents directory we deploy to. Cursor 2.4+ reads
+# ~/.cursor/agents; agy defines subagents inline (no .md dir) so it stays out.
+_SUBAGENT_AGENTS = {"claude", "codex", "cursor", "pi"}
 _STATUS_GLYPH = {
     "present": "[green]✓[/]",
     "empty": "[yellow]○[/]",
@@ -606,6 +613,38 @@ def _render_orphans(orphans: list[SkillOrphan]) -> None:
         print_section(console, origin.capitalize(), hint)
         for o in group:
             console.print(f"  [{color}]{glyph}[/] [dim]{o.location}/[/]{o.name}")
+
+
+def _render_collision_report(report: SkillCollisionReport) -> None:
+    console.print(
+        f"  [dim]{report.local_count} canonical skills · "
+        f"{report.external_count} Pi-package skills scanned[/]"
+    )
+    if not report.collisions:
+        print_status(console, "success", "No local/Pi-package skill collisions found")
+        return
+    by_domain: dict[str, list[SkillCollision]] = {}
+    for collision in report.collisions:
+        by_domain.setdefault(collision.domain, []).append(collision)
+    for domain in sorted(by_domain):
+        print_section(console, domain, "likely overlapping trigger/domain")
+        for c in by_domain[domain]:
+            glyph = "=" if c.kind == "same-name" else "~"
+            console.print(
+                f"  [yellow]{glyph}[/] [bold]{escape(c.local.name)}[/] "
+                f"[dim]({escape(c.local.path)})[/]  ↔  "
+                f"[{_GOLD}]{escape(c.external.name)}[/] "
+                f"[dim]({escape(c.external.source)} · {escape(c.external.path)})[/]"
+            )
+            console.print(f"      [dim]{escape(c.reason)}[/]")
+
+
+@skills_app.command("audit")
+def skills_audit(ctx: typer.Context) -> None:
+    """Audit likely trigger collisions between owned skills and Pi package skills."""
+    app_ctx = app_context(ctx)
+    print_title(console, "agent", "skills", "audit")
+    _render_collision_report(collision_report(home=app_ctx.home, dotfiles_dir=app_ctx.dotfiles_dir))
 
 
 @skills_app.command("prune")

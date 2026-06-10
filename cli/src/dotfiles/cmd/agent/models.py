@@ -61,6 +61,7 @@ class SkillsSummary(BaseModel):
 
     canonical_skills: int
     claude_deployed: int
+    cursor_deployed: int
     shared_deployed: int
 
 

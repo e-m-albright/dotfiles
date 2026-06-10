@@ -200,6 +200,7 @@ class TestSectionSkills:
         summary = make_service(tmp_path / "dotfiles", tmp_path / "home").section_skills()
         assert summary.canonical_skills == 0
         assert summary.claude_deployed == 0
+        assert summary.cursor_deployed == 0
         assert summary.shared_deployed == 0
 
     def test_counts_skill_md_files(self, tmp_path: Path) -> None:
@@ -223,6 +224,17 @@ class TestSectionSkills:
             (claude_skills / name).mkdir(parents=True)
         summary = make_service(tmp_path / "dotfiles", home).section_skills()
         assert summary.claude_deployed == 3
+
+    def test_cursor_deployed_count_uses_owned_skills_not_vendor_builtins(
+        self, tmp_path: Path
+    ) -> None:
+        home = tmp_path / "home"
+        cursor_skills = home / ".cursor" / "skills"
+        (cursor_skills / "review").mkdir(parents=True)
+        (cursor_skills / "testing").mkdir(parents=True)
+        (home / ".cursor" / "skills-cursor" / "vendor-builtin").mkdir(parents=True)
+        summary = make_service(tmp_path / "dotfiles", home).section_skills()
+        assert summary.cursor_deployed == 2
 
     def test_shared_deployed_count(self, tmp_path: Path) -> None:
         home = tmp_path / "home"

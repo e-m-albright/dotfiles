@@ -1,6 +1,6 @@
 # Pi power setup
 
-Reference for the [Pi coding agent](https://pi.dev) as managed in this repo (`agents/pi/`), the packages we run, and the standing **oh-my-pi vs. base Pi** decision. Decisions live in [ADR-0005](adr/0005-re-add-pi-as-local-first-agent.md) and [ADR-0006](adr/0006-pi-power-packages-mitsupi-and-safe-git.md); this is the practical companion.
+Reference for the [Pi coding agent](https://pi.dev) as managed in this repo (`agents/pi/`), the packages we run, and the standing **oh-my-pi vs. base Pi** decision. Decisions live in [ADR-0005](adr/0005-re-add-pi-as-local-first-agent.md) and [ADR-0006](adr/0006-pi-power-packages-mitsupi-and-safe-git.md); this is the practical companion. See also the current customization audit: [`docs/knowledge/pi-customization-audit.md`](knowledge/pi-customization-audit.md).
 
 ## What Pi is
 
