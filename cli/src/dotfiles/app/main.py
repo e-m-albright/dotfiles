@@ -29,6 +29,7 @@ from dotfiles.cmd.benchmark.cli import benchmark_app
 from dotfiles.cmd.brew.cli import brew_app
 from dotfiles.cmd.doctor.cli import doctor_command
 from dotfiles.cmd.remote.cli import remote_app
+from dotfiles.cmd.repo.cli import repo_app
 from dotfiles.cmd.session.cli import session_app
 from dotfiles.cmd.snapshot.cli import snapshot_app
 from dotfiles.logging import configure_logging
@@ -116,6 +117,7 @@ def dock(ctx: typer.Context) -> None:
 
 
 app.add_typer(snapshot_app, name="snapshot", rich_help_panel=PANEL_MACHINE)
+app.add_typer(repo_app, name="repo", rich_help_panel=PANEL_MACHINE)
 
 
 @app.command("profile-shell", rich_help_panel=PANEL_MACHINE, context_settings=_PASSTHROUGH)
