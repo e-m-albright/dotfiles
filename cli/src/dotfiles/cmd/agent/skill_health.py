@@ -12,7 +12,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from dotfiles.adapters.ports import HttpClient, HttpError, ProcessRunner
-from dotfiles.agent import OVERVIEW_AGENTS, Agent
+from dotfiles.agent import OVERVIEW_AGENTS, VENDOR_BY_NAME, Agent
 from dotfiles.cmd.agent.config import McpServerEntry, load_mcp_servers
 from dotfiles.cmd.agent.models import AgentOverview, AgentVerify, McpProbe
 from dotfiles.cmd.agent.overview import AgentOverviewService
@@ -64,7 +64,10 @@ def _vendor_counts(overview: AgentOverview, agent: Agent) -> tuple[int, int, int
     skills_dep = deployed.get(agent, 0)
     skills_exp = canonical if agent in deployed else 0
 
-    if agent in ("claude", "codex"):
+    # Every vendor with a subagents dir is expected to carry the full set — derived
+    # from the registry, never hand-listed, so verify agrees with the overview (which
+    # reads the same field). A vendor with no subagents surface expects 0.
+    if VENDOR_BY_NAME[agent].paths.subagents:
         agents_dep = sum(1 for a in overview.agents if a.cells.get(agent, False))
         agents_exp = len(overview.agents)
     else:
