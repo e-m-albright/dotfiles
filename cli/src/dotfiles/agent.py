@@ -18,8 +18,7 @@ class VendorPaths:
     """Home-relative paths for this vendor's agent surfaces. ``None`` = n/a (skipped)."""
 
     skills: str | None = None
-    subagents: str | None = None  # verify surface (may differ from deploy dir)
-    subagents_deploy: str | None = None  # live subagent .md dir (overview matrix)
+    subagents: str | None = None  # the subagent .md dir — one path for deploy + verify
     rules: str | None = None
     mcp: str | None = None
     hooks: str | None = None
@@ -58,7 +57,6 @@ VENDORS: tuple[Vendor, ...] = (
         paths=VendorPaths(
             skills=".claude/skills",
             subagents=".claude/agents",
-            subagents_deploy=".claude/agents",
             rules=".claude/rules",
             mcp=".claude.json",
             hooks=".claude/settings.json",
@@ -72,8 +70,11 @@ VENDORS: tuple[Vendor, ...] = (
         in_overview=True,
         paths=VendorPaths(
             skills=".cursor/skills",
-            subagents_deploy=".cursor/agents",
+            # Cursor natively supports subagents (cursor.com/docs/subagents).
+            subagents=".cursor/agents",
             mcp=".cursor/mcp.json",
+            # Cursor hooks live inside cli-config.json (cursor.com/docs/hooks).
+            hooks=".cursor/cli-config.json",
             settings=".cursor/cli-config.json",
         ),
     ),
@@ -84,7 +85,6 @@ VENDORS: tuple[Vendor, ...] = (
         paths=VendorPaths(
             skills=".agents/skills",
             subagents=".codex/agents",
-            subagents_deploy=".codex/agents",
             mcp=".codex/config.toml",
             hooks=".codex/hooks.json",
             instructions=".codex/AGENTS.md",
@@ -110,7 +110,6 @@ VENDORS: tuple[Vendor, ...] = (
         paths=VendorPaths(
             skills=".agents/skills",
             subagents=".pi/agent/agents",
-            subagents_deploy=".pi/agent/agents",
             instructions=".pi/agent/AGENTS.md",
             settings=".pi/agent/settings.json",
         ),

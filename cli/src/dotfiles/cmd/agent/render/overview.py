@@ -35,11 +35,13 @@ _AGENT_COLS: tuple[str, ...] = OVERVIEW_AGENTS
 _COL_W = 8
 _LABEL_W = 24
 # Which agents each surface applies to; others render "·" (n/a), never "✗".
+# Derived from the registry — never hand-listed — so the Subagents/Hooks matrices
+# can't drift from the vendor pages / verify, which read the same fields. (MCP is
+# the exception: we deploy only granola, to a subset of the vendors that *have* an
+# MCP path, so the deploy intent doesn't follow from path-presence.)
 _MCP_AGENTS = {"claude", "codex"}  # the only vendors we deploy MCP to (granola); rest n/a
-_HOOK_AGENTS = {"claude", "cursor", "codex"}
-# Vendors with a `.md` subagents directory we deploy to. Cursor 2.4+ reads
-# ~/.cursor/agents; agy defines subagents inline (no .md dir) so it stays out.
-_SUBAGENT_AGENTS = {"claude", "codex", "cursor", "pi"}
+_HOOK_AGENTS = {v.name for v in VENDORS if v.paths.hooks}
+_SUBAGENT_AGENTS = {v.name for v in VENDORS if v.paths.subagents}
 _STATUS_GLYPH = {
     "present": "[green]✓[/]",
     "empty": "[yellow]○[/]",

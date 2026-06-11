@@ -233,8 +233,7 @@ class AgentOverviewService:
     def _deploy_subagents(self) -> dict[str, bool]:
         h = self._home
         return {
-            v.name: self._has_md(h / rel) if (rel := v.paths.subagents_deploy) else False
-            for v in VENDORS
+            v.name: self._has_md(h / rel) if (rel := v.paths.subagents) else False for v in VENDORS
         }
 
     def _deploy_statusline(self) -> dict[str, bool]:
@@ -469,9 +468,7 @@ class AgentOverviewService:
             return []
 
         h = self._home
-        deploy_dirs = {
-            v.name: h / rel if (rel := v.paths.subagents_deploy) else None for v in VENDORS
-        }
+        deploy_dirs = {v.name: h / rel if (rel := v.paths.subagents) else None for v in VENDORS}
         rows: list[AgentPresenceRow] = []
         for entry in list_dir(agents_root):
             if entry.is_dir() or entry.suffix != ".md":
