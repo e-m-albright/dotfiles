@@ -42,6 +42,9 @@ from dotfiles.cmd.agent.models import (
 from dotfiles.cmd.agent.vendors.claude import parse_plugins_yaml
 from dotfiles.cmd.agent.verify import AgentVerifyService
 from dotfiles.fsutil import list_dir
+from dotfiles.logging import get_logger
+
+_log = get_logger(__name__)
 
 if TYPE_CHECKING:
     from dotfiles.adapters.ports import ProcessRunner
@@ -410,10 +413,18 @@ class AgentOverviewService:
         ]
 
     def _read_text(self, path: Path) -> str:
-        """File text, or '' when absent/unreadable."""
+        """File text, or '' when absent/unreadable.
+
+        A present-but-unreadable file (permissions, broken mount) degrades to ''
+        like an absent one, so the probe can't crash. That collapse is logged so
+        a misdiagnosis ("not deployed" when really "couldn't read") is traceable.
+        """
         try:
             return path.read_text()
-        except OSError:
+        except FileNotFoundError:
+            return ""
+        except OSError as exc:
+            _log.warning("probe_read_failed", path=str(path), error=str(exc))
             return ""
 
     # ------------------------------------------------------------------

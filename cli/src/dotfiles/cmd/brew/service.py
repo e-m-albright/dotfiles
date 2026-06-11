@@ -22,7 +22,10 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.logging import get_logger
 from dotfiles.result import StepResult
+
+_log = get_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # Models
@@ -364,7 +367,14 @@ def install_packages(
             for name, kind in to_install
         ]
 
-    return [_install_one(name, kind, runner) for name, kind in to_install]
+    _log.info("brew_install_start", count=len(to_install))
+    results: list[StepResult] = []
+    for name, kind in to_install:
+        result = _install_one(name, kind, runner)
+        if result.level == "error":
+            _log.warning("brew_install_failed", package=name, kind=kind)
+        results.append(result)
+    return results
 
 
 # ---------------------------------------------------------------------------

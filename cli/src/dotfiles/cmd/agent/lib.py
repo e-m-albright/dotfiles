@@ -20,7 +20,10 @@ from dotfiles.cmd.agent.settings_merger import (
     merge_replace,
     write_json_safely,
 )
+from dotfiles.logging import get_logger
 from dotfiles.result import StepResult  # re-exported for the agent adapters
+
+_log = get_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # MCP helpers
@@ -324,9 +327,11 @@ def deploy_skills(
         "-y",
         "--copy",
     )
+    _log.info("deploy_skills_start", agent=agent, skills=len(skill_names))
     result = runner.run(cmd, check=False)
     if result.exit_code == 0:
         return StepResult(level="success", message=f"Deployed skills via npx skills ({agent})")
+    _log.warning("deploy_skills_failed", agent=agent, exit_code=result.exit_code)
     return StepResult(
         level="error",
         message=f"Failed to deploy skills via npx skills ({agent})",
