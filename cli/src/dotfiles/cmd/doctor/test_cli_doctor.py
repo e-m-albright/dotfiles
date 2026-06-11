@@ -7,7 +7,9 @@ from typer.testing import CliRunner
 from dotfiles.app.main import app
 from dotfiles.testing.fakes import make_fake_context
 
-runner = CliRunner()
+# NO_COLOR + wide terminal: CI forces color, which makes Rich split flag names
+# with ANSI codes and breaks plain-substring help assertions (see agent setup).
+runner = CliRunner(env={"NO_COLOR": "1", "TERM": "dumb", "COLUMNS": "200"})
 
 
 def test_doctor_runs_and_groups(monkeypatch) -> None:

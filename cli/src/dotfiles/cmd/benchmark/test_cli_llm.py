@@ -1,5 +1,6 @@
 """Tests for `dotfiles llm` Typer commands (list/bench/estimate/compare)."""
 
+import pytest
 from typer.testing import CliRunner
 
 from dotfiles.app.main import app
@@ -76,18 +77,20 @@ def test_llm_help_lists_compare_subcommand() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_llm_list_prints_lms_ps_output() -> None:
-    """lms is on PATH on this machine; FakeProcessRunner scripts (lms, ps) output."""
+def test_llm_list_prints_lms_ps_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`lms ps` output is rendered. Fake `lms` onto PATH so this is hermetic on
+    a clean machine (the service gates on a real shutil.which('lms'))."""
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/lms" if name == "lms" else None)
     proc = FakeProcessRunner()
     proc.script(("lms", "ps"), stdout="my-model  loaded\n")
     ctx = make_fake_context(runner=proc)
     result = runner.invoke(app, ["benchmark", "list"], obj=ctx)
-    # lms is installed, so we expect the scripted output to be printed
     assert result.exit_code == 0, result.output
     assert "my-model" in result.output
 
 
-def test_llm_list_exit_zero() -> None:
+def test_llm_list_exit_zero(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/lms" if name == "lms" else None)
     proc = FakeProcessRunner()
     proc.script(("lms", "ps"), stdout="model-a  loaded\n")
     ctx = make_fake_context(runner=proc)

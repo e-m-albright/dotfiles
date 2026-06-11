@@ -1,7 +1,10 @@
 """Sessions pane lists zellij sessions and resolves the attach/switch command."""
 
+import sys
+
 import pytest
 
+from dotfiles.cmd.session.zellij import zellij_cache_root
 from dotfiles.testing.fakes import FakeProcessRunner, make_fake_context
 from dotfiles.tui.app import MissionControlApp
 
@@ -571,8 +574,11 @@ async def test_reload_preserves_highlighted_row():
 @pytest.mark.asyncio
 async def test_session_row_previews_running_programs(tmp_path):
     # zellij's session_info cache says what's running; the row should preview it.
-    info = tmp_path / "Library" / "Caches" / "org.Zellij-Contributors.Zellij"
-    info = info / "contract_version_1" / "session_info" / "work"
+    # Write to the cache root for THIS platform (macOS Library/Caches vs Linux
+    # XDG ~/.cache) so the test is hermetic on the CI runner, not just macOS.
+    info = (
+        zellij_cache_root(tmp_path, sys.platform) / "contract_version_1" / "session_info" / "work"
+    )
     info.mkdir(parents=True)
     (info / "session-metadata.kdl").write_text(
         'panes {\n    pane { id 0 is_plugin false exited false title "nvim" }\n}\n'

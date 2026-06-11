@@ -10,7 +10,10 @@ from typer.testing import CliRunner
 from dotfiles.app.main import app
 from dotfiles.testing.fakes import FakeProcessRunner, make_fake_context, write_tree
 
-runner = CliRunner()
+# NO_COLOR + wide terminal so help assertions are deterministic: under CI's
+# forced color Rich splits flag names with ANSI codes (--reset-mcp → -, -reset,
+# -mcp), and a narrow width wraps them — both break plain substring matching.
+runner = CliRunner(env={"NO_COLOR": "1", "TERM": "dumb", "COLUMNS": "200"})
 
 # ---------------------------------------------------------------------------
 # Minimal dotfiles tree helpers
@@ -89,7 +92,9 @@ def test_agent_setup_gemini_skipped_shows_vendor_header(tmp_path: Path) -> None:
     dotfiles = _make_dotfiles(tmp_path)
     ctx = make_fake_context(home=tmp_path / "home", dotfiles_dir=dotfiles)
     result = runner.invoke(app, ["agent", "setup", "gemini"], obj=ctx)
-    assert "Gemini" in result.output
+    # The vendor header is the display name "Antigravity" (agy), printed whether
+    # or not the tool is installed — hermetic, unlike the install-dependent body.
+    assert "Antigravity" in result.output
 
 
 def test_agent_setup_gemini_skipped_shows_complete_message(tmp_path: Path) -> None:

@@ -592,18 +592,15 @@ class TestCleanMode:
 
 class TestIsolation:
     def test_does_not_touch_real_home(self, dotfiles: Path, home: Path) -> None:
-        """home fixture is tmp_path — verify nothing writes to Path.home()."""
+        """home fixture is tmp_path — verify setup writes into it, not Path.home()."""
         real_home = Path.home()
         _run(dotfiles, home)
-        # Real ~/.claude/settings.json mtime must not change (we don't check mtime here,
-        # but we verify we only wrote into the injected home)
-        assert (
-            not (real_home / ".claude" / "settings.json").samefile(
-                home / ".claude" / "settings.json"
-            )
-            if (home / ".claude" / "settings.json").is_file()
-            else True
-        )
+        injected = home / ".claude" / "settings.json"
+        # Setup wrote into the injected home, and that path is not the real one.
+        # resolve() (not samefile) so this never stats a possibly-absent real
+        # ~/.claude/settings.json — that crash was a CI-only failure.
+        assert injected.is_file()
+        assert injected.resolve() != (real_home / ".claude" / "settings.json").resolve()
 
     def test_idempotent(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
