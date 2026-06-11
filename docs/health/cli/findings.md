@@ -58,3 +58,11 @@ Ranked by churn×complexity / drift risk.
 ## Dismissed 2026-06-11 (investigated, not real)
 
 - **`agent verify` "43/34" skill drift** — not a bug. Deployed counts include vendor/plugin skills beyond our canonical 34 (e.g. plugin-provided skills in `~/.claude/skills`). The line reports real state; only the "drift" label is slightly misleading (see backlog: relabel deployed-beyond-canonical as "extra"). gemini shows a clean 34/34.
+
+## Adversarial-assessor findings — adapters/http.py (2026-06-11)
+
+First run of the new `adversarial-assessor` skill (opus pass over `http.py` + the port contract). Verified before recording:
+- **[H1] non-JSON 2xx branch uncovered** · *will-drift* — `probe_mcp`'s `except ValueError` (reachable-but-non-JSON) had no hermetic test; `FakeHttpClient` can't raise `ValueError`. **✅ FIXED** — added `_HttpNonJson` + `test_probe_http_non_json_body_is_reachable`.
+- **[H2] `dict[str, Any]` return is a lie behind a suppression** · *friction* — `get_json`/`post_json` annotate `dict` but `json.loads` can return a list/scalar; papered with `# type: ignore[no-any-return]`. A 2xx JSON-array body types as `dict`, deferring the failure to a downstream pydantic `ValidationError`. Fix: runtime `isinstance(parsed, dict)` guard that raises `HttpError`, then drop the ignore — or honestly type the return. **Backlog (verified).**
+- **[H3] `HttpError` dual import path** · *aesthetic* — `http.py` re-exports it in `__all__` while the port docstring says it belongs to the port "not the adapter". Make `ports` the single public path; drop the re-export, update the one test import. **Backlog (verified; matches the no-back-compat-shims preference).**
+- **[H4] protocol-conformance tests near-vacuous** · *aesthetic* — `@runtime_checkable` `isinstance` checks validate method *names* only, not signatures/returns; they read as stronger contract guarantees than they are. Consider a real parametrized behavior contract or delete. **Backlog.**

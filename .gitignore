@@ -82,6 +82,10 @@ editors/cursor/.cursorignore
 # -----------------------------------------------------------------------------
 ai/artifacts/
 
+# Raw adversarial-assessor output (`just assess`). Generated, may be large and
+# numerous; copy a curated assessment into docs/health/<scope>/ deliberately.
+docs/health/assessments/
+
 # -----------------------------------------------------------------------------
 # Vendor CLI cwd state (created when running gemini/codex/pi from within dotfiles)
 # -----------------------------------------------------------------------------

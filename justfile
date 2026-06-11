@@ -67,6 +67,14 @@ lint-agents:
 mutation *args:
     uv run --with mutmut mutmut run {{args}}
 
+# Adversarial assessment — route the work past an INDEPENDENT model (default
+# Claude Fable 5) acting as a skeptical principal engineer, read-only, to surface
+# blind spots. The structural counter to sycophancy. Findings are claims to
+# VERIFY, not gospel. Paid + opt-in. `just assess <focus>` or bare for the repo.
+[group('quality')]
+assess *args:
+    bash {{repo}}/ai/skills/adversarial-assessor/scripts/assess.sh {{args}}
+
 # Voice gate (deterministic half): scan prose for banned LLM/marketing slop.
 # Delta-scoped — staged *.md by default, or the files passed (commit-msg passes
 # its message file). Excludes the doctrine files that quote the phrases. The

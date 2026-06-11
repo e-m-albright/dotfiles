@@ -45,6 +45,25 @@ class _RaisingHttp(FakeHttpClient):
         raise OSError("connection refused")
 
 
+class _HttpNonJson(FakeHttpClient):
+    """A 2xx response whose body isn't JSON — json.loads raises ValueError."""
+
+    def get_json(self, url):  # type: ignore[override]
+        raise ValueError("Expecting value: line 1 column 1")
+
+
+def test_probe_http_non_json_body_is_reachable():
+    # An endpoint that answers a GET with non-JSON (a ValueError on decode) is
+    # still reachable. Flagged by an adversarial-assessor pass as an uncovered
+    # branch the FakeHttpClient couldn't reach.
+    entry = McpServerEntry.model_validate(
+        {"targets": ["claude"], "type": "http", "url": "https://x/mcp"}
+    )
+    probe = probe_mcp("granola", entry, http=_HttpNonJson(), which=lambda c: c)
+    assert probe.ok is True
+    assert "non-JSON" in probe.detail
+
+
 def test_probe_http_reachable():
     entry = McpServerEntry.model_validate(
         {"targets": ["claude"], "type": "http", "url": "https://x/mcp"}
