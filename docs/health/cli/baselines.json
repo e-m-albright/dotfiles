@@ -13,7 +13,7 @@
   "dependency_cycles": 0,
   "suppressions": {
     "type-ignore": 15,
-    "cast": 31,
+    "cast": 21,
     "any-annotation": 14,
     "noqa": 0,
     "broad-except": 0,

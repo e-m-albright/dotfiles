@@ -48,6 +48,23 @@ from dotfiles.fsutil import prune_broken_symlinks
 
 _JsonDict = dict[str, Any]
 
+
+def _subobj(d: _JsonDict, key: str) -> _JsonDict:
+    """The nested JSON object at *key*, or ``{}``.
+
+    The single typed cast for reading a subtree out of settings.json, which is
+    parsed as ``dict[str, object]`` (we merge into a Claude-owned file rather
+    than model it, so unknown keys survive the round-trip). Replaces the dozen
+    ad-hoc ``cast(_JsonDict, d.get(k) or {})`` sites with one named boundary.
+    """
+    return cast(_JsonDict, d.get(key) or {})
+
+
+def _str_list(d: _JsonDict, key: str) -> list[str]:
+    """The string list at *key*, or ``[]`` — the list counterpart to _subobj."""
+    return cast("list[str]", d.get(key) or [])
+
+
 # Desktop app config path (relative to home)
 _DESKTOP_CONFIG_REL = "Library/Application Support/Claude/claude_desktop_config.json"
 
@@ -188,7 +205,7 @@ def _setup_permissions(dotfiles_dir: Path, claude_home: Path) -> list[StepResult
     perms_src = load_json_or(src, {})
     settings = _load_settings(claude_home)
 
-    existing_perms = cast(_JsonDict, settings.get("permissions") or {})
+    existing_perms = _subobj(settings, "permissions")
     default_mode = perms_src.get("defaultMode") or existing_perms.get("defaultMode") or "auto"
     new_perms: _JsonDict = {
         **existing_perms,
@@ -199,8 +216,8 @@ def _setup_permissions(dotfiles_dir: Path, claude_home: Path) -> list[StepResult
     updated = merge_replace(settings, ["permissions"], new_perms)
     _save_settings(claude_home, updated)
 
-    a = len(cast("list[str]", perms_src.get("allow", [])))
-    d = len(cast("list[str]", perms_src.get("deny", [])))
+    a = len(_str_list(perms_src, "allow"))
+    d = len(_str_list(perms_src, "deny"))
     return [
         StepResult(
             level="success", message=f"Permissions: {a} allow, {d} deny (~/.claude/settings.json)"
@@ -227,7 +244,7 @@ def _rewrite_http_to_mcp_remote(entry: _JsonDict) -> _JsonDict:
     if entry.get("type") != "http" or not entry.get("url"):
         return entry
     url = cast(str, entry["url"])
-    headers = cast(_JsonDict, entry.get("headers") or {})
+    headers = _subobj(entry, "headers")
     header_args = [f"--header={k}:{v}" for k, v in headers.items()]
     args: list[str] = ["-y", "mcp-remote", url, *header_args]
     return {"command": "npx", "args": args}
@@ -268,7 +285,7 @@ def _setup_desktop(dotfiles_dir: Path, home: Path, *, reset_mcp: bool) -> list[S
     mcp_json = dotfiles_dir / "ai" / "agents" / "shared" / "mcp-servers.json"
     if mcp_json.is_file():
         servers, managed_keys = _desktop_servers(dotfiles_dir, home, reset_mcp=reset_mcp)
-        existing_mcp = cast(_JsonDict, existing.get("mcpServers") or {})
+        existing_mcp = _subobj(existing, "mcpServers")
         new_mcp = merge_managed_mcp(
             existing_mcp,
             servers,
@@ -286,8 +303,8 @@ def _setup_desktop(dotfiles_dir: Path, home: Path, *, reset_mcp: bool) -> list[S
     prefs_src = dotfiles_dir / "ai" / "agents" / "claude" / "desktop-preferences.json"
     if prefs_src.is_file():
         prefs_file = load_json_or(prefs_src, {})
-        prefs = cast(_JsonDict, prefs_file.get("preferences") or {})
-        existing_prefs = cast(_JsonDict, existing.get("preferences") or {})
+        prefs = _subobj(prefs_file, "preferences")
+        existing_prefs = _subobj(existing, "preferences")
         # dotfiles prefs are base; existing user prefs win on conflict
         merged_prefs: _JsonDict = {**prefs, **existing_prefs}
         existing = merge_replace(existing, ["preferences"], merged_prefs)
@@ -305,7 +322,7 @@ def _setup_hooks(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     if not src.is_file():
         return []
     hooks_file = load_json_or(src, {})
-    hooks: _JsonDict = cast(_JsonDict, hooks_file.get("hooks") or {})
+    hooks: _JsonDict = _subobj(hooks_file, "hooks")
     settings = _load_settings(claude_home)
     updated = merge_replace(settings, ["hooks"], hooks)
     _save_settings(claude_home, updated)
@@ -415,7 +432,7 @@ def _expected_plugin_ids(dotfiles_dir: Path) -> set[str]:
 
 def _clean_plugins(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     settings = _load_settings(claude_home)
-    current = cast(_JsonDict, settings.get("enabledPlugins") or {})
+    current = _subobj(settings, "enabledPlugins")
     expected = _expected_plugin_ids(dotfiles_dir)
     kept = {k: v for k, v in current.items() if k in expected}
     removed = len(current) - len(kept)
@@ -431,7 +448,7 @@ def _expected_marketplace_ids(dotfiles_dir: Path) -> set[str]:
 
 def _clean_marketplaces(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     settings = _load_settings(claude_home)
-    current = cast(_JsonDict, settings.get("extraKnownMarketplaces") or {})
+    current = _subobj(settings, "extraKnownMarketplaces")
     expected = _expected_marketplace_ids(dotfiles_dir)
     kept = {k: v for k, v in current.items() if k in expected}
     removed = len(current) - len(kept)
@@ -463,8 +480,8 @@ def _clean_mcp_permissions(dotfiles_dir: Path, claude_home: Path) -> list[StepRe
     expected_mcp = all_mcp_server_names(dotfiles_dir)
 
     settings = _load_settings(claude_home)
-    perms = cast(_JsonDict, settings.get("permissions") or {})
-    allow = cast(list[str], perms.get("allow") or [])
+    perms = _subobj(settings, "permissions")
+    allow = _str_list(perms, "allow")
 
     cleaned = [p for p in allow if not _is_stale_mcp_perm(p, expected_plugins, expected_mcp)]
     removed = len(allow) - len(cleaned)
@@ -480,7 +497,7 @@ def _clean_stale_projects(home: Path) -> list[StepResult]:
     if not claude_json.is_file():
         return []
     data = load_json_or(claude_json, {})
-    projects = cast(_JsonDict, data.get("projects") or {})
+    projects = _subobj(data, "projects")
     kept = {k: v for k, v in projects.items() if Path(k).is_dir()}
     removed = len(projects) - len(kept)
     updated = merge_replace(data, ["projects"], kept)
