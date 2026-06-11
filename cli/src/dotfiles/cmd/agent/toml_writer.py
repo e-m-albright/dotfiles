@@ -22,7 +22,7 @@ _ObjDict = dict[str, object]
 # ---------------------------------------------------------------------------
 
 
-def _toml_value(v: object) -> str:
+def toml_value(v: object) -> str:
     """Serialise a single TOML value (string, list[str], or dict[str,str])."""
     if isinstance(v, bool):
         return str(v).lower()
@@ -30,11 +30,11 @@ def _toml_value(v: object) -> str:
         escaped = v.replace("\\", "\\\\").replace('"', '\\"')
         return f'"{escaped}"'
     if isinstance(v, list):
-        items = ", ".join(_toml_value(item) for item in cast(list[object], v))
+        items = ", ".join(toml_value(item) for item in cast(list[object], v))
         return f"[{items}]"
     if isinstance(v, dict):
         d = cast(_ObjDict, v)
-        pairs = ", ".join(f'"{k}" = {_toml_value(val)}' for k, val in d.items())
+        pairs = ", ".join(f'"{k}" = {toml_value(val)}' for k, val in d.items())
         return "{" + pairs + "}"
     # Fallback: ints, floats, etc.
     return str(v)
@@ -51,7 +51,7 @@ def render_mcp_toml(servers: _JsonDict) -> str:
         lines.append(f"[mcp_servers.{name}]")
         if isinstance(config, dict):
             for k, v in cast(_ObjDict, config).items():
-                lines.append(f"{k} = {_toml_value(v)}")
+                lines.append(f"{k} = {toml_value(v)}")
         lines.append("")  # blank line between tables
     return "\n".join(lines)
 

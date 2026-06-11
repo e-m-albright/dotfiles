@@ -91,7 +91,8 @@ def _overview() -> AgentOverview:
             ),
         ),
         skills=SkillsSummary(
-            canonical_skills=21, claude_deployed=21, cursor_deployed=21, shared_deployed=21
+            canonical_skills=21,
+            deployed={"claude": 21, "cursor": 21, "codex": 21},
         ),
         agents=(),
         rules=RulesSummary(canonical_rules=31, claude_deployed=31, cursor_deployed=31),

@@ -329,6 +329,23 @@ class TestSetupStatusline:
         parsed = tomllib.loads((codex_home / "config.toml").read_text())
         assert parsed["tui"]["theme"] == "Sublime Snazzy"
 
+    def test_drop_managed_keys_handles_bracket_in_array_value(self) -> None:
+        """A ``]`` inside a quoted status_line element must not end the array early.
+
+        Regression: the old ``"]" not in line`` scan leaked later elements as bare
+        strings, producing invalid TOML on re-setup.
+        """
+        from dotfiles.cmd.agent.vendors.codex import _drop_tui_managed_keys
+
+        original = '[tui]\nstatus_line = [\n  "git [detached]",\n  "context",\n]\nkeep = 1\n'
+        result = "".join(_drop_tui_managed_keys(original.splitlines(keepends=True)))
+
+        # status_line fully removed, the trailing key survives, result still parses.
+        assert "status_line" not in result
+        assert "context" not in result
+        assert "keep = 1" in result
+        tomllib.loads(result)
+
 
 # ---------------------------------------------------------------------------
 # Hooks

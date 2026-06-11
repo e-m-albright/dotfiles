@@ -58,14 +58,11 @@ def _probe_http(server: str, url: str, http: HttpClient) -> McpProbe:
 def _vendor_counts(overview: AgentOverview, agent: Agent) -> tuple[int, int, int, int]:
     """Return (skills_deployed, skills_expected, agents_deployed, agents_expected)."""
     canonical = overview.skills.canonical_skills
-    if agent == "claude":
-        skills_dep, skills_exp = overview.skills.claude_deployed, canonical
-    elif agent == "cursor":
-        skills_dep, skills_exp = overview.skills.cursor_deployed, canonical
-    elif agent == "codex":
-        skills_dep, skills_exp = overview.skills.shared_deployed, canonical
-    else:
-        skills_dep, skills_exp = 0, 0
+    # Every vendor that deploys our skills is in the registry-built map; expected
+    # is the canonical count for those, 0 for a vendor with no skills surface.
+    deployed = overview.skills.deployed
+    skills_dep = deployed.get(agent, 0)
+    skills_exp = canonical if agent in deployed else 0
 
     if agent in ("claude", "codex"):
         agents_dep = sum(1 for a in overview.agents if a.cells.get(agent, False))

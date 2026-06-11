@@ -38,14 +38,17 @@ class ValueRow(BaseModel):
 
 
 class SkillsSummary(BaseModel):
-    """Skill counts in the agent overview."""
+    """Skill counts in the agent overview.
+
+    ``deployed`` maps vendor name → count of deployed skill dirs, built from the
+    VENDORS registry so every vendor with a skills surface is covered (one source,
+    not a hand-listed subset). ``canonical_skills`` is the count in ai/skills.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     canonical_skills: int
-    claude_deployed: int
-    cursor_deployed: int
-    shared_deployed: int
+    deployed: dict[str, int]
 
 
 class RulesSummary(BaseModel):

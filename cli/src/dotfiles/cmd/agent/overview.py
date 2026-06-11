@@ -421,7 +421,12 @@ class AgentOverviewService:
     # ------------------------------------------------------------------
 
     def section_skills(self) -> SkillsSummary:
-        """Count canonical SKILL.md files; count deployed dirs in claude/shared."""
+        """Count canonical SKILL.md files and per-vendor deployed skill dirs.
+
+        Deployed counts come from the VENDORS registry — one entry per vendor that
+        declares a skills surface — so gemini/pi/hermes are counted, not just the
+        original claude/cursor/codex trio.
+        """
         skills_root = self._dotfiles / "ai" / "skills"
         canonical = 0
         if skills_root.exists() and skills_root.is_dir():
@@ -429,21 +434,12 @@ class AgentOverviewService:
                 if entry.is_dir() and (entry / "SKILL.md").exists():
                     canonical += 1
 
-        claude_dir = self._home / ".claude" / "skills"
-        claude_deployed = self._count_subdirs(claude_dir)
-
-        cursor_dir = self._home / ".cursor" / "skills"
-        cursor_deployed = self._count_subdirs(cursor_dir)
-
-        shared_dir = self._home / ".agents" / "skills"
-        shared_deployed = self._count_subdirs(shared_dir)
-
-        return SkillsSummary(
-            canonical_skills=canonical,
-            claude_deployed=claude_deployed,
-            cursor_deployed=cursor_deployed,
-            shared_deployed=shared_deployed,
-        )
+        deployed = {
+            v.name: self._count_subdirs(self._home / v.paths.skills)
+            for v in VENDORS
+            if v.paths.skills
+        }
+        return SkillsSummary(canonical_skills=canonical, deployed=deployed)
 
     def _count_subdirs(self, path: Path) -> int:
         """Count immediate subdirectory entries under path (0 if not present)."""
@@ -526,7 +522,7 @@ class AgentOverviewService:
         """One PermissionRow per config source that exists."""
         rows: list[PermissionRow] = []
         rows.extend(
-            _perm_settings("Claude Code (deployed)", self._home / ".claude" / "settings.json")
+            _perm_settings("Claude Code (deployed)", surface_path(self._home, "claude", "settings"))
         )
         rows.extend(
             _perm_permissions_block(

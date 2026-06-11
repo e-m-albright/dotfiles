@@ -151,7 +151,10 @@ def load_config[M: BaseModel](
             return None
         text = path.read_text()
         return model.model_validate_json(text)
-    except (pydantic.ValidationError, ValueError) as exc:
+    except (pydantic.ValidationError, ValueError, OSError) as exc:
+        # OSError too: a file can pass exists() yet be unreadable (permissions,
+        # a broken mount). These are probe/read paths that must degrade to None,
+        # not crash an informational command. Matches load_json_or / _perm_codex.
         _log.warning("config_parse_failed", path=str(path), model=model.__name__, error=str(exc))
         return None
 

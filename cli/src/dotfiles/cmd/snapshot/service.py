@@ -91,12 +91,12 @@ def _vendor_tokens(overview: AgentOverview, agent: Agent) -> list[str]:
         if hook.cells.get(agent, False):
             tokens.append(f"hook:{hook.label}")
     if agent == "claude":
-        tokens.append(f"skills:{overview.skills.claude_deployed}")
+        tokens.append(f"skills:{overview.skills.deployed.get('claude', 0)}")
         tokens.append(f"rules:{overview.rules.claude_deployed}")
     elif agent == "cursor":
         tokens.append(f"rules:{overview.rules.cursor_deployed}")
     elif agent == "codex":
-        tokens.append(f"skills:{overview.skills.shared_deployed}")
+        tokens.append(f"skills:{overview.skills.deployed.get('codex', 0)}")
     return sorted(tokens)
 
 

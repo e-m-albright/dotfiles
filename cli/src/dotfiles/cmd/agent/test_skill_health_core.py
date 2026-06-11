@@ -110,9 +110,11 @@ def _overview(*, claude_deployed=21, canonical=21) -> AgentOverview:
         hooks=(),
         skills=SkillsSummary(
             canonical_skills=canonical,
-            claude_deployed=claude_deployed,
-            cursor_deployed=canonical,
-            shared_deployed=canonical,
+            deployed={
+                "claude": claude_deployed,
+                "cursor": canonical,
+                "codex": canonical,
+            },
         ),
         agents=(
             AgentPresenceRow(

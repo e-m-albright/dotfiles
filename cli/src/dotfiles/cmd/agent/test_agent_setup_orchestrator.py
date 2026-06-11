@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dotfiles.agent import AGENTS
 from dotfiles.cmd.agent.setup import ALL_AGENTS, VENDOR_SETUP, AgentSetupResult, run_setup
 from dotfiles.result import StepResult
 from dotfiles.testing.fakes import make_fake_context
@@ -19,6 +20,10 @@ def test_all_agents_matches_dispatch_order() -> None:
     # The no-argument run covers every dispatchable Agent, in dispatch order.
     assert ALL_AGENTS == ("claude", "cursor", "codex", "gemini", "pi", "hermes")
     assert tuple(VENDOR_SETUP) == ALL_AGENTS
+    # Drift guard: every vendor in the registry has a setup entry (and vice
+    # versa). A 7th vendor added to VENDORS but not here would silently never
+    # get set up; this fails loudly instead.
+    assert tuple(VENDOR_SETUP) == AGENTS
 
 
 def test_run_setup_runs_only_named_agents_in_order() -> None:

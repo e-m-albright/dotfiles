@@ -265,9 +265,16 @@ class TestSectionSkills:
     def test_zero_when_no_dirs(self, tmp_path: Path) -> None:
         summary = make_service(tmp_path / "dotfiles", tmp_path / "home").section_skills()
         assert summary.canonical_skills == 0
-        assert summary.claude_deployed == 0
-        assert summary.cursor_deployed == 0
-        assert summary.shared_deployed == 0
+        # All six vendors with a skills surface are present and zero — not just
+        # the original claude/cursor/codex trio.
+        assert summary.deployed == {
+            "claude": 0,
+            "cursor": 0,
+            "codex": 0,
+            "gemini": 0,
+            "pi": 0,
+            "hermes": 0,
+        }
 
     def test_counts_skill_md_files(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
@@ -289,7 +296,7 @@ class TestSectionSkills:
         for name in ("alpha", "beta", "gamma"):
             (claude_skills / name).mkdir(parents=True)
         summary = make_service(tmp_path / "dotfiles", home).section_skills()
-        assert summary.claude_deployed == 3
+        assert summary.deployed["claude"] == 3
 
     def test_cursor_deployed_count_uses_owned_skills_not_vendor_builtins(
         self, tmp_path: Path
@@ -300,7 +307,7 @@ class TestSectionSkills:
         (cursor_skills / "testing").mkdir(parents=True)
         (home / ".cursor" / "skills-cursor" / "vendor-builtin").mkdir(parents=True)
         summary = make_service(tmp_path / "dotfiles", home).section_skills()
-        assert summary.cursor_deployed == 2
+        assert summary.deployed["cursor"] == 2
 
     def test_shared_deployed_count(self, tmp_path: Path) -> None:
         home = tmp_path / "home"
@@ -308,7 +315,20 @@ class TestSectionSkills:
         (shared / "one").mkdir(parents=True)
         (shared / "two").mkdir(parents=True)
         summary = make_service(tmp_path / "dotfiles", home).section_skills()
-        assert summary.shared_deployed == 2
+        # codex and pi both deploy to the shared ~/.agents/skills dir.
+        assert summary.deployed["codex"] == 2
+        assert summary.deployed["pi"] == 2
+
+    def test_hermes_and_gemini_skill_dirs_are_counted(self, tmp_path: Path) -> None:
+        """Regression: the registry-driven count covers the vendors the old
+        hardcoded trio omitted (gemini, hermes)."""
+        home = tmp_path / "home"
+        (home / ".hermes" / "skills" / "a").mkdir(parents=True)
+        (home / ".gemini" / "antigravity-cli" / "skills" / "b").mkdir(parents=True)
+        (home / ".gemini" / "antigravity-cli" / "skills" / "c").mkdir(parents=True)
+        summary = make_service(tmp_path / "dotfiles", home).section_skills()
+        assert summary.deployed["hermes"] == 1
+        assert summary.deployed["gemini"] == 2
 
     def test_files_in_deployed_dir_not_counted(self, tmp_path: Path) -> None:
         """Only subdirectories count; plain files are ignored."""
@@ -317,7 +337,7 @@ class TestSectionSkills:
         (claude_skills / "real-skill").mkdir(parents=True)
         (claude_skills / "README.md").write_text("content")
         summary = make_service(tmp_path / "dotfiles", home).section_skills()
-        assert summary.claude_deployed == 1
+        assert summary.deployed["claude"] == 1
 
 
 # ===========================================================================

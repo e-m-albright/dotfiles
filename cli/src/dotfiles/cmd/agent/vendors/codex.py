@@ -16,6 +16,7 @@ All paths are injected; Path.home() MUST NOT appear here.
 
 from __future__ import annotations
 
+import re
 import shutil
 import tomllib
 from collections.abc import Callable
@@ -30,7 +31,7 @@ from dotfiles.cmd.agent.lib import (
     mcp_skip,
     write_kernel_instructions,
 )
-from dotfiles.cmd.agent.toml_writer import render_mcp_toml, upsert_section
+from dotfiles.cmd.agent.toml_writer import render_mcp_toml, toml_value, upsert_section
 
 
 def setup_codex(
@@ -235,9 +236,23 @@ def _line_key(stripped: str) -> str:
     return stripped.split("=", 1)[0].strip() if "=" in stripped else ""
 
 
+def _without_quoted(stripped: str) -> str:
+    """Drop ``"..."`` / ``'...'`` spans so bracket scans ignore string contents.
+
+    A status_line element like ``"git [detached]"`` carries a literal ``]`` that
+    must not be mistaken for the array's closing bracket.
+    """
+    return re.sub(r"\"[^\"]*\"|'[^']*'", "", stripped)
+
+
+def _closes_array(stripped: str) -> bool:
+    """True when this line closes the array (a ``]`` outside any string value)."""
+    return "]" in _without_quoted(stripped)
+
+
 def _starts_multiline_array(stripped: str) -> bool:
     """True when status_line opens an array that does not close on this line."""
-    return _line_key(stripped) == "status_line" and "]" not in stripped
+    return _line_key(stripped) == "status_line" and not _closes_array(stripped)
 
 
 def _drop_tui_managed_keys(lines: list[str]) -> list[str]:
@@ -264,7 +279,7 @@ def _process_line(stripped: str, in_tui: bool, skip_array: bool) -> tuple[bool, 
     array-skip mode. Extracted to keep _drop_tui_managed_keys under complexity 10.
     """
     if skip_array:
-        return ("]" not in stripped), False
+        return (not _closes_array(stripped)), False
     if stripped.startswith("["):
         return False, True
     if in_tui and _line_key(stripped) in _TUI_MANAGED_KEYS:
@@ -282,9 +297,7 @@ def _find_section_index(lines: list[str], header: str) -> int | None:
 
 def _render_tui_keys(keys: dict[str, object]) -> list[str]:
     """Render a dict of simple TOML values as key = value lines."""
-    from dotfiles.cmd.agent.toml_writer import _toml_value  # type: ignore[attr-defined]
-
-    return [f"{k} = {_toml_value(v)}\n" for k, v in keys.items()]
+    return [f"{k} = {toml_value(v)}\n" for k, v in keys.items()]
 
 
 def _setup_hooks(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
