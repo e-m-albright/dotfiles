@@ -202,7 +202,7 @@ def _render_capability_matrix(rows: Iterable[CapabilityRow]) -> None:
     console.print(
         "  [dim][green]✓[/green] supported · [yellow]◐[/yellow] beta/partial · "
         "[cyan]⊕[/cyan] via extension · [red]✗[/red] absent (proven) · ? unverified[/]\n"
-        "  [dim]receipts (probe / source per cell): dotfiles agent capabilities[/]"
+        "  [dim]evidence (probe / source per cell): dotfiles agent capabilities[/]"
     )
 
 
@@ -469,7 +469,7 @@ def capabilities(
         False, "--verify", help="Run each cell's local probe and report proven/failed."
     ),
 ) -> None:
-    """The capability matrix with its receipts — a probe and/or source URL per cell.
+    """The capability matrix with its evidence — a probe and/or source URL per cell.
 
     The matrix is provenance-backed: `--verify` runs the on-machine probes so the
     claims stay tethered to what's actually installed.

@@ -70,19 +70,20 @@ Cursor was previously reporting only vendor built-ins under `~/.cursor/skills-cu
 
 Build/keep:
 
-1. `/consult` — second opinion primitive. Prefer this name over `/oracle`; `oracle` is not an industry term here and is too cryptic. `/consult` can later power `/review --consult`.
-2. Context attribution footer/command — show what consumes context: transcript, files, tool output, skills, cache.
-3. 5h/7d quota split — extend `git-status.ts` if provider headers expose both windows.
-4. Output redaction — deterministic tool-output filter; near-zero model tax if implemented as an extension hook.
-5. Hashline edit helper — optional robust edit path for large/churny files; do not replace simple string edits until proven.
-6. LSP sidecar — read-only first (`diagnostics`, `references`, `definition`), because Zed remains the IDE.
-7. `/handoff` — deterministic session closeout prompt generator.
-8. `/decision` — durable decision capture into docs, not model memory.
-9. `/review --consult` — structured multi-model/cross-model review after `/consult` exists.
-10. Architecture guard — deterministic + heuristic checks for god files, helper sprawl, duplicate abstractions, and parallel implementations.
-11. Model router — route by task class only after we have enough usage evidence.
-12. Cost guard — budget/statusline warnings for paid models.
-13. Browser-tooling router — command wrapper around the existing browser-tooling skill/tool choices.
+1. `/consult` — **shipped** in `ai/agents/pi/extensions/consult.ts`; second opinion primitive. Prefer this name over `/oracle`; `oracle` is not an industry term here and is too cryptic. `/consult` can later power `/review --consult`.
+2. Context/session breakdown — **shipped** as portable skill `ai/skills/context-session-breakdown`; keep deterministic Pi command ideas separate from the portable handoff workflow.
+3. Context attribution footer/command — show what consumes context: transcript, files, tool output, skills, cache.
+4. 5h/7d quota split — extend `git-status.ts` if provider headers expose both windows.
+5. Output redaction — deterministic tool-output filter; near-zero model tax if implemented as an extension hook.
+6. Hashline edit helper — optional robust edit path for large/churny files; do not replace simple string edits until proven.
+7. LSP sidecar — read-only first (`diagnostics`, `references`, `definition`), because Zed remains the IDE.
+8. `/handoff` — deterministic session closeout prompt generator.
+9. `/decision` — durable decision capture into docs, not model memory.
+10. `/review --consult` — structured multi-model/cross-model review after `/consult` exists.
+11. Architecture guard — deterministic + heuristic checks for god files, helper sprawl, duplicate abstractions, and parallel implementations.
+12. Model router — route by task class only after we have enough usage evidence.
+13. Cost guard — budget/statusline warnings for paid models.
+14. Browser-tooling router — command wrapper around the existing browser-tooling skill/tool choices.
 
 Defer or sidecar:
 

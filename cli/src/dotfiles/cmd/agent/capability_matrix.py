@@ -13,7 +13,7 @@ Workflow tool), even though there's no public feature doc.
 Status: yes (GA) · beta (preview/partial/auto-only) · ext (only via an
 extension, e.g. Pi) · no (proven absent, with evidence) · unverified (no
 first-party source AND not locally probeable). Glyphs render in
-``dotfiles agent overview``; the full receipts live in docs/knowledge/agent-fleet.md.
+``dotfiles agent overview``; the full evidence lives in docs/knowledge/agent-fleet.md.
 
 Run the local probes with ``dotfiles agent capabilities --verify`` to keep the
 matrix tethered to reality.
@@ -243,7 +243,7 @@ def capability_rows() -> list[CapabilityRow]:
 
 
 def receipts() -> list[tuple[str, str, Cell]]:
-    """(capability, agent, cell) for every cell that has a test or source — the receipts."""
+    """(capability, agent, cell) for every cell that has a test or source — the evidence."""
     out: list[tuple[str, str, Cell]] = []
     for cap in CAPABILITY_MATRIX:
         for agent in AGENTS:

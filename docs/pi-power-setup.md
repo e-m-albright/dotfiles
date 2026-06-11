@@ -47,7 +47,7 @@ Pi has no built-in permission system; `safe-git` intercepts bash calls and gates
 
 ### Worth evaluating later
 
-- `oracle` (hjanuschka/shitty-extensions) — second-opinion from another model; lets Pi consult our Claude/Codex subscriptions mid-task.
+- `/consult` is now repo-owned (`ai/agents/pi/extensions/consult.ts`): second opinion from Claude/Codex without installing `oracle`. Keep watching external implementations only for ideas.
 - `filter-output` / `security` (michalvavra/agents) — redact tokens/secrets from tool output.
 - Status-bar packages (`pi-powerline-footer`, `rytswd/pi-agent-extensions`) add subscription-usage + context-window display — feature ideas for our custom `git-status.ts`.
 
@@ -61,7 +61,7 @@ Pi is our **canonical ideal agent**: smallest context tax, capabilities where th
 | **Statusline rate-limit split (5h/7d)** | single quota % | **Parked** — build when Pi exposes both provider windows in response headers (confirmed for `openai-codex`, unverified for Anthropic-OAuth) | extend `git-status.ts` `quotaFromHeaders` |
 | **MCP** | none | **Won't build** — local-first is the point; stays `· n/a by choice`, not a gap | — |
 | **Hooks** | extensions | **Sufficient** — Pi's hot-reloadable extensions ARE its hook/automation surface; no `hooks.json` adapter needed | — |
-| **Second opinion** (consult Claude/Codex mid-task) | — | **Evaluate** — high leverage; lets Pi tap our other subscriptions | `oracle` (hjanuschka/shitty-extensions) |
+| **Second opinion** (consult Claude/Codex mid-task) | ✓ `/consult` | **Shipped** — keep small/read-only; default Claude, `--codex` available | `ai/agents/pi/extensions/consult.ts` |
 | **Output redaction** (secrets/tokens) | — | **Evaluate** — defense-in-depth for tool output | `filter-output`/`security` (michalvavra/agents) |
 | **Robust large-file edits** | string-replace | **Defer** — only if Edit-churn becomes painful; test on our models first | oh-my-pi hashline (side-by-side `~/.omp`) |
 | **IDE replacement** (LSP rename, DAP debug, kernels) | — | **Side-car only** — never in the fleet Pi slot (abandons minimalism); run oh-my-pi under `~/.omp` for refactor/debug sessions | `mise use -g github:can1357/oh-my-pi` |
