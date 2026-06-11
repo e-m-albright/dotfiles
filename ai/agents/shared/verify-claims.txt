@@ -10,6 +10,7 @@
 # of matching ordinary prose. (Verified non-matches: "latest passing run was…",
 # "commit works fine", "confirm it works?", "tests pass per CI history".)
 \b(all|the) tests? (now )?(pass|passed|passes)\b
+\b(all )?[0-9]+ tests? (now )?(pass|passed|passing)\b
 \b(all )?tests? are (now )?(passing|green)\b
 \ball (checks?|gates?) (pass|passed|are green)\b
 \bci is (now )?green\b

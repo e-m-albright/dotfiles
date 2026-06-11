@@ -111,6 +111,14 @@ def test_missing_sources_degrade_to_zero(tmp_path: Path) -> None:
     assert _item(manifest, "skill index").count == 0
 
 
+def test_absent_docs_show_unknown_not_a_fabricated_count(tmp_path: Path) -> None:
+    # With no source docs, the map must admit "P?"/"G?" — never a hardcoded 12/14
+    # that lies about being live-derived (assessor finding 1.4).
+    columns = {c.name: c.ids for c in build_manifest(tmp_path).columns}
+    assert columns["Doctrine"].endswith("P?")
+    assert columns["Enforcement"] == "G?"
+
+
 def test_manifest_json_shape_and_totals(tmp_path: Path) -> None:
     manifest = build_manifest(_fake_repo(tmp_path))
     payload = manifest_json(manifest)

@@ -76,6 +76,15 @@ printf '%s' "$text" | grep -iqEf <(grep -vE '^[[:space:]]*(#|$)' "$CLAIMS_FILE")
 [ "$tools" -gt 0 ] && exit 0
 
 # Claim present with zero tools this turn → block once with a nudge.
+#
+# Telemetry: record every block so the gate's firing is OBSERVABLE — otherwise its
+# value (and the claim patterns) rest on intuition, and an unfired gate is itself an
+# unverified done-claim. Append-only, best-effort; opt out with VERIFY_LOG=/dev/null.
+log="${VERIFY_LOG:-$HOME/.claude/verify-before-done.log}"
+if [ "$log" != "/dev/null" ] && mkdir -p "$(dirname "$log")" 2>/dev/null; then
+    printf '%s\tblock\t%s\n' "$(date -u +%FT%TZ)" "$(printf '%s' "$text" | tr '\n\t' '  ' | cut -c1-100)" >>"$log" 2>/dev/null || true
+fi
+
 reason="K1 — verify before claiming done. Your reply asserts something passes/works/is verified, but you ran no tools this turn to check it. Run the test/build/command and cite the actual result, or soften the claim to what you actually observed."
 jq -cn --arg r "$reason" '{decision: "block", reason: $r}'
 exit 0

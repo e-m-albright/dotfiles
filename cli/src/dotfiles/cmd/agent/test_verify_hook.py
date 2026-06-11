@@ -10,6 +10,7 @@ contract — the hook must stay conservative (no false blocks).
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -56,12 +57,21 @@ def _tool_result() -> dict[str, object]:
     }
 
 
-def _run(tmp_path: Path, events: list[dict[str, object]], *, stop_active: bool = False) -> str:
+def _run(
+    tmp_path: Path,
+    events: list[dict[str, object]],
+    *,
+    stop_active: bool = False,
+    log_path: Path | None = None,
+) -> str:
     transcript = tmp_path / "transcript.jsonl"
     transcript.write_text("\n".join(json.dumps(e) for e in events) + "\n")
     payload = json.dumps({"transcript_path": str(transcript), "stop_hook_active": stop_active})
+    # Point the block-telemetry log at a tmp file so the suite never writes to the
+    # real ~/.claude/verify-before-done.log (hermetic, per G8).
+    env = {**os.environ, "VERIFY_LOG": str(log_path or (tmp_path / "verify.log"))}
     result = subprocess.run(
-        ["bash", str(_HOOK)], input=payload, capture_output=True, text=True, check=False
+        ["bash", str(_HOOK)], input=payload, capture_output=True, text=True, check=False, env=env
     )
     assert result.returncode == 0, f"hook must always exit 0; stderr={result.stderr!r}"
     return result.stdout.strip()
@@ -123,6 +133,7 @@ _FALSE_POSITIVES = [
     "commit works fine on my side",
     "Want me to confirm it works?",
     "tests pass locally per CI history, but I haven't run them here.",
+    "Added 29 tests (975 total) covering the new path.",  # a count report, not a pass-claim
 ]
 
 
@@ -130,6 +141,26 @@ _FALSE_POSITIVES = [
 def test_innocent_phrasings_are_not_blocked(tmp_path: Path, text: str) -> None:
     out = _run(tmp_path, [_human("status?"), _assistant_text(text)])
     assert not _blocked(out), f"false block on innocent text: {text!r}"
+
+
+def test_numbered_test_count_signoff_is_blocked(tmp_path: Path) -> None:
+    # The canonical coding-agent sign-off — "All 975 tests pass" — with the count.
+    out = _run(tmp_path, [_human("done?"), _assistant_text("All 975 tests pass.")])
+    assert _blocked(out)
+
+
+def test_block_is_logged_for_observability(tmp_path: Path) -> None:
+    log = tmp_path / "verify.log"
+    out = _run(tmp_path, [_human("fix"), _assistant_text("Done — all tests pass.")], log_path=log)
+    assert _blocked(out)
+    assert log.exists()
+    assert "block" in log.read_text()
+
+
+def test_allowed_turn_writes_no_log(tmp_path: Path) -> None:
+    log = tmp_path / "verify.log"
+    _run(tmp_path, [_human("fix"), _assistant_text("I updated the file.")], log_path=log)
+    assert not log.exists() or log.read_text() == ""
 
 
 def test_missing_transcript_fails_open(tmp_path: Path) -> None:

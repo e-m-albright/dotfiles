@@ -77,6 +77,8 @@ def render_instructions(manifest: InstructionsManifest) -> None:
     console.print(
         f"\n[dim]Budget paid every session: [/][bold]{_fmt_tokens(default_tok)} tok[/]"
         f"[dim] · reachable corpus: {_fmt_tokens(manifest.tokens_for(LoadMode.reachable))} tok[/]"
+        f"\n[dim](repo sources only — excludes the harness system prompt, MEMORY.md "
+        f"auto-memory, and vendor-injected skills; Claude-shaped load semantics)[/]"
     )
 
 

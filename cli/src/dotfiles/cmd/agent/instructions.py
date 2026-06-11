@@ -229,15 +229,20 @@ def _map_columns(root: Path) -> tuple[MapColumn, ...]:
         _NUMBERED_HEADER.findall(_read(root / "docs" / "knowledge" / "engineering-gates.md"))
     )
     skills = len(sorted((root / "ai" / "skills").glob("*/SKILL.md")))
+    # Show "P?"/"G?" on a zero count, never a hardcoded historical number — a gauge
+    # that fabricates on failure (regex break, missing doc) is worse than one that
+    # admits it doesn't know (P7/G13: fail loud, never silent in your own layer).
+    p_range = f"P1-P{principles}" if principles else "P?"
+    g_range = f"G1-G{gates}" if gates else "G?"
     return (
         MapColumn(
             name="Doctrine",
-            ids=f"K1-K8 · P1-P{principles or 12}",
+            ids=f"K1-K8 · {p_range}",
             source="rules.md · engineering-philosophy.md",
         ),
         MapColumn(
             name="Enforcement",
-            ids=f"G1-G{gates or 14}",
+            ids=g_range,
             source="engineering-gates.md",
         ),
         MapColumn(name="Defense in depth", ids="L0-L5", source="how-we-build.md"),

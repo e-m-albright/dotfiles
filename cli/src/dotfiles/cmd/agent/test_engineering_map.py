@@ -14,7 +14,9 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from dotfiles.cmd.agent.instructions import build_manifest
+# Import the manifest's OWN header pattern, don't re-implement it — else the gate
+# can validate a different regex than the code it gates (assessor finding 1.3).
+from dotfiles.cmd.agent.instructions import _NUMBERED_HEADER, build_manifest
 
 _REPO = Path(__file__).resolve().parents[5]
 
@@ -25,8 +27,8 @@ def _table_ids(doc: str, letter: str) -> list[int]:
 
 
 def _numbered_headers(doc: str) -> int:
-    """Numbered `## N.` / `### N.` headers — the manifest's own count source."""
-    return len(re.findall(r"(?m)^#{2,3} \d+\. ", doc))
+    """Numbered `## N.` / `### N.` headers — counted with the manifest's own pattern."""
+    return len(_NUMBERED_HEADER.findall(doc))
 
 
 def test_map_ids_are_contiguous_and_match_their_source_docs() -> None:
