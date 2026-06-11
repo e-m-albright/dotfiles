@@ -27,8 +27,22 @@ block() {
 }
 
 # --- Filesystem obliteration -------------------------------------------------
+# Block recursive force-deletes of a root/home path. Robust to flag order
+# (-rf / -fr / -r -f), case (-R), long flags (--recursive/--force), and quoting
+# ("$HOME"). Quotes are stripped first; the command is split on separators so a
+# dangerous path in one segment can't be confused with a benign rm in another
+# (e.g. `cd /tmp && rm -rf build` is allowed; `rm -rf /usr` is not). The vector
+# contract lives in cli .../test_guard_hooks.py — add a bypass there, then fix.
+fs_cmd=$(printf '%s' "$CMD" | tr -d "\"'")
+while IFS= read -r seg; do
+    printf '%s' "$seg" | grep -qE '(^|[[:space:]])rm([[:space:]]|$)' || continue
+    printf '%s' "$seg" | grep -qE '[[:space:]]-[A-Za-z]*[rR]|[[:space:]]--recursive' || continue
+    printf '%s' "$seg" | grep -qE '[[:space:]]-[A-Za-z]*[fF]|[[:space:]]--force' || continue
+    printf '%s' "$seg" | grep -qE '[[:space:]](/|~|\$HOME|\$\{HOME\})' || continue
+    block 'recursive force-delete of a root/home path.'
+done <<< "$(printf '%s' "$fs_cmd" | sed -E 's/(&&|\|\||[;&|])/\n/g')"
+
 case "$CMD" in
-    *"rm -rf /"*|*"rm -rf ~"*|*'rm -rf $HOME'*) block 'recursive force-delete of a home/root path.' ;;
     *"sudo rm"*|*"sudo dd"*) block 'privileged destructive command.' ;;
 esac
 
