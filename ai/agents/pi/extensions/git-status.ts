@@ -250,7 +250,7 @@ function renderFooter(ctx: ExtensionContext, gitState: GitState, quotaState: Quo
 
 	const gitText = gitSegment(gitState);
 	const sessionName = ctx.sessionManager.getSessionName();
-	let pathLine = gitText ? `${dim(cwd)} ${gitText}` : dim(cwd);
+	let pathLine = gitText ? `${statusColor("note", "π")} ${dim(cwd)} ${gitText}` : `${statusColor("note", "π")} ${dim(cwd)}`;
 	if (sessionName) pathLine += dim(` • ${sessionName}`);
 	const coloredPathLine = truncateToWidth(pathLine, width, dim("..."));
 

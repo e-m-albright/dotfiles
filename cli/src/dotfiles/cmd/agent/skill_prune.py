@@ -26,13 +26,14 @@ from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.result import StepResult
 
 # Deployed skill directories we mirror, relative to $HOME. Codex + Pi share
-# ~/.agents/skills; Cursor keeps its own (curated) set.
+# ~/.agents/skills; Cursor keeps its own (curated) set; Hermes has ~/.hermes/skills.
 _SKILL_DIRS: tuple[tuple[str, ...], ...] = (
     (".claude", "skills"),
     (".agents", "skills"),
     (".codex", "skills"),
     (".cursor", "skills"),
     (".cursor", "skills-cursor"),
+    (".hermes", "skills"),
 )
 # Dirs where our skills + external + untracked-external installs land. A skill that
 # lives ONLY outside these (in a vendor's own dir) is that vendor's built-in.

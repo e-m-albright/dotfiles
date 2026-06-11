@@ -55,7 +55,7 @@ def _vendor_counts(overview: AgentOverview, agent: Agent) -> tuple[int, int, int
         skills_dep, skills_exp = 0, 0
 
     if agent in ("claude", "codex"):
-        agents_dep = sum(1 for a in overview.agents if getattr(a, agent, False))
+        agents_dep = sum(1 for a in overview.agents if a.cells.get(agent, False))
         agents_exp = len(overview.agents)
     else:
         agents_dep, agents_exp = 0, 0

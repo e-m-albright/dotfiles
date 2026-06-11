@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/dotfiles/ai/agents/shared/hooks/format-on-save.sh",
+            "command": "bash ~/dotfiles/ai/agents/shared/hooks/format-on-save.sh",
             "timeout": 30
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/dotfiles/ai/agents/shared/hooks/notify.sh"
+            "command": "bash ~/dotfiles/ai/agents/shared/hooks/notify.sh"
           }
         ]
       }
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "NOTIFY_MESSAGE='Permission needed' NOTIFY_SOUND=Basso ~/dotfiles/ai/agents/shared/hooks/notify.sh"
+            "command": "NOTIFY_MESSAGE='Permission needed' NOTIFY_SOUND=Basso bash ~/dotfiles/ai/agents/shared/hooks/notify.sh"
           }
         ]
       }

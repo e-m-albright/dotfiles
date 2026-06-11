@@ -7,16 +7,13 @@ Hexagonal: imports only stdlib + pydantic + core models/ports.
 
 from __future__ import annotations
 
-import json
 import shutil
 from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, ConfigDict, Field
-
-from dotfiles.agent import AGENTS
+from dotfiles.agent import AGENTS, VENDORS, Vendor
 from dotfiles.cmd.agent.capability_matrix import (
     CAPABILITY_MATRIX,
     CapabilityRow,
@@ -24,21 +21,21 @@ from dotfiles.cmd.agent.capability_matrix import (
     fleet_doc_stale_days,
 )
 from dotfiles.cmd.agent.config import (
+    InstalledPlugins,
+    McpServersFile,
     PermissionsBlock,
     SettingsWithPermissions,
     load_config,
 )
 from dotfiles.cmd.agent.models import (
     AgentOverview,
+    AgentPresenceRow,
     AgentSurface,
     CoverageState,
-    HookRow,
-    McpRow,
     PermissionRow,
     PluginRow,
     RulesSummary,
     SkillsSummary,
-    SubagentRow,
     UniformityRow,
     ValueRow,
 )
@@ -81,6 +78,10 @@ _LOCAL_ONLY: frozenset[tuple[str, str]] = frozenset(
         ("hooks", "gemini"),  # agy: hook registration is workspace-local
         ("hooks", "pi"),  # pi: hooks come from the safe-git extension, not a global set
         ("statusline", "cursor"),  # cursor: statusline is beta, no stable deploy mechanism
+        ("rules", "hermes"),  # hermes: rules come from project AGENTS.md; no global slot we own
+        ("subagents", "hermes"),  # hermes: delegate_task is a runtime tool, no deploy dir
+        ("permissions", "hermes"),  # hermes: tool policy lives in Hermes-managed config, not ours
+        ("hooks", "hermes"),  # hermes: ~/.hermes/hooks schema undocumented; we don't deploy it
     }
 )
 
@@ -94,12 +95,32 @@ def _coverage(capability: str, agent: str, supported: bool, deployed: bool) -> C
     return "local" if (capability, agent) in _LOCAL_ONLY else "gap"
 
 
-class _McpServersFile(BaseModel):
-    """Just the ``mcpServers`` map of an agent's MCP config (extra keys ignored)."""
+def _perm_settings(label: str, path: Path) -> list[PermissionRow]:
+    cfg = load_config(path, SettingsWithPermissions)
+    if cfg is None:
+        return []
+    return [
+        PermissionRow(
+            label=label,
+            allow=len(cfg.permissions.allow),
+            deny=len(cfg.permissions.deny),
+            source_path=str(path),
+        )
+    ]
 
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
-    mcp_servers: dict[str, object] = Field(default_factory=dict, alias="mcpServers")
+def _perm_permissions_block(label: str, path: Path) -> list[PermissionRow]:
+    cfg = load_config(path, PermissionsBlock)
+    if cfg is None:
+        return []
+    return [
+        PermissionRow(
+            label=label,
+            allow=len(cfg.allow),
+            deny=len(cfg.deny),
+            source_path=str(path),
+        )
+    ]
 
 
 class AgentOverviewService:
@@ -188,43 +209,40 @@ class AgentOverviewService:
     def _deploy_rules(self) -> dict[str, bool]:
         h = self._home
         return {
-            "claude": (h / ".claude" / "CLAUDE.md").exists(),
-            "cursor": self._count_cursor_rules(self._cursor_rules_dir()) > 0,
-            "codex": (h / ".codex" / "AGENTS.md").exists(),
-            "gemini": (h / ".gemini" / "AGENTS.md").exists(),
-            "pi": (h / ".pi" / "agent" / "AGENTS.md").exists(),
+            v.name: (
+                self._count_cursor_rules(self._cursor_rules_dir()) > 0
+                if v.name == "cursor"
+                else v.paths.exists(h, v.paths.instructions)
+            )
+            for v in VENDORS
         }
 
     def _deploy_skills(self) -> dict[str, bool]:
         h = self._home
-        return {
-            "claude": self._count_subdirs(h / ".claude" / "skills") > 0,
-            "cursor": self._count_subdirs(h / ".cursor" / "skills") > 0,
-            "codex": self._count_subdirs(h / ".agents" / "skills") > 0,
-            "gemini": self._count_subdirs(h / ".gemini" / "antigravity-cli" / "skills") > 0,
-            "pi": self._count_subdirs(h / ".agents" / "skills") > 0,
-        }
+        result: dict[str, bool] = {}
+        for v in VENDORS:
+            if v.paths.skills:
+                result[v.name] = self._count_subdirs(h / v.paths.skills) > 0
+            else:
+                result[v.name] = False
+        return result
 
     def _deploy_subagents(self) -> dict[str, bool]:
         h = self._home
         return {
-            "claude": self._has_md(h / ".claude" / "agents"),
-            "cursor": self._has_md(h / ".cursor" / "agents"),
-            "codex": self._has_md(h / ".codex" / "agents"),
-            "gemini": False,  # supported, but no .md-dir convention yet (inline)
-            "pi": self._has_md(h / ".pi" / "agent" / "agents"),
+            v.name: self._has_md(h / rel) if (rel := v.paths.subagents_deploy) else False
+            for v in VENDORS
         }
 
     def _deploy_statusline(self) -> dict[str, bool]:
         h = self._home
         return {
             "claude": self._file_contains(h / ".claude" / "settings.json", "statusLine"),
-            "cursor": False,  # beta; no stable deploy mechanism yet
+            "cursor": False,
             "codex": self._file_contains(h / ".codex" / "config.toml", "status_line"),
-            # agy ships a native, always-on statusline (no file to deploy); the
-            # presence of its config root proves agy is set up and the bar is shown.
             "gemini": (h / ".gemini" / "antigravity-cli").is_dir(),
             "pi": (h / ".pi" / "agent" / "extensions" / "git-status.ts").exists(),
+            "hermes": False,  # no custom statusline surface; Hermes' TUI footer is fixed
         }
 
     def _deploy_permissions(self) -> dict[str, bool]:
@@ -235,17 +253,12 @@ class AgentOverviewService:
             "codex": (h / ".codex" / "rules" / "default.rules").exists(),
             "gemini": (h / ".gemini" / "settings.json").exists(),
             "pi": (h / ".pi" / "agent" / "permission-policy.json").exists(),
+            "hermes": False,  # tool policy is Hermes-managed (config.yaml + sandbox), not ours
         }
 
     def _deploy_hooks(self) -> dict[str, bool]:
         rows = self.section_hooks()
-        return {
-            "claude": any(r.claude for r in rows),
-            "cursor": any(r.cursor for r in rows),
-            "codex": any(r.codex for r in rows),
-            "gemini": False,  # no hooks deployed
-            "pi": False,  # hooks only via the safe-git extension, not our shared set
-        }
+        return {agent: any(r.cells.get(agent, False) for r in rows) for agent in AGENTS}
 
     def _has_md(self, path: Path) -> bool:
         """True when *path* is a dir holding at least one ``.md`` file."""
@@ -259,29 +272,25 @@ class AgentOverviewService:
     # Skills & Rules (colocated value matrix: per-agent deployment)
     # ------------------------------------------------------------------
 
+    def _skill_count_cell(self, v: Vendor, home: Path) -> str:
+        if not v.paths.skills:
+            return "—"
+        return str(self._count_subdirs(home / v.paths.skills))
+
+    def _rules_cell(self, v: Vendor, home: Path) -> str:
+        if v.name == "cursor":
+            return ".mdc" if self._count_cursor_rules(self._cursor_rules_dir()) > 0 else "—"
+        if not v.paths.instructions:
+            return "—"
+        label = "CLAUDE" if v.name == "claude" else "AGENTS"
+        return label if v.paths.exists(home, v.paths.instructions) else "—"
+
     def section_skills_rules(self) -> list[ValueRow]:
         """Per-agent skill counts and where each vendor's rules live (files vs embedded)."""
         h = self._home
-        skills = {
-            "claude": str(self._count_subdirs(h / ".claude" / "skills")),
-            "cursor": str(self._count_subdirs(h / ".cursor" / "skills")),
-            "codex": str(self._count_subdirs(h / ".agents" / "skills")),
-            "gemini": "—",  # Gemini has no skills surface
-            "pi": str(self._count_subdirs(h / ".agents" / "skills")),
-        }
-        # The kernel (rules.md) is deployed verbatim to each vendor's instruction
-        # file — the cell names that file, consistently, so every vendor reads the
-        # same rules via its own convention (Claude=CLAUDE.md, Cursor=.mdc, rest=AGENTS.md).
-        rules = {
-            "claude": "CLAUDE" if (h / ".claude" / "CLAUDE.md").exists() else "—",
-            "cursor": ".mdc" if self._count_cursor_rules(self._cursor_rules_dir()) > 0 else "—",
-            "codex": "AGENTS" if (h / ".codex" / "AGENTS.md").exists() else "—",
-            "gemini": "AGENTS" if (h / ".gemini" / "AGENTS.md").exists() else "—",
-            "pi": "AGENTS" if (h / ".pi" / "agent" / "AGENTS.md").exists() else "—",
-        }
         return [
-            ValueRow(label="skills", cells=skills),
-            ValueRow(label="rules", cells=rules),
+            ValueRow(label="skills", cells={v.name: self._skill_count_cell(v, h) for v in VENDORS}),
+            ValueRow(label="rules", cells={v.name: self._rules_cell(v, h) for v in VENDORS}),
         ]
 
     def _cursor_rules_dir(self) -> Path:
@@ -304,18 +313,14 @@ class AgentOverviewService:
     # Section 1: MCP Servers
     # ------------------------------------------------------------------
 
-    def section_mcp(self) -> list[McpRow]:
-        """One McpRow per server, from each agent's LIVE config (codex via `codex mcp list`)."""
+    def section_mcp(self) -> list[AgentPresenceRow]:
+        """One row per server, from each agent's LIVE config (codex via `codex mcp list`)."""
         live = self._live_mcp()
         names = sorted({name for servers in live.values() for name in servers})
         return [
-            McpRow(
-                server=name,
-                claude=name in live["claude"],
-                cursor=name in live["cursor"],
-                codex=name in live["codex"],
-                gemini=name in live["gemini"],
-                pi=False,  # Pi has no MCP surface (rendered n/a, not a failure)
+            AgentPresenceRow(
+                label=name,
+                cells={agent: name in live[agent] for agent in AGENTS},
             )
             for name in names
         ]
@@ -323,17 +328,19 @@ class AgentOverviewService:
     def _live_mcp(self) -> dict[str, set[str]]:
         """Server names actually configured per agent, read from live state."""
         h = self._home
-        return {
-            "claude": self._mcp_config_servers(h / ".claude.json"),
-            "cursor": self._mcp_config_servers(h / ".cursor" / "mcp.json"),
-            "gemini": self._mcp_config_servers(h / ".gemini" / "settings.json"),
-            "codex": self._codex_mcp(),
-            "pi": set(),
-        }
+        live: dict[str, set[str]] = {}
+        for v in VENDORS:
+            if v.name == "codex":
+                live["codex"] = self._codex_mcp()
+            elif v.name == "pi" or v.paths.mcp is None:
+                live[v.name] = set()
+            else:
+                live[v.name] = self._mcp_config_servers(h / v.paths.mcp)
+        return live
 
     def _mcp_config_servers(self, path: Path) -> set[str]:
         """The ``mcpServers`` keys in an agent's MCP config (empty if absent/invalid)."""
-        cfg = load_config(path, _McpServersFile)
+        cfg = load_config(path, McpServersFile)
         return set(cfg.mcp_servers) if cfg is not None else set()
 
     def _codex_mcp(self) -> set[str]:
@@ -354,17 +361,14 @@ class AgentOverviewService:
     def section_plugins(self) -> list[PluginRow]:
         """Installed Claude Code plugins, flagged against the plugins.yaml allowlist."""
         config = self._home / ".claude" / "plugins" / "installed_plugins.json"
-        if not config.is_file():
-            return []
-        try:
-            data = json.loads(config.read_text())
-        except (OSError, json.JSONDecodeError):
+        cfg = load_config(config, InstalledPlugins)
+        if cfg is None:
             return []
         declared = self._declared_plugin_names()
         rows: list[PluginRow] = []
-        for ref, installs in data.get("plugins", {}).items():
+        for ref, installs in cfg.plugins.items():
             name, _, marketplace = str(ref).partition("@")
-            version = installs[0].get("version", "") if installs else ""
+            version = installs[0].version if installs else ""
             rows.append(
                 PluginRow(
                     name=name,
@@ -386,13 +390,8 @@ class AgentOverviewService:
     # Section 2: Hooks
     # ------------------------------------------------------------------
 
-    def section_hooks(self) -> list[HookRow]:
-        """Per-vendor hook coverage by intent, not raw native event name.
-
-        Every hook-capable vendor wires the same shared scripts through different
-        native events. An intent is present for a vendor when its script basename
-        appears in that vendor's hook config.
-        """
+    def section_hooks(self) -> list[AgentPresenceRow]:
+        """Per-vendor hook coverage by intent, not raw native event name."""
         agents_dir = self._dotfiles / "ai" / "agents"
         texts = {
             "claude": self._read_text(agents_dir / "claude" / "hooks.json"),
@@ -400,11 +399,12 @@ class AgentOverviewService:
             "codex": self._read_text(agents_dir / "codex" / "hooks.json"),
         }
         return [
-            HookRow(
-                event=intent,
-                claude=script in texts["claude"],
-                cursor=script in texts["cursor"],
-                codex=script in texts["codex"],
+            AgentPresenceRow(
+                label=intent,
+                cells={
+                    agent: texts[agent].find(script) >= 0 if agent in texts else False
+                    for agent in AGENTS
+                },
             )
             for intent, script in _HOOK_INTENTS
         ]
@@ -455,32 +455,32 @@ class AgentOverviewService:
     # Section 4: Subagents
     # ------------------------------------------------------------------
 
-    def section_agents(self) -> list[SubagentRow]:
-        """One SubagentRow per .ai/agents/*.md, with deployment flags."""
+    def section_agents(self) -> list[AgentPresenceRow]:
+        """One row per subagent .md, with deployment flags per vendor."""
         agents_root = self._dotfiles / "ai" / "subagents"
         if not agents_root.exists() or not agents_root.is_dir():
             return []
 
-        # One dir per vendor that reads a `.md` subagents directory. Cursor 2.4+
-        # reads ~/.cursor/agents (we deploy there); agy has no confirmed .md dir
-        # convention yet (it defines subagents inline), so it's an honest gap.
-        claude_agents = self._home / ".claude" / "agents"
-        codex_agents = self._home / ".codex" / "agents"
-        cursor_agents = self._home / ".cursor" / "agents"
-        pi_agents = self._home / ".pi" / "agent" / "agents"
-
-        rows: list[SubagentRow] = []
+        h = self._home
+        deploy_dirs = {
+            v.name: h / rel if (rel := v.paths.subagents_deploy) else None for v in VENDORS
+        }
+        rows: list[AgentPresenceRow] = []
         for entry in list_dir(agents_root):
             if entry.is_dir() or entry.suffix != ".md":
                 continue
             name = entry.stem
             rows.append(
-                SubagentRow(
-                    name=name,
-                    claude=(claude_agents / f"{name}.md").exists(),
-                    codex=(codex_agents / f"{name}.md").exists(),
-                    cursor=(cursor_agents / f"{name}.md").exists(),
-                    pi=(pi_agents / f"{name}.md").exists(),
+                AgentPresenceRow(
+                    label=name,
+                    cells={
+                        agent: (
+                            (dest / f"{name}.md").exists()
+                            if (dest := deploy_dirs[agent]) is not None
+                            else False
+                        )
+                        for agent in AGENTS
+                    },
                 )
             )
         return rows
@@ -525,53 +525,23 @@ class AgentOverviewService:
     def section_permissions(self) -> list[PermissionRow]:
         """One PermissionRow per config source that exists."""
         rows: list[PermissionRow] = []
-        rows.extend(self._perm_claude_deployed())
-        rows.extend(self._perm_claude_source())
-        rows.extend(self._perm_cursor())
+        rows.extend(
+            _perm_settings("Claude Code (deployed)", self._home / ".claude" / "settings.json")
+        )
+        rows.extend(
+            _perm_permissions_block(
+                "Claude (dotfiles source)",
+                self._dotfiles / "ai" / "agents" / "claude" / "permissions.json",
+            )
+        )
+        rows.extend(
+            _perm_settings(
+                "Cursor CLI",
+                self._dotfiles / "ai" / "agents" / "cursor" / "cli-config.json",
+            )
+        )
         rows.extend(self._perm_codex())
         return rows
-
-    def _perm_claude_deployed(self) -> list[PermissionRow]:
-        path = self._home / ".claude" / "settings.json"
-        cfg = load_config(path, SettingsWithPermissions)
-        if cfg is None:
-            return []
-        return [
-            PermissionRow(
-                label="Claude Code (deployed)",
-                allow=len(cfg.permissions.allow),
-                deny=len(cfg.permissions.deny),
-                source_path=str(path),
-            )
-        ]
-
-    def _perm_claude_source(self) -> list[PermissionRow]:
-        path = self._dotfiles / "ai" / "agents" / "claude" / "permissions.json"
-        cfg = load_config(path, PermissionsBlock)
-        if cfg is None:
-            return []
-        return [
-            PermissionRow(
-                label="Claude (dotfiles source)",
-                allow=len(cfg.allow),
-                deny=len(cfg.deny),
-                source_path=str(path),
-            )
-        ]
-
-    def _perm_cursor(self) -> list[PermissionRow]:
-        path = self._dotfiles / "ai" / "agents" / "cursor" / "cli-config.json"
-        cfg = load_config(path, SettingsWithPermissions)
-        if cfg is None:
-            return []
-        return [
-            PermissionRow(
-                label="Cursor CLI",
-                allow=len(cfg.permissions.allow),
-                deny=len(cfg.permissions.deny),
-                source_path=str(path),
-            )
-        ]
 
     def _perm_codex(self) -> list[PermissionRow]:
         path = self._dotfiles / "ai" / "agents" / "codex" / "default.rules"

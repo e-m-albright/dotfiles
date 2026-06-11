@@ -1,17 +1,14 @@
-# Codex statusline. The segment set below is the fleet-canonical info set —
-# the same project / git / model / context% / 5h / 7d signals Claude's
-# statusline.sh and Pi's git-status.ts render. Codex only exposes a theme name
-# (no per-segment colors), so the warm amber/sage palette the other two share
-# can't be matched here; the segments carry the uniformity. See
-# docs/knowledge/agent-fleet.md.
+# Codex statusline. Codex is declarative, not command-rendered, so this is the
+# closest available Pi-shaped ordering: tool identity, current directory, git,
+# context, 5h/7d limits, Fast mode, then model.
 theme = "Sublime Snazzy"
 status_line = [
   "app-name",
-  "project-name",
+  "current-dir",
   "git-branch",
-  "model-with-reasoning",
   "context-used",
   "five-hour-limit",
   "weekly-limit",
   "fast-mode",
+  "model-with-reasoning",
 ]

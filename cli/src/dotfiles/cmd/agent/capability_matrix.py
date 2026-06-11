@@ -61,6 +61,7 @@ def _row(
     cursor: Cell,
     antigravity: Cell,
     pi: Cell,
+    hermes: Cell,
 ) -> Capability:
     return Capability(
         key=key,
@@ -71,6 +72,7 @@ def _row(
             "cursor": cursor,
             "gemini": antigravity,  # the ~/.gemini slot is Antigravity (agy)
             "pi": pi,
+            "hermes": hermes,
         },
     )
 
@@ -79,7 +81,7 @@ def _c(status: CellStatus, test: str = "", src: str = "") -> Cell:
     return Cell(status=status, test=test, src=src)
 
 
-# 14 capabilities x 5 vendors. Order: context surfaces, integration, UX/safety,
+# 14 capabilities x 6 vendors. Order: context surfaces, integration, UX/safety,
 # extensibility, then the 2026-era categories.
 CAPABILITY_MATRIX: tuple[Capability, ...] = (
     _row(
@@ -90,6 +92,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("yes", "test -d ~/.cursor", "https://cursor.com/docs/cli/using"),
         _c("yes", "test -f ~/.gemini/AGENTS.md"),
         _c("yes", "pi --help | grep -q -- --no-context-files"),
+        _c("yes", "test -f ~/.hermes/SOUL.md"),  # + project AGENTS.md/CLAUDE.md auto-injected
     ),
     _row(
         "skills",
@@ -99,6 +102,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("yes", "test -d ~/.cursor/skills-cursor", "https://cursor.com/changelog/2-4"),
         _c("yes", "strings $(which agy) | grep -qi /skills"),
         _c("yes", "pi --help | grep -q -- --skill"),
+        _c("yes", "test -d ~/.hermes/skills"),
     ),
     _row(
         "subagents",
@@ -108,6 +112,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("yes", "test -d ~/.cursor/agents", "https://cursor.com/docs/subagents"),
         _c("yes", "strings $(which agy) | grep -qi subagent"),
         _c("ext", "", "https://github.com/nicobailon/pi-subagents"),
+        _c("yes", "test -f ~/.hermes/hermes-agent/tools/delegate_tool.py"),  # delegate_task
     ),
     _row(
         "mcp",
@@ -117,6 +122,9 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("yes", "test -f ~/.cursor/mcp.json"),
         _c("yes", "test -f ~/.gemini/config/mcp_config.json"),
         _c("no", "pi --help | grep -qi mcp", "https://github.com/earendil-works/pi"),
+        _c(
+            "beta", "test -d ~/.hermes/hermes-agent/optional-mcps"
+        ),  # runtime registry, no static cfg
     ),
     _row(
         "hooks",
@@ -130,6 +138,9 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
             "test -f ~/.pi/agent/extensions/safe-git.ts",
             "https://pi.dev/docs/latest/extensions",
         ),
+        _c(
+            "beta", "test -d ~/.hermes/hooks"
+        ),  # hooks dir seeded; schema undocumented, we don't deploy
     ),
     _row(
         "statusline",
@@ -139,6 +150,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("beta", "", "https://cursor.com/changelog/04-14-26"),
         _c("yes", "strings $(which agy) | grep -qi statusline"),
         _c("ext", "test -f ~/.pi/agent/extensions/git-status.ts"),
+        _c("unverified", ""),  # TUI footer is fixed; no custom statusline surface found
     ),
     _row(
         "permissions",
@@ -148,6 +160,9 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("yes", "test -f ~/.cursor/cli-config.json"),
         _c("yes", "grep -q exclude ~/.gemini/settings.json"),
         _c("ext", "test -f ~/.pi/agent/permission-policy.json"),
+        _c(
+            "beta", "test -f ~/.hermes/hermes-agent/tools/skills_guard.py"
+        ),  # tool gating + Docker sandbox
     ),
     _row(
         "plugins",
@@ -157,6 +172,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("yes", "", "https://cursor.com/changelog/2-5"),
         _c("yes", "agy plugin list"),
         _c("yes", "pi list"),
+        _c("yes", "test -d ~/.hermes/hermes-agent/plugins"),  # plugins/ + skills marketplace
     ),
     _row(
         "dynamic-workflows",
@@ -166,6 +182,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("unverified", ""),
         _c("no", "", "https://antigravity.google/docs/rules-workflows"),
         _c("yes", "pi --help | grep -qi extension", "https://pi.dev/docs/latest/extensions"),
+        _c("beta", "test -f ~/.hermes/hermes-agent/batch_runner.py"),  # delegate_task + batch/cron
     ),
     _row(
         "memory",
@@ -175,6 +192,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("unverified", ""),
         _c("yes", "strings $(which agy) | grep -qi /memory"),
         _c("yes", "pi --help | grep -q -- --resume"),
+        _c("yes", "test -d ~/.hermes/memories"),  # MEMORY.md / USER.md
     ),
     _row(
         "output-styles",
@@ -188,6 +206,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("no", "", "https://cursor.com/docs/cli/reference"),
         _c("no", ""),
         _c("yes", "pi --help | grep -qi theme"),
+        _c("yes", "test -f ~/.hermes/SOUL.md"),  # SOUL.md = editable persona/identity
     ),
     _row(
         "slash-commands",
@@ -197,6 +216,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("yes", "", "https://cursor.com/docs/cli/reference/slash-commands"),
         _c("yes", "strings $(which agy) | grep -qi /agents"),
         _c("yes", "", "https://pi.dev/docs/latest/prompt-templates"),
+        _c("yes", "", "https://hermes-agent.nousresearch.com/docs/reference/cli-commands"),
     ),
     _row(
         "sandboxing",
@@ -206,6 +226,7 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("yes", "cursor-agent --help | grep -qi sandbox"),
         _c("yes", "agy --help 2>&1 | grep -qi sandbox"),
         _c("no", "pi --help | grep -qi sandbox", "https://pi.dev/docs/latest/security"),
+        _c("yes", "test -f ~/.hermes/hermes-agent/Dockerfile"),  # Docker container isolation
     ),
     _row(
         "model-routing",
@@ -215,6 +236,9 @@ CAPABILITY_MATRIX: tuple[Capability, ...] = (
         _c("beta", "cursor-agent --help | grep -q -- --model"),
         _c("beta", "agy --help 2>&1 | grep -qi model"),
         _c("beta", "pi --help | grep -q -- --models"),
+        _c(
+            "yes", "", "https://hermes-agent.nousresearch.com/docs/user-guide/configuration"
+        ),  # fallback_model
     ),
 )
 

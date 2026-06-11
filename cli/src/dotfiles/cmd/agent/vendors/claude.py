@@ -30,13 +30,14 @@ from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.lib import (
     StepResult,
     all_mcp_server_names,
-    build_global_instructions,
     deploy_skills,
     deploy_subagents,
     disabled_mcp_server_names,
     mcp_servers_for,
     mcp_skip,
     merge_managed_mcp,
+    merge_mcp_json_file,
+    write_kernel_instructions,
 )
 from dotfiles.cmd.agent.settings_merger import (
     load_json_or,
@@ -104,11 +105,12 @@ def _save_settings(claude_home: Path, data: _JsonDict) -> None:
 
 def _setup_instructions(dotfiles_dir: Path, claude_home: Path) -> list[StepResult]:
     """Write the core agent instructions → ~/.claude/CLAUDE.md."""
-    content = build_global_instructions(dotfiles_dir)
-    if content is None:
-        return [StepResult(level="error", message="No agents/shared/rules.md found")]
-    (claude_home / "CLAUDE.md").write_text(content, encoding="utf-8")
-    return [StepResult(level="success", message="Core instructions (~/.claude/CLAUDE.md)")]
+    return write_kernel_instructions(
+        claude_home / "CLAUDE.md",
+        dotfiles_dir,
+        message="Core instructions (~/.claude/CLAUDE.md)",
+        missing_error=True,
+    )
 
 
 def _setup_rules(claude_home: Path) -> list[StepResult]:
@@ -210,24 +212,14 @@ def _setup_mcp(
     dotfiles_dir: Path, home: Path, claude_home: Path, *, reset_mcp: bool
 ) -> list[StepResult]:
     """Merge managed MCP servers into ~/.claude.json (.mcpServers)."""
-    claude_json = home / ".claude.json"
-    skip = mcp_skip(home)
-    servers = mcp_servers_for(dotfiles_dir, "claude", skip=skip)
-
-    existing = load_json_or(claude_json, {})
-    existing_mcp = cast(_JsonDict, existing.get("mcpServers") or {})
-    new_mcp = merge_managed_mcp(
-        existing_mcp,
-        servers,
-        managed_keys=set(mcp_servers_for(dotfiles_dir, "claude").keys()),
+    return merge_mcp_json_file(
+        home / ".claude.json",
+        dotfiles_dir,
+        "claude",
+        home,
         reset_mcp=reset_mcp,
-        prune=disabled_mcp_server_names(dotfiles_dir),
+        success_message="Configured MCP servers (Claude Code)",
     )
-    updated = merge_replace(existing, ["mcpServers"], new_mcp)
-    write_json_safely(claude_json, updated)
-    return [
-        StepResult(level="success", message=f"Configured {len(servers)} MCP servers (Claude Code)")
-    ]
 
 
 def _rewrite_http_to_mcp_remote(entry: _JsonDict) -> _JsonDict:

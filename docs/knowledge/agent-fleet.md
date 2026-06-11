@@ -2,7 +2,7 @@
 
 > **Last reviewed**: 2026-06-11 — Refresh when a vendor changes its config schema or a new agent joins the fleet. (`audit-agent-fleet-drift` re-proves this on a weekly cadence.)
 
-We run five coding agents — **Claude Code, Codex, Cursor, Gemini, Pi** — from one set of dotfiles config (`ai/agents/`), deployed by the Python CLI (`dotfiles agent setup`). This doc records what "uniform" means across them, where it can't be (vendor limits), and how the two cross-cutting concerns — **statuslines** and **permissions** — are kept in sync.
+We run six coding agents — **Claude Code, Codex, Cursor, Antigravity/agy, Pi, Hermes** — from one set of dotfiles config (`ai/agents/`), deployed by the Python CLI (`dotfiles agent setup`). This doc records what "uniform" means across them, where it can't be (vendor limits), and how the two cross-cutting concerns — **statuslines** and **permissions** — are kept in sync. (**Hermes** is the lightest slot — a **skills-only** target; see [its note](#the-sixth-slot-hermes-skills-only) for why it carries no rules/MCP/hooks deploy.)
 
 The guiding rule: **one source of truth per concern, translated per vendor, drift-gated by a test.** Edit the canonical artifact; a test fails if a vendor file falls out of sync.
 
@@ -14,22 +14,22 @@ This is the **VENDOR-CAPABILITY** matrix: does each tool *support* the capabilit
 
 Status tokens: **yes** = generally available · **beta** = preview/partial/auto-only · **ext** = only via an extension (Pi) · **no** = proven absent (with evidence) · **unverified** = no first-party source AND not locally probeable. Reconciliation rule: when a local probe and a doc disagree, **the probe wins** (it's what's installed).
 
-| Capability | Claude | Codex | Cursor | Antigravity | Pi |
-|---|---|---|---|---|---|
-| rules | yes | yes | yes | yes | yes |
-| skills | yes | yes | yes | yes | yes |
-| subagents | yes | yes | yes | yes | ext |
-| mcp | yes | yes | yes | yes | no |
-| hooks | yes | yes | yes | yes | ext |
-| statusline | yes | yes | beta | yes | ext |
-| permissions | yes | yes | yes | yes | ext |
-| plugins | yes | yes | yes | yes | yes |
-| dynamic-workflows | yes | no | unverified | no | yes |
-| memory | yes | beta | unverified | yes | yes |
-| output-styles | beta | yes | no | no | yes |
-| slash-commands | yes | yes | yes | yes | yes |
-| sandboxing | yes | yes | yes | yes | no |
-| model-routing | yes | yes | beta | beta | beta |
+| Capability | Claude | Codex | Cursor | Antigravity | Pi | Hermes |
+|---|---|---|---|---|---|---|
+| rules | yes | yes | yes | yes | yes | yes |
+| skills | yes | yes | yes | yes | yes | yes |
+| subagents | yes | yes | yes | yes | ext | yes |
+| mcp | yes | yes | yes | yes | no | beta |
+| hooks | yes | yes | yes | yes | ext | beta |
+| statusline | yes | yes | beta | yes | ext | unverified |
+| permissions | yes | yes | yes | yes | ext | beta |
+| plugins | yes | yes | yes | yes | yes | yes |
+| dynamic-workflows | yes | no | unverified | no | yes | beta |
+| memory | yes | beta | unverified | yes | yes | yes |
+| output-styles | beta | yes | no | no | yes | yes |
+| slash-commands | yes | yes | yes | yes | yes | yes |
+| sandboxing | yes | yes | yes | yes | no | yes |
+| model-routing | yes | yes | beta | beta | beta | yes |
 
 **Proven absences** (`no` with positive evidence, not "didn't find"): Pi MCP ("No MCP" by design, README); Pi sandboxing ("Pi does not include a built-in sandbox" — use Docker); Codex dynamic-workflows (`js_repl` removed, `code_mode` WIP); Antigravity dynamic-workflows (its `/workflow` is markdown step-guides, not JS orchestration); Antigravity + Cursor output-styles (no style surface). The **agy `⊘`→`yes` corrections** (skills/subagents/hooks/statusline) were proven by the installed binary's own strings — see Receipts.
 
@@ -37,7 +37,7 @@ Status tokens: **yes** = generally available · **beta** = preview/partial/auto-
 
 The full per-cell provenance lives in `capability_matrix.py` (the `test` = on-machine probe, `src` = source URL) and prints via `dotfiles agent capabilities`. Examples of the on-machine probes: `strings $(which agy) | grep -qi 'Toggle the statusline'` (agy statusline), `strings $(which claude) | grep -qi 'dynamic workflow'` (Claude dynamic-workflows), `pi --help | grep -- --skill` (Pi skills), `claude mcp list` (Claude MCP). `--verify` runs them all and reports proven/failed.
 
-**MCP is intentionally near-zero in OUR deployment** (separate from vendor support above): only **granola** earns a server (semantic meeting-search has no CLI), on **Claude + Codex**; **context7 was retired for the `ctx7` CLI** and is auto-pruned on setup (`disabled_mcp_server_names` → `merge_managed_mcp(prune=…)`).
+**MCP is intentionally near-zero in OUR deployment** (separate from vendor support above): only **granola** earns a server (semantic meeting-search has no CLI), on **Claude**; **context7 was retired for the `ctx7` CLI** and is auto-pruned on setup (`disabled_mcp_server_names` → `merge_managed_mcp(prune=…)`).
 
 ---
 
@@ -77,6 +77,27 @@ Sources: [transitioning blog](https://developers.googleblog.com/an-important-upd
 
 ---
 
+## The sixth slot: Hermes (skills-only)
+
+**Hermes** is NousResearch's [`hermes-agent`](https://github.com/NousResearch/hermes-agent) — a terminal/TUI coding agent (installed v0.16.0 via `curl … nousresearch.com/install.sh | bash` → `~/.local/bin/hermes`, config under `~/.hermes/`). We deploy it as a **skills-only** vendor; `setup_hermes` symlinks the canonical `ai/skills` into `~/.hermes/skills` (single source of truth) and does nothing else.
+
+Why no rules/MCP/hooks deploy — **deploy = truth, not aspiration** (each "we don't" is grounded in the installed source):
+
+| Surface | Hermes reality | Our action |
+|---|---|---|
+| **skills** | global skills load from `~/.hermes/skills` (`hermes_cli/config.py`) | ✅ symlink canonical `ai/skills` |
+| **rules** | behavioural rules come from **project** `AGENTS.md`/`CLAUDE.md`/`.cursorrules`, auto-injected from the CWD (`hermes_cli/tips.py`) — already deployed per-repo | n/a — no global rules slot we own |
+| **instructions (global)** | `~/.hermes/SOUL.md` is Hermes' **own seeded persona** (`_ensure_default_soul_md`), not ours to overwrite | n/a — would clobber Hermes' identity |
+| **mcp** | runtime MCP registry (`optional-mcps/`, `mcp_serve.py`); no static config schema we can write | n/a — not deterministically deployable |
+| **hooks** | a `~/.hermes/hooks` dir is seeded but its schema is undocumented | n/a — won't guess a security-critical format |
+| **subagents** | the `delegate_task` runtime tool, no `.md` deploy dir | n/a — programmatic, like agy |
+
+The capability matrix above still tracks Hermes' *vendor support* (what it can do), with receipts probing the installed tree (`test -f ~/.hermes/hermes-agent/tools/delegate_tool.py`, `test -d ~/.hermes/memories`, …). In `dotfiles agent overview`'s Uniformity matrix Hermes shows **skills active**; rules/subagents/permissions/hooks render as *not-globally-closable* (the `_LOCAL_ONLY` set), and statusline as n/a — none are red gaps, because none are surfaces we can or should deploy globally.
+
+Source: live binary/filesystem probe (2026-06-11, hermes-agent v0.16.0) · [Hermes config docs](https://hermes-agent.nousresearch.com/docs/user-guide/configuration).
+
+---
+
 ## Recently adopted capabilities (June 2026 landscape sweep)
 
 What shipped across the tools lately, with our verdict. KEEP/adopt = part of the toolkit; evaluate/skip = parked with reason.
@@ -113,11 +134,13 @@ The shared **visual language** is the amber/sage ramp, identical tiers everywher
 | gold | `#d3b15f` | ≥ 55% |
 | sage | `#8fa879` | < 55% |
 
-- **Pi** (`ai/agents/pi/extensions/git-status.ts`) — the reference. `amberRamp()` defines the tiers.
-- **Claude** (`ai/agents/claude/statusline.sh`) — `ramp()` retuned to the exact same tiers/colors. Keeps Claude's richer 5h/7d rate-limit split (its payload exposes both windows).
-- **Codex** (`ai/agents/codex/statusline.toml`) — segment set matches the canonical info (project · git · model · context% · 5h · 7d · fast-mode). Codex only exposes a theme name, not per-segment colors, so the palette can't be matched; the segments carry the uniformity.
+Every statusline starts with the tool identity before workspace context, so mixed terminal panes are scannable: `π` for Pi, `claude` for Claude Code, Codex's built-in `app-name`, and `agy` for Antigravity.
 
-**Idea on deck (not yet built):** give Pi the 5h + 7d split Claude has, when the active provider exposes both rate-limit windows in response headers. Today Pi shows a single quota %. This depends on Pi surfacing the relevant provider headers (confirmed for `openai-codex`; unverified for Anthropic-OAuth), so it's parked until that's checked.
+- **Pi** (`ai/agents/pi/extensions/git-status.ts`) — the reference. `amberRamp()` defines the tiers. Shows context %, auth/cost, git detail, model, token I/O, and cache I/O. It does **not** show Codex 5h/7d/Fast telemetry today because Pi's provider event did not expose that data in practice.
+- **Claude** (`ai/agents/claude/statusline.sh`) — Pi-shaped one-line renderer: `claude <cwd> (<git>) · ctx: n% · 5h: n% left · 7d: n% left · <model>`. Same ramp, same git counters; Claude exposes 5h/7d used %, so the script renders left % to match Codex.
+- **Codex** (`ai/agents/codex/statusline.toml`) — closest declarative Pi-shaped ordering: app-name · current-dir · git · context% · 5h · 7d · fast-mode · model. Codex only exposes a theme name, not custom per-segment rendering/colors.
+- **Antigravity/agy** (`ai/agents/gemini/statusline.sh`) — Pi-shaped one-line `/statusline <command>` renderer deployed through the Antigravity config slot (`~/.gemini/antigravity-cli/statusLine`). Its payload is vendor-private, so the script parses multiple likely field names and degrades to tool + workspace/git.
+- **Cursor** — beta/vendor-controlled statusline surface. No dotfiles-owned renderer is deployed until Cursor exposes a stable command/config contract; identity remains handled by the GUI chrome.
 
 ---
 

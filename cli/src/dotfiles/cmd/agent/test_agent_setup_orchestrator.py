@@ -17,7 +17,7 @@ def _fail(agent: str) -> StepResult:
 
 def test_all_agents_matches_dispatch_order() -> None:
     # The no-argument run covers every dispatchable Agent, in dispatch order.
-    assert ALL_AGENTS == ("claude", "cursor", "codex", "gemini", "pi")
+    assert ALL_AGENTS == ("claude", "cursor", "codex", "gemini", "pi", "hermes")
     assert tuple(VENDOR_SETUP) == ALL_AGENTS
 
 

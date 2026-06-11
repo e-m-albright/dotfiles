@@ -16,21 +16,12 @@ from __future__ import annotations
 import shutil
 from collections.abc import Callable
 from pathlib import Path
-from typing import cast
 
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.lib import (
     StepResult,
     deploy_subagents,
-    disabled_mcp_server_names,
-    mcp_servers_for,
-    mcp_skip,
-    merge_managed_mcp,
-)
-from dotfiles.cmd.agent.settings_merger import (
-    load_json_or,
-    merge_replace,
-    write_json_safely,
+    merge_mcp_json_file,
 )
 from dotfiles.fsutil import prune_broken_symlinks, symlink
 
@@ -82,40 +73,17 @@ def setup_cursor(
 
 
 def _setup_mcp(dotfiles_dir: Path, home: Path, *, reset_mcp: bool = False) -> list[StepResult]:
-    """Merge shared MCP servers into editors/cursor/mcp.json (in-repo).
-
-    When *reset_mcp* is True, purge any managed keys (names from
-    ``mcp_servers_for(dotfiles_dir, "cursor")``) from the existing config before
-    merging the current set — faithful to the ``--reset-mcp`` branch in
-    agents/cursor/setup.sh.
-    """
+    """Merge shared MCP servers into editors/cursor/mcp.json (in-repo)."""
     mcp_file = dotfiles_dir / "editors" / "cursor" / "mcp.json"
     mcp_file.parent.mkdir(parents=True, exist_ok=True)
-
-    skip = mcp_skip(home)
-    servers = mcp_servers_for(dotfiles_dir, "cursor", skip=skip)
-
-    existing = load_json_or(mcp_file, {})
-    raw_mcp = existing.get("mcpServers", {})
-    existing_mcp: dict[str, object] = (
-        cast(dict[str, object], raw_mcp) if isinstance(raw_mcp, dict) else {}
-    )
-
-    merged_mcp = merge_managed_mcp(
-        existing_mcp,
-        servers,
-        managed_keys=set(mcp_servers_for(dotfiles_dir, "cursor").keys()),
+    return merge_mcp_json_file(
+        mcp_file,
+        dotfiles_dir,
+        "cursor",
+        home,
         reset_mcp=reset_mcp,
-        prune=disabled_mcp_server_names(dotfiles_dir),
+        success_message="Configured MCP servers (Cursor, in-repo)",
     )
-    updated = merge_replace(existing, ["mcpServers"], merged_mcp)
-    write_json_safely(mcp_file, updated)
-
-    return [
-        StepResult(
-            level="success", message=f"Configured {len(servers)} MCP servers (Cursor, in-repo)"
-        )
-    ]
 
 
 def _setup_rules(dotfiles_dir: Path) -> list[StepResult]:

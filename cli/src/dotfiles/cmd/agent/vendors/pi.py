@@ -20,8 +20,8 @@ from pathlib import Path
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.lib import (
     StepResult,
-    build_global_instructions,
     deploy_subagents,
+    write_kernel_instructions,
 )
 from dotfiles.fsutil import prune_broken_symlinks, symlink
 
@@ -112,12 +112,11 @@ def _setup_config_symlinks(dotfiles_dir: Path, pi_home: Path) -> list[StepResult
 
 def _setup_instructions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:
     """Write ~/.pi/agent/AGENTS.md = the shared rules.md kernel, verbatim."""
-    content = build_global_instructions(dotfiles_dir)
-    if content is None:
-        return []
-
-    (pi_home / "AGENTS.md").write_text(content, encoding="utf-8")
-    return [StepResult(level="success", message="Global instructions (~/.pi/agent/AGENTS.md)")]
+    return write_kernel_instructions(
+        pi_home / "AGENTS.md",
+        dotfiles_dir,
+        message="Global instructions (~/.pi/agent/AGENTS.md)",
+    )
 
 
 def _setup_extensions(dotfiles_dir: Path, pi_home: Path) -> list[StepResult]:

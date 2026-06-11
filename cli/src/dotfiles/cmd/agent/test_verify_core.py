@@ -109,12 +109,11 @@ def test_file_path_gives_present_status(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_na_surface_is_skipped(tmp_path: Path) -> None:
-    # Gemini has no skills surface → uniform row, status n/a (skipped).
+def test_gemini_skills_surface_missing_when_undepoyed(tmp_path: Path) -> None:
+    # Gemini skills live under antigravity-cli/skills — checked like any other surface.
     svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
     g_skills = next(s for s in svc.vendors() if s.agent == "gemini" and s.label == "skills")
-    assert g_skills.status == "skipped"
-    assert g_skills.quantity == "n/a"
+    assert g_skills.status == "missing"
 
 
 def test_present_and_missing_surfaces_for_an_agent(tmp_path: Path) -> None:
@@ -140,14 +139,14 @@ def test_vendors_returns_all_vendor_groups(tmp_path: Path) -> None:
     svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
     surfaces = svc.vendors()
     vendors_seen = {s.agent for s in surfaces}
-    assert vendors_seen == {"claude", "cursor", "codex", "gemini", "pi"}
+    assert vendors_seen == {"claude", "cursor", "codex", "gemini", "pi", "hermes"}
 
 
 def test_every_agent_has_the_same_attribute_checklist(tmp_path: Path) -> None:
     from dotfiles.cmd.agent.verify import _ATTRIBUTES
 
     surfaces = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles").vendors()
-    for agent in ("claude", "cursor", "codex", "gemini", "pi"):
+    for agent in ("claude", "cursor", "codex", "gemini", "pi", "hermes"):
         labels = [s.label for s in surfaces if s.agent == agent]
         assert labels == list(_ATTRIBUTES)
 

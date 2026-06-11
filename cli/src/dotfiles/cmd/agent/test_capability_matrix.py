@@ -113,6 +113,7 @@ _HEADER_AGENT = {
     "cursor": "cursor",
     "antigravity": "gemini",
     "pi": "pi",
+    "hermes": "hermes",
 }
 
 

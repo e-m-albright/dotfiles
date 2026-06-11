@@ -2,7 +2,7 @@
 
 Box up an opinionated developer experience as idempotent, repeatable setup.
 
-Clone on a fresh Mac, run one install script, and the machine is bootstrapped: Homebrew packages, macOS preferences and Dock, and the curated agentic-coding tooling (rules, skills, MCP) we've blessed — deployed globally across Claude Code, Cursor, Codex, Gemini, and Pi. A tight `dotfiles` CLI keeps it healthy (doctor, snapshot, brew sync) and handles small conveniences (remote SSH, model benchmarks). A small phone-drivable TUI manages long-running agent sessions on the go.
+Clone on a fresh Mac, run one install script, and the machine is bootstrapped: Homebrew packages, macOS preferences and Dock, and the curated agentic-coding tooling (rules, skills, MCP) we've blessed — deployed globally across Claude Code, Cursor, Codex, Gemini, Pi, and Hermes. A tight `dotfiles` CLI keeps it healthy (doctor, snapshot, brew sync) and handles small conveniences (remote SSH, model benchmarks). A small phone-drivable TUI manages long-running agent sessions on the go.
 
 **This is** the single source for our developer experience — when we bless a tool, it goes in here and becomes core. **It is not** a project generator or a terminal dashboard. It sets up the computer and gets out of the way. Technology taste (which language, which framework) lives as reviewable reference in [`docs/stacks/`](docs/stacks/README.md) — consulted per-project, never pushed.
 
@@ -184,6 +184,7 @@ Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs
 | **Cursor** | Cursor | active | AI-native editor with shared MCP servers, hooks, skills, agents |
 | **Codex CLI** | OpenAI | active | Terminal coding agent (open-source, o4-mini default) |
 | **Pi** | earendil-works | active | Local-first lightweight terminal agent (shares `~/.agents/skills`); repo-owned extensions and vendored `safe-git` guardrail, no external Pi package dependency. See [docs/pi-power-setup.md](docs/pi-power-setup.md) |
+| **Hermes** | NousResearch | active | Terminal/TUI coding agent ([`hermes-agent`](https://github.com/NousResearch/hermes-agent)); **skills-only** slot — we symlink `ai/skills` into `~/.hermes/skills`. Rules come from project `AGENTS.md`; no global rules/MCP/hooks deploy |
 | **Copilot CLI** | GitHub | disabled | Terminal coding agent (fleet mode, cloud delegation) |
 | **Codex Desktop** | OpenAI | disabled | macOS app for parallel coding agents |
 | **GWS CLI** | Google | active | Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin) |
@@ -207,23 +208,23 @@ Setup is automated via `dotfiles agent setup` (also runs during install):
 
 - **Global instructions**: `~/.codex/AGENTS.md` deployed from shared rules
 - **Config**: `~/.codex/config.toml` with MCP servers and `project_doc_fallback_filenames = ["CODEX.md"]`
-- **Statusline**: `[tui]` theme + status-line text segments installed from `ai/agents/codex/statusline.toml`
+- **Statusline**: `[tui]` theme + status-line text segments installed from `ai/agents/codex/statusline.toml` (Codex-declarative Pi ordering: app-name/current-dir/git/context/limits/Fast/model)
 - **Hooks**: Format-on-save (reuses Claude's hook), sensitive file guard, terminal notifications
 - **Skills**: deployed from `ai/skills/` via `npx skills`
-- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — targets "codex" or "claude"
+- **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — servers with `codex` in `targets`
 - **Command auto-approve**: `~/.codex/rules/default.rules` deployed from `ai/agents/codex/default.rules` (universal allowlist; Codex appends interactive approvals — fold back periodically)
 
 See `ai/agents/codex/` for all configuration files.
 
-### Gemini CLI
+### Antigravity CLI (`agy`)
 
 Setup is automated via `dotfiles agent setup`:
 
 - **Settings**: `~/.gemini/settings.json` seeded from `ai/agents/gemini/settings.json` (preserves existing auth)
-- **Global instructions**: `~/.gemini/GEMINI.md` written verbatim from `ai/agents/shared/rules.md` (the same kernel every vendor gets)
+- **Global instructions**: `~/.gemini/AGENTS.md` written verbatim from `ai/agents/shared/rules.md` (the same kernel every vendor gets)
 - **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — servers with `gemini` in `targets`
-
-Gemini does not yet have skills or subagents surfaces; rules cover the equivalent ground.
+- **Skills**: canonical `ai/skills/` linked into `~/.gemini/antigravity-cli/skills/`
+- **Statusline**: custom Pi-shaped renderer from `ai/agents/gemini/statusline.sh` configured for agy's `statusLine` / `/statusline <command>` surface; starts with `agy`
 
 See `ai/agents/gemini/` for all configuration files.
 
@@ -268,6 +269,7 @@ Setup is automated via `dotfiles agent setup` (also runs during install):
 - **Hooks**: Format-on-save (biome/ruff/rustfmt/gofmt/shellcheck), sensitive file guard, terminal notifications on completion
 - **Skills**: deployed from `ai/skills/` via `npx skills`
 - **Agents**: deployed from `ai/subagents/`
+- **Statusline**: custom Pi-shaped command `ai/agents/claude/statusline.sh` (starts with `claude`, then cwd/git/context/limits/model)
 - **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — GitHub, Linear, Granola, Notion, Playwright, Chrome DevTools (standalone); Context7 (via plugin)
 - **Browser-tool tiers**: See `docs/knowledge/browser-tooling.md` — when to reach for Playwright tests (Tier 1), agent-browser/pinchtab CLIs (Tier 2), Playwright/Chrome DevTools MCPs (Tier 3-4), or Stagehand (Tier 5)
 - **Cloud MCPs**: Gmail, Google Calendar (configured via claude.ai, not in dotfiles)
@@ -299,6 +301,7 @@ Setup is automated via `dotfiles agent setup cursor` (also runs during install):
 - **Subagents**: Cursor doesn't dispatch subagents; the `ai/subagents/` collection deploys to Claude Code and Codex only
 - **Rules**: Shared rules from `ai/agents/shared/rules.md`
 - **Marketplace stack**: See `ai/agents/cursor/PLUGINS.md` for core/work plugin recommendations and install commands (`/add-plugin ...`)
+- **Statusline**: no dotfiles-owned renderer yet; Cursor's statusline surface is still beta/vendor-controlled
 
 Note: Cursor Marketplace plugin installs and OAuth flows are manual by design (run in Cursor chat/UI). The setup scripts print an explicit checklist so these steps are hard to miss.
 
@@ -344,7 +347,7 @@ dotfiles dock                # Reset Dock layout
 dotfiles profile-shell       # Profile shell startup time
 dotfiles agent overview      # Live cross-vendor dashboard: capability matrix (14 capabilities × 5 agents), MCP, hooks, skills, subagents, permissions
 dotfiles agent capabilities  # The capability matrix with evidence (a probe and/or source URL per cell); --verify runs the probes to confirm the matrix matches reality
-dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi (optional --reset-mcp, --clean, --prune); prints the Cursor plugin checklist
+dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi + Hermes (optional --reset-mcp, --clean, --prune); prints the Cursor plugin checklist
 dotfiles agent skills        # List skills by origin (canonical/external/plugin/retired/untracked) with descriptions; vendor builtins hidden (--all to show)
 dotfiles agent skills prune  # Dry-run: bucket deployed skills into retired (ours, deletable) / builtin (vendor, untouched) / untracked; --apply deletes only retired
 dotfiles agent verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)

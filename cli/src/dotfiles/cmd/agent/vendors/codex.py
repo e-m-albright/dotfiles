@@ -24,11 +24,11 @@ from pathlib import Path
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.lib import (
     StepResult,
-    build_global_instructions,
     deploy_skills,
     deploy_subagents,
     mcp_servers_for,
     mcp_skip,
+    write_kernel_instructions,
 )
 from dotfiles.cmd.agent.toml_writer import render_mcp_toml, upsert_section
 
@@ -73,12 +73,12 @@ _CODEX_SPECIFIC: tuple[str, ...] = (
 
 def _setup_instructions(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
     """Write ~/.codex/AGENTS.md = core agent instructions + codex-specific block."""
-    content = build_global_instructions(dotfiles_dir, extra_sections=_CODEX_SPECIFIC)
-    if content is None:
-        return []
-
-    (codex_home / "AGENTS.md").write_text(content, encoding="utf-8")
-    return [StepResult(level="success", message="Core instructions (~/.codex/AGENTS.md)")]
+    return write_kernel_instructions(
+        codex_home / "AGENTS.md",
+        dotfiles_dir,
+        extra_sections=_CODEX_SPECIFIC,
+        message="Core instructions (~/.codex/AGENTS.md)",
+    )
 
 
 def _setup_default_rules(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
@@ -128,11 +128,7 @@ def _setup_mcp(dotfiles_dir: Path, codex_home: Path, home: Path) -> list[StepRes
     (marketplaces, projects, plugins, tui, etc.).
     """
     skip = mcp_skip(home)
-    # codex setup.sh uses codex | claude targets (claude as fallback)
-    servers_codex = mcp_servers_for(dotfiles_dir, "codex", skip=skip)
-    servers_claude = mcp_servers_for(dotfiles_dir, "claude", skip=skip)
-    # Merge: codex takes priority; add claude targets not already present
-    servers: dict[str, object] = {**servers_claude, **servers_codex}
+    servers = mcp_servers_for(dotfiles_dir, "codex", skip=skip)
 
     config_toml = codex_home / "config.toml"
     existing_text = config_toml.read_text() if config_toml.is_file() else ""
@@ -296,5 +292,15 @@ def _setup_hooks(dotfiles_dir: Path, codex_home: Path) -> list[StepResult]:
     src = dotfiles_dir / "ai" / "agents" / "codex" / "hooks.json"
     if not src.is_file():
         return []
+    _ensure_shared_hooks_executable(dotfiles_dir)
     shutil.copy2(src, codex_home / "hooks.json")
     return [StepResult(level="success", message="Deployed hooks (~/.codex/hooks.json)")]
+
+
+def _ensure_shared_hooks_executable(dotfiles_dir: Path) -> None:
+    """Codex may execute lifecycle hook targets directly; keep shell hooks runnable."""
+    hooks_dir = dotfiles_dir / "ai" / "agents" / "shared" / "hooks"
+    if not hooks_dir.is_dir():
+        return
+    for script in hooks_dir.glob("*.sh"):
+        script.chmod(script.stat().st_mode | 0o111)

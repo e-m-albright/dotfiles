@@ -106,12 +106,20 @@ class GeminiSettings(BaseModel):
     tools: GeminiTools = Field(default_factory=GeminiTools)
 
 
-class InstalledPlugins(BaseModel):
-    """~/.claude/plugins/installed_plugins.json — the ``plugins`` map (presence check)."""
+class PluginInstall(BaseModel):
+    """One install record under a plugin ref key."""
 
     model_config = ConfigDict(extra="ignore")
 
-    plugins: dict[str, object] = Field(default_factory=dict)
+    version: str = ""
+
+
+class InstalledPlugins(BaseModel):
+    """~/.claude/plugins/installed_plugins.json — the ``plugins`` map."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    plugins: dict[str, list[PluginInstall]] = Field(default_factory=dict)
 
 
 class ClaudeSettingsProbe(BaseModel):
@@ -148,25 +156,30 @@ def load_config[M: BaseModel](
         return None
 
 
-def load_mcp_servers(path: Path) -> dict[str, McpServerEntry]:
-    """Read mcp-servers.json; return only object-valued entries parsed as McpServerEntry."""
+def load_mcp_registry(path: Path) -> tuple[dict[str, McpServerEntry], dict[str, object]]:
+    """Read mcp-servers.json once: validated entries plus the raw object-valued dict."""
     if not path.exists():
-        return {}
+        return {}, {}
     try:
         raw: object = json.loads(path.read_text())
     except (json.JSONDecodeError, OSError) as exc:
         _log.warning("mcp_servers_read_failed", path=str(path), error=str(exc))
-        return {}
+        return {}, {}
     if not isinstance(raw, dict):
         _log.warning("mcp_servers_not_object", path=str(path))
-        return {}
+        return {}, {}
     raw_dict = cast(dict[str, object], raw)
-    # Filter to object-only entries before validation
     obj_only: dict[str, dict[str, object]] = {
         k: cast(dict[str, object], v) for k, v in raw_dict.items() if isinstance(v, dict)
     }
     try:
-        return _MCP_SERVERS_ADAPTER.validate_python(obj_only)
+        return _MCP_SERVERS_ADAPTER.validate_python(obj_only), raw_dict
     except pydantic.ValidationError as exc:
         _log.warning("mcp_servers_invalid", path=str(path), error=str(exc))
-        return {}
+        return {}, raw_dict
+
+
+def load_mcp_servers(path: Path) -> dict[str, McpServerEntry]:
+    """Read mcp-servers.json; return only object-valued entries parsed as McpServerEntry."""
+    entries, _ = load_mcp_registry(path)
+    return entries

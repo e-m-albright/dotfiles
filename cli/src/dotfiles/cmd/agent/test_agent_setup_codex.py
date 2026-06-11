@@ -6,6 +6,7 @@ All tests use tmp_path for home + dotfiles_dir; no real home is touched.
 from __future__ import annotations
 
 import json
+import stat
 import tomllib
 from pathlib import Path
 
@@ -59,7 +60,6 @@ prefix_rule(pattern=["git", "commit"], decision="allow")
 STATUSLINE_TOML = """\
 theme = "Sublime Snazzy"
 status_line = [
-  "app-name",
   "git-branch",
 ]
 """
@@ -89,6 +89,7 @@ def dotfiles(tmp_path: Path) -> Path:
             "ai/agents/codex/default.rules": DEFAULT_RULES,
             "ai/agents/codex/statusline.toml": STATUSLINE_TOML,
             "ai/agents/codex/hooks.json": HOOKS_JSON,
+            "ai/agents/shared/hooks/notify.sh": "#!/usr/bin/env bash\nexit 0\n",
             "ai/rules/process/global-process.mdc": PROCESS_RULE,
             "ai/skills/.keep": "",  # skills dir must exist for deploy_skills
             "ai/subagents/myagent.md": "# MyAgent\n",
@@ -218,11 +219,10 @@ class TestSetupMcp:
         assert "playwright" in parsed["mcp_servers"]
         assert "context7" in parsed["mcp_servers"]
 
-    def test_claude_only_target_included_as_fallback(self, dotfiles: Path, home: Path) -> None:
-        """granola targets only claude — but codex setup.sh includes claude targets too."""
+    def test_claude_only_target_excluded(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
         parsed = tomllib.loads((home / ".codex" / "config.toml").read_text())
-        assert "granola" in parsed["mcp_servers"]
+        assert "granola" not in parsed["mcp_servers"]
 
     def test_no_targets_key_in_mcp_entries(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
@@ -305,6 +305,7 @@ class TestSetupStatusline:
         parsed = tomllib.loads((home / ".codex" / "config.toml").read_text())
         assert "tui" in parsed
         assert parsed["tui"]["theme"] == "Sublime Snazzy"
+        assert parsed["tui"]["status_line"] == ["git-branch"]
 
     def test_creates_tui_section_if_absent(self, dotfiles: Path, home: Path) -> None:
         """When no [tui] in existing config, one should be appended."""
@@ -347,6 +348,14 @@ class TestSetupHooks:
         hooks_result = next((r for r in results if "hooks" in r.message.lower()), None)
         assert hooks_result is not None
         assert hooks_result.ok
+
+    def test_shared_hook_scripts_are_executable(self, dotfiles: Path, home: Path) -> None:
+        hook = dotfiles / "ai" / "agents" / "shared" / "hooks" / "notify.sh"
+        hook.chmod(0o644)
+
+        _run(dotfiles, home)
+
+        assert hook.stat().st_mode & stat.S_IXUSR
 
 
 # ---------------------------------------------------------------------------

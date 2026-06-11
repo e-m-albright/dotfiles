@@ -60,6 +60,7 @@ def dotfiles(tmp_path: Path) -> Path:
             "ai/agents/shared/mcp-servers.json": MCP_SERVERS_JSON,
             "ai/agents/shared/rules.md": RULES_MD,
             "ai/agents/gemini/settings.json": GEMINI_SEED_SETTINGS,
+            "ai/agents/gemini/statusline.sh": "#!/usr/bin/env bash\necho agy\n",
             "ai/rules/process/global-process.mdc": PROCESS_RULE,
         },
     )
@@ -202,6 +203,14 @@ class TestGeminiPresent:
         assert mcp_msg is not None
         assert "1" in mcp_msg.message  # 1 gemini-target server
 
+    def test_configures_agy_statusline(self, dotfiles: Path, home: Path) -> None:
+        self._run(dotfiles, home)
+        settings = json.loads((home / ".gemini" / "antigravity-cli" / "settings.json").read_text())
+        statusline = settings["statusLine"]
+        assert statusline["enabled"] is True
+        assert statusline["command"].startswith("bash ")
+        assert statusline["command"].endswith("ai/agents/gemini/statusline.sh")
+
     def test_idempotent(self, dotfiles: Path, home: Path) -> None:
         """Running twice should not raise and should produce the same output."""
         self._run(dotfiles, home)
@@ -309,3 +318,32 @@ class TestResetMcp:
         data = json.loads((gemini_home / "settings.json").read_text())
         assert "my-custom" in data["mcpServers"]
         assert "playwright" in data["mcpServers"]
+
+    def test_deploys_skills_symlinks(self, dotfiles: Path, home: Path) -> None:
+        # Create a skill directory and SKILL.md under dotfiles to deploy
+        skill_src = dotfiles / "ai" / "skills" / "test-skill"
+        skill_src.mkdir(parents=True, exist_ok=True)
+        (skill_src / "SKILL.md").write_text("# Test Skill\n")
+
+        _run_gemini(dotfiles, home)
+
+        dest_skill = home / ".gemini" / "antigravity-cli" / "skills" / "test-skill"
+        assert dest_skill.is_symlink()
+        assert dest_skill.resolve() == skill_src.resolve()
+
+
+# ---------------------------------------------------------------------------
+# agy present only
+# ---------------------------------------------------------------------------
+
+
+class TestAgyPresentOnly:
+    def test_runs_setup_successfully_with_agy_only(self, dotfiles: Path, home: Path) -> None:
+        results = setup_gemini(
+            runner=_runner(),
+            home=home,
+            dotfiles_dir=dotfiles,
+            which=lambda name: "/usr/bin/agy" if name == "agy" else None,
+        )
+        assert all(r.ok for r in results)
+        assert (home / ".gemini").is_dir()

@@ -257,6 +257,13 @@ url = "https://claude.ai/install.sh"
 post_install = "claude install latest"
 note = "Tracks `latest`, not the lagging `stable` cask. Migrated off npm global 2026-05-28."
 
+[special.hermes]
+method = "curl_install"
+flag = "ai"
+url = "https://hermes-agent.nousresearch.com/install.sh"
+args = ["--non-interactive"]
+note = "NousResearch hermes-agent (terminal/TUI coding agent). No brew cask; self-contained uv/Node install under ~/.hermes. Skills deployed by `dotfiles agent setup hermes`."
+
 # =============================================================================
 # npm globals (no brew formula available / brew formula is wrong package)
 # =============================================================================

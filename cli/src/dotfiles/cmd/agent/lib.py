@@ -14,7 +14,12 @@ from pathlib import Path
 from typing import cast
 
 from dotfiles.adapters.ports import ProcessRunner
-from dotfiles.cmd.agent.config import McpServerEntry, load_mcp_servers
+from dotfiles.cmd.agent.config import McpServerEntry, load_mcp_registry
+from dotfiles.cmd.agent.settings_merger import (
+    load_json_or,
+    merge_replace,
+    write_json_safely,
+)
 from dotfiles.result import StepResult  # re-exported for the agent adapters
 
 # ---------------------------------------------------------------------------
@@ -66,21 +71,10 @@ def mcp_servers_for(
     - Removes any entry whose name is in *skip*
     - Strips the ``.targets`` key from each returned config dict
     """
-    import json as _json
-
     json_path = dotfiles_dir / "ai" / "agents" / "shared" / "mcp-servers.json"
-    if not json_path.exists():
+    entries, raw_dict = load_mcp_registry(json_path)
+    if not entries:
         return {}
-    try:
-        raw_obj: object = _json.loads(json_path.read_text())
-    except (_json.JSONDecodeError, OSError):
-        return {}
-    if not isinstance(raw_obj, dict):
-        return {}
-    raw_dict = cast(dict[str, object], raw_obj)
-
-    # Use load_mcp_servers for parsed/validated targets info
-    entries = load_mcp_servers(json_path)
 
     result: dict[str, dict[str, object]] = {}
     for name, entry in entries.items():
@@ -116,18 +110,11 @@ def all_mcp_server_names(dotfiles_dir: Path) -> set[str]:
     target Claude — mirrors the bash ``jq 'keys[]'`` over the whole registry.
     Excludes ``$``-prefixed meta keys (e.g. ``$comment``).
     """
-    import json as _json
-
     json_path = dotfiles_dir / "ai" / "agents" / "shared" / "mcp-servers.json"
-    if not json_path.exists():
+    _, raw_dict = load_mcp_registry(json_path)
+    if not raw_dict:
         return set()
-    try:
-        raw: object = _json.loads(json_path.read_text())
-    except (_json.JSONDecodeError, OSError):
-        return set()
-    if not isinstance(raw, dict):
-        return set()
-    return {k for k in cast(dict[str, object], raw) if not k.startswith("$")}
+    return {k for k in raw_dict if not k.startswith("$")}
 
 
 def disabled_mcp_server_names(dotfiles_dir: Path) -> set[str]:
@@ -171,6 +158,45 @@ def merge_managed_mcp(
     return {**base, **servers}
 
 
+def merge_mcp_into_json(
+    existing: dict[str, object],
+    dotfiles_dir: Path,
+    target: str,
+    home: Path,
+    *,
+    reset_mcp: bool,
+) -> tuple[dict[str, object], int]:
+    """Return (*settings* with ``mcpServers`` merged, server count). Does not write."""
+    skip = mcp_skip(home)
+    servers = mcp_servers_for(dotfiles_dir, target, skip=skip)
+    raw_mcp = existing.get("mcpServers", {})
+    existing_mcp = cast(dict[str, object], raw_mcp) if isinstance(raw_mcp, dict) else {}
+    merged_mcp = merge_managed_mcp(
+        existing_mcp,
+        servers,
+        managed_keys=set(mcp_servers_for(dotfiles_dir, target).keys()),
+        reset_mcp=reset_mcp,
+        prune=disabled_mcp_server_names(dotfiles_dir),
+    )
+    return merge_replace(existing, ["mcpServers"], merged_mcp), len(servers)
+
+
+def merge_mcp_json_file(
+    path: Path,
+    dotfiles_dir: Path,
+    target: str,
+    home: Path,
+    *,
+    reset_mcp: bool,
+    success_message: str,
+) -> list[StepResult]:
+    """Merge managed MCP servers into a JSON config's ``mcpServers`` key."""
+    existing = load_json_or(path, {})
+    updated, count = merge_mcp_into_json(existing, dotfiles_dir, target, home, reset_mcp=reset_mcp)
+    write_json_safely(path, updated)
+    return [StepResult(level="success", message=f"{success_message} ({count} servers)")]
+
+
 # ---------------------------------------------------------------------------
 # Global instruction file (shared rules.md + rendered process rules)
 # ---------------------------------------------------------------------------
@@ -193,6 +219,24 @@ def build_global_instructions(
         return None
     parts: list[str] = [kernel.read_text(), *extra_sections]
     return "\n".join(parts)
+
+
+def write_kernel_instructions(
+    dest: Path,
+    dotfiles_dir: Path,
+    *,
+    extra_sections: Sequence[str] = (),
+    message: str,
+    missing_error: bool = False,
+) -> list[StepResult]:
+    """Write the shared rules kernel to *dest*, or report missing/error."""
+    content = build_global_instructions(dotfiles_dir, extra_sections=extra_sections)
+    if content is None:
+        if missing_error:
+            return [StepResult(level="error", message="No agents/shared/rules.md found")]
+        return []
+    dest.write_text(content, encoding="utf-8")
+    return [StepResult(level="success", message=message)]
 
 
 # ---------------------------------------------------------------------------

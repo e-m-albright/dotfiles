@@ -91,28 +91,28 @@ class TestSectionMcp:
         _seed_mcp_config(home, ".claude.json", ["granola", "playwright"])
         _seed_mcp_config(home, ".cursor/mcp.json", ["context7", "playwright"])
         _seed_mcp_config(home, ".gemini/settings.json", ["playwright"])
-        runner = _runner_codex_mcp("playwright", "granola")
+        runner = _runner_codex_mcp("playwright")
 
         rows = _service_with_runner(tmp_path / "d", home, runner).section_mcp()
-        by = {r.server: r for r in rows}
+        by = {r.label: r for r in rows}
 
-        assert by["playwright"].claude
-        assert by["playwright"].cursor
-        assert by["playwright"].codex
-        assert by["playwright"].gemini
-        assert by["granola"].claude
-        assert by["granola"].codex
-        assert by["granola"].cursor is False
-        assert by["context7"].cursor
-        assert by["context7"].claude is False
+        assert by["playwright"].cells["claude"]
+        assert by["playwright"].cells["cursor"]
+        assert by["playwright"].cells["codex"]
+        assert by["playwright"].cells["gemini"]
+        assert by["granola"].cells["claude"]
+        assert by["granola"].cells["codex"] is False
+        assert by["granola"].cells["cursor"] is False
+        assert by["context7"].cells["cursor"]
+        assert by["context7"].cells["claude"] is False
         # Pi has no MCP surface — always n/a (False), never a failure.
-        assert all(r.pi is False for r in rows)
+        assert all(r.cells.get("pi") is False for r in rows)
 
     def test_codex_servers_come_from_the_cli(self, tmp_path: Path) -> None:
         runner = _runner_codex_mcp("playwright")
         rows = _service_with_runner(tmp_path / "d", tmp_path / "home", runner).section_mcp()
-        assert [r.server for r in rows] == ["playwright"]
-        assert rows[0].codex is True
+        assert [r.label for r in rows] == ["playwright"]
+        assert rows[0].cells["codex"] is True
 
     def test_codex_cli_failure_degrades_to_empty(self, tmp_path: Path) -> None:
         runner = FakeProcessRunner()
@@ -158,27 +158,30 @@ _INTENT_NAMES = ["guard-file", "guard-shell", "format", "notify"]
 class TestSectionHooks:
     def test_four_intent_rows_even_with_no_hook_files(self, tmp_path: Path) -> None:
         rows = make_service(tmp_path / "dotfiles", tmp_path / "home").section_hooks()
-        assert [r.event for r in rows] == _INTENT_NAMES
-        assert all(not (r.claude or r.cursor or r.codex) for r in rows)
+        assert [r.label for r in rows] == _INTENT_NAMES
+        assert all(
+            not (r.cells.get("claude") or r.cells.get("cursor") or r.cells.get("codex"))
+            for r in rows
+        )
 
     def test_intent_present_when_its_shared_script_is_wired(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
         _seed_claude_intents(dotfiles, ["guard-file", "guard-shell", "format", "notify"])
         rows = make_service(dotfiles, tmp_path / "home").section_hooks()
-        assert all(r.claude for r in rows)
-        assert all(not r.cursor and not r.codex for r in rows)
+        assert all(r.cells["claude"] for r in rows)
+        assert all(not r.cells.get("cursor") and not r.cells.get("codex") for r in rows)
 
     def test_per_vendor_intent_detection(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
         _seed_cursor_intents(dotfiles, ["format", "guard-shell"])
         _seed_codex_intents(dotfiles, ["guard-file", "notify"])
-        rows = {r.event: r for r in make_service(dotfiles, tmp_path / "home").section_hooks()}
-        assert rows["format"].cursor
-        assert not rows["format"].codex
-        assert rows["guard-shell"].cursor
-        assert rows["guard-file"].codex
-        assert not rows["guard-file"].cursor
-        assert rows["notify"].codex
+        rows = {r.label: r for r in make_service(dotfiles, tmp_path / "home").section_hooks()}
+        assert rows["format"].cells["cursor"]
+        assert not rows["format"].cells["codex"]
+        assert rows["guard-shell"].cells["cursor"]
+        assert rows["guard-file"].cells["codex"]
+        assert not rows["guard-file"].cells["cursor"]
+        assert rows["notify"].cells["codex"]
 
     def test_uniform_intent_across_all_three_vendors(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
@@ -188,11 +191,11 @@ class TestSectionHooks:
         notify = next(
             r
             for r in make_service(dotfiles, tmp_path / "home").section_hooks()
-            if r.event == "notify"
+            if r.label == "notify"
         )
-        assert notify.claude
-        assert notify.cursor
-        assert notify.codex
+        assert notify.cells["claude"]
+        assert notify.cells["cursor"]
+        assert notify.cells["codex"]
 
     def test_invalid_json_graceful(self, tmp_path: Path) -> None:
         # The section greps text, so even unparseable JSON yields four all-False rows.
@@ -201,8 +204,8 @@ class TestSectionHooks:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("BAD")
         rows = make_service(dotfiles, tmp_path / "home").section_hooks()
-        assert [r.event for r in rows] == _INTENT_NAMES
-        assert all(not r.claude for r in rows)
+        assert [r.label for r in rows] == _INTENT_NAMES
+        assert all(not r.cells.get("claude") for r in rows)
 
 
 _ENFORCED_TIER_NAMES = ["rules", "skills", "subagents", "statusline", "permissions", "hooks"]
@@ -333,10 +336,10 @@ class TestSectionAgents:
         rows = make_service(dotfiles, tmp_path / "home").section_agents()
         assert len(rows) == 1
         row = rows[0]
-        assert row.name == "researcher"
-        assert row.claude is False
-        assert row.codex is False
-        assert row.pi is False
+        assert row.label == "researcher"
+        assert row.cells.get("claude") is False
+        assert row.cells.get("codex") is False
+        assert row.cells.get("pi") is False
 
     def test_agent_deployed_to_claude(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
@@ -347,8 +350,8 @@ class TestSectionAgents:
         (claude_agents / "coder.md").write_text("# coder")
         rows = make_service(dotfiles, home).section_agents()
         row = rows[0]
-        assert row.claude is True
-        assert row.codex is False
+        assert row.cells["claude"] is True
+        assert row.cells.get("codex") is False
 
     def test_agent_deployed_to_all_vendors(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
@@ -363,9 +366,9 @@ class TestSectionAgents:
             deploy_path.write_text("# helper")
         rows = make_service(dotfiles, home).section_agents()
         row = rows[0]
-        assert row.claude
-        assert row.codex
-        assert row.pi
+        assert row.cells["claude"]
+        assert row.cells["codex"]
+        assert row.cells["pi"]
 
     def test_directories_in_agents_dir_skipped(self, tmp_path: Path) -> None:
         dotfiles = tmp_path / "dotfiles"
@@ -387,7 +390,7 @@ class TestSectionAgents:
         for name in ("zebra", "alpha", "middle"):
             seed_agent(dotfiles, name)
         rows = make_service(dotfiles, tmp_path / "home").section_agents()
-        names = [r.name for r in rows]
+        names = [r.label for r in rows]
         assert names == sorted(names)
 
 
@@ -619,8 +622,8 @@ class TestAgentSurfaces:
         surfaces = make_service(tmp_path / "dotfiles", tmp_path / "home").vendor_surfaces()
         gemini = [s for s in surfaces if s.agent == "gemini"]
         assert len(gemini) > 1
-        skills = next(s for s in gemini if s.label == "skills")
-        assert skills.status == "skipped"  # gemini has no skills surface → n/a
+        subagents = next(s for s in gemini if s.label == "subagents")
+        assert subagents.status == "skipped"  # gemini has no global subagents dir → n/a
 
     def test_overview_vendor_surfaces_populated(self, tmp_path: Path) -> None:
         result = make_service(tmp_path / "dotfiles", tmp_path / "home").overview()

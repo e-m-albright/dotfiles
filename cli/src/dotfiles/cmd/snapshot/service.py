@@ -85,11 +85,11 @@ def _vendor_tokens(overview: AgentOverview, agent: Agent) -> list[str]:
     """Stable, sorted tokens describing one agent's deployed agentic config."""
     tokens: list[str] = []
     for row in overview.mcp:
-        if getattr(row, agent, False):
-            tokens.append(f"mcp:{row.server}")
+        if row.cells.get(agent, False):
+            tokens.append(f"mcp:{row.label}")
     for hook in overview.hooks:
-        if getattr(hook, agent, False):
-            tokens.append(f"hook:{hook.event}")
+        if hook.cells.get(agent, False):
+            tokens.append(f"hook:{hook.label}")
     if agent == "claude":
         tokens.append(f"skills:{overview.skills.claude_deployed}")
         tokens.append(f"rules:{overview.rules.claude_deployed}")

@@ -3,7 +3,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from dotfiles.cmd.agent.models import AgentOverview, HookRow, McpRow, RulesSummary, SkillsSummary
+from dotfiles.cmd.agent.models import AgentOverview, AgentPresenceRow, RulesSummary, SkillsSummary
 from dotfiles.cmd.snapshot.models import BrewState, RuntimeChange, Snapshot, SymlinkState
 from dotfiles.cmd.snapshot.service import (
     agent_config_hashes,
@@ -66,8 +66,30 @@ def test_collect_symlinks_flags_ok_and_broken(tmp_path):
 
 def _overview() -> AgentOverview:
     return AgentOverview(
-        mcp=(McpRow(server="granola", claude=True, cursor=False, codex=False, gemini=False),),
-        hooks=(HookRow(event="PostToolUse", claude=True, cursor=True, codex=False),),
+        mcp=(
+            AgentPresenceRow(
+                label="granola",
+                cells={
+                    "claude": True,
+                    "cursor": False,
+                    "codex": False,
+                    "gemini": False,
+                    "pi": False,
+                },
+            ),
+        ),
+        hooks=(
+            AgentPresenceRow(
+                label="PostToolUse",
+                cells={
+                    "claude": True,
+                    "cursor": True,
+                    "codex": False,
+                    "gemini": False,
+                    "pi": False,
+                },
+            ),
+        ),
         skills=SkillsSummary(
             canonical_skills=21, claude_deployed=21, cursor_deployed=21, shared_deployed=21
         ),
@@ -81,7 +103,7 @@ def test_agent_config_hashes_are_stable_and_per_vendor():
     a = agent_config_hashes(_overview())
     b = agent_config_hashes(_overview())
     assert a == b  # deterministic
-    assert set(a) == {"claude", "cursor", "codex", "gemini", "pi"}
+    assert set(a) == {"claude", "cursor", "codex", "gemini", "pi", "hermes"}
     assert all(isinstance(v, str) and v for v in a.values())
 
 
@@ -90,7 +112,17 @@ def test_agent_config_hash_changes_when_mcp_changes():
     changed_overview = _overview().model_copy(
         update={
             "mcp": (
-                McpRow(server="granola", claude=False, cursor=False, codex=False, gemini=False),
+                AgentPresenceRow(
+                    label="granola",
+                    cells={
+                        "claude": False,
+                        "cursor": False,
+                        "codex": False,
+                        "gemini": False,
+                        "pi": False,
+                        "hermes": False,
+                    },
+                ),
             )
         }
     )
@@ -117,7 +149,7 @@ def test_capture_builds_a_snapshot(tmp_path):
     )
     assert snap.brew.leaves == ("git",)
     assert snap.runtimes == {"node": "v22.3.0"}
-    assert set(snap.agent_config) == {"claude", "cursor", "codex", "gemini", "pi"}
+    assert set(snap.agent_config) == {"claude", "cursor", "codex", "gemini", "pi", "hermes"}
 
 
 def test_write_then_load_and_list(tmp_path):

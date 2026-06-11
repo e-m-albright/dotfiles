@@ -11,6 +11,7 @@ Configures the slot:
   - Seed ~/.gemini/settings.json from dotfiles seed if missing
   - Merge managed MCP servers into settings.json (+ tools.exclude blocklist)
   - Write ~/.gemini/AGENTS.md (the shared rules.md kernel, verbatim); retire GEMINI.md
+  - Configure Antigravity/agy's custom statusline command when the agy slot exists
 
 All paths are injected; Path.home() MUST NOT appear here.
 """
@@ -26,10 +27,7 @@ from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.agent.lib import (
     StepResult,
     build_global_instructions,
-    disabled_mcp_server_names,
-    mcp_servers_for,
-    mcp_skip,
-    merge_managed_mcp,
+    merge_mcp_into_json,
 )
 from dotfiles.cmd.agent.settings_merger import (
     load_json_or,
@@ -58,6 +56,7 @@ def setup_gemini(
     results.extend(_setup_settings_and_mcp(dotfiles_dir, gemini_home, reset_mcp=reset_mcp))
     results.extend(_setup_instructions(dotfiles_dir, gemini_home))
     results.extend(_setup_skills(dotfiles_dir, gemini_home))
+    results.extend(_setup_statusline(dotfiles_dir, gemini_home))
     return results
 
 
@@ -84,23 +83,14 @@ def _setup_settings_and_mcp(
 
         _shutil.copy2(seed, settings_file)
 
-    skip = mcp_skip(gemini_home.parent)  # home = gemini_home.parent
-    servers = mcp_servers_for(dotfiles_dir, "gemini", skip=skip)
-
     existing = load_json_or(settings_file, {})
-    raw_mcp = existing.get("mcpServers", {})
-    existing_mcp: dict[str, object] = (
-        cast(dict[str, object], raw_mcp) if isinstance(raw_mcp, dict) else {}
-    )
-
-    merged_mcp = merge_managed_mcp(
-        existing_mcp,
-        servers,
-        managed_keys=set(mcp_servers_for(dotfiles_dir, "gemini").keys()),
+    updated, count = merge_mcp_into_json(
+        existing,
+        dotfiles_dir,
+        "gemini",
+        gemini_home.parent,
         reset_mcp=reset_mcp,
-        prune=disabled_mcp_server_names(dotfiles_dir),
     )
-    updated = merge_replace(existing, ["mcpServers"], merged_mcp)
 
     # Deploy the managed shell-command blocklist (tools.exclude) from the seed.
     # `seed-if-missing` above doesn't refresh an existing install, so set it
@@ -117,9 +107,7 @@ def _setup_settings_and_mcp(
         )
 
     write_json_safely(settings_file, updated)
-    results.append(
-        StepResult(level="success", message=f"Configured {len(servers)} MCP servers (Gemini)")
-    )
+    results.append(StepResult(level="success", message=f"Configured {count} MCP servers (Gemini)"))
     return results
 
 
@@ -157,6 +145,34 @@ def _setup_skills(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:
         count += 1
     return [
         StepResult(level="success", message=f"Linked {count} skills (agy → antigravity-cli/skills)")
+    ]
+
+
+def _setup_statusline(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:
+    """Configure Antigravity/agy's custom statusline renderer.
+
+    agy exposes this interactively as ``/statusline <command>`` and persists the
+    setting internally. The local binary also reads ``~/.gemini/antigravity-cli``
+    settings; keep this best-effort and surface the pasteable command so a user
+    can repair it from inside agy if Google changes the private storage shape.
+    """
+    script = dotfiles_dir / "ai" / "agents" / "gemini" / "statusline.sh"
+    if not script.is_file():
+        return []
+
+    agy_home = gemini_home / "antigravity-cli"
+    agy_home.mkdir(parents=True, exist_ok=True)
+    settings_file = agy_home / "settings.json"
+    command = f"bash {script}"
+    settings = load_json_or(settings_file, {})
+    settings = merge_replace(settings, ["statusLine"], {"enabled": True, "command": command})
+    write_json_safely(settings_file, settings)
+    return [
+        StepResult(
+            level="success",
+            message="Configured agy statusline (~/.gemini/antigravity-cli/settings.json)",
+            details=f"Fallback inside agy: /statusline {command}",
+        )
     ]
 
 

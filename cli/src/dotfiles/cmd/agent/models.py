@@ -8,30 +8,13 @@ from dotfiles.agent import Agent
 from dotfiles.cmd.agent.capability_matrix import CapabilityRow
 
 
-class McpRow(BaseModel):
-    """One MCP server row in the agent overview (one bool per agent column)."""
+class AgentPresenceRow(BaseModel):
+    """One matrix row: a label plus per-vendor bool cells (MCP, hooks, subagents, …)."""
 
     model_config = ConfigDict(frozen=True)
 
-    server: str
-    claude: bool = False
-    cursor: bool = False
-    codex: bool = False
-    gemini: bool = False
-    pi: bool = False
-
-
-class HookRow(BaseModel):
-    """One hook-event row in the agent overview (one bool per agent column)."""
-
-    model_config = ConfigDict(frozen=True)
-
-    event: str
-    claude: bool = False
-    cursor: bool = False
-    codex: bool = False
-    gemini: bool = False
-    pi: bool = False
+    label: str
+    cells: dict[str, bool]  # keyed by agent name
 
 
 class PluginRow(BaseModel):
@@ -63,19 +46,6 @@ class SkillsSummary(BaseModel):
     claude_deployed: int
     cursor_deployed: int
     shared_deployed: int
-
-
-class SubagentRow(BaseModel):
-    """One subagent row in the agent overview."""
-
-    model_config = ConfigDict(frozen=True)
-
-    name: str
-    claude: bool = False
-    cursor: bool = False
-    codex: bool = False
-    gemini: bool = False
-    pi: bool = False
 
 
 class RulesSummary(BaseModel):
@@ -170,10 +140,10 @@ class AgentOverview(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    mcp: tuple[McpRow, ...]
-    hooks: tuple[HookRow, ...]
+    mcp: tuple[AgentPresenceRow, ...]
+    hooks: tuple[AgentPresenceRow, ...]
     skills: SkillsSummary
-    agents: tuple[SubagentRow, ...]
+    agents: tuple[AgentPresenceRow, ...]
     rules: RulesSummary
     permissions: tuple[PermissionRow, ...]
     vendor_surfaces: tuple[AgentSurface, ...] = ()

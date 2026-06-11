@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Claude Code statusline, shaped to match Pi as closely as Claude's one-line
+# Antigravity/agy statusline, shaped to match Pi as closely as agy's custom
 # command surface allows:
 #
-#   claude <cwd> (<branch> [wt:name] [!n] [+n] [*n] [?n] [⇡n] [⇣n]) · ctx: n% · 5h: n% left · 7d: n% left · <model>
+#   agy <cwd> (<branch> [!n] [+n] [*n] [?n] [⇡n] [⇣n]) · ctx: n% · Fast off · <model>
 #
-# Reads Claude's statusline JSON payload on stdin. Set NO_COLOR=1 to disable
-# ANSI colors. Schema: https://code.claude.com/docs/en/statusline.md
+# agy passes StatusLineData JSON on stdin. The payload is not public, so this
+# accepts multiple observed/likely field names and degrades gracefully.
 
 set -uo pipefail
 
@@ -75,15 +75,8 @@ git_segment() {
     cd "$cwd" 2>/dev/null || return 0
     git rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
 
-    local branch git_dir common_dir top_level worktree_name counts staged unstaged untracked conflicts ahead=0 behind=0 upstream_counts parts=()
+    local branch counts staged unstaged untracked conflicts ahead=0 behind=0 upstream_counts parts=()
     branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || printf 'detached')
-    git_dir=$(git rev-parse --path-format=absolute --git-dir 2>/dev/null || true)
-    common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
-    top_level=$(git rev-parse --show-toplevel 2>/dev/null || true)
-    if [[ -n "$git_dir" && -n "$common_dir" && "$git_dir" != "$common_dir" && -n "$top_level" ]]; then
-        worktree_name=$(basename "$top_level")
-    fi
-
     counts=$(git status --porcelain 2>/dev/null | count_git_porcelain)
     read -r staged unstaged untracked conflicts <<< "$counts"
     upstream_counts=$(git rev-list --left-right --count 'HEAD...@{u}' 2>/dev/null || true)
@@ -92,7 +85,6 @@ git_segment() {
     fi
 
     parts+=("$branch")
-    [[ -n "${worktree_name:-}" ]] && parts+=("${NOTE}wt:${worktree_name}${R}")
     (( conflicts > 0 )) && parts+=("${DANGER}!${conflicts}${R}")
     (( staged > 0 )) && parts+=("${WARN}+${staged}${R}")
     (( unstaged > 0 )) && parts+=("${WARN}*${unstaged}${R}")
@@ -107,28 +99,29 @@ git_segment() {
     printf '%s%s%s' "${DIM}(" "${parts[*]}" ")${R}"
 }
 
-model=$(j '.model.display_name')
-cwd=$(j '.workspace.current_dir')
-ctx_pct=$(j '.context_window.used_percentage')
-five_used=$(j '.rate_limits.five_hour.used_percentage')
-seven_used=$(j '.rate_limits.seven_day.used_percentage')
+cwd=$(j '.workspace.current_dir // .workspace.cwd // .workspace.path // .cwd // .current_dir // .project.path')
+model=$(j '.model.display_name // .model.name // .modelInfo.displayName // .modelInfo.name // .model // .agent.model')
+ctx_pct=$(j '.context.used_percentage // .context_window.used_percentage // .context.percent_used // .currentUsage.contextPercent // .currentUsage.context_used_percent // .contextUsedPercent')
+fast=$(printf '%s' "$input" | jq -r '
+    if .agent and (.agent | has("fast_mode")) then .agent.fast_mode
+    elif has("fast_mode") then .fast_mode
+    elif .mode and (.mode | has("fast")) then .mode.fast
+    elif has("fastMode") then .fastMode
+    else empty end
+' 2>/dev/null)
 
 sep="${DIM} · ${R}"
-out="${NOTE}claude${R} ${DIM}$(short_path "${cwd:-?}")${R}"
+out="${NOTE}agy${R} ${DIM}$(short_path "${cwd:-?}")${R}"
 git_text=$(git_segment "$cwd")
 [[ -n "$git_text" ]] && out="${out} ${git_text}"
 
 if [[ -n "$ctx_pct" ]]; then
     out="${out}${sep}$(ramp "$ctx_pct")ctx: $(printf '%.0f%%' "$ctx_pct")${R}"
 fi
-if [[ -n "$five_used" ]]; then
-    five_left=$(awk -v used="$five_used" 'BEGIN { printf "%.0f", 100 - used }')
-    out="${out}${sep}$(ramp "$five_used")5h: ${five_left}% left${R}"
-fi
-if [[ -n "$seven_used" ]]; then
-    seven_left=$(awk -v used="$seven_used" 'BEGIN { printf "%.0f", 100 - used }')
-    out="${out}${sep}$(ramp "$seven_used")7d: ${seven_left}% left${R}"
-fi
+case "$(printf '%s' "$fast" | tr '[:upper:]' '[:lower:]')" in
+    true|1|on|yes|fast) out="${out}${sep}${WARN}Fast on${R}" ;;
+    false|0|off|no) out="${out}${sep}${DIM}Fast off${R}" ;;
+esac
 if [[ -n "$model" ]]; then
     out="${out}${sep}${DIM}${model}${R}"
 fi

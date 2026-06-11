@@ -17,6 +17,7 @@ from dotfiles.cmd.agent.vendors.claude import setup_claude
 from dotfiles.cmd.agent.vendors.codex import setup_codex
 from dotfiles.cmd.agent.vendors.cursor import setup_cursor
 from dotfiles.cmd.agent.vendors.gemini import setup_gemini
+from dotfiles.cmd.agent.vendors.hermes import setup_hermes
 from dotfiles.cmd.agent.vendors.pi import setup_pi
 from dotfiles.console import has_errors
 from dotfiles.result import StepResult
@@ -56,13 +57,18 @@ def _pi(ctx: AppContext, clean: bool, reset_mcp: bool) -> list[StepResult]:
     return setup_pi(runner=ctx.runner, home=ctx.home, dotfiles_dir=ctx.dotfiles_dir)
 
 
-# Dispatch as data — order is the setup order (claude → cursor → codex → gemini → pi).
+def _hermes(ctx: AppContext, clean: bool, reset_mcp: bool) -> list[StepResult]:
+    return setup_hermes(runner=ctx.runner, home=ctx.home, dotfiles_dir=ctx.dotfiles_dir)
+
+
+# Dispatch as data — order is the setup order (claude → … → pi → hermes).
 VENDOR_SETUP: Mapping[str, VendorSetup] = {
     "claude": _claude,
     "cursor": _cursor,
     "codex": _codex,
     "gemini": _gemini,
     "pi": _pi,
+    "hermes": _hermes,
 }
 
 # The Agents `setup` runs when none is named, in dispatch order.

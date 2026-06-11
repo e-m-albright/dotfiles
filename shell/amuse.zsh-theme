@@ -5,11 +5,11 @@
 # precmd hook (zero subshells at render time); the prompt strings just
 # interpolate the cached segments.
 #
-#   ~/dir (main ↑2 +1 !3 ?2) [venv] wt:fix-bug cc:yolo took 8s 14:32:05
+#   ~/dir (main +1 *3 ?2 ⇡2) wt:fix-bug cc:yolo took 8s 14:32:05
 #   127 $   (yellow on success, red on failure)
 #
-# Line 1: dir · git (branch + ahead/behind + staged/unstaged/untracked) ·
-#         venv · worktree · active Claude profile · duration (if slow) · clock
+# Line 1: dir · git (branch + staged/unstaged/untracked + ahead/behind) ·
+#         worktree · active Claude profile · duration (if slow) · clock
 # Line 2: exit code (only on failure) + $  (yellow ok / red failed)
 
 # Colors (modern %F{} syntax only)
@@ -21,6 +21,10 @@ GREEN="%F{82}"
 ORANGE="%F{208}"
 GOLD="%F{179}"
 DIM="%F{242}"
+SAGE="%F{#8fa879}"
+NOTE="%F{#80a6ad}"
+WARN="%F{#d9913d}"
+DANGER="%F{#d9784d}"
 RESET="%f"
 BOLD="%B"
 UNBOLD="%b"
@@ -37,7 +41,6 @@ autoload -Uz add-zsh-hook
 # -----------------------------------------------------------------------------
 _git_segment=""
 _wt_segment=""
-_venv_segment=""
 _profile_segment=""
 _exit_segment=""
 _duration_segment=""
@@ -67,9 +70,9 @@ _prompt_duration_compute() {
 }
 
 # -----------------------------------------------------------------------------
-# Git: branch + ahead/behind + staged/unstaged/untracked/conflict counts.
-# Single `git status --porcelain=v2 --branch` call; clean repos show just the
-# branch name, matching the old minimalist look.
+# Git: branch + staged/unstaged/untracked/conflict + ahead/behind counts.
+# Single `git status --porcelain=v2 --branch` call; clean repos show branch + ✓,
+# matching the Pi statusline.
 # -----------------------------------------------------------------------------
 _prompt_git_compute() {
     _git_segment=""
@@ -109,14 +112,15 @@ _prompt_git_compute() {
         label="$head"
     fi
 
-    local seg="${BOLD}${GREEN}(${label}"
-    (( ahead ))     && seg+=" ${CYAN}↑${ahead}"
-    (( behind ))    && seg+=" ${CYAN}↓${behind}"
-    (( conflict ))  && seg+=" ${RED}✗${conflict}"
-    (( staged ))    && seg+=" ${GREEN}+${staged}"
-    (( unstaged ))  && seg+=" ${YELLOW}!${unstaged}"
-    (( untracked )) && seg+=" ${DIM}?${untracked}"
-    seg+="${GREEN})${UNBOLD}${RESET} "
+    local seg="${DIM}(${RESET}${BOLD}${SAGE}${label}${UNBOLD}${RESET}"
+    (( conflict ))  && seg+=" ${DANGER}!${conflict}${RESET}"
+    (( staged ))    && seg+=" ${WARN}+${staged}${RESET}"
+    (( unstaged ))  && seg+=" ${WARN}*${unstaged}${RESET}"
+    (( untracked )) && seg+=" ${WARN}?${untracked}${RESET}"
+    (( ahead ))     && seg+=" ${NOTE}⇡${ahead}${RESET}"
+    (( behind ))    && seg+=" ${WARN}⇣${behind}${RESET}"
+    (( ! conflict && ! staged && ! unstaged && ! untracked && ! ahead && ! behind )) && seg+=" ${SAGE}✓${RESET}"
+    seg+="${DIM})${RESET} "
     _git_segment="$seg"
 }
 
@@ -148,15 +152,6 @@ _prompt_context_compute() {
     fi
 }
 
-# Python virtualenv indicator
-_prompt_venv_compute() {
-    if [[ -n "$VIRTUAL_ENV" ]]; then
-        _venv_segment="${GOLD}[${VIRTUAL_ENV:t}]${RESET} "
-    else
-        _venv_segment=""
-    fi
-}
-
 # -----------------------------------------------------------------------------
 # precmd: capture exit status FIRST (before any arithmetic clobbers $?), then
 # refresh every cached segment.
@@ -173,7 +168,6 @@ _prompt_precmd() {
     _prompt_duration_compute
     _prompt_git_compute
     _prompt_context_compute
-    _prompt_venv_compute
 }
 
 add-zsh-hook preexec _prompt_preexec
@@ -184,5 +178,5 @@ add-zsh-hook precmd  _prompt_precmd
 # including duration + clock, lives on line 1's left; no right prompt.
 # -----------------------------------------------------------------------------
 PROMPT='
-${BOLD}${PINK}%~${UNBOLD}${RESET} ${_git_segment}${_venv_segment}${_wt_segment}${_profile_segment}${_duration_segment}${DIM}%*${RESET}
+${BOLD}${PINK}%~${UNBOLD}${RESET} ${_git_segment}${_wt_segment}${_profile_segment}${_duration_segment}${DIM}%*${RESET}
 ${_exit_segment}${_char_color}\$${RESET} '

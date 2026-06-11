@@ -3,11 +3,11 @@
 from dotfiles.cmd.agent.config import McpServerEntry
 from dotfiles.cmd.agent.models import (
     AgentOverview,
+    AgentPresenceRow,
     AgentVerify,
     McpProbe,
     RulesSummary,
     SkillsSummary,
-    SubagentRow,
 )
 from dotfiles.cmd.agent.skill_health import SkillHealthService, build_vendor_verifies, probe_mcp
 from dotfiles.testing.fakes import FakeHttpClient, FakeProcessRunner
@@ -81,8 +81,14 @@ def _overview(*, claude_deployed=21, canonical=21) -> AgentOverview:
             shared_deployed=canonical,
         ),
         agents=(
-            SubagentRow(name="debugger", claude=True, codex=True, pi=False),
-            SubagentRow(name="security-auditor", claude=False, codex=True, pi=False),
+            AgentPresenceRow(
+                label="debugger",
+                cells={"claude": True, "codex": True, "pi": False},
+            ),
+            AgentPresenceRow(
+                label="security-auditor",
+                cells={"claude": False, "codex": True, "pi": False},
+            ),
         ),
         rules=RulesSummary(canonical_rules=31, claude_deployed=31, cursor_deployed=31),
         permissions=(),
@@ -138,4 +144,4 @@ def test_skill_health_service_runs_over_empty_tree(tmp_path):
         which=lambda c: None,
     )
     verifies = svc.verify(offline=True)
-    assert {v.agent for v in verifies} == {"claude", "cursor", "codex", "gemini", "pi"}
+    assert {v.agent for v in verifies} == {"claude", "cursor", "codex", "gemini", "pi", "hermes"}

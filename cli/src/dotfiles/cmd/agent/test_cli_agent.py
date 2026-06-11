@@ -331,7 +331,7 @@ def test_agent_catechism_shows_live_scope_health(tmp_path: Path) -> None:
 
 def test_order_by_origin_groups_by_origin_then_name() -> None:
     """`agent skills` lists by origin (canonical → … → untracked) then name within."""
-    from dotfiles.cmd.agent.cli import _order_by_origin
+    from dotfiles.cmd.agent.render.skills import order_by_origin
     from dotfiles.cmd.agent.skill_inventory import SkillInfo
 
     def s(name: str, origin: str) -> SkillInfo:
@@ -346,7 +346,7 @@ def test_order_by_origin_groups_by_origin_then_name() -> None:
         s("alpha", "untracked"),
         s("delta", "external"),
     ]
-    ordered = [(x.origin, x.name) for x in _order_by_origin(skills)]
+    ordered = [(x.origin, x.name) for x in order_by_origin(skills)]
     assert ordered == [
         ("canonical", "alpha"),
         ("canonical", "zulu"),
@@ -360,7 +360,7 @@ def test_order_by_origin_groups_by_origin_then_name() -> None:
 def test_origin_provenance_surfaces_plugin_marketplace_ref() -> None:
     """A plugin section header names its marketplace ref(s) — the real provenance —
     and de-dupes/sorts them; other origins use a static management hint."""
-    from dotfiles.cmd.agent.cli import _origin_provenance
+    from dotfiles.cmd.agent.render.skills import origin_provenance
     from dotfiles.cmd.agent.skill_inventory import SkillInfo
 
     def s(name: str, origin: str, source: str) -> SkillInfo:
@@ -370,12 +370,12 @@ def test_origin_provenance_surfaces_plugin_marketplace_ref() -> None:
         s("brainstorming", "plugin", "superpowers@claude-plugins-official"),
         s("writing-plans", "plugin", "superpowers@claude-plugins-official"),
     ]
-    assert _origin_provenance("plugin", superpowers) == (
+    assert origin_provenance("plugin", superpowers) == (
         "superpowers@claude-plugins-official — manage via /plugin"
     )
 
     multi = [s("a", "plugin", "zeta@m"), s("b", "plugin", "alpha@m")]
-    assert _origin_provenance("plugin", multi) == "alpha@m, zeta@m — manage via /plugin"
+    assert origin_provenance("plugin", multi) == "alpha@m, zeta@m — manage via /plugin"
 
     canonical = [s("converge", "canonical", "ai/skills/converge")]
-    assert _origin_provenance("canonical", canonical) == "this repo, ai/skills/ — edit directly"
+    assert origin_provenance("canonical", canonical) == "this repo, ai/skills/ — edit directly"

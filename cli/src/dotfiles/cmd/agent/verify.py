@@ -18,7 +18,7 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
-from dotfiles.agent import AGENTS, Agent
+from dotfiles.agent import AGENTS, SURFACE_PATHS, Agent
 from dotfiles.cmd.agent.models import AgentSurface
 from dotfiles.fsutil import list_dir
 
@@ -32,61 +32,6 @@ _ATTRIBUTES: tuple[str, ...] = (
     "instructions",
     "settings",
 )
-
-# attribute -> {agent: $HOME-relative path, or None when the agent has no such
-# surface (rendered n/a)}. Symlinked configs (cursor mcp/settings, pi settings)
-# resolve through, so existence checks still pass.
-_SURFACE_MAP: dict[str, dict[Agent, str | None]] = {
-    "skills": {
-        "claude": ".claude/skills",
-        "cursor": ".cursor/skills",
-        "codex": ".agents/skills",
-        "gemini": None,
-        "pi": ".agents/skills",
-    },
-    "subagents": {
-        "claude": ".claude/agents",
-        "cursor": None,
-        "codex": ".codex/agents",
-        "gemini": None,
-        "pi": ".pi/agent/agents",
-    },
-    "rules": {  # only Claude reads a rules dir; the rest embed rules in instructions
-        "claude": ".claude/rules",
-        "cursor": None,
-        "codex": None,
-        "gemini": None,
-        "pi": None,
-    },
-    "mcp": {
-        "claude": ".claude.json",
-        "cursor": ".cursor/mcp.json",
-        "codex": ".codex/config.toml",
-        "gemini": ".gemini/settings.json",
-        "pi": None,
-    },
-    "hooks": {
-        "claude": ".claude/settings.json",
-        "cursor": None,
-        "codex": ".codex/hooks.json",
-        "gemini": None,
-        "pi": None,
-    },
-    "instructions": {
-        "claude": ".claude/CLAUDE.md",
-        "cursor": None,
-        "codex": ".codex/AGENTS.md",
-        "gemini": ".gemini/AGENTS.md",
-        "pi": ".pi/agent/AGENTS.md",
-    },
-    "settings": {
-        "claude": ".claude/settings.json",
-        "cursor": ".cursor/cli-config.json",
-        "codex": ".codex/config.toml",
-        "gemini": ".gemini/settings.json",
-        "pi": ".pi/agent/settings.json",
-    },
-}
 
 
 class AgentVerifyService:
@@ -117,7 +62,7 @@ class AgentVerifyService:
         results: list[AgentSurface] = []
         for agent in AGENTS:
             for attribute in _ATTRIBUTES:
-                rel = _SURFACE_MAP[attribute].get(agent)
+                rel = SURFACE_PATHS[attribute].get(agent)
                 results.append(self._surface(agent, attribute, rel))
         return results
 

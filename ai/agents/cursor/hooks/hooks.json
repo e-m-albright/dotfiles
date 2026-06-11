@@ -12,12 +12,12 @@
     },
     {
       "event": "afterFileEdit",
-      "command": "~/dotfiles/ai/agents/shared/hooks/format-on-save.sh",
+      "command": "bash ~/dotfiles/ai/agents/shared/hooks/format-on-save.sh",
       "matcher": "*.sh|*.ts|*.tsx|*.js|*.jsx|*.py|*.rs|*.go|*.json"
     },
     {
       "event": "stop",
-      "command": "~/dotfiles/ai/agents/shared/hooks/notify.sh",
+      "command": "bash ~/dotfiles/ai/agents/shared/hooks/notify.sh",
       "matcher": "*"
     }
   ]

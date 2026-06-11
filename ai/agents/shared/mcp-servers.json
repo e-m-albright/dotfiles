@@ -4,7 +4,7 @@
   "granola": {
     "type": "http",
     "url": "https://mcp.granola.ai/mcp",
-    "targets": ["claude", "codex"]
+    "targets": ["claude"]
   },
   "_context7_disabled": "context7 MCP disabled 2026-06-09 — replaced by the `ctx7` CLI (`npx ctx7 library <name>` + `ctx7 docs <id>`, full 1:1 parity with the MCP's two tools). Docs lookup now needs no always-on MCP tax and is universal across every shell-capable agent, not patchy per-vendor. (was: https://mcp.context7.com/mcp, targets cursor/gemini)",
 
