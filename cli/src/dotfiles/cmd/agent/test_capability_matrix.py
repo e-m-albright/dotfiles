@@ -171,3 +171,32 @@ def test_capability_rows_render_shape() -> None:
     rows = capability_rows()
     assert len(rows) == len(CAPABILITY_MATRIX)
     assert all(set(r.cells) == set(AGENTS) for r in rows)
+
+
+# The drift-gate the overview's trust depends on: HAVE ⟹ CAN. If the registry defines
+# a deploy path for (vendor, surface), the capability matrix MUST mark that vendor as
+# supporting it — never "no"/"unverified". This is what stops the per-vendor pages and
+# the capability matrix from disagreeing (the contradiction that made the dashboard a
+# liar: a surface deployed in one view, "n/a"/unsupported in another).
+_SURFACE_TO_CAPABILITY = {
+    "skills": "skills",
+    "subagents": "subagents",
+    "instructions": "rules",  # the kernel file IS the rules capability
+    "mcp": "mcp",
+    "hooks": "hooks",
+}
+
+
+def test_deploy_path_implies_capability_support() -> None:
+    from dotfiles.agent import VENDORS
+
+    matrix = {cap.key: cap.cells for cap in CAPABILITY_MATRIX}
+    for vendor in VENDORS:
+        for surface, capability in _SURFACE_TO_CAPABILITY.items():
+            if getattr(vendor.paths, surface) is None:
+                continue  # we don't deploy this surface to this vendor — nothing to assert
+            status = matrix[capability][vendor.name].status
+            assert status not in ("no", "unverified"), (
+                f"{vendor.name} deploys {surface!r} (capability {capability!r}) but the matrix "
+                f"says {status!r} — deploy-vs-capability drift; reconcile the registry or the cell"
+            )

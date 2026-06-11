@@ -22,15 +22,17 @@ from dotfiles.agent import AGENTS, SURFACE_PATHS, Agent
 from dotfiles.cmd.agent.models import AgentSurface
 from dotfiles.fsutil import list_dir
 
-# The uniform attribute checklist shown for every agent, in order.
-_ATTRIBUTES: tuple[str, ...] = (
-    "skills",
-    "subagents",
-    "rules",
-    "mcp",
-    "hooks",
-    "instructions",
-    "settings",
+# The uniform checklist shown for every agent: (display label, registry surface key).
+# "rules" reads the deployed kernel file (CLAUDE.md / AGENTS.md / .mdc) — the same text
+# every vendor loads — not a separate dir; there is no longer a redundant
+# "instructions" row, and cursor (.mdc) + hermes (runtime) are handled in _rules_surface.
+_ATTRIBUTES: tuple[tuple[str, str], ...] = (
+    ("skills", "skills"),
+    ("subagents", "subagents"),
+    ("rules", "instructions"),
+    ("mcp", "mcp"),
+    ("hooks", "hooks"),
+    ("settings", "settings"),
 )
 
 
@@ -61,9 +63,11 @@ class AgentVerifyService:
         """
         results: list[AgentSurface] = []
         for agent in AGENTS:
-            for attribute in _ATTRIBUTES:
-                rel = SURFACE_PATHS[attribute].get(agent)
-                results.append(self._surface(agent, attribute, rel))
+            for label, key in _ATTRIBUTES:
+                if label == "rules":
+                    results.append(self._rules_surface(agent))
+                else:
+                    results.append(self._surface(agent, label, SURFACE_PATHS[key].get(agent)))
         return results
 
     def _surface(self, agent: Agent, label: str, rel: str | None) -> AgentSurface:
@@ -71,6 +75,30 @@ class AgentVerifyService:
         if rel is None:
             return AgentSurface(agent=agent, label=label, status="skipped", quantity="n/a")
         return self._check(agent, label, self._home / rel)
+
+    def _rules_surface(self, agent: Agent) -> AgentSurface:
+        """The deployed kernel/rules — the instructions file every vendor loads.
+
+        Mirrors uniformity's `_deploy_rules`, so the vendor page and uniformity can't
+        disagree: claude/codex/gemini/pi carry it in CLAUDE.md/AGENTS.md; cursor in its
+        generated `.mdc`; hermes injects a project AGENTS.md at runtime (no global file
+        we own). Every vendor does rules — none should read "n/a" for an unused dir.
+        """
+        if agent == "cursor":
+            mdc_dir = self._dotfiles_dir / "ai" / "agents" / "cursor" / "rules"
+            has_mdc = mdc_dir.is_dir() and any(p.suffix == ".mdc" for p in list_dir(mdc_dir))
+            return AgentSurface(
+                agent=agent,
+                label="rules",
+                status="present" if has_mdc else "missing",
+                quantity=".mdc",
+                detail=str(mdc_dir),
+            )
+        if agent == "hermes":
+            return AgentSurface(
+                agent=agent, label="rules", status="skipped", quantity="runtime (project AGENTS.md)"
+            )
+        return self._surface(agent, "rules", SURFACE_PATHS["instructions"].get(agent))
 
     # ------------------------------------------------------------------
     # Core path-check logic (mirrors check_path() in the shell script)

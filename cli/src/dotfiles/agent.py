@@ -19,10 +19,9 @@ class VendorPaths:
 
     skills: str | None = None
     subagents: str | None = None  # the subagent .md dir — one path for deploy + verify
-    rules: str | None = None
     mcp: str | None = None
     hooks: str | None = None
-    instructions: str | None = None
+    instructions: str | None = None  # the kernel/rules file (CLAUDE.md / AGENTS.md / .mdc)
     settings: str | None = None
 
     def resolve(self, home: Path, rel: str | None) -> Path | None:
@@ -57,7 +56,6 @@ VENDORS: tuple[Vendor, ...] = (
         paths=VendorPaths(
             skills=".claude/skills",
             subagents=".claude/agents",
-            rules=".claude/rules",
             mcp=".claude.json",
             hooks=".claude/settings.json",
             instructions=".claude/CLAUDE.md",
@@ -161,7 +159,6 @@ SURFACE_PATHS: dict[str, dict[Agent, str | None]] = {
     for attr in (
         "skills",
         "subagents",
-        "rules",
         "mcp",
         "hooks",
         "instructions",

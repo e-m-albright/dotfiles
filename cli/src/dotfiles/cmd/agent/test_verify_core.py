@@ -127,7 +127,8 @@ def test_present_and_missing_surfaces_for_an_agent(tmp_path: Path) -> None:
         if s.agent == "gemini"
     }
     assert by_label["settings"].status == "present"
-    assert by_label["instructions"].status == "missing"
+    # "rules" reads the kernel file (AGENTS.md here), which is absent → missing.
+    assert by_label["rules"].status == "missing"
 
 
 # ---------------------------------------------------------------------------
@@ -146,9 +147,10 @@ def test_every_agent_has_the_same_attribute_checklist(tmp_path: Path) -> None:
     from dotfiles.cmd.agent.verify import _ATTRIBUTES
 
     surfaces = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles").vendors()
+    expected = [label for label, _ in _ATTRIBUTES]
     for agent in ("claude", "cursor", "codex", "gemini", "pi", "hermes"):
         labels = [s.label for s in surfaces if s.agent == agent]
-        assert labels == list(_ATTRIBUTES)
+        assert labels == expected
 
 
 def test_multiple_skill_md_files_counted(tmp_path: Path) -> None:
