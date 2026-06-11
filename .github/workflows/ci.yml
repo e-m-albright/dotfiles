@@ -10,7 +10,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Syntax check all shell scripts
         run: |
@@ -58,10 +58,50 @@ jobs:
   cli:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - uses: extractions/setup-just@v2
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
+      - uses: extractions/setup-just@v4
       - name: Health + quality gate (fmt, lint, types, deadcode, complexity, ratchet, tests)
         run: just check
       - name: Validate skill/agent markdown (catches silent frontmatter-drop on deploy)
         run: just lint-agents
+
+  # Clean-machine rehearsal — runs the agentic deploy + health commands against a
+  # fresh $HOME with no vendor tools installed. Unit tests run on a configured dev
+  # box and miss the non-hermetic-crash class (e.g. a probe that dies on an absent
+  # ~/.claude or a live MCP 405); this proves the commands degrade gracefully — no
+  # unhandled traceback — on the kind of machine the repo exists to bootstrap.
+  # Non-zero exits are expected (a clean box has gaps to report); a traceback is not.
+  # NOTE: full install.sh is macOS-specific and not rehearsed here.
+  clean-machine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
+      - name: Install the dotfiles CLI
+        working-directory: cli
+        run: uv sync --frozen
+      - name: Rehearse agent deploy + health against a clean HOME
+        working-directory: cli
+        run: |
+          set -u
+          home="$(mktemp -d)"
+          bin=".venv/bin/dotfiles"
+          fail=0
+          check() {  # <label> <args...> — fails the job only on a Python traceback
+            local label="$1"; shift
+            echo "::group::dotfiles $label (clean HOME)"
+            HOME="$home" timeout 150 "$bin" "$@" >out.txt 2>&1 || echo "(exit $? — tolerated unless traceback)"
+            cat out.txt
+            if grep -q 'Traceback (most recent call last)' out.txt; then
+              echo "::error::dotfiles $label crashed with a traceback on a clean machine"
+              fail=1
+            fi
+            echo "::endgroup::"
+          }
+          check "agent setup" agent setup
+          check "agent overview" agent overview
+          check "agent verify" agent verify --offline
+          check "doctor" doctor
+          exit "$fail"
