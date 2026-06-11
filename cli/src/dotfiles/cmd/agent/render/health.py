@@ -8,15 +8,12 @@ from rich.table import Table
 
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.agent import VENDORS
-from dotfiles.cmd.agent.catechism import DoctrineLayer, ScopeHealth
 from dotfiles.cmd.agent.models import (
     AgentVerify,
-    CatechismEntry,
     FileValidation,
     HealthBootstrap,
     Hotspot,
 )
-from dotfiles.cmd.agent.render.overview import GOLD
 from dotfiles.cmd.agent.web_chat import GeminiChunksService
 from dotfiles.console import console, print_section, print_title, render_steps
 from dotfiles.result import StepResult
@@ -123,50 +120,6 @@ def render_hotspots(rows: tuple[Hotspot, ...]) -> None:
     tbl.add_column("file", style="dim")
     for h in rows[:8]:
         tbl.add_row(str(h.score), str(h.churn), str(h.loc), escape(h.file))
-    console.print(tbl)
-
-
-def _ov_section(title: str, hint: str | None = None) -> None:
-    line = f"\n[bold]▸ {escape(title)}[/]"
-    if hint:
-        line += f"  [dim]{escape(hint)}[/]"
-    console.print(line)
-
-
-def render_doctrine(layers: tuple[DoctrineLayer, ...]) -> None:
-    _ov_section("Doctrine", "the backbone — outermost → innermost")
-    width = max((len(layer.name) for layer in layers), default=8)
-    for layer in layers:
-        console.print(
-            f"  [{GOLD}]{escape(layer.name):<{width}}[/]  {escape(layer.role)}\n"
-            f"  {' ' * width}  [dim]{escape(layer.doc)}[/]"
-        )
-
-
-def render_scope_health(scopes: list[ScopeHealth]) -> None:
-    _ov_section("Health baselines", "the ratchet floor — every ceiling may only DECREASE")
-    if not scopes:
-        console.print("  [dim](no docs/health/<scope>/baselines.json yet)[/]")
-        return
-    for s in scopes:
-        supp = " · ".join(f"{k} {v}" for k, v in s.suppressions.items())
-        cx = f"≤{s.complexity_max}"
-        cx += " ✓" if s.complexity_over == 0 else f" [red]({s.complexity_over} over)[/]"
-        console.print(
-            f"  [{GOLD}]{escape(s.scope)}[/]  [dim]{s.loc} LOC · complexity {cx} · "
-            f"updated {escape(s.updated)}[/]"
-        )
-        console.print(f"    [dim]suppressions:[/] {escape(supp)}")
-
-
-def render_catechism(entries: tuple[CatechismEntry, ...]) -> None:
-    _ov_section("Router", "symptom → the rite to reach for · front door: code-health")
-    tbl = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
-    tbl.add_column("You want to…", style="dim", max_width=48)
-    tbl.add_column("Reach for")
-    tbl.add_column("Tier · kind", style="dim")
-    for e in entries:
-        tbl.add_row(escape(e.symptom), f"[bold]{escape(e.rite)}[/]", escape(e.tier))
     console.print(tbl)
 
 

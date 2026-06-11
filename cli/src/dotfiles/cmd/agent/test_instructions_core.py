@@ -147,10 +147,27 @@ def test_manifest_has_five_harness_layers(tmp_path: Path) -> None:
 
 def test_manifest_json_includes_tools_and_layers(tmp_path: Path) -> None:
     payload = manifest_json(build_manifest(_fake_repo(tmp_path)))
-    assert {"tools", "layers"} <= set(payload)
+    assert {"tools", "layers", "doctrine", "routing"} <= set(payload)
     tools = payload["tools"]
     assert isinstance(tools, list)
     assert any(isinstance(t, dict) and t["name"] == "Bash" for t in tools)
+
+
+def test_manifest_subsumes_catechism_doctrine_and_routing(tmp_path: Path) -> None:
+    # The doctrine backbone + symptom→rite routing now ride on the manifest (the
+    # tree folds them in, so `catechism` is just a view of `instructions`).
+    manifest = build_manifest(_fake_repo(tmp_path))
+    assert manifest.doctrine  # the engineering-map backbone
+    assert any(entry.rite == "code-style" for entry in manifest.routing)
+
+
+def test_subagents_carry_vendor_gaps(tmp_path: Path) -> None:
+    # The vendors that skip a surface are flagged inline — gemini (agy) and hermes
+    # have no subagents dir in the registry.
+    gaps = _item(build_manifest(_fake_repo(tmp_path)), "subagents").vendor_gaps
+    assert "agy" in gaps
+    assert "hermes" in gaps
+    assert "claude" not in gaps
 
 
 def test_render_runs_for_small_and_large_manifests(tmp_path: Path) -> None:

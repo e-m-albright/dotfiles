@@ -11,7 +11,6 @@ from rich.markup import escape
 from dotfiles.app.context import app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.agent.capability_matrix import capability_rows, receipts
-from dotfiles.cmd.agent.catechism import CATECHISM, DOCTRINE, read_scope_health
 from dotfiles.cmd.agent.health import HealthError, HealthService, git_root
 from dotfiles.cmd.agent.instructions import build_manifest
 from dotfiles.cmd.agent.overview import AgentOverviewService
@@ -19,10 +18,7 @@ from dotfiles.cmd.agent.render.health import (
     gemini_flycut,
     gemini_list,
     gemini_step,
-    render_catechism,
-    render_doctrine,
     render_health,
-    render_scope_health,
     render_setup_results,
     render_validation,
     render_vendor,
@@ -350,16 +346,11 @@ def health(
 
 @agent_app.command()
 def catechism(ctx: typer.Context) -> None:
-    """The code-health backbone: doctrine hierarchy + live ratchet floor + symptom→rite router."""
+    """Subsumed into `agent instructions` — its doctrine + routing now live in that tree."""
     app_ctx = app_context(ctx)
-    print_title(console, "agent", "catechism")
-    render_doctrine(DOCTRINE)
-    render_scope_health(read_scope_health(app_ctx.dotfiles_dir))
-    render_catechism(CATECHISM)
-    console.print(
-        "\n[dim]The doctrine: ENGINEERING.md · the theory: code-health-portfolio.md · "
-        "verify live: just check (ratchet-check.sh)[/]"
-    )
+    print_title(console, "agent", "instructions")
+    console.print("[dim](catechism is now part of [/]instructions[dim] — showing it)[/]\n")
+    render_instructions(build_manifest(app_ctx.dotfiles_dir))
 
 
 @agent_app.command()
@@ -367,12 +358,13 @@ def instructions(
     ctx: typer.Context,
     json_out: bool = typer.Option(False, "--json", help="Emit the raw manifest as JSON."),
 ) -> None:
-    """The harness manifest: what context an agent is fed, by load mode + token cost.
+    """The harness manifest as a tree: what an agent is fed, and what it can reach.
 
-    Three groups: *loaded by default* (the budget every session pays), *reachable on
-    demand* (zero cost until pulled), and the *active harness* (hooks, deny-vocab,
-    permissions, MCP — behavior-shaping config, not context text), under the
-    engineering map it all hangs off.
+    The five-layer harness model, then a tree of context — *in context now* (the
+    budget every session pays), *reachable on demand* (zero cost until pulled), the
+    *active harness* (hooks/deny/permissions/MCP), and the *tool surface* — with the
+    engineering map + symptom→rite routing folded in (subsuming `catechism`) and the
+    vendors that skip a surface flagged inline.
     """
     app_ctx = app_context(ctx)
     manifest = build_manifest(app_ctx.dotfiles_dir)
@@ -382,8 +374,7 @@ def instructions(
     print_title(console, "agent", "instructions")
     render_instructions(manifest)
     console.print(
-        "\n[dim]Siblings: [/]overview[dim] (deploy state) · [/]catechism[dim] "
-        "(code-health routing) · the map: ENGINEERING.md[/]"
+        "\n[dim]Sibling: [/]overview[dim] (per-vendor deploy state) · the map: ENGINEERING.md[/]"
     )
 
 

@@ -22,7 +22,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, RootModel
 
-from dotfiles.cmd.agent.catechism import DOCTRINE
+from dotfiles.agent import VENDORS
+from dotfiles.cmd.agent.catechism import CATECHISM, DOCTRINE, CatechismEntry, DoctrineLayer
 
 
 def est_tokens(text: str) -> int:
@@ -49,6 +50,7 @@ class ContextItem(BaseModel):
     est_tokens: int  # estimated context cost; 0 for non-text harness config
     count: int  # number of files this item spans
     note: str
+    vendor_gaps: tuple[str, ...] = ()  # vendor columns that don't get this surface
 
 
 class MapColumn(BaseModel):
@@ -91,12 +93,19 @@ class InstructionsManifest(BaseModel):
     columns: tuple[MapColumn, ...]
     tools: tuple[ToolItem, ...]
     layers: tuple[HarnessLayer, ...]
+    doctrine: tuple[DoctrineLayer, ...]  # the map's backbone (subsumes catechism)
+    routing: tuple[CatechismEntry, ...]  # symptom → rite (subsumes catechism)
 
     def tokens_for(self, mode: LoadMode) -> int:
         return sum(i.est_tokens for i in self.items if i.mode is mode)
 
     def items_for(self, mode: LoadMode) -> list[ContextItem]:
         return [i for i in self.items if i.mode is mode]
+
+
+def _vendor_gaps(surface: str) -> tuple[str, ...]:
+    """Vendor column labels that have no path for *surface* — the ones it skips."""
+    return tuple(v.column for v in VENDORS if getattr(v.paths, surface) is None)
 
 
 _FRONTMATTER = re.compile(r"^---\n.*?\n---\n", re.DOTALL)
@@ -219,6 +228,7 @@ def _subagents_item(root: Path) -> ContextItem:
         est_tokens=tokens,
         count=len(files),
         note="dispatched via the Agent tool; never in main context",
+        vendor_gaps=_vendor_gaps("subagents"),
     )
 
 
@@ -250,6 +260,7 @@ def _harness_items(root: Path) -> list[ContextItem]:
             est_tokens=0,
             count=len(hooks),
             note="pre-tool guards + verify-before-done (K1) + format/notify",
+            vendor_gaps=_vendor_gaps("hooks"),
         ),
         ContextItem(
             name="deny vocabulary",
@@ -386,4 +397,6 @@ def build_manifest(dotfiles_dir: Path) -> InstructionsManifest:
         columns=_map_columns(dotfiles_dir),
         tools=_tools(dotfiles_dir),
         layers=_harness_layers(dotfiles_dir),
+        doctrine=DOCTRINE,
+        routing=CATECHISM,
     )
