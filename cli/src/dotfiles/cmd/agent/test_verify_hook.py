@@ -115,6 +115,23 @@ def test_stop_hook_active_never_blocks(tmp_path: Path) -> None:
     assert not _blocked(out)
 
 
+# Innocent final messages that an earlier, unanchored pattern set wrongly blocked
+# (the "test" inside "latest", "it works" inside "commit works", a question, and a
+# report of prior CI state). The hook must ALLOW all of these.
+_FALSE_POSITIVES = [
+    "The latest passing run was yesterday, so we're good.",
+    "commit works fine on my side",
+    "Want me to confirm it works?",
+    "tests pass locally per CI history, but I haven't run them here.",
+]
+
+
+@pytest.mark.parametrize("text", _FALSE_POSITIVES)
+def test_innocent_phrasings_are_not_blocked(tmp_path: Path, text: str) -> None:
+    out = _run(tmp_path, [_human("status?"), _assistant_text(text)])
+    assert not _blocked(out), f"false block on innocent text: {text!r}"
+
+
 def test_missing_transcript_fails_open(tmp_path: Path) -> None:
     payload = json.dumps(
         {"transcript_path": str(tmp_path / "nope.jsonl"), "stop_hook_active": False}

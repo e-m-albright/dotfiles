@@ -5,9 +5,19 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from pydantic import TypeAdapter, ValidationError
+
 from dotfiles.adapters.ports import HttpError
 
-__all__ = ["HttpError", "UrllibHttpClient"]
+# HttpError belongs to the port, not the adapter — `dotfiles.adapters.ports` is its
+# single public home. It's imported here only to raise it, not to re-export it.
+__all__ = ["UrllibHttpClient"]
+
+# The port promises a JSON object; json.loads alone returns Any and can hand back a
+# list or scalar. A typed adapter validates the shape (raising on a non-object)
+# without laundering that Any through a suppression — and turns a malformed body
+# into the same HttpError as every other transport failure.
+_JSON_OBJECT = TypeAdapter(dict[str, object])
 
 
 class UrllibHttpClient:
@@ -36,7 +46,6 @@ class UrllibHttpClient:
         try:
             with urllib.request.urlopen(req, timeout=self._timeout) as resp:
                 raw = resp.read()
-                return json.loads(raw)  # type: ignore[no-any-return]
         except urllib.error.HTTPError as exc:
             raise HttpError(
                 f"HTTP {exc.code} from {req.full_url}: {exc.reason}",
@@ -44,3 +53,7 @@ class UrllibHttpClient:
             ) from exc
         except urllib.error.URLError as exc:
             raise HttpError(f"Connection failed to {req.full_url}: {exc.reason}") from exc
+        try:
+            return _JSON_OBJECT.validate_json(raw)
+        except ValidationError as exc:
+            raise HttpError(f"Expected a JSON object from {req.full_url}") from exc

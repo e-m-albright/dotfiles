@@ -37,7 +37,9 @@ class DoctrineLayer(BaseModel):
 # the index that makes the doctrine navigable (and lets us evolve it in one place).
 DOCTRINE: tuple[DoctrineLayer, ...] = (
     DoctrineLayer(
-        name="Canon", doc="ENGINEERING.md", role="the umbrella — philosophy + practice + toolbelt"
+        name="Canon",
+        doc="ENGINEERING.md",
+        role="the engineering map — doctrine, enforcement, layers, tools",
     ),
     DoctrineLayer(
         name="Philosophy",

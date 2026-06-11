@@ -14,7 +14,11 @@
 #   3. stop_hook_active caps it at a single nudge per turn — it can never loop.
 # Anything it can't parse, it fails OPEN (exit 0): a missed lie beats a false block.
 #
-# Contract (Claude Code / Codex Stop hook):
+# Contract — Claude Code Stop / SubagentStop hook. The jq parser below assumes the
+# Claude Code transcript schema (.type "user"/"assistant", .message.content[] with
+# tool_use / tool_result blocks). It is deliberately NOT wired to Codex: that
+# rollout JSONL is a different, unverified shape, and a hook that silently fails
+# open on an unverified contract is the exact unproven claim this hook polices.
 #   stdin  = {"transcript_path": "...", "stop_hook_active": bool, ...}
 #   block  = print {"decision":"block","reason":"..."} to stdout, exit 0
 #   allow  = no output, exit 0
@@ -64,7 +68,9 @@ text="${parsed#*$'\t'}"
 [[ "$tools" =~ ^[0-9]+$ ]] || exit 0
 
 # No strong verification claim in the final message → nothing to enforce.
-printf '%s' "$text" | grep -iqEf "$CLAIMS_FILE" || exit 0
+# Strip '#' comments and blank lines first (grep -f would treat them as patterns —
+# a commented-out paren would crash the match and fail open silently).
+printf '%s' "$text" | grep -iqEf <(grep -vE '^[[:space:]]*(#|$)' "$CLAIMS_FILE") || exit 0
 
 # Claim present, but the agent ran tools this turn → trust it.
 [ "$tools" -gt 0 ] && exit 0

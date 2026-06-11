@@ -1,17 +1,21 @@
 # Verification-claim patterns for the verify-before-done Stop hook (kernel K1).
 # One extended-regex (grep -iEf) per line; '#' lines and blanks are ignored.
-# These are STRONG "I checked and it's good" claims — the hook only nudges when
-# one of these appears AND the agent ran zero tools that turn. Tune freely:
-# add a pattern the moment a lie slips through; loosen one that false-positives.
-tests? (now )?(all )?(pass|passing|passes|passed|are green)
-all (the )?tests? (are )?(now )?(passing|green)
-all (tests? )?green
-ci('?s| is) (now )?green
-build (now )?(succeeds|passes|passed|is green)
-it (now )?works( now)?
-verified (it|that|this)?\s*works
-confirmed (it|this|that)?\s*works
-everything (passes|works|is green|is passing)
-all (checks?|gates?) (pass|passing|green)
-successfully (tested|verified|ran)
-the (fix|change|build) (works|is verified|passed)
+#
+# These match STRONG, DECLARATIVE "I checked and it's good" claims. The hook only
+# nudges when one appears AND the agent ran zero tools that turn. Design bias:
+# PRECISION over recall — a missed lie beats a false block (a nuisance hook gets
+# muted within a month). So patterns are \b-anchored and require assertive framing
+# ("all tests pass", not a bare "it works" that hides in "comm[it works]" or a
+# question). Tune freely: add a pattern when a lie slips through; never at the cost
+# of matching ordinary prose. (Verified non-matches: "latest passing run was…",
+# "commit works fine", "confirm it works?", "tests pass per CI history".)
+\b(all|the) tests? (now )?(pass|passed|passes)\b
+\b(all )?tests? are (now )?(passing|green)\b
+\ball (checks?|gates?) (pass|passed|are green)\b
+\bci is (now )?green\b
+\bbuild (now )?(succeeds|succeeded|passes|passed|is green)\b
+\beverything (passes|works|is green|is passing)\b
+\bverified (that |it |this )*works\b
+\bconfirmed (it |this )*working\b
+\bsuccessfully (tested|verified)\b
+\bthe (fix|change|build) (works|is verified|passed|passes)\b

@@ -32,9 +32,10 @@ at a *layer* where you reach for a *lens* — and the *ratchet* makes the win st
          becomes a deterministic floor the next change can't breach. Fires at L1·L2·L3.
 ```
 
-**The binding law:** every Principle has at least one Gate that enforces it; every Gate
-fires at a Layer. A belief with no gate is a claim we can't keep — *if you cannot enforce
-it, do not claim it.* A gate with no belief behind it is ceremony. The four columns are
+**The binding law:** every Principle has an enforcement — a deterministic **Gate** where
+one is possible, a **review** check (Tier B) where the property is irreducibly semantic
+(e.g. P8, concurrency bounds). A belief with *neither* is a claim we can't keep — *if you
+cannot enforce it, do not claim it.* A gate with no belief behind it is ceremony. The four columns are
 one system seen from four angles.
 
 **Two readings of the same picture:**
@@ -76,7 +77,7 @@ one system seen from four angles.
 | **P5** | Simplicity is the goal — small files are a proxy | G1, G5 |
 | **P6** | Dead code is dead weight | G1, L1 |
 | **P7** | Every exception is an event | G13 |
-| **P8** | Concurrency is bounded | — (review) |
+| **P8** | Concurrency is bounded | review (Tier B) |
 | **P9** | Observability is a design constraint | G13 |
 | **P10** | Suppressions ratchet downward | G1 |
 | **P11** | Tests verify behavior, not implementation | G5, G8 |

@@ -122,7 +122,7 @@ def _skill_items(root: Path) -> tuple[ContextItem, ContextItem]:
         mode=LoadMode.default,
         est_tokens=index_tokens,
         count=len(files),
-        note="frontmatter (name + description) only; bodies load on trigger",
+        note="frontmatter (skill metadata) only; bodies load on trigger",
     )
     bodies = ContextItem(
         name="skill bodies",
