@@ -86,12 +86,14 @@ class LMStudioService:
         runner: ProcessRunner,
         http: HttpClient,
         settings: LlmSettings,
-        which: _WhichFn = shutil.which,
+        which: _WhichFn | None = None,
     ) -> None:
         self._runner = runner
         self._http = http
         self._s = settings
-        self._which = which
+        # Resolve at call time (not as a default arg captured at import) so tests
+        # can monkeypatch shutil.which to fake `lms` onto a clean machine's PATH.
+        self._which = which or shutil.which
 
     # ------------------------------------------------------------------
     # Public methods
