@@ -119,7 +119,7 @@ def render_capability_matrix(rows: Iterable[CapabilityRow]) -> None:
     rows_list = list(rows)
     if not rows_list:
         return
-    _matrix_header("Capability matrix")
+    _matrix_header("CAN · vendor capability")
     for row in rows_list:
         cells = "".join(_capability_cell(row.cells[a]) for a in _AGENT_COLS)
         console.print(f"  {escape(row.capability):<{_LABEL_W}}{cells}")
@@ -148,13 +148,14 @@ def _render_uniformity_matrix(rows: Iterable[UniformityRow]) -> None:
     rows_list = list(rows)
     if not rows_list:
         return
-    _matrix_header("Uniformity (enforced)")
+    _matrix_header("HAVE · our deployment")
     for row in rows_list:
         cells = "".join(_coverage_cell(row.cells.get(a, "na")) for a in _AGENT_COLS)
         console.print(f"  {escape(row.capability):<{_LABEL_W}}{cells}")
     console.print(
         "  [dim][green]✓[/green] deployed · [red]✗[/red] closable gap · "
-        "[yellow]○[/yellow] supported but workspace-local/ext/beta · · n/a[/]"
+        "[yellow]○[/yellow] supported but workspace-local/ext/beta · · n/a "
+        "· rows = the enforced tier[/]"
     )
 
 
