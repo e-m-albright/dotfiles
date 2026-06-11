@@ -2,7 +2,7 @@
 # Claude Code statusline, shaped to match Pi as closely as Claude's one-line
 # command surface allows:
 #
-#   claude <cwd> (<branch> [wt:name] [!n] [+n] [*n] [?n] [⇡n] [⇣n]) · ctx: n% · 5h: n% left · 7d: n% left · <model>
+#   claude <cwd> (<branch> [wt:name] [!n] [+n] [*n] [?n] [⇡n] [⇣n]) · ctx: n% · 5h: n% used · 7d: n% used · <model>
 #
 # Reads Claude's statusline JSON payload on stdin. Set NO_COLOR=1 to disable
 # ANSI colors. Schema: https://code.claude.com/docs/en/statusline.md
@@ -122,12 +122,10 @@ if [[ -n "$ctx_pct" ]]; then
     out="${out}${sep}$(ramp "$ctx_pct")ctx: $(printf '%.0f%%' "$ctx_pct")${R}"
 fi
 if [[ -n "$five_used" ]]; then
-    five_left=$(awk -v used="$five_used" 'BEGIN { printf "%.0f", 100 - used }')
-    out="${out}${sep}$(ramp "$five_used")5h: ${five_left}% left${R}"
+    out="${out}${sep}$(ramp "$five_used")5h: $(printf '%.0f%%' "$five_used") used${R}"
 fi
 if [[ -n "$seven_used" ]]; then
-    seven_left=$(awk -v used="$seven_used" 'BEGIN { printf "%.0f", 100 - used }')
-    out="${out}${sep}$(ramp "$seven_used")7d: ${seven_left}% left${R}"
+    out="${out}${sep}$(ramp "$seven_used")7d: $(printf '%.0f%%' "$seven_used") used${R}"
 fi
 if [[ -n "$model" ]]; then
     out="${out}${sep}${DIM}${model}${R}"
