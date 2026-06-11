@@ -1,10 +1,10 @@
-# How We Build — the Defense-in-Depth Map
+# Defense in Depth — the Layers (L0–L5) in Detail
 
-> The visual, operational companion to [`CANON.md`](../../CANON.md). The Canon states
-> the **articles** (what is true) and the **rites** (what we do); this page maps *where*
-> and *when* each rite fires — layered cheapest-first — so quality is **enforced in depth**
-> rather than hoped for. This is the **how**, not the what: the encompassing process of
-> development as aided by AI. Generic by design; a project tweaks the specifics, never the shape.
+> The **Defense-in-depth** column of the [Engineering Map](../../ENGINEERING.md), zoomed in.
+> The map gives the one-screen nesting (doctrine → enforcement → layers → tools) and the IDs;
+> this page is the deep dive on *where and when* each gate fires — layered cheapest-first, so
+> quality is **enforced in depth** rather than hoped for. Generic by design; a project tweaks
+> the specifics, never the shape.
 
 The thesis in one line: **catch each class of defect at the cheapest layer that can catch it, make every stochastic gain durable by recording it as a deterministic floor, and let nothing that can be enforced survive as mere prose.**
 
@@ -198,4 +198,4 @@ This map is a living artifact, built on the shoulders of giants (Ousterhout, Fow
 - **Fold the siloed doctrines** (security, fleet-uniformity, build-discipline) into the Canon's enforcement articles, not just this map's pointers.
 - **Language packs** — the ratchet's suppression catalog is Python/TS/Rust-flavoured; "any repo" is really "any repo we've hand-coded patterns for."
 
-See [`docs/health/ASSESSMENT.md`](../health/ASSESSMENT.md) for the independent critique that names these gaps, and [`CANON.md`](../../CANON.md) for the doctrine itself.
+See [`docs/health/ASSESSMENT.md`](../health/ASSESSMENT.md) for the independent critique that names these gaps, and [`ENGINEERING.md`](../../ENGINEERING.md) for the doctrine itself.

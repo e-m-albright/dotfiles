@@ -5,7 +5,7 @@ description: The testability/effect-isolation lens of the code-health portfolio 
 
 # Purify
 
-> **Canon** — enacts Principle 4 (*Boundaries are contracts*) and Principle 11 (*Tests verify behavior, not implementation*). See [CANON.md](../../../CANON.md).
+> **Canon** — enacts Principle 4 (*Boundaries are contracts*) and Principle 11 (*Tests verify behavior, not implementation*). See [ENGINEERING.md](../../../ENGINEERING.md).
 
 The **effect-isolation lens**. Logic tangled with I/O can only be tested end-to-end and is hard to reason about. This lens separates the **pure core** (deterministic computation, trivially testable) from the **imperative shell** (the thin layer that does I/O), and uses the type system to make whole classes of error impossible. It's the design school behind "humble object," hexagonal architecture, and type-driven design.
 

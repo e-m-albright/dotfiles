@@ -9,7 +9,7 @@ Three layers, all printed by ``dotfiles agent catechism``:
 - **Router** — the call-and-response of symptom → rite (the entry-point map; the
   prose table in code-health-portfolio.md mirrors it).
 
-See CANON.md for the umbrella framing.
+See ENGINEERING.md for the umbrella framing.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ class DoctrineLayer(BaseModel):
 # the index that makes the doctrine navigable (and lets us evolve it in one place).
 DOCTRINE: tuple[DoctrineLayer, ...] = (
     DoctrineLayer(
-        name="Canon", doc="CANON.md", role="the umbrella — philosophy + practice + toolbelt"
+        name="Canon", doc="ENGINEERING.md", role="the umbrella — philosophy + practice + toolbelt"
     ),
     DoctrineLayer(
         name="Philosophy",

@@ -2,7 +2,7 @@
 
 Follow `ai/agents/shared/rules.md` — the universal agent kernel, deployed verbatim to every vendor — plus any project-specific rules below.
 
-**The Canon & the Catechism** ([`CANON.md`](CANON.md)) is the umbrella term for this repo's engineering philosophy and practice — process, code health, developer experience, and the toolbelt (justfiles, lefthook, CI) that enforces them. When the owner says **"the Canon,"** they mean *all of it*. New patterns earn their place by tracing to an article of the Canon; new articles earn theirs by naming the rite that enforces them.
+**The Engineering Map** ([`ENGINEERING.md`](ENGINEERING.md)) is the single source of truth for how this repo builds: the doctrine (kernel **K1–K8** + 12 principles **P1–P12**), how it's enforced (the gates **G1–G14**), where it fires (the defense-in-depth layers **L0–L5**), and the lenses you reach for — nested in one screen, with a symptom→rite routing table. When the owner says **"the Canon,"** he means *that whole map*; the word is a spoken handle, not a structure. New patterns earn their place by tracing to a principle or gate **by ID**; new beliefs earn theirs by naming the gate that will enforce them.
 
 This is a personal dotfiles and development environment configuration repo. It bootstraps a Mac to a curated developer experience: machine setup scripts, editor configs, and the agentic-coding tooling (rules, skills, MCP) we deploy across vendors.
 
@@ -63,7 +63,7 @@ This is a dotfiles and dev environment repo, not a typical application. Key diff
 ## Reference Docs
 
 The curated knowledge base lives in `docs/` (see `docs/README.md`):
-- `CANON.md` (repo root) -- **the Canon & the Catechism**: the umbrella philosophy + practice (process, code health, DX, toolbelt). Start here for the whole ethos.
+- `ENGINEERING.md` (repo root) -- **the Engineering Map**: the one-screen nesting of doctrine → enforcement → layers → tools, with stable IDs (K/P/G/L) and the symptom→rite routing table. Start here. ("the Canon" is the spoken alias for this whole map.)
 - `docs/knowledge/how-we-build.md` -- the **visual defense-in-depth map**: every gate/rite by layer (author-time → pre-commit → pre-push → CI → scheduled → convergence), deterministic vs stochastic, the test pyramid, how to work within it
 - `docs/engineering-philosophy.md` -- the 12 universal code-health principles (Canon, article II)
 - `docs/knowledge/engineering-gates.md` -- how each principle is enforced mechanically (the toolbelt doctrine)

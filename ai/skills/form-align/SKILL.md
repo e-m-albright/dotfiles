@@ -5,7 +5,7 @@ description: The domain/ontology lens of the code-health portfolio — make the 
 
 # Align
 
-> **Canon** — enacts Principle 2 (*Type the domain, not the plumbing*) and Principle 3 (*One source of truth per concept*). See [CANON.md](../../../CANON.md).
+> **Canon** — enacts Principle 2 (*Type the domain, not the plumbing*) and Principle 3 (*One source of truth per concept*). See [ENGINEERING.md](../../../ENGINEERING.md).
 
 The **conceptual lens**: does the code speak the language of the domain? Structure can be clean and modules deep while the codebase still models the wrong concepts or names them after an external API. This lens aligns the code's vocabulary and boundaries with the domain — the backbone everything else hangs on, since names drive module boundaries.
 

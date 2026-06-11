@@ -5,7 +5,7 @@ description: The safe-execution lens of the code-health portfolio — apply name
 
 # Tidy
 
-> **Canon** — enacts Principle 5 (*Simplicity is the goal*) via named, behavior-preserving transforms. See [CANON.md](../../../CANON.md).
+> **Canon** — enacts Principle 5 (*Simplicity is the goal*) via named, behavior-preserving transforms. See [ENGINEERING.md](../../../ENGINEERING.md).
 
 The **mechanical, behavior-preserving execution lens** (Fowler's *Refactoring*, Beck's *Tidy First?*). Where `form-deepen` decides *what* design to pursue and `converge` *measures and ratchets* a whole repo, `form-tidy` is how you safely make a specific structural change *now*: pick a named transform, apply it in tiny steps, keep the tests green, commit it separately.
 

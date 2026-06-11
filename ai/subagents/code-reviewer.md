@@ -40,4 +40,4 @@ Catch the issues a careful senior reviewer would catch before a change lands: co
 Be direct. No praise filler. Flag what you're unsure about rather than hedging everything.
 
 ## Sources
-- Lenses drawn from `docs/engineering-philosophy.md` (the 12 principles), `docs/knowledge/engineering-gates.md`, and `CANON.md`.
+- Lenses drawn from `docs/engineering-philosophy.md` (the 12 principles), `docs/knowledge/engineering-gates.md`, and `ENGINEERING.md`.

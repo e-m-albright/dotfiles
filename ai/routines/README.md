@@ -25,4 +25,4 @@ Unattended *generative* refactoring on a cron is a cited anti-pattern: cosmetic 
 ~half the PRs needing fixes, no measured health gain, inter-pass oscillation. So the
 cron is allowed to **find** (cheap, safe, reversible) and forbidden to **fix** (a
 judgment call that stays with a human). Every taste/structural lens and all of Tier B
-remain interactive. See [`CANON.md`](../../CANON.md) and the portfolio scheduling policy.
+remain interactive. See [`ENGINEERING.md`](../../ENGINEERING.md) and the portfolio scheduling policy.

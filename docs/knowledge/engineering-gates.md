@@ -127,5 +127,5 @@ Hard-won traps from large agentic refactors. Most are judgment, not gates, so th
 ## See also
 
 - [../engineering-philosophy.md](../engineering-philosophy.md) — the 12 principles each of these gates enforces
-- [../../CANON.md](../../CANON.md) — these gates are the enforcement articles of the Canon (§III)
+- [../../ENGINEERING.md](../../ENGINEERING.md) — these gates are the enforcement articles of the Canon (§III)
 - [how-we-build.md](how-we-build.md) — where each gate fires in the defense-in-depth ladder

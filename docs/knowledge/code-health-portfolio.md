@@ -1,17 +1,8 @@
-# The Code-Health Canon & Catechism
+# The Code-Health Lens Portfolio
 
 > A curated set of *contestable* lenses for improving a codebase, not a unified theory. Routed by the [`code-health`](../../ai/skills/code-health/SKILL.md) skill. Enforced by the ratchet in [engineering-gates.md](engineering-gates.md); graded against [engineering-philosophy.md](../engineering-philosophy.md).
 
-## The Canon & the Catechism
-
-> This page is the **code-health** chapter of a repo-wide frame. The full umbrella — process, code health, DX, and the toolbelt — lives at [`CANON.md`](../../CANON.md). What follows applies the same two-halves lens to code health specifically.
-
-The whole system has two halves. Naming them makes the umbrella easy to hold in one's head — and easy to keep honest, because they answer different questions.
-
-- **The Canon** — *what is true about good code.* The doctrine you don't relitigate every PR: the [12 Principles](../engineering-philosophy.md), the [gates that enforce each](engineering-gates.md), the [form/function completeness model](#the-completeness-model-form-vs-function) below, the arbitrated [antagonist tiebreaks](#the-lenses), and the [evidence base](#evidence-base). The Canon answers **why**. It changes rarely, and only by argument.
-- **The Catechism** — *what you actually do, confronted with real code.* The drilled practice: the lenses (`form-*`, `converge`, Tier B), the [ratchet and routines](../health/README.md#routines--what-makes-it-self-managing), the persistent [health state](../health/README.md), and the call-and-response [entry-point map](#entry-points--the-catechism) — literally question→answer ("want to make it smaller? → `form-prune`"). The Catechism answers **what do I do now**.
-
-Mnemonic: **believe the Canon, practice the Catechism.** A catechism is just doctrine made drillable — the Catechism here is the Canon rendered executable: every rite (a lens, a gate, a routine) traces back to a principle, and every principle has at least one rite that enacts it. If a practice can't be traced to the Canon, it's superstition; if a principle has no practice, it's a claim the system can't keep (which is exactly what [engineering-philosophy.md](../engineering-philosophy.md) means by "if you cannot enforce it, do not claim it").
+> **Where this fits.** This page is the **Tools** column of the [Engineering Map](../../ENGINEERING.md) — the deep dive on the lenses themselves. The map shows how the lenses nest under the whole system (doctrine → enforcement → layers → tools) and carries the symptom→rite routing table; this page is the theory it points to: the two-axis model, the antagonist tiebreaks, the convergent sequence, and the evidence base.
 
 ## Why a portfolio instead of one skill
 

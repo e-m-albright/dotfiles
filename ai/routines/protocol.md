@@ -1,7 +1,7 @@
 # Routine protocol — the shared scheduled-scan run loop
 
 Every entry in [`registry.json`](registry.json) runs this loop. The invariant, from
-the [Canon](../../CANON.md) scheduling policy and [how-we-build](../../docs/knowledge/how-we-build.md)
+the [Canon](../../ENGINEERING.md) scheduling policy and [how-we-build](../../docs/knowledge/how-we-build.md)
 layer **L4**: **schedule the finding, gate the fixing.** A routine surfaces work; a
 human decides what to act on. It enacts the kernel article *"detection is safe
 unattended; the fix is human-gated"* and never auto-applies a generative refactor —

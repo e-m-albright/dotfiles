@@ -5,7 +5,7 @@ description: The readability/interpretability lens of the code-health portfolio 
 
 # Clarify
 
-> **Canon** — serves readability as a first-class dimension (graded by the review rubric); the why-comment rule of the kernel. See [CANON.md](../../../CANON.md).
+> **Canon** — serves readability as a first-class dimension (graded by the review rubric); the why-comment rule of the kernel. See [ENGINEERING.md](../../../ENGINEERING.md).
 
 The **interpretability lens**. Readability is a real, measured dimension — separate from module structure — and the literature splits it cleanly: a **structural** axis (line length, nesting depth, blank-line rhythm, identifier counts; Buse & Weimer) and a **textual** axis (identifier specificity, comment-code consistency, comment quality, textual coherence; Scalabrino). Both matter; either alone is insufficient. This lens improves both.
 

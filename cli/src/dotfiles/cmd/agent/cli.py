@@ -352,7 +352,7 @@ def catechism(ctx: typer.Context) -> None:
     render_scope_health(read_scope_health(app_ctx.dotfiles_dir))
     render_catechism(CATECHISM)
     console.print(
-        "\n[dim]The doctrine: CANON.md · the theory: code-health-portfolio.md · "
+        "\n[dim]The doctrine: ENGINEERING.md · the theory: code-health-portfolio.md · "
         "verify live: just check (ratchet-check.sh)[/]"
     )
 
