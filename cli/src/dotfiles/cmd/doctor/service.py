@@ -5,6 +5,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.agent import surface_path
 from dotfiles.cmd.doctor.models import CheckResult
 from dotfiles.fsutil import symlink as _make_symlink
 
@@ -283,7 +284,7 @@ class DoctorService:
             )
 
         # Claude instructions (~/.claude/CLAUDE.md) — warn if absent
-        claude_md = self._home / ".claude" / "CLAUDE.md"
+        claude_md = surface_path(self._home, "claude", "instructions")
         if claude_md.exists():
             results.append(
                 CheckResult(section=sec, name="Claude instructions", status="ok", detail="exists")
@@ -317,7 +318,7 @@ class DoctorService:
 
     def _check_claude_settings(self, sec: str) -> list[CheckResult]:
         """Claude plugins + hooks from ~/.claude/settings.json."""
-        settings = self._home / ".claude" / "settings.json"
+        settings = surface_path(self._home, "claude", "settings")
         if not settings.exists() or self._which("jq") is None:
             return []
         results: list[CheckResult] = []
@@ -366,7 +367,7 @@ class DoctorService:
 
     def _check_claude_mcp(self, sec: str) -> list[CheckResult]:
         """Claude MCP servers from ~/.claude.json."""
-        claude_json = self._home / ".claude.json"
+        claude_json = surface_path(self._home, "claude", "mcp")
         if not claude_json.exists() or self._which("jq") is None:
             return []
         mcp_count = self._jq_count(".mcpServers // {} | length", claude_json)
@@ -388,7 +389,7 @@ class DoctorService:
             return []
         results: list[CheckResult] = []
 
-        agents_md = self._home / ".codex" / "AGENTS.md"
+        agents_md = surface_path(self._home, "codex", "instructions")
         if agents_md.exists():
             results.append(
                 CheckResult(section=sec, name="Codex instructions", status="ok", detail="exists")
@@ -403,7 +404,7 @@ class DoctorService:
                 )
             )
 
-        hooks_json = self._home / ".codex" / "hooks.json"
+        hooks_json = surface_path(self._home, "codex", "hooks")
         if hooks_json.exists():
             results.append(
                 CheckResult(section=sec, name="Codex hooks", status="ok", detail="configured")
@@ -415,7 +416,7 @@ class DoctorService:
                 )
             )
 
-        config_toml = self._home / ".codex" / "config.toml"
+        config_toml = surface_path(self._home, "codex", "mcp")
         toml_content = config_toml.read_text() if config_toml.exists() else ""
         if "mcp_servers" in toml_content:
             results.append(

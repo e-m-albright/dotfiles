@@ -13,7 +13,7 @@ from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from dotfiles.agent import AGENTS, VENDORS, Vendor
+from dotfiles.agent import AGENTS, VENDORS, Vendor, surface_path
 from dotfiles.cmd.agent.capability_matrix import (
     CAPABILITY_MATRIX,
     CapabilityRow,
@@ -237,9 +237,9 @@ class AgentOverviewService:
     def _deploy_statusline(self) -> dict[str, bool]:
         h = self._home
         return {
-            "claude": self._file_contains(h / ".claude" / "settings.json", "statusLine"),
+            "claude": self._file_contains(surface_path(h, "claude", "settings"), "statusLine"),
             "cursor": False,
-            "codex": self._file_contains(h / ".codex" / "config.toml", "status_line"),
+            "codex": self._file_contains(surface_path(h, "codex", "settings"), "status_line"),
             "gemini": (h / ".gemini" / "antigravity-cli").is_dir(),
             "pi": (h / ".pi" / "agent" / "extensions" / "git-status.ts").exists(),
             "hermes": False,  # no custom statusline surface; Hermes' TUI footer is fixed
@@ -248,10 +248,10 @@ class AgentOverviewService:
     def _deploy_permissions(self) -> dict[str, bool]:
         h = self._home
         return {
-            "claude": self._file_contains(h / ".claude" / "settings.json", "permissions"),
-            "cursor": (h / ".cursor" / "cli-config.json").exists(),
+            "claude": self._file_contains(surface_path(h, "claude", "settings"), "permissions"),
+            "cursor": surface_path(h, "cursor", "settings").exists(),
             "codex": (h / ".codex" / "rules" / "default.rules").exists(),
-            "gemini": (h / ".gemini" / "settings.json").exists(),
+            "gemini": surface_path(h, "gemini", "settings").exists(),
             "pi": (h / ".pi" / "agent" / "permission-policy.json").exists(),
             "hermes": False,  # tool policy is Hermes-managed (config.yaml + sandbox), not ours
         }

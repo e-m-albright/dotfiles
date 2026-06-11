@@ -132,6 +132,23 @@ VENDORS: tuple[Vendor, ...] = (
 
 AGENTS: tuple[Agent, ...] = tuple(v.name for v in VENDORS)
 VENDOR_BY_NAME: dict[Agent, Vendor] = {v.name: v for v in VENDORS}
+
+
+def surface_path(home: Path, vendor: Agent, surface: str) -> Path:
+    """Resolve a vendor's home-relative surface path from the one registry.
+
+    The single lookup every probe (doctor, overview, ...) should use instead of
+    re-hardcoding ``~/.claude/settings.json`` and friends — so a path that moves
+    in ``VENDORS`` propagates everywhere automatically. Raises ``KeyError`` when
+    the vendor declares no such surface (a wiring bug, surfaced loudly, not a
+    silent miss).
+    """
+    rel: str | None = getattr(VENDOR_BY_NAME[vendor].paths, surface)
+    if rel is None:
+        raise KeyError(f"vendor {vendor!r} has no {surface!r} surface")
+    return home / rel
+
+
 # The vendors the agent-overview dashboard tracks. snapshot and skill-health
 # both iterate exactly this set.
 OVERVIEW_AGENTS: tuple[Agent, ...] = tuple(v.name for v in VENDORS if v.in_overview)
