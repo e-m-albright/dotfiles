@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8
+      - uses: astral-sh/setup-uv@v8.2.0
       - uses: extractions/setup-just@v4
       - name: Health + quality gate (fmt, lint, types, deadcode, complexity, ratchet, tests)
         run: just check
@@ -78,7 +78,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8
+      - uses: astral-sh/setup-uv@v8.2.0
       - name: Install the dotfiles CLI
         working-directory: cli
         run: uv sync --frozen
