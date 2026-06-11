@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.markup import escape
 
 from dotfiles.app.context import AppContext, app_context
+from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.session import session_name
 from dotfiles.cmd.session.agent_sessions import agents_by_session, live_agents
 from dotfiles.cmd.session.models import AgentActivity, Session
@@ -39,7 +40,8 @@ def _sweep(app_ctx: AppContext) -> None:
 
 
 session_app = typer.Typer(
-    help="List/attach/create/kill zellij sessions (same on phone and laptop)."
+    cls=FuzzyTyperGroup,
+    help="List/attach/create/kill zellij sessions (same on phone and laptop).",
 )
 
 

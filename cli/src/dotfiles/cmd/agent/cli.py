@@ -9,6 +9,7 @@ import typer
 from rich.markup import escape
 
 from dotfiles.app.context import app_context
+from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.agent.capability_matrix import capability_rows, receipts
 from dotfiles.cmd.agent.catechism import CATECHISM, DOCTRINE, read_scope_health
 from dotfiles.cmd.agent.health import HealthError, HealthService, git_root
@@ -52,10 +53,12 @@ from dotfiles.cmd.agent.skills import validate_skill_files
 from dotfiles.cmd.agent.web_chat import GeminiChunksService, GeminiError
 from dotfiles.console import console, print_section, print_status, print_title, render_steps
 
-agent_app = typer.Typer(help="Agentic setup for this machine and web chats.")
+agent_app = typer.Typer(cls=FuzzyTyperGroup, help="Agentic setup for this machine and web chats.")
 # Two scopes, by where the agentic context lives:
 #   this machine (direct commands)   web → browser chats
-web_app = typer.Typer(help="Provision browser-chat agents with paste-able instructions.")
+web_app = typer.Typer(
+    cls=FuzzyTyperGroup, help="Provision browser-chat agents with paste-able instructions."
+)
 
 
 class _AgentChoice(StrEnum):
@@ -208,7 +211,7 @@ def lint(ctx: typer.Context) -> None:
 
 
 # `agent skills` (list) + `agent skills prune` — skills is its own sub-app.
-skills_app = typer.Typer(help="List skills by origin, and prune retired ones.")
+skills_app = typer.Typer(cls=FuzzyTyperGroup, help="List skills by origin, and prune retired ones.")
 
 
 @skills_app.callback(invoke_without_command=True)

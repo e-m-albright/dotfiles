@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING
 
 import typer
 
+from dotfiles.app.fuzzy import FuzzyTyperGroup
+
 if TYPE_CHECKING:
     from rich.console import Console
     from rich.panel import Panel
@@ -49,6 +51,7 @@ _SHIM = _REPO_ROOT / "bin" / "dotfiles"
 _PASSTHROUGH = {"allow_extra_args": True, "ignore_unknown_options": True}
 
 app = typer.Typer(
+    cls=FuzzyTyperGroup,
     name="dotfiles",
     help="Curated Mac dev environment: machine setup, remote control, and agentic tooling.",
     no_args_is_help=True,

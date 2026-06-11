@@ -8,6 +8,7 @@ from pathlib import Path
 import typer
 
 from dotfiles.app.context import AppContext, app_context
+from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.snapshot.models import Snapshot, SnapshotDiff
 from dotfiles.cmd.snapshot.service import (
     capture,
@@ -18,7 +19,7 @@ from dotfiles.cmd.snapshot.service import (
 )
 from dotfiles.console import console, print_status, print_title
 
-snapshot_app = typer.Typer(help="Capture and diff machine-state snapshots.")
+snapshot_app = typer.Typer(cls=FuzzyTyperGroup, help="Capture and diff machine-state snapshots.")
 
 
 def _capture_now(app_ctx: AppContext) -> Snapshot:

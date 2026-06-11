@@ -4,6 +4,7 @@ import typer
 from rich.console import Console
 
 from dotfiles.app.context import app_context
+from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.remote.models import ConnectionInfo, RemoteStatus
 from dotfiles.cmd.remote.service import (
     SHARING_OPEN,
@@ -21,7 +22,9 @@ from dotfiles.console import (
     render_steps,
 )
 
-remote_app = typer.Typer(help="Turn phone (Termius) remote-shell access on or off.")
+remote_app = typer.Typer(
+    cls=FuzzyTyperGroup, help="Turn phone (Termius) remote-shell access on or off."
+)
 
 _WAIT_TIMEOUT_MIN = 2
 

@@ -4,12 +4,14 @@ import typer
 from rich.markup import escape
 
 from dotfiles.app.context import AppContext, app_context
+from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.benchmark.models import BenchResult
 from dotfiles.cmd.benchmark.service import LMStudioService
 from dotfiles.console import console, print_section, print_status, print_title
 
 benchmark_app = typer.Typer(
-    help="Benchmark local LM Studio models for your hardware (list|bench|estimate|compare)."
+    cls=FuzzyTyperGroup,
+    help="Benchmark local LM Studio models for your hardware (list|bench|estimate|compare).",
 )
 
 

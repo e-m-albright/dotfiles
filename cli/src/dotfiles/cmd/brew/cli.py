@@ -7,6 +7,7 @@ from typing import Annotated
 import typer
 
 from dotfiles.app.context import app_context
+from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.brew.service import (
     PackageManifest,
     add_taps,
@@ -30,7 +31,7 @@ from dotfiles.console import (
 )
 from dotfiles.result import StepResult
 
-brew_app = typer.Typer(help="Manage Homebrew packages from packages.toml.")
+brew_app = typer.Typer(cls=FuzzyTyperGroup, help="Manage Homebrew packages from packages.toml.")
 
 
 def _manifest(ctx: typer.Context) -> PackageManifest:

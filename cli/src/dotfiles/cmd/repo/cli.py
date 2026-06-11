@@ -8,11 +8,14 @@ from typing import Annotated
 
 import typer
 
+from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.repo.models import RepoAudit, RepoCheck
 from dotfiles.cmd.repo.service import RepoAuditService
 from dotfiles.console import console, print_section, print_title
 
-repo_app = typer.Typer(help="Assert repos follow the Canon (gates, docs, stack hygiene).")
+repo_app = typer.Typer(
+    cls=FuzzyTyperGroup, help="Assert repos follow the Canon (gates, docs, stack hygiene)."
+)
 
 _GLYPH: dict[str, str] = {
     "pass": "[green]✓[/]",
