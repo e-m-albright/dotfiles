@@ -34,6 +34,7 @@ from dotfiles.cmd.agent.settings_merger import (
     merge_replace,
     write_json_safely,
 )
+from dotfiles.cmd.agent.skill_prune import external_skill_names
 from dotfiles.fsutil import prune_broken_symlinks, symlink
 
 
@@ -143,8 +144,20 @@ def _setup_skills(dotfiles_dir: Path, gemini_home: Path) -> list[StepResult]:
     for skill_md in sorted(src.glob("*/SKILL.md")):
         symlink(skill_md.parent, dest / skill_md.parent.name)
         count += 1
+    # The third-party externals install into the shared ~/.agents/skills dir (codex/pi
+    # keep them there too); link them so agy reaches fleet parity instead of canonical-only.
+    ext_src = gemini_home.parent / ".agents" / "skills"
+    ext = 0
+    for name in sorted(external_skill_names(dotfiles_dir)):
+        if (ext_dir := ext_src / name).is_dir():
+            symlink(ext_dir, dest / name)
+            count += 1
+            ext += 1
     return [
-        StepResult(level="success", message=f"Linked {count} skills (agy → antigravity-cli/skills)")
+        StepResult(
+            level="success",
+            message=f"Linked {count} skills (agy → antigravity-cli/skills; {ext} external)",
+        )
     ]
 
 

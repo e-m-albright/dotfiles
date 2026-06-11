@@ -39,6 +39,7 @@ from dotfiles.cmd.agent.models import (
     UniformityRow,
     ValueRow,
 )
+from dotfiles.cmd.agent.skill_prune import canonical_skill_names, external_skill_names
 from dotfiles.cmd.agent.vendors.claude import parse_plugins_yaml
 from dotfiles.cmd.agent.verify import AgentVerifyService
 from dotfiles.fsutil import list_dir
@@ -274,10 +275,19 @@ class AgentOverviewService:
     # Skills & Rules (colocated value matrix: per-agent deployment)
     # ------------------------------------------------------------------
 
+    def _intentional_skill_names(self) -> set[str]:
+        """Skills we own or intentionally track (canonical + external) — vs vendor-bundled."""
+        return canonical_skill_names(self._dotfiles) | external_skill_names(self._dotfiles)
+
     def _skill_count_cell(self, v: Vendor, home: Path) -> str:
+        """Deployed skill count, annotated by origin: a bare total when every skill is
+        ours, else ``ours+extra`` so vendor-bundled noise (e.g. Hermes' own library) is
+        visible instead of inflating an opaque number."""
         if not v.paths.skills:
             return "—"
-        return str(self._count_subdirs(home / v.paths.skills))
+        deployed = {p.name for p in list_dir(home / v.paths.skills) if p.is_dir()}
+        extra = len(deployed - self._intentional_skill_names())
+        return f"{len(deployed) - extra}+{extra}" if extra else str(len(deployed))
 
     def _rules_cell(self, v: Vendor, home: Path) -> str:
         if v.name == "cursor":
