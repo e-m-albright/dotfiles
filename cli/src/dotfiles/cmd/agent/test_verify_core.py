@@ -34,14 +34,24 @@ def test_missing_paths_read_missing_on_empty_tree(tmp_path: Path) -> None:
     assert by[("gemini", "skills")].status == "missing"
 
 
-def test_deployed_skills_counted(tmp_path: Path) -> None:
-    skills = tmp_path / "home" / ".claude" / "skills"
+def test_deployed_skills_counted_with_census_notation(tmp_path: Path) -> None:
     for name in ("alpha", "beta"):
-        (skills / name).mkdir(parents=True)
+        src = tmp_path / "dotfiles" / "ai" / "skills" / name
+        src.mkdir(parents=True)
+        (src / "SKILL.md").write_text("---\n---\n")
+        (tmp_path / "home" / ".claude" / "skills" / name).mkdir(parents=True)
     by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
     cell = by[("claude", "skills")]
     assert cell.status == "present"
     assert cell.quantity == "2 skills"
+
+
+def test_foreign_skills_surface_in_census_notation(tmp_path: Path) -> None:
+    # No canonical skills exist, so a deployed dir is foreign — the page shows
+    # the same ours+foreign notation as the Skills & Rules matrix, not a bare 1.
+    (tmp_path / "home" / ".claude" / "skills" / "mystery").mkdir(parents=True)
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    assert by[("claude", "skills")].quantity == "0+1 skills"
 
 
 def test_empty_skill_dir_reads_empty(tmp_path: Path) -> None:

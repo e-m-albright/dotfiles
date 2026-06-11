@@ -14,6 +14,7 @@ from pathlib import Path
 from dotfiles.agent import VENDORS, SurfaceName, Vendor
 from dotfiles.cmd.agent.fleet import Fleet, FleetCell, Have, probe_deploy
 from dotfiles.cmd.agent.models import AgentSurface, AgentSurfaceStatus
+from dotfiles.cmd.agent.skill_census import SkillCensus, skill_census
 
 # Every page shows the same rows in the same order: the 7 capability surfaces
 # plus the settings plumbing row.
@@ -44,14 +45,18 @@ _HAVE_STATUS: dict[str, AgentSurfaceStatus] = {
 }
 
 
-def _quantity(surface: str, have: Have) -> str:
+def _quantity(surface: str, have: Have, census: SkillCensus | None) -> str:
+    if surface == "skills" and census is not None and census.deployed > 0:
+        # The census label (e.g. "36+18"), so this page and the Skills & Rules
+        # matrix show the same notation for the same fact.
+        return f"{census.label()} skills"
     unit = _COUNT_UNIT.get(surface)
     if have.count is None or unit is None:
         return ""
     return f"{have.count} {unit}"
 
 
-def _deployed_surface(vendor: Vendor, cell: FleetCell) -> AgentSurface:
+def _deployed_surface(vendor: Vendor, cell: FleetCell, census: SkillCensus | None) -> AgentSurface:
     have = cell.have
     if have is None:  # stance=="deploy" always probes; guard for the type-checker
         raise ValueError(f"deploy cell ({vendor.name}, {cell.surface}) without a probe")
@@ -60,7 +65,7 @@ def _deployed_surface(vendor: Vendor, cell: FleetCell) -> AgentSurface:
         label=cell.surface,
         status=_HAVE_STATUS[have.state],
         detail=have.path,
-        quantity=_quantity(cell.surface, have),
+        quantity=_quantity(cell.surface, have, census),
         path=have.path,
     )
 
@@ -104,13 +109,14 @@ def vendor_surfaces(fleet: Fleet, *, home: Path, dotfiles_dir: Path) -> list[Age
     """The uniform per-vendor checklist — same rows, same order, fleet-derived."""
     results: list[AgentSurface] = []
     for vendor in VENDORS:
+        census = skill_census(vendor, home=home, dotfiles_dir=dotfiles_dir)
         for surface in _SURFACE_ORDER:
             if surface == "settings":
                 results.append(_settings_surface(vendor, home=home, dotfiles_dir=dotfiles_dir))
             else:
                 cell = fleet.cell(vendor.name, surface)
                 results.append(
-                    _deployed_surface(vendor, cell)
+                    _deployed_surface(vendor, cell, census)
                     if cell.stance == "deploy"
                     else _undeployed_surface(vendor, cell)
                 )
