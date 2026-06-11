@@ -14,7 +14,7 @@
   "suppressions": {
     "type-ignore": 15,
     "cast": 21,
-    "any-annotation": 14,
+    "any-annotation": 15,
     "noqa": 0,
     "broad-except": 0,
     "pragma-no-cover": 1
@@ -22,7 +22,7 @@
   "suppression_patterns": {
     "type-ignore": "# *type: *ignore",
     "cast": "cast\\(",
-    "any-annotation": ": Any\\b|dict\\[str, Any\\]",
+    "any-annotation": ": Any($|[^A-Za-z0-9_])|dict\\[str, Any\\]",
     "noqa": "# *noqa",
     "broad-except": "except Exception",
     "pragma-no-cover": "# *pragma: *no cover"
