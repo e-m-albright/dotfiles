@@ -354,7 +354,7 @@ dotfiles agent verify        # Check skills/agents deployed + probe MCP servers 
 dotfiles agent stats         # Skill-usage analytics from Claude + Codex transcripts: leaderboard, dead skills, weak triggers (--since, --json)
 dotfiles agent health        # Bootstrap a repo's code-health backbone: scorecard → docs/health/<scope>/baselines.json + findings.md (--scope, --glob, --run-from, --force)
 dotfiles agent catechism     # The code-health backbone: doctrine hierarchy (Canon→Philosophy→Gates→Portfolio) + live ratchet floor per scope + symptom→rite router
-dotfiles agent instructions  # The harness manifest: what context an agent is fed, by load mode (loaded-by-default vs reachable-on-demand) + token cost, the active harness (hooks/deny/permissions/MCP), and the engineering map (--json)
+dotfiles agent instructions  # The harness manifest: the five-layer harness overview, the engineering map, context by load mode (default vs reachable) + token cost, the active harness (hooks/deny/permissions/MCP), and the tool surface (mutating tools flagged) (--json)
 dotfiles remote on --dry-run
                              # Preview Termius SSH/Mosh/Zellij setup
 dotfiles remote on --add-key "ssh-ed25519 AAAA... termius-phone" --harden-ssh

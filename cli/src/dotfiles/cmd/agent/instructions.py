@@ -61,13 +61,36 @@ class MapColumn(BaseModel):
     source: str
 
 
+class ToolItem(BaseModel):
+    """One tool in the agent's surface — what it can DO, and whether it mutates state."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    kind: str  # file · search · exec · web · agent · meta · mcp
+    mutating: bool  # changes state? (the mutating ones are what the guardrails gate)
+    note: str
+
+
+class HarnessLayer(BaseModel):
+    """One layer of the five-layer harness model, mapped to what this repo provides."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    pieces: str  # the concrete things in this repo that fill the layer
+    note: str
+
+
 class InstructionsManifest(BaseModel):
-    """The full harness manifest: every context source + the engineering map."""
+    """The full harness manifest: context sources, the map, the tool surface, layers."""
 
     model_config = ConfigDict(frozen=True)
 
     items: tuple[ContextItem, ...]
     columns: tuple[MapColumn, ...]
+    tools: tuple[ToolItem, ...]
+    layers: tuple[HarnessLayer, ...]
 
     def tokens_for(self, mode: LoadMode) -> int:
         return sum(i.est_tokens for i in self.items if i.mode is mode)
@@ -78,6 +101,39 @@ class InstructionsManifest(BaseModel):
 
 _FRONTMATTER = re.compile(r"^---\n.*?\n---\n", re.DOTALL)
 _NUMBERED_HEADER = re.compile(r"^#{2,3} \d+\. ", re.MULTILINE)
+
+# The agent's built-in tool surface (Claude Code). A reference constant — these are
+# harness-provided, not repo files — annotated by whether they mutate state, because
+# the mutating ones are exactly what the guardrails (guard hooks) sit in front of.
+_BUILTIN_TOOLS: tuple[ToolItem, ...] = (
+    ToolItem(name="Read", kind="file", mutating=False, note="files, PDFs, images, notebooks"),
+    ToolItem(name="Glob", kind="search", mutating=False, note="find files by name/pattern"),
+    ToolItem(name="Grep", kind="search", mutating=False, note="search file contents (ripgrep)"),
+    ToolItem(
+        name="Edit",
+        kind="file",
+        mutating=True,
+        note="exact string replace · guarded: sensitive-file",
+    ),
+    ToolItem(
+        name="Write", kind="file", mutating=True, note="create/overwrite · guarded: sensitive-file"
+    ),
+    ToolItem(
+        name="Bash",
+        kind="exec",
+        mutating=True,
+        note="shell · guarded: destructive-shell + deny-vocab",
+    ),
+    ToolItem(name="WebFetch", kind="web", mutating=False, note="fetch + read a URL (grounding)"),
+    ToolItem(name="WebSearch", kind="web", mutating=False, note="search the web (grounding)"),
+    ToolItem(
+        name="Agent/Task", kind="agent", mutating=False, note="dispatch a subagent in fresh context"
+    ),
+    ToolItem(name="NotebookEdit", kind="file", mutating=True, note="edit Jupyter notebook cells"),
+    ToolItem(
+        name="TodoWrite", kind="meta", mutating=False, note="track multi-step work in-session"
+    ),
+)
 
 
 def _read(path: Path) -> str:
@@ -254,6 +310,53 @@ def _map_columns(root: Path) -> tuple[MapColumn, ...]:
     )
 
 
+def _tools(root: Path) -> tuple[ToolItem, ...]:
+    """The agent's tool surface: built-in tools + a derived line for wired MCP servers."""
+    mcp = _mcp_count(root)
+    mcp_item = ToolItem(
+        name="MCP",
+        kind="mcp",
+        mutating=False,
+        note=f"{mcp} server(s) wired (ctx7, browser, …); tools loaded on demand",
+    )
+    return (*_BUILTIN_TOOLS, mcp_item)
+
+
+def _harness_layers(root: Path) -> tuple[HarnessLayer, ...]:
+    """The five-layer harness model (orchestration → observability), mapped to this repo."""
+    skills = len(sorted((root / "ai" / "skills").glob("*/SKILL.md")))
+    hooks = len(sorted((root / "ai" / "agents" / "shared" / "hooks").glob("*.sh")))
+    tools = len(_BUILTIN_TOOLS)
+    mcp = _mcp_count(root)
+    return (
+        HarnessLayer(
+            name="1 · Tool orchestration",
+            pieces=f"{tools} built-in tools · {mcp} MCP server(s)",
+            note="what the agent can do; mutating tools (Bash/Edit/Write) are gated",
+        ),
+        HarnessLayer(
+            name="2 · Verification loops",
+            pieces="verify-before-done (K1) · gates G1-G14 · review · adversarial-assessor",
+            note="catch a failure before it compounds; separate grader from generator",
+        ),
+        HarnessLayer(
+            name="3 · Context & memory",
+            pieces=f"kernel K1-K8 · {skills} skills · reference docs · MEMORY.md",
+            note="curated, repo-owned, version-controlled — not tool-private memory",
+        ),
+        HarnessLayer(
+            name="4 · Guardrails",
+            pieces=f"{hooks} hooks · deny-vocabulary · permission profile",
+            note="block destructive/sensitive actions at the pre-tool boundary",
+        ),
+        HarnessLayer(
+            name="5 · Observability",
+            pieces="verify-before-done.log · structlog at service boundaries",
+            note="see the gate fire; make a silent degradation loud (P9/G13)",
+        ),
+    )
+
+
 def build_manifest(dotfiles_dir: Path) -> InstructionsManifest:
     """Assemble the harness manifest from the repo's canonical sources."""
     index, bodies = _skill_items(dotfiles_dir)
@@ -278,4 +381,9 @@ def build_manifest(dotfiles_dir: Path) -> InstructionsManifest:
         _subagents_item(dotfiles_dir),
         *_harness_items(dotfiles_dir),
     )
-    return InstructionsManifest(items=items, columns=_map_columns(dotfiles_dir))
+    return InstructionsManifest(
+        items=items,
+        columns=_map_columns(dotfiles_dir),
+        tools=_tools(dotfiles_dir),
+        layers=_harness_layers(dotfiles_dir),
+    )

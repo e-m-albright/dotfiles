@@ -5,7 +5,13 @@ from __future__ import annotations
 from rich.markup import escape
 from rich.table import Table
 
-from dotfiles.cmd.agent.instructions import ContextItem, InstructionsManifest, LoadMode
+from dotfiles.cmd.agent.instructions import (
+    ContextItem,
+    HarnessLayer,
+    InstructionsManifest,
+    LoadMode,
+    ToolItem,
+)
 from dotfiles.cmd.agent.render.overview import GOLD
 from dotfiles.console import console
 
@@ -48,6 +54,29 @@ def _harness_table(items: list[ContextItem]) -> None:
     console.print(table)
 
 
+def _render_harness_overview(layers: tuple[HarnessLayer, ...]) -> None:
+    _section("The harness", "the five layers we engineer around the model")
+    width = max((len(layer.name) for layer in layers), default=8)
+    for layer in layers:
+        console.print(
+            f"  [{GOLD}]{escape(layer.name):<{width}}[/]  {escape(layer.pieces)}\n"
+            f"  {' ' * width}  [dim]{escape(layer.note)}[/]"
+        )
+
+
+def _render_tools(tools: tuple[ToolItem, ...]) -> None:
+    _section("Tools", "the agent's surface — what it can do · ✎ = mutating (gated)")
+    table = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
+    table.add_column("tool")
+    table.add_column("kind", style="dim")
+    table.add_column("", justify="center", width=1)
+    table.add_column("note", style="dim", max_width=50)
+    for tool in tools:
+        mark = "[red]✎[/]" if tool.mutating else "[dim]·[/]"
+        table.add_row(f"[{GOLD}]{escape(tool.name)}[/]", escape(tool.kind), mark, escape(tool.note))
+    console.print(table)
+
+
 def _render_map(manifest: InstructionsManifest) -> None:
     _section(
         "The engineering map", "doctrine → enforcement → layers → tools · full: ENGINEERING.md"
@@ -61,7 +90,8 @@ def _render_map(manifest: InstructionsManifest) -> None:
 
 
 def render_instructions(manifest: InstructionsManifest) -> None:
-    """Print the full harness manifest: the map, then context by load mode."""
+    """Print the full harness manifest: harness overview, map, context, tools."""
+    _render_harness_overview(manifest.layers)
     _render_map(manifest)
 
     default_tok = manifest.tokens_for(LoadMode.default)
@@ -73,6 +103,8 @@ def render_instructions(manifest: InstructionsManifest) -> None:
 
     _section("Active harness", "shapes behavior, not context text")
     _harness_table(manifest.items_for(LoadMode.harness))
+
+    _render_tools(manifest.tools)
 
     console.print(
         f"\n[dim]Budget paid every session: [/][bold]{_fmt_tokens(default_tok)} tok[/]"
@@ -87,6 +119,8 @@ def manifest_json(manifest: InstructionsManifest) -> dict[str, object]:
     return {
         "items": [item.model_dump(mode="json") for item in manifest.items],
         "columns": [col.model_dump(mode="json") for col in manifest.columns],
+        "tools": [tool.model_dump(mode="json") for tool in manifest.tools],
+        "layers": [layer.model_dump(mode="json") for layer in manifest.layers],
         "totals": {
             "default_tokens": manifest.tokens_for(LoadMode.default),
             "reachable_tokens": manifest.tokens_for(LoadMode.reachable),

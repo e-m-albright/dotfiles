@@ -127,6 +127,32 @@ def test_manifest_json_shape_and_totals(tmp_path: Path) -> None:
     assert {item["name"] for item in payload["items"]} >= {"kernel", "skill bodies", "mcp servers"}
 
 
+def test_manifest_exposes_tools_with_mutating_flags(tmp_path: Path) -> None:
+    manifest = build_manifest(_fake_repo(tmp_path))
+    names = {t.name for t in manifest.tools}
+    assert {"Read", "Bash", "Edit", "Write", "MCP"} <= names
+    # The mutating tools are exactly the ones the guardrails sit in front of.
+    mutating = {t.name for t in manifest.tools if t.mutating}
+    assert {"Bash", "Edit", "Write"} <= mutating
+    assert "Read" not in mutating
+    assert "WebSearch" not in mutating
+
+
+def test_manifest_has_five_harness_layers(tmp_path: Path) -> None:
+    layers = build_manifest(_fake_repo(tmp_path)).layers
+    assert len(layers) == 5
+    assert layers[0].name.endswith("Tool orchestration")
+    assert layers[-1].name.endswith("Observability")
+
+
+def test_manifest_json_includes_tools_and_layers(tmp_path: Path) -> None:
+    payload = manifest_json(build_manifest(_fake_repo(tmp_path)))
+    assert {"tools", "layers"} <= set(payload)
+    tools = payload["tools"]
+    assert isinstance(tools, list)
+    assert any(isinstance(t, dict) and t["name"] == "Bash" for t in tools)
+
+
 def test_render_runs_for_small_and_large_manifests(tmp_path: Path) -> None:
     # Smoke: rendering must not raise, and both token-format branches are exercised
     # (the fake tree is tiny → "~N"; the real repo is large → "~N.Nk").
