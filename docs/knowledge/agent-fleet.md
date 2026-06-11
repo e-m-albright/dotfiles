@@ -1,6 +1,6 @@
 # Agent Fleet Uniformity
 
-> **Last reviewed**: 2026-06-10 — Refresh when a vendor changes its config schema or a new agent joins the fleet.
+> **Last reviewed**: 2026-06-11 — Refresh when a vendor changes its config schema or a new agent joins the fleet. (`audit-agent-fleet-drift` re-proves this on a weekly cadence.)
 
 We run five coding agents — **Claude Code, Codex, Cursor, Gemini, Pi** — from one set of dotfiles config (`ai/agents/`), deployed by the Python CLI (`dotfiles agent setup`). This doc records what "uniform" means across them, where it can't be (vendor limits), and how the two cross-cutting concerns — **statuslines** and **permissions** — are kept in sync.
 
@@ -57,11 +57,23 @@ Verified config (probed live on v1.0.7):
 | MCP | `~/.gemini/settings.json` `mcpServers` + an (empty) `~/.gemini/config/mcp_config.json` agy now seeds — empty by choice (MCP is Claude-only) | ✅ done |
 | Permissions | `~/.gemini/settings.json` `tools.exclude` (deny-vocab) | ✅ done |
 | Plugins | `agy plugin import gemini\|claude` / `install <x>@<mp>` | available |
-| Skills · Subagents · Hooks | **Supported by agy** (proven: its binary ships `/skills`, `/agents`, `/hooks`, "Subagents", "Toggle the statusline") — the capability matrix is `yes`. What's unconfirmed is the **global on-disk deploy path** for OUR skills: agy reads project `.agents/skills/<name>/SKILL.md`, but a v1.0.7 install exposes no top-level `skills`/`agents`/`hooks` subcommand and `~/.gemini/antigravity-cli/` is runtime-only (cache/brain/builtin). | supported; our global deploy TBD |
+| Skills | **`~/.gemini/antigravity-cli/skills/`** (global, SKILL.md standard — same as the fleet); we symlink the canonical set there via `_setup_skills` | ✅ done |
+| Subagents | **Programmatic, not file-deployed** — agy spawns subagents dynamically (built-in roles / generic clones / on-the-fly registration), no `.md`-dir to drop into. Workspace `.agents/` agent-scripts are per-repo, not global. | n/a — not a deploy target |
+| Hooks | Workspace-local **`.agents/hooks.json`** (global hooks via `~/.gemini/config/`). Different protocol from our shared scripts: agy hooks read stdin JSON and write `{"decision":"allow"\|"deny"}` on **stdout** (not exit-2). | supported, workspace-local |
+| Statusline | **Native, always-on** TUI bar (no file to deploy) | ✅ native |
 
-**So agy *supports* skills/subagents/hooks (matrix = `yes`); we just haven't wired OUR skills into a global agy path yet** (the matrix is vendor-capability; deployment is the per-agent checklist). Caveats: (a) re-probe after an `agy` update for a global skills dir, then deploy; (b) static subagent *dirs* may never come — Google frames agy subagents as *dynamic* `/agent` dispatch, so don't plan to port `ai/subagents/*.md` there. The `dotfiles agent web copy` Gemini-*web*-chat command is unrelated and stays.
+### agy's customization model (verified 2026-06-11)
 
-Sources: [transitioning blog](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/) · live `agy --version`/`--help`/filesystem probe (2026-06-09, v1.0.7) · gemini-cli issue #16058.
+agy has two **customization roots**: a Global root (`~/.gemini/`, with the agy-specific `~/.gemini/antigravity-cli/`) and a per-workspace root (`.agents/` in the repo). This is why agy's enforced-tier cells split the way they do in `dotfiles agent overview`'s Uniformity matrix:
+
+- **rules** → `~/.gemini/AGENTS.md` (global). ✓ deployed.
+- **skills** → `~/.gemini/antigravity-cli/skills/` (global, SKILL.md). ✓ deployed (33 linked). Workspace skills also load from `.agents/skills/`.
+- **permissions** → `~/.gemini/settings.json` `tools.exclude`. ✓ deployed.
+- **statusline** → native built-in; marked active via the agy config-root probe (nothing to deploy).
+- **subagents** → `○` *by design*: dynamic/programmatic dispatch, no global `.md` dir. Do **not** plan to port `ai/subagents/*.md` here.
+- **hooks** → `○`: closable only per-workspace (`.agents/hooks.json`) and in agy's JSON-decision protocol, not our global exit-2 scripts. A `--workspace` deploy was scoped and **declined** (narrow payoff + unverifiable agy runtime) — revisit if agy ships a global hook path or you live in agy-driven repos.
+
+Sources: [transitioning blog](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/) · [agy skills/MCP config](https://medium.com/google-cloud/configuring-mcp-servers-and-skills-for-antigravity-cli-and-ide-a938c7eebb78) · [agy hooks docs](https://antigravity.google/docs/hooks) · live binary/filesystem probe (2026-06-11, v1.0.7).
 
 ---
 
@@ -152,18 +164,23 @@ Claude's `permissions.json` keeps a broad `allow` for inner-loop dev commands (a
 
 ## Hooks — one intent set, three events per vendor
 
-Hooks are **deterministic, harness-side automation** fired at lifecycle points. The key property: **they cost the model zero context** (they're shell commands the harness runs, not tokens the model reads), so unlike rules/MCP they aren't a budget concern — they're pure "make the floor deterministic." We run **one canonical intent set**; only the event *name* and *script* differ per vendor (each harness hands a different payload, so the scripts can't be literally shared).
+Hooks are **deterministic, harness-side automation** fired at lifecycle points. The key property: **they cost the model zero context** (they're shell commands the harness runs, not tokens the model reads), so unlike rules/MCP they aren't a budget concern — they're pure "make the floor deterministic."
 
-| Intent | Claude | Codex | Cursor | Gemini→agy | Pi |
+**One shared script per intent, deployed verbatim.** The scripts live in `ai/agents/shared/hooks/` and are **payload-defensive** — each reads the path/command from whichever JSON key the harness uses (Claude/Codex `.tool_input.*` · Cursor `.filePath`/`.command`), so one script serves every vendor. Only the native *event name* differs. `dotfiles agent overview` renders the **Hooks matrix by intent** (proven by the shared script's basename in each vendor's config).
+
+| Intent (shared script) | Claude | Codex | Cursor | agy | Pi |
 |---|---|---|---|---|---|
-| **Guard** destructive git/file ops | `PreToolUse` → `git-guardrails.sh` + path guard | `PreToolUse` (inline glob) | `beforeShellExecution` → `guard-destructive.sh` | ⚠️ pending | `safe-git` extension |
-| **Format** on file edit | `PostToolUse` → `format-on-save.sh` | `PostToolUse` → `format-on-save.sh` | `afterFileEdit` → `format-on-save-shim.sh` | ⚠️ pending | — |
-| **Notify** on done/idle | `Stop`+`Notification` → terminal bell | `Stop` → `terminal-notifier` | — | ⚠️ pending | — |
+| **guard-file** `guard-sensitive-file.sh` (block creds/keys/.env) | `PreToolUse` Edit\|Write | `PreToolUse` Edit\|Write | `preToolUse` Write\|Edit | ○ workspace-local | ○ ext |
+| **guard-shell** `guard-destructive-shell.sh` (force-push, hard-reset, clean -f, rm -rf ~/, …) | `PreToolUse` Bash | `PreToolUse` (all) | `beforeShellExecution` | ○ | ○ `safe-git` |
+| **format** `format-on-save.sh` | `PostToolUse` | `PostToolUse` | `afterFileEdit` | ○ | — |
+| **notify** `notify.sh` (env-derived label) | `Stop` + `Notification` | `Stop` + `PermissionRequest` | `stop` | ○ | — |
 
-**Deliberate divergences (not drift):**
-- **Notify is the loosest** intent — Claude rings the bell (universal, guarded by `$CURSOR_AGENT` so it's silent inside Cursor), Codex uses `terminal-notifier` (richer, needs the brew package), Cursor skips it. Acceptable: notify is quality-of-life, not a safety floor.
-- **Guard is the floor** and is everywhere it can be — the three hook-capable terminal agents plus Pi's `safe-git` extension. This is the same hard-stop posture as the [deny vocabulary](#permissions--one-vocabulary-two-surfaces), enforced a second way (at tool-call time, not just config).
-- **Gemini→agy hooks are pending** — `agy` supports a JSON hook lifecycle, but the on-disk path isn't yet confirmed; wire guard+format there when verified (closing those ⚠ cells).
+All three file-based vendors (Claude/Codex/Cursor) carry the full intent set — the guards block via **exit 2** (Claude/Codex/Cursor share that convention). Two real safety gaps were closed in the consolidation: **Codex had no destructive-shell guard**, **Cursor had no credential-file guard**.
+
+**The `○` cells are architectural, not pending:**
+- **agy** registers hooks **workspace-local** (`.agents/hooks.json`) in a different protocol — stdin JSON → stdout `{"decision":"allow"|"deny"}`, *not* exit-2 — so our global shared scripts can't be dropped in. Not a global deploy target.
+- **Pi** guards via the `safe-git` extension (its native mechanism), not our shared set.
+- **Notify is the loosest** intent (quality-of-life, not a safety floor), so its absence on agy/pi is harmless.
 
 **To change a hook:** edit the per-vendor script (`ai/agents/<vendor>/hooks/`); the intent set above is the contract each vendor must satisfy. New hard-stop guard patterns belong in `deny-commands.yaml` *first* (the config floor), then the guard hook is the runtime backstop.
 
