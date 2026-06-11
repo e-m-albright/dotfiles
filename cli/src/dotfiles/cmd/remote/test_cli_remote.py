@@ -100,7 +100,7 @@ def test_remote_on_tailscale_flag_brings_tailnet_up() -> None:
 
 def test_remote_off_nudges_to_sharing_pane_when_on() -> None:
     r = _runner_with_status("On")
-    fake = make_fake_context(runner=r, interactive=True)
+    fake = make_fake_context(runner=r, interactive=False)
     result = runner.invoke(app, ["remote", "off"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0  # nudges, never errors — it doesn't flip the toggle
     assert "Remote Login is ON" in result.output
@@ -118,7 +118,7 @@ def test_remote_off_already_disabled_says_so() -> None:
 
 def test_remote_off_tailscale_flag_brings_tailnet_down() -> None:
     r = _runner_with_status("On")
-    fake = make_fake_context(runner=r, interactive=True)
+    fake = make_fake_context(runner=r, interactive=False)
     result = runner.invoke(app, ["remote", "off", "--tailscale"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
     assert ("tailscale", "down") in r.calls

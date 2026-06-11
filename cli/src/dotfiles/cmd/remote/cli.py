@@ -52,10 +52,11 @@ def _ssh_auth_value(status: RemoteStatus) -> str:
 def _wait_for_login(service: RemoteService, *, target: bool, interactive: bool) -> None:
     """Hold open with a spinner until Remote Login flips to *target*, then confirm.
 
-    Only runs in an interactive TTY — under a pipe (tests/scripts) there's no one
-    to flip the toggle, so we skip the wait and report current state instead.
+    Only runs when ``AppContext.interactive`` is True (stdin is a TTY in production).
+    Under a pipe or in CLI tests with ``interactive=False``, there's no one to flip
+    the toggle — skip the wait and leave Settings open for the user.
     """
-    if not (interactive and console.is_terminal):
+    if not interactive:
         return
     word = "on" if target else "off"
     with console.status(f"Waiting for Remote Login to turn {word}…"):

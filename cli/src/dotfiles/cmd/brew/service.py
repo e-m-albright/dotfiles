@@ -15,6 +15,7 @@ provides:
 from __future__ import annotations
 
 import tomllib
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -240,24 +241,8 @@ def stale_packages(
     manifest: PackageManifest,
     runner: ProcessRunner,
 ) -> list[str]:
-    """Return installed packages that are not declared anywhere in the manifest.
-
-    "Stale" means a top-level (explicitly requested) package installed on this
-    machine but not mentioned at all in packages.toml (not even as disabled).
-    Transitive dependencies are excluded — see requested_formulae(). A disabled
-    package is declared, so it is NOT stale.
-    """
-    declared = _all_declared_names(manifest)
-    # Only consider top-level (requested) formulae — never transitive deps.
-    formulae = requested_formulae(runner)
-    casks = installed_casks(runner)
-    installed = formulae | casks
-    # A versioned keg (openssl@3) is not stale when its base name (openssl) is
-    # declared — mirrors the alias-aware match in missing_packages.
-    stale = sorted(
-        name for name in installed if name not in declared and _strip_version(name) not in declared
-    )
-    return stale
+    """Return installed packages that are not declared anywhere in the manifest."""
+    return InstallPlan.compute(manifest, runner, flags_on=set()).stale
 
 
 def missing_packages(
@@ -267,14 +252,38 @@ def missing_packages(
     flags_on: set[str],
 ) -> list[tuple[str, str]]:
     """Return (name, kind) pairs for enabled packages not currently installed."""
-    formulae = installed_formulae(runner)
-    casks = installed_casks(runner)
-    installed = formulae | casks
-    # Treat a versioned keg (openssl@3) as satisfying its declared base (openssl),
-    # so an alias declaration is not re-installed on every run.
-    satisfied = installed | {_strip_version(name) for name in installed}
-    wanted = enabled_packages(manifest, flags_on=flags_on)
-    return [(name, kind) for name, kind in wanted if name not in satisfied]
+    return InstallPlan.compute(manifest, runner, flags_on=flags_on).missing
+
+
+@dataclass(frozen=True)
+class InstallPlan:
+    """Computed install plan: what's missing vs stale on this machine."""
+
+    missing: list[tuple[str, str]]
+    stale: list[str]
+
+    @classmethod
+    def compute(
+        cls,
+        manifest: PackageManifest,
+        runner: ProcessRunner,
+        *,
+        flags_on: set[str],
+    ) -> InstallPlan:
+        formulae = installed_formulae(runner)
+        casks = installed_casks(runner)
+        installed = formulae | casks
+        satisfied = installed | {_strip_version(name) for name in installed}
+        wanted = enabled_packages(manifest, flags_on=flags_on)
+        missing = [(name, kind) for name, kind in wanted if name not in satisfied]
+        declared = _all_declared_names(manifest)
+        requested = requested_formulae(runner)
+        stale = sorted(
+            name
+            for name in (requested | casks)
+            if name not in declared and _strip_version(name) not in declared
+        )
+        return cls(missing=missing, stale=stale)
 
 
 # ---------------------------------------------------------------------------
@@ -426,6 +435,33 @@ def install_claude_code(runner: ProcessRunner) -> list[StepResult]:
     runner.run(_CLAUDE_CODE_PIN)
 
     return [StepResult(level="success", message="claude-code installed")]
+
+
+_HERMES_CHECK = ("sh", "-c", "command -v hermes")
+_HERMES_INSTALL = (
+    "sh",
+    "-c",
+    "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --non-interactive",
+)
+
+
+def install_hermes(runner: ProcessRunner) -> list[StepResult]:
+    """Install Hermes (NousResearch hermes-agent) via its native installer if absent.
+
+    Idempotency guard: skips if `hermes` is on PATH. The installer is self-contained
+    (uv-managed Python + Node under ~/.hermes); `--non-interactive` skips the setup
+    wizard so a fresh-machine run doesn't block. Skills are deployed separately by
+    `dotfiles agent setup hermes`.
+    """
+    check = runner.run(_HERMES_CHECK)
+    if check.stdout.strip():
+        return [StepResult(level="info", message="hermes already installed — skipping")]
+
+    res = runner.run(_HERMES_INSTALL)
+    if res.exit_code != 0:
+        return [StepResult(level="error", message=f"hermes installer failed: {res.stderr.strip()}")]
+
+    return [StepResult(level="success", message="hermes installed")]
 
 
 _TW_APP_PATH = "/Applications/TypeWhisper.app"

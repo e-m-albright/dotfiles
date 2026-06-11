@@ -12,6 +12,7 @@ from dotfiles.cmd.brew.service import (
     PackageManifest,
     add_taps,
     install_claude_code,
+    install_hermes,
     install_npm_globals,
     install_packages,
     install_rust,
@@ -335,6 +336,43 @@ def test_install_claude_code_error_on_failure() -> None:
         stderr="download failed",
     )
     results = install_claude_code(runner)
+    assert results[0].level == "error"
+
+
+# ---------------------------------------------------------------------------
+# install_hermes
+# ---------------------------------------------------------------------------
+
+_HERMES_INSTALL_CMD = (
+    "sh",
+    "-c",
+    "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --non-interactive",
+)
+
+
+def test_install_hermes_skips_when_present() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("sh", "-c", "command -v hermes"), stdout="/Users/x/.local/bin/hermes\n")
+    results = install_hermes(runner)
+    assert results[0].level == "info"
+    assert "already installed" in results[0].message
+    assert not any("nousresearch" in " ".join(c) for c in runner.calls)
+
+
+def test_install_hermes_runs_installer() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("sh", "-c", "command -v hermes"), stdout="")
+    runner.script(_HERMES_INSTALL_CMD, exit_code=0)
+    results = install_hermes(runner)
+    assert any("nousresearch" in " ".join(c) for c in runner.calls)
+    assert results[0].level == "success"
+
+
+def test_install_hermes_error_on_failure() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("sh", "-c", "command -v hermes"), stdout="")
+    runner.script(_HERMES_INSTALL_CMD, exit_code=1, stderr="download failed")
+    results = install_hermes(runner)
     assert results[0].level == "error"
 
 
