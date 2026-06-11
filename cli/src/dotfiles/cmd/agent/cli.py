@@ -12,6 +12,7 @@ from dotfiles.app.context import app_context
 from dotfiles.cmd.agent.capability_matrix import capability_rows, receipts
 from dotfiles.cmd.agent.catechism import CATECHISM, DOCTRINE, read_scope_health
 from dotfiles.cmd.agent.health import HealthError, HealthService, git_root
+from dotfiles.cmd.agent.instructions import build_manifest
 from dotfiles.cmd.agent.overview import AgentOverviewService
 from dotfiles.cmd.agent.render.health import (
     gemini_flycut,
@@ -26,6 +27,7 @@ from dotfiles.cmd.agent.render.health import (
     render_vendor,
     verify_capability_probes,
 )
+from dotfiles.cmd.agent.render.instructions import manifest_json, render_instructions
 from dotfiles.cmd.agent.render.overview import (
     CAP_GLYPH,
     GOLD,
@@ -354,6 +356,31 @@ def catechism(ctx: typer.Context) -> None:
     console.print(
         "\n[dim]The doctrine: ENGINEERING.md · the theory: code-health-portfolio.md · "
         "verify live: just check (ratchet-check.sh)[/]"
+    )
+
+
+@agent_app.command()
+def instructions(
+    ctx: typer.Context,
+    json_out: bool = typer.Option(False, "--json", help="Emit the raw manifest as JSON."),
+) -> None:
+    """The harness manifest: what context an agent is fed, by load mode + token cost.
+
+    Three groups: *loaded by default* (the budget every session pays), *reachable on
+    demand* (zero cost until pulled), and the *active harness* (hooks, deny-vocab,
+    permissions, MCP — behavior-shaping config, not context text), under the
+    engineering map it all hangs off.
+    """
+    app_ctx = app_context(ctx)
+    manifest = build_manifest(app_ctx.dotfiles_dir)
+    if json_out:
+        console.print_json(data=manifest_json(manifest))
+        return
+    print_title(console, "agent", "instructions")
+    render_instructions(manifest)
+    console.print(
+        "\n[dim]Siblings: [/]overview[dim] (deploy state) · [/]catechism[dim] "
+        "(code-health routing) · the map: ENGINEERING.md[/]"
     )
 
 
