@@ -146,7 +146,7 @@ Selection is **affectedness-based**: one `.affected.yml` maps path globs → `{s
 
 Everything we can reach for, grouped. (`dotfiles agent catechism` prints the code-health routing; this is the complete set.)
 
-- **Code-health form lenses** [S] — `code-health` (router) · `converge` (engine) · `form-deepen` `form-tidy` `form-prune` `form-clarify` `form-align` `form-purify`.
+- **Code-health form lenses** [S] — `code-health` (router) · `converge` (engine) · `form-deepen` `form-tidy` `form-prune` `form-clarify` `code-style` `form-align` `form-purify`.
 - **Review / safety / speed (Tier B)** [S] — `review` · `/security-review` · `systematic-debugging` · `performance-engineer`.
 - **Audits** [S] — `god-functions` · `duplication` · `coupling` · `abstractions`.
 - **Testing** [S] — `testing` (taxonomy) · `test-driven-development` · framework skills (`vitest`, `playwright-e2e-testing`).

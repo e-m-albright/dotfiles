@@ -26,6 +26,7 @@ State this to the user when they ask for "unimpeachable" code: the book guarante
 | whole-repo, measured, ratchet down, reduce LOC, converge over passes | **converge** | measured · convergent |
 | "clean up this function", extract, flatten conditionals, a known transform | **form-tidy** | mechanical · convergent |
 | "hard to follow", naming, comments, newcomer/agent comprehension | **form-clarify** | taste · readability |
+| "make this elegant/beautiful/artful", best code possible, the wince test | **code-style** | taste · aesthetic |
 | names don't match the business, leaked API names, wrong boundaries | **form-align** | conceptual · divergent |
 | over-engineered, dead code, YAGNI, "make it smaller" | **form-prune** | minimalist · convergent |
 | "can only test end-to-end", tame side effects, illegal states | **form-purify** | testability · structural |
@@ -40,9 +41,10 @@ Lenses have a natural order that minimizes rework:
 2. **form-align** + **form-deepen** — get the concepts and boundaries right (diverge: find the real design).
 3. **form-purify** — isolate effects so what remains is testable.
 4. **form-tidy** — execute the mechanical transforms safely.
-5. **form-clarify** — final readability and navigation pass.
-6. **converge** — measure, ratchet the gains into CI contracts, and re-grade. This is what makes the pass *stick* and *converge* rather than re-rot.
-7. **Tier B** — `/review`, `/security-review`, `systematic-debugging`, `performance-engineer` for the pillars refactoring can't reach.
+5. **form-clarify** — readability and navigation pass.
+6. **code-style** — the capstone elegance pass, once the code is correct, clear, and structured. Aesthetic only; never a substitute for the structural lenses above it.
+7. **converge** — measure, ratchet the gains into CI contracts, and re-grade. This is what makes the pass *stick* and *converge* rather than re-rot.
+8. **Tier B** — `/review`, `/security-review`, `systematic-debugging`, `performance-engineer` for the pillars refactoring can't reach.
 
 Don't run all seven blindly — let the Tier-A routing table and the scorecard pick where effort actually pays (churn × complexity hotspots).
 

@@ -134,7 +134,7 @@ The contestable lenses for improving a codebase, routed by the
 antagonist tiebreaks, the convergent sequence: [`docs/knowledge/code-health-portfolio.md`](docs/knowledge/code-health-portfolio.md).
 
 - **Form (behavior-preserving):** `form-deepen` · `form-tidy` · `form-prune` ·
-  `form-clarify` · `form-align` · `form-purify`, with `converge` as the measured engine.
+  `form-clarify` · `code-style` · `form-align` · `form-purify`, with `converge` as the measured engine.
 - **Function / safety / speed:** `review` · `/security-review` · `systematic-debugging` ·
   `performance-engineer`. These find or change behavior — not refactors.
 
@@ -155,6 +155,7 @@ it, pick by what you actually want. `dotfiles agent catechism` prints this routi
 | make a tangled unit testable (pure core / effects out) | **`form-purify`** | P11 |
 | apply a known safe refactoring (extract, guard clauses…) | **`form-tidy`** | P5 |
 | make it readable to a newcomer / navigable by an agent | **`form-clarify`** | — |
+| make already-correct, already-clear code genuinely elegant | **`code-style`** | P5, P2 |
 | find bugs + grade a diff before merge | **`review`** | K1 |
 | audit specifically for vulnerabilities | **`/security-review`** | G10 |
 | chase a known failing test / hard bug | **`systematic-debugging`** | K7 |

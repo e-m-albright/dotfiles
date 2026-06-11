@@ -27,6 +27,7 @@ Code quality has four source-measurable pillars (CISQ/ISO 5055): **Reliability, 
 | **converge** | empirical SE — fitness functions, ratchet | measured · convergent | the orchestrator; ratchets the rest in |
 | **form-tidy** | Fowler/Beck — refactoring catalog, two-hats | mechanical · convergent | vs deepen → extract for a real seam, not a line target |
 | **form-clarify** | Buse-Weimer + Scalabrino — readability | taste · readability | vs prune → keep the *why*, cut restating |
+| **code-style** | craft/taste — conceptual integrity, the wince test | taste · aesthetic | vs clarify → terse-but-elegant can beat newcomer-explicit; vs prune → elegance *is* deletion, but exact |
 | **form-align** | Evans DDD — ubiquitous language, contexts | conceptual · divergent | vs YAGNI → richness only in the core subdomain |
 | **form-prune** | minimalism — YAGNI, worse-is-better, Tigerstyle | minimalist · convergent | vs structure-adders → delete first, then build |
 | **form-purify** | FP/hexagonal — pure core, parse-don't-validate | testability · structural | vs YAGNI → isolate effects only where they block testing |
@@ -41,7 +42,7 @@ The lenses are deliberately different *kinds* of artifact, invoked differently. 
 
 | Kind | How you invoke it | Which lenses |
 |---|---|---|
-| **Skill** | name or `/name` (auto-fires on triggers) | `code-health`, `converge`, `form-deepen`, `form-tidy`, `form-prune`, `form-clarify`, `form-align`, `form-purify`, `review`, `systematic-debugging` |
+| **Skill** | name or `/name` (auto-fires on triggers) | `code-health`, `converge`, `form-deepen`, `form-tidy`, `form-prune`, `form-clarify`, `code-style`, `form-align`, `form-purify`, `review`, `systematic-debugging` |
 | **Slash command** | typed `/name` only (built-in) | `/security-review`, `/simplify` |
 | **Subagent** | dispatched via the Agent tool | `performance-engineer` |
 
@@ -61,6 +62,7 @@ The call-and-response of the system: a symptom on the left, the rite to reach fo
 | make a tangled unit testable (pure core / effects out) | **`form-purify`** | A · testability |
 | apply a known safe refactoring (extract, guard clauses…) | **`form-tidy`** | A · mechanical |
 | make it readable to a newcomer / navigable by an agent | **`form-clarify`** | A · readability |
+| make already-correct, already-clear code genuinely elegant | **`code-style`** | A · aesthetic |
 | find bugs + grade a diff before merge | **`review`** | B · correctness |
 | audit specifically for vulnerabilities | **`/security-review`** | B · security |
 | chase a known failing test / hard bug | **`systematic-debugging`** | B · debugging |
@@ -71,7 +73,7 @@ The one overlap to know: a bare *"this feels coupled / where are the seams?"* fi
 
 ## The convergent sequence (full pass)
 
-`form-prune` (delete first) → `form-align` + `form-deepen` (get concepts/boundaries right) → `form-purify` (make it testable) → `form-tidy` (mechanical transforms) → `form-clarify` (readability) → `converge` (measure, ratchet into CI contracts, re-grade) → Tier B (pillars refactoring can't reach). Let the churn×complexity scorecard pick where effort pays; don't run all of it blindly.
+`form-prune` (delete first) → `form-align` + `form-deepen` (get concepts/boundaries right) → `form-purify` (make it testable) → `form-tidy` (mechanical transforms) → `form-clarify` (readability) → `code-style` (the final elegance pass, once it's correct, clear, and structured) → `converge` (measure, ratchet into CI contracts, re-grade) → Tier B (pillars refactoring can't reach). Let the churn×complexity scorecard pick where effort pays; don't run all of it blindly. `code-style` is the *capstone*, not a substitute — elegance on top of broken structure is lipstick; run it last.
 
 ## Shared conventions (what keeps it convergent)
 

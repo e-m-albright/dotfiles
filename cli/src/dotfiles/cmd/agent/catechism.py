@@ -166,6 +166,11 @@ CATECHISM: tuple[CatechismEntry, ...] = (
         tier="A · readability",
     ),
     CatechismEntry(
+        symptom="make already-correct, already-clear code genuinely elegant",
+        rite="code-style",
+        tier="A · aesthetic",
+    ),
+    CatechismEntry(
         symptom="find bugs + grade a diff before merge", rite="review", tier="B · correctness"
     ),
     CatechismEntry(
