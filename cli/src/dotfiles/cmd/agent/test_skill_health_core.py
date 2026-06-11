@@ -1,5 +1,6 @@
 """Skill-health: deployment counts, drift, and MCP reachability probes."""
 
+from dotfiles.adapters.ports import HttpError
 from dotfiles.cmd.agent.config import McpServerEntry
 from dotfiles.cmd.agent.models import (
     AgentOverview,
@@ -60,6 +61,39 @@ def test_probe_http_unreachable():
     probe = probe_mcp("granola", entry, http=_RaisingHttp(), which=lambda c: c)
     assert probe.ok is False
     assert "refused" in probe.detail
+
+
+class _HttpStatus(FakeHttpClient):
+    """Answers with an HTTP error status — the server is live but rejects GET."""
+
+    def get_json(self, url):  # type: ignore[override]
+        raise HttpError("HTTP 405: Method Not Allowed", status=405)
+
+
+class _HttpConnFail(FakeHttpClient):
+    """Connection never completes — no status."""
+
+    def get_json(self, url):  # type: ignore[override]
+        raise HttpError("Connection failed", status=None)
+
+
+def test_probe_http_405_is_reachable():
+    # Regression: an MCP server returning 405 to a GET (it speaks POST) must be
+    # reported reachable, not crash `agent verify` with an unhandled HttpError.
+    entry = McpServerEntry.model_validate(
+        {"targets": ["claude"], "type": "http", "url": "https://x/mcp"}
+    )
+    probe = probe_mcp("granola", entry, http=_HttpStatus(), which=lambda c: c)
+    assert probe.ok is True
+    assert "405" in probe.detail
+
+
+def test_probe_http_connection_failure_is_unreachable():
+    entry = McpServerEntry.model_validate(
+        {"targets": ["claude"], "type": "http", "url": "https://x/mcp"}
+    )
+    probe = probe_mcp("granola", entry, http=_HttpConnFail(), which=lambda c: c)
+    assert probe.ok is False
 
 
 def test_probe_stdio_checks_path():

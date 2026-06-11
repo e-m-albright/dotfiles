@@ -5,13 +5,9 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from dotfiles.adapters.ports import HttpError
 
-class HttpError(RuntimeError):
-    """Raised on non-2xx responses or connection failures."""
-
-    def __init__(self, message: str, *, status: int | None = None) -> None:
-        super().__init__(message)
-        self.status = status
+__all__ = ["HttpError", "UrllibHttpClient"]
 
 
 class UrllibHttpClient:

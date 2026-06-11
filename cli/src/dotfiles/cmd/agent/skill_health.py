@@ -11,7 +11,7 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
-from dotfiles.adapters.ports import HttpClient, ProcessRunner
+from dotfiles.adapters.ports import HttpClient, HttpError, ProcessRunner
 from dotfiles.agent import OVERVIEW_AGENTS, Agent
 from dotfiles.cmd.agent.config import McpServerEntry, load_mcp_servers
 from dotfiles.cmd.agent.models import AgentOverview, AgentVerify, McpProbe
@@ -27,19 +27,32 @@ def probe_mcp(
 ) -> McpProbe:
     """Probe one MCP server. HTTP: try to reach the URL. stdio: command on PATH?"""
     if entry.url:
-        try:
-            http.get_json(entry.url)
-        except OSError as exc:
-            return McpProbe(server=server, ok=False, detail=str(exc)[:60])
-        except ValueError:
-            # Got a response, just not JSON — the endpoint is reachable.
-            return McpProbe(server=server, ok=True, detail="reachable (non-JSON)")
-        return McpProbe(server=server, ok=True, detail="reachable")
+        return _probe_http(server, entry.url, http)
     if entry.command:
-        if which(entry.command) is not None:
-            return McpProbe(server=server, ok=True, detail=f"{entry.command} on PATH")
-        return McpProbe(server=server, ok=False, detail=f"{entry.command} not found")
+        on_path = which(entry.command) is not None
+        detail = f"{entry.command} on PATH" if on_path else f"{entry.command} not found"
+        return McpProbe(server=server, ok=on_path, detail=detail)
     return McpProbe(server=server, ok=False, detail="no url or command configured")
+
+
+def _probe_http(server: str, url: str, http: HttpClient) -> McpProbe:
+    """Reachability of an HTTP MCP endpoint — any server answer counts as live."""
+    try:
+        http.get_json(url)
+    except HttpError as exc:
+        # The server answered with an HTTP status → the endpoint is live. MCP HTTP
+        # servers commonly reject a bare GET (405) since they speak POST/streaming,
+        # so any status means reachable. Only a status-less error (DNS/TLS/connection
+        # failure) is a genuine miss.
+        if exc.status is not None:
+            return McpProbe(server=server, ok=True, detail=f"reachable (HTTP {exc.status})")
+        return McpProbe(server=server, ok=False, detail=str(exc)[:60])
+    except OSError as exc:
+        return McpProbe(server=server, ok=False, detail=str(exc)[:60])
+    except ValueError:
+        # Got a response, just not JSON — the endpoint is reachable.
+        return McpProbe(server=server, ok=True, detail="reachable (non-JSON)")
+    return McpProbe(server=server, ok=True, detail="reachable")
 
 
 def _vendor_counts(overview: AgentOverview, agent: Agent) -> tuple[int, int, int, int]:
