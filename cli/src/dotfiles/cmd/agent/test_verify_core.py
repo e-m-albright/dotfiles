@@ -1,168 +1,106 @@
-"""Tests for AgentVerifyService (core/verify.py)."""
+"""Tests for the vendor-page projection (verify.py) over the fleet model."""
+
+from __future__ import annotations
 
 from pathlib import Path
 
-from dotfiles.cmd.agent.verify import AgentVerifyService
+from dotfiles.agent import AGENTS
+from dotfiles.cmd.agent.fleet import build_fleet
+from dotfiles.cmd.agent.verify import _SURFACE_ORDER, vendor_surfaces
 
 
-def _make_svc(
-    *,
-    home: Path,
-    dotfiles_dir: Path,
-    which_map: dict[str, str] | None = None,
-) -> AgentVerifyService:
-    _map = which_map or {}
-    return AgentVerifyService(
-        home=home,
-        dotfiles_dir=dotfiles_dir,
-        which=lambda name: _map.get(name),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Path-level semantics
-# ---------------------------------------------------------------------------
-
-
-def test_missing_path_gives_missing_status(tmp_path: Path) -> None:
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = svc._check("claude", "skills", tmp_path / "home" / ".claude" / "skills")
-    assert result.status == "missing"
-    assert ".claude/skills" in result.detail
-
-
-def test_dir_with_skill_md_gives_present_n_skills(tmp_path: Path) -> None:
-    d = tmp_path / "home" / ".claude" / "skills"
-    d.mkdir(parents=True)
-    (d / "SKILL.md").write_text("# Skill")
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = svc._check("claude", "skills", d)
-    assert result.status == "present"
-    assert "1 skills @" in result.detail
-
-
-def test_dir_with_skill_md_in_subdir_counts_at_depth2(tmp_path: Path) -> None:
-    d = tmp_path / "home" / ".claude" / "skills"
-    sub = d / "foo"
-    sub.mkdir(parents=True)
-    (sub / "SKILL.md").write_text("# Skill")
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = svc._check("claude", "skills", d)
-    assert result.status == "present"
-    assert "1 skills @" in result.detail
-
-
-def test_dir_with_entries_but_no_skill_md_gives_present_n_entries(tmp_path: Path) -> None:
-    d = tmp_path / "home" / ".claude" / "agents"
-    d.mkdir(parents=True)
-    (d / "agent1.md").write_text("# Agent")
-    (d / "agent2.md").write_text("# Agent2")
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = svc._check("claude", "subagents", d)
-    assert result.status == "present"
-    assert "2 entries @" in result.detail
-
-
-def test_dir_of_dangling_symlinks_is_not_present(tmp_path: Path) -> None:
-    # A dir whose entries are all broken symlinks (e.g. orphaned ~/.claude/rules
-    # links into a deleted source) must read as empty, not a healthy surface.
-    d = tmp_path / "home" / ".claude" / "rules"
-    d.mkdir(parents=True)
-    (d / "ghost.md").symlink_to(tmp_path / "gone" / "ghost.mdc")
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = svc._check("claude", "rules", d)
-    assert result.status == "empty"
-
-
-def test_dir_counts_only_resolving_entries(tmp_path: Path) -> None:
-    d = tmp_path / "home" / ".claude" / "rules"
-    d.mkdir(parents=True)
-    (d / "real.md").write_text("# rule")
-    (d / "ghost.md").symlink_to(tmp_path / "gone" / "ghost.mdc")
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = svc._check("claude", "rules", d)
-    assert result.status == "present"
-    assert "1 entries @" in result.detail
-
-
-def test_empty_dir_gives_empty_status(tmp_path: Path) -> None:
-    d = tmp_path / "home" / ".claude" / "skills"
-    d.mkdir(parents=True)
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = svc._check("claude", "skills", d)
-    assert result.status == "empty"
-    assert "empty:" in result.detail
-
-
-def test_file_path_gives_present_status(tmp_path: Path) -> None:
-    p = tmp_path / "home" / ".claude.json"
-    p.parent.mkdir(parents=True)
-    p.write_text("{}")
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = svc._check("claude", "MCP config", p)
-    assert result.status == "present"
-    assert result.detail == str(p)
-
-
-# ---------------------------------------------------------------------------
-# Gemini / Pi gating
-# ---------------------------------------------------------------------------
-
-
-def test_gemini_skills_surface_missing_when_undepoyed(tmp_path: Path) -> None:
-    # Gemini skills live under antigravity-cli/skills — checked like any other surface.
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    g_skills = next(s for s in svc.vendors() if s.agent == "gemini" and s.label == "skills")
-    assert g_skills.status == "missing"
-
-
-def test_present_and_missing_surfaces_for_an_agent(tmp_path: Path) -> None:
-    h = tmp_path / "home"
-    settings = h / ".gemini" / "settings.json"
-    settings.parent.mkdir(parents=True)
-    settings.write_text("{}")  # AGENTS.md deliberately absent
-    by_label = {
-        s.label: s
-        for s in _make_svc(home=h, dotfiles_dir=tmp_path / "dotfiles").vendors()
-        if s.agent == "gemini"
-    }
-    assert by_label["settings"].status == "present"
-    # "rules" reads the kernel file (AGENTS.md here), which is absent → missing.
-    assert by_label["rules"].status == "missing"
-
-
-# ---------------------------------------------------------------------------
-# Full vendors() output structure — uniform checklist for every agent
-# ---------------------------------------------------------------------------
+def _surfaces(tmp_path: Path):
+    home = tmp_path / "home"
+    repo = tmp_path / "dotfiles"
+    fleet = build_fleet(home=home, dotfiles_dir=repo)
+    return vendor_surfaces(fleet, home=home, dotfiles_dir=repo)
 
 
 def test_vendors_returns_all_vendor_groups(tmp_path: Path) -> None:
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    surfaces = svc.vendors()
-    vendors_seen = {s.agent for s in surfaces}
-    assert vendors_seen == {"claude", "cursor", "codex", "gemini", "pi", "hermes"}
+    assert {s.agent for s in _surfaces(tmp_path)} == set(AGENTS)
 
 
-def test_every_agent_has_the_same_attribute_checklist(tmp_path: Path) -> None:
-    from dotfiles.cmd.agent.verify import _ATTRIBUTES
-
-    surfaces = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles").vendors()
-    expected = [label for label, _ in _ATTRIBUTES]
-    for agent in ("claude", "cursor", "codex", "gemini", "pi", "hermes"):
+def test_every_agent_has_the_same_surface_checklist(tmp_path: Path) -> None:
+    surfaces = _surfaces(tmp_path)
+    expected = list(_SURFACE_ORDER)
+    for agent in AGENTS:
         labels = [s.label for s in surfaces if s.agent == agent]
         assert labels == expected
 
 
-def test_multiple_skill_md_files_counted(tmp_path: Path) -> None:
-    d = tmp_path / "home" / ".claude" / "skills"
-    d.mkdir(parents=True)
-    # 1 at depth 1
-    (d / "SKILL.md").write_text("# S1")
-    sub = d / "bar"
-    sub.mkdir()
-    # 1 at depth 2
-    (sub / "SKILL.md").write_text("# S2")
-    svc = _make_svc(home=tmp_path / "home", dotfiles_dir=tmp_path / "dotfiles")
-    result = svc._check("claude", "skills", d)
-    assert result.status == "present"
-    assert "2 skills @" in result.detail
+def test_missing_paths_read_missing_on_empty_tree(tmp_path: Path) -> None:
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    assert by[("claude", "skills")].status == "missing"
+    assert by[("gemini", "skills")].status == "missing"
+
+
+def test_deployed_skills_counted(tmp_path: Path) -> None:
+    skills = tmp_path / "home" / ".claude" / "skills"
+    for name in ("alpha", "beta"):
+        (skills / name).mkdir(parents=True)
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    cell = by[("claude", "skills")]
+    assert cell.status == "present"
+    assert cell.quantity == "2 skills"
+
+
+def test_empty_skill_dir_reads_empty(tmp_path: Path) -> None:
+    (tmp_path / "home" / ".claude" / "skills").mkdir(parents=True)
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    assert by[("claude", "skills")].status == "empty"
+
+
+def test_subagents_counted_as_md_files(tmp_path: Path) -> None:
+    agents = tmp_path / "home" / ".claude" / "agents"
+    agents.mkdir(parents=True)
+    (agents / "debugger.md").write_text("# d")
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    cell = by[("claude", "subagents")]
+    assert cell.status == "present"
+    assert cell.quantity == "1 agents"
+
+
+def test_local_stances_show_their_reason_not_bare_na(tmp_path: Path) -> None:
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    gem_sub = by[("gemini", "subagents")]
+    assert gem_sub.status == "skipped"
+    assert gem_sub.quantity == "local-only"
+    assert "workspace" in gem_sub.detail
+    hermes_rules = by[("hermes", "rules")]
+    assert hermes_rules.status == "skipped"
+    assert "AGENTS.md" in hermes_rules.detail
+
+
+def test_native_stance_reads_present_with_note(tmp_path: Path) -> None:
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    agy_status = by[("gemini", "statusline")]
+    assert agy_status.status == "present"
+    assert agy_status.quantity == "native"
+
+
+def test_none_stance_reads_na(tmp_path: Path) -> None:
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    assert by[("pi", "mcp")].status == "skipped"
+    assert by[("pi", "mcp")].quantity == "n/a"
+    assert by[("hermes", "settings")].status == "skipped"
+
+
+def test_hooks_quantity_reports_wired_intents(tmp_path: Path) -> None:
+    settings = tmp_path / "home" / ".claude" / "settings.json"
+    settings.parent.mkdir(parents=True)
+    settings.write_text('{"hooks": {"x": "guard-sensitive-file.sh; notify.sh"}}')
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    cell = by[("claude", "hooks")]
+    # 2 of 4 intents wired → partial, surfaced as ○ with the true count.
+    assert cell.status == "empty"
+    assert cell.quantity == "2 hooks wired"
+
+
+def test_cursor_rules_probe_is_repo_rooted(tmp_path: Path) -> None:
+    mdc = tmp_path / "dotfiles" / "ai" / "agents" / "cursor" / "rules"
+    mdc.mkdir(parents=True)
+    (mdc / "shared-rules.mdc").write_text("---\n---\n")
+    by = {(s.agent, s.label): s for s in _surfaces(tmp_path)}
+    cell = by[("cursor", "rules")]
+    assert cell.status == "present"
+    assert cell.quantity == "1 .mdc"

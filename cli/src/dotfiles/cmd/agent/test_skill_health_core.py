@@ -7,9 +7,8 @@ from dotfiles.cmd.agent.models import (
     AgentPresenceRow,
     AgentVerify,
     McpProbe,
-    RulesSummary,
-    SkillsSummary,
 )
+from dotfiles.cmd.agent.skill_census import SkillCensus
 from dotfiles.cmd.agent.skill_health import SkillHealthService, build_vendor_verifies, probe_mcp
 from dotfiles.testing.fakes import FakeHttpClient, FakeProcessRunner
 
@@ -17,8 +16,10 @@ from dotfiles.testing.fakes import FakeHttpClient, FakeProcessRunner
 def test_vendor_verify_holds_counts_drift_and_probes():
     v = AgentVerify(
         agent="claude",
-        skills_deployed=21,
+        skills_ours=21,
         skills_expected=21,
+        skills_external=2,
+        skills_foreign=0,
         agents_deployed=6,
         agents_expected=6,
         drift=(),
@@ -123,17 +124,19 @@ def test_probe_stdio_checks_path():
     assert absent.ok is False
 
 
+def _census(vendor: str, ours: int, expected: int, foreign: int = 0) -> SkillCensus:
+    return SkillCensus(vendor=vendor, ours=ours, external=0, foreign=foreign, expected=expected)
+
+
 def _overview(*, claude_deployed=21, canonical=21) -> AgentOverview:
     return AgentOverview(
         mcp=(),
+        mcp_agents=(),
         hooks=(),
-        skills=SkillsSummary(
-            canonical_skills=canonical,
-            deployed={
-                "claude": claude_deployed,
-                "cursor": canonical,
-                "codex": canonical,
-            },
+        censuses=(
+            _census("claude", claude_deployed, canonical),
+            _census("cursor", canonical, canonical),
+            _census("codex", canonical, canonical),
         ),
         agents=(
             AgentPresenceRow(
@@ -145,7 +148,6 @@ def _overview(*, claude_deployed=21, canonical=21) -> AgentOverview:
                 cells={"claude": False, "codex": True, "pi": False},
             ),
         ),
-        rules=RulesSummary(canonical_rules=31, claude_deployed=31, cursor_deployed=31),
         permissions=(),
     )
 
@@ -159,7 +161,7 @@ def test_build_vendor_verifies_flags_skill_drift():
         offline=True,
     )
     claude = next(v for v in verifies if v.agent == "claude")
-    assert claude.skills_deployed == 19
+    assert claude.skills_ours == 19
     assert claude.skills_expected == 21
     assert any("skills" in d for d in claude.drift)
 

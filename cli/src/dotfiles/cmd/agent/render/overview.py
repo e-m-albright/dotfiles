@@ -35,13 +35,13 @@ _AGENT_COLS: tuple[str, ...] = OVERVIEW_AGENTS
 _COL_W = 8
 _LABEL_W = 24
 # Which agents each surface applies to; others render "·" (n/a), never "✗".
-# Derived from the registry — never hand-listed — so the Subagents/Hooks matrices
-# can't drift from the vendor pages / verify, which read the same fields. (MCP is
-# the exception: we deploy only granola, to a subset of the vendors that *have* an
-# MCP path, so the deploy intent doesn't follow from path-presence.)
-_MCP_AGENTS = {"claude", "codex"}  # the only vendors we deploy MCP to (granola); rest n/a
-_HOOK_AGENTS = {v.name for v in VENDORS if v.paths.hooks}
-_SUBAGENT_AGENTS = {v.name for v in VENDORS if v.paths.subagents}
+# Derived from the registry's Deploy stances — never hand-listed — so the matrices
+# can't drift from the vendor pages / verify, which read the same stances. The
+# hook-intents matrix applies only where the deploy IS the shared-intent wiring
+# (pi's hooks ride an extension, not these scripts). MCP intent comes from
+# mcp-servers.json targets, carried on the overview data (data.mcp_agents).
+_HOOK_AGENTS = {v.name for v in VENDORS if (d := v.deploy("hooks")) and d.proof == "hook-intents"}
+_SUBAGENT_AGENTS = {v.name for v in VENDORS if v.deploy("subagents")}
 _STATUS_GLYPH = {
     "present": "[green]✓[/]",
     "empty": "[yellow]○[/]",
@@ -248,9 +248,10 @@ def _render_one_agent_section(
         return
     for s in surfaces:
         glyph = _STATUS_GLYPH.get(s.status, "[dim]·[/]")
+        # Path-backed rows link the path; intentional non-deploys show their reason.
+        tail = _path_link(s.path, home) if s.path else f"[dim]{escape(s.detail)}[/dim]"
         console.print(
-            f"  {glyph}  [{GOLD}]{escape(s.label):<14}[/] "
-            f"{escape(s.quantity):<12} {_path_link(s.path, home)}"
+            f"  {glyph}  [{GOLD}]{escape(s.label):<14}[/] {escape(s.quantity):<12} {tail}"
         )
     _render_agent_gaps(data, agent)
     confirm = _confirmations(data).get(agent)
@@ -275,7 +276,7 @@ def render_overview(data: AgentOverview, home: Path) -> None:
         )
     _render_value_matrix("Skills & Rules", data.skills_rules)
     _render_plugins(data.plugins)
-    _render_state_matrix("MCP servers", data.mcp, _MCP_AGENTS)
+    _render_state_matrix("MCP servers", data.mcp, set(data.mcp_agents))
     _render_state_matrix("Subagents", data.agents, _SUBAGENT_AGENTS)
     _render_state_matrix("Hooks", data.hooks, _HOOK_AGENTS)
     _render_permissions(data.permissions, home)

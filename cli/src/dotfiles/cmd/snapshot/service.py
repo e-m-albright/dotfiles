@@ -83,20 +83,14 @@ def collect_symlinks(*, home: Path, dotfiles_dir: Path) -> tuple[SymlinkState, .
 
 def _vendor_tokens(overview: AgentOverview, agent: Agent) -> list[str]:
     """Stable, sorted tokens describing one agent's deployed agentic config."""
-    tokens: list[str] = []
-    for row in overview.mcp:
-        if row.cells.get(agent, False):
-            tokens.append(f"mcp:{row.label}")
-    for hook in overview.hooks:
-        if hook.cells.get(agent, False):
-            tokens.append(f"hook:{hook.label}")
-    if agent == "claude":
-        tokens.append(f"skills:{overview.skills.deployed.get('claude', 0)}")
-        tokens.append(f"rules:{overview.rules.claude_deployed}")
-    elif agent == "cursor":
-        tokens.append(f"rules:{overview.rules.cursor_deployed}")
-    elif agent == "codex":
-        tokens.append(f"skills:{overview.skills.deployed.get('codex', 0)}")
+    tokens = [f"mcp:{row.label}" for row in overview.mcp if row.cells.get(agent, False)]
+    tokens += [f"hook:{row.label}" for row in overview.hooks if row.cells.get(agent, False)]
+    tokens += [f"skills:{c.deployed}" for c in overview.censuses if c.vendor == agent]
+    tokens += [
+        f"rules:{cell}"
+        for row in overview.skills_rules
+        if row.label == "rules" and (cell := row.cells.get(agent, "—")) != "—"
+    ]
     return sorted(tokens)
 
 

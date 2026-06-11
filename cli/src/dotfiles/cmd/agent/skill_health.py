@@ -16,6 +16,7 @@ from dotfiles.agent import OVERVIEW_AGENTS, VENDOR_BY_NAME, Agent
 from dotfiles.cmd.agent.config import McpServerEntry, load_mcp_servers
 from dotfiles.cmd.agent.models import AgentOverview, AgentVerify, McpProbe
 from dotfiles.cmd.agent.overview import AgentOverviewService
+from dotfiles.cmd.agent.skill_census import SkillCensus
 
 
 def probe_mcp(
@@ -55,30 +56,19 @@ def _probe_http(server: str, url: str, http: HttpClient) -> McpProbe:
     return McpProbe(server=server, ok=True, detail="reachable")
 
 
-def _vendor_counts(overview: AgentOverview, agent: Agent) -> tuple[int, int, int, int]:
-    """Return (skills_deployed, skills_expected, agents_deployed, agents_expected)."""
-    canonical = overview.skills.canonical_skills
-    # Every vendor that deploys our skills is in the registry-built map; expected
-    # is the canonical count for those, 0 for a vendor with no skills surface.
-    deployed = overview.skills.deployed
-    skills_dep = deployed.get(agent, 0)
-    skills_exp = canonical if agent in deployed else 0
-
-    # Every vendor with a subagents dir is expected to carry the full set — derived
-    # from the registry, never hand-listed, so verify agrees with the overview (which
-    # reads the same field). A vendor with no subagents surface expects 0.
-    if VENDOR_BY_NAME[agent].paths.subagents:
-        agents_dep = sum(1 for a in overview.agents if a.cells.get(agent, False))
-        agents_exp = len(overview.agents)
-    else:
-        agents_dep, agents_exp = 0, 0
-    return skills_dep, skills_exp, agents_dep, agents_exp
+def _agent_counts(overview: AgentOverview, agent: Agent) -> tuple[int, int]:
+    """(subagents deployed, expected) — registry-derived; 0/0 without a deploy stance."""
+    if VENDOR_BY_NAME[agent].deploy("subagents") is None:
+        return 0, 0
+    deployed = sum(1 for a in overview.agents if a.cells.get(agent, False))
+    return deployed, len(overview.agents)
 
 
-def _drift(skills_dep: int, skills_exp: int, agents_dep: int, agents_exp: int) -> tuple[str, ...]:
+def _drift(census: SkillCensus | None, agents_dep: int, agents_exp: int) -> tuple[str, ...]:
+    """Real drift only: canonical skills or subagents missing — extras never alarm."""
     drift: list[str] = []
-    if skills_exp and skills_dep != skills_exp:
-        drift.append(f"skills {skills_dep}/{skills_exp} deployed")
+    if census is not None and census.missing > 0:
+        drift.append(f"skills {census.ours}/{census.expected} canonical deployed")
     if agents_exp and agents_dep != agents_exp:
         drift.append(f"agents {agents_dep}/{agents_exp} deployed")
     return tuple(drift)
@@ -110,17 +100,21 @@ def build_vendor_verifies(
     offline: bool = False,
 ) -> list[AgentVerify]:
     """Per-agent skill-health from an AgentOverview + the MCP server config."""
+    censuses = {c.vendor: c for c in overview.censuses}
     verifies: list[AgentVerify] = []
     for agent in OVERVIEW_AGENTS:
-        skills_dep, skills_exp, agents_dep, agents_exp = _vendor_counts(overview, agent)
+        census = censuses.get(agent)
+        agents_dep, agents_exp = _agent_counts(overview, agent)
         verifies.append(
             AgentVerify(
                 agent=agent,
-                skills_deployed=skills_dep,
-                skills_expected=skills_exp,
+                skills_ours=census.ours if census else 0,
+                skills_expected=census.expected if census else 0,
+                skills_external=census.external if census else 0,
+                skills_foreign=census.foreign if census else 0,
                 agents_deployed=agents_dep,
                 agents_expected=agents_exp,
-                drift=_drift(skills_dep, skills_exp, agents_dep, agents_exp),
+                drift=_drift(census, agents_dep, agents_exp),
                 mcp=_vendor_probes(agent, mcp_servers, http=http, which=which, offline=offline),
             )
         )

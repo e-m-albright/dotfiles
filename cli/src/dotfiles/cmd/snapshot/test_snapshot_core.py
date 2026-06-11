@@ -3,7 +3,8 @@
 from datetime import datetime
 from pathlib import Path
 
-from dotfiles.cmd.agent.models import AgentOverview, AgentPresenceRow, RulesSummary, SkillsSummary
+from dotfiles.cmd.agent.models import AgentOverview, AgentPresenceRow
+from dotfiles.cmd.agent.skill_census import SkillCensus
 from dotfiles.cmd.snapshot.models import BrewState, RuntimeChange, Snapshot, SymlinkState
 from dotfiles.cmd.snapshot.service import (
     agent_config_hashes,
@@ -90,12 +91,13 @@ def _overview() -> AgentOverview:
                 },
             ),
         ),
-        skills=SkillsSummary(
-            canonical_skills=21,
-            deployed={"claude": 21, "cursor": 21, "codex": 21},
+        mcp_agents=("claude",),
+        censuses=(
+            SkillCensus(vendor="claude", ours=21, external=0, foreign=0, expected=21),
+            SkillCensus(vendor="cursor", ours=21, external=0, foreign=0, expected=21),
+            SkillCensus(vendor="codex", ours=21, external=0, foreign=0, expected=21),
         ),
         agents=(),
-        rules=RulesSummary(canonical_rules=31, claude_deployed=31, cursor_deployed=31),
         permissions=(),
     )
 

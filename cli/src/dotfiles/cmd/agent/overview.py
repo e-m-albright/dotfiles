@@ -1,7 +1,11 @@
-"""Agent overview service.
+"""Agent overview service — every section a projection of the fleet model.
 
-Produces structured data for each of the 6 sections:
-MCP, hooks, skills, agents, rules, permissions.
+CAN comes from the capability matrix, STANCE from the VENDORS registry, HAVE
+from ``build_fleet``'s live probes, skill numbers from the one census. This
+module composes those into the dashboard sections; it owns no vendor lists,
+no deploy paths, and no probe logic of its own — so the sections cannot
+disagree with each other or with ``agent verify``.
+
 Hexagonal: imports only stdlib + pydantic + core models/ports.
 """
 
@@ -13,9 +17,8 @@ from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from dotfiles.agent import AGENTS, VENDORS, Vendor, surface_path
+from dotfiles.agent import AGENTS, HOOK_INTENTS, VENDORS, surface_path
 from dotfiles.cmd.agent.capability_matrix import (
-    CAPABILITY_MATRIX,
     CapabilityRow,
     capability_rows,
     fleet_doc_stale_days,
@@ -26,22 +29,21 @@ from dotfiles.cmd.agent.config import (
     PermissionsBlock,
     SettingsWithPermissions,
     load_config,
+    load_mcp_servers,
 )
+from dotfiles.cmd.agent.fleet import Fleet, FleetCell, build_fleet
 from dotfiles.cmd.agent.models import (
     AgentOverview,
     AgentPresenceRow,
-    AgentSurface,
     CoverageState,
     PermissionRow,
     PluginRow,
-    RulesSummary,
-    SkillsSummary,
     UniformityRow,
     ValueRow,
 )
-from dotfiles.cmd.agent.skill_prune import canonical_skill_names, external_skill_names
+from dotfiles.cmd.agent.skill_census import SkillCensus, skill_census
 from dotfiles.cmd.agent.vendors.claude import parse_plugins_yaml
-from dotfiles.cmd.agent.verify import AgentVerifyService
+from dotfiles.cmd.agent.verify import vendor_surfaces
 from dotfiles.fsutil import list_dir
 from dotfiles.logging import get_logger
 
@@ -51,18 +53,9 @@ if TYPE_CHECKING:
     from dotfiles.adapters.ports import ProcessRunner
 
 
-# The uniform hook contract: each intent maps to the shared script every
-# hook-capable vendor wires. Presence is proven by the basename appearing in a
-# vendor's hooks config (so the matrix compares intents, not raw event names).
-_HOOK_INTENTS: tuple[tuple[str, str], ...] = (
-    ("guard-file", "guard-sensitive-file.sh"),
-    ("guard-shell", "guard-destructive-shell.sh"),
-    ("format", "format-on-save.sh"),
-    ("notify", "notify.sh"),
-)
-
 # Capabilities we hold every vendor to a uniform standard on (the rest are
-# tracked but not enforced). Each name must be a key in the capability matrix.
+# tracked but not enforced). Each name is both a capability-matrix key and a
+# registry surface name.
 _ENFORCED_TIER: tuple[str, ...] = (
     "rules",
     "skills",
@@ -72,31 +65,19 @@ _ENFORCED_TIER: tuple[str, ...] = (
     "hooks",
 )
 
-
-# (capability, vendor) pairs that the vendor supports but ONLY at a scope we can't
-# reach with a global deploy — workspace-local config, an extension, or a beta with
-# no stable API. These render as a not-globally-closable gap, not a red action item.
-_LOCAL_ONLY: frozenset[tuple[str, str]] = frozenset(
-    {
-        ("subagents", "gemini"),  # agy: workspace .agents/ agent-scripts, no global dir
-        ("hooks", "gemini"),  # agy: hook registration is workspace-local
-        ("hooks", "pi"),  # pi: hooks come from the safe-git extension, not a global set
-        ("statusline", "cursor"),  # cursor: statusline is beta, no stable deploy mechanism
-        ("rules", "hermes"),  # hermes: rules come from project AGENTS.md; no global slot we own
-        ("subagents", "hermes"),  # hermes: delegate_task is a runtime tool, no deploy dir
-        ("permissions", "hermes"),  # hermes: tool policy lives in Hermes-managed config, not ours
-        ("hooks", "hermes"),  # hermes: ~/.hermes/hooks schema undocumented; we don't deploy it
-    }
-)
+# Capability statuses that mean "the vendor supports it" for gap classification.
+_SUPPORTED = ("yes", "beta", "ext")
 
 
-def _coverage(capability: str, agent: str, supported: bool, deployed: bool) -> CoverageState:
-    """Classify one (capability, vendor) cell: na / active / local / gap."""
-    if not supported:
-        return "na"
-    if deployed:
+def _coverage(cell: FleetCell) -> CoverageState:
+    """Classify one fleet cell for the uniformity matrix: active / gap / local / na."""
+    if cell.stance == "deploy":
+        return "active" if cell.have is not None and cell.have.state == "present" else "gap"
+    if cell.stance == "native":
         return "active"
-    return "local" if (capability, agent) in _LOCAL_ONLY else "gap"
+    if cell.stance == "local":
+        return "local"
+    return "gap" if cell.can.status in _SUPPORTED else "na"
 
 
 def _perm_settings(label: str, path: Path) -> list[PermissionRow]:
@@ -151,178 +132,77 @@ class AgentOverviewService:
     # ------------------------------------------------------------------
 
     def overview(self) -> AgentOverview:
-        """Collect all six sections and return an AgentOverview."""
+        """Build the fleet once, then project every section from it."""
+        fleet = self.fleet()
         return AgentOverview(
             mcp=tuple(self.section_mcp()),
-            hooks=tuple(self.section_hooks()),
-            skills=self.section_skills(),
+            mcp_agents=self._mcp_deploy_targets(),
+            hooks=tuple(self.section_hooks(fleet)),
             agents=tuple(self.section_agents()),
-            rules=self.section_rules(),
             permissions=tuple(self.section_permissions()),
-            vendor_surfaces=tuple(self.vendor_surfaces()),
+            vendor_surfaces=tuple(
+                vendor_surfaces(fleet, home=self._home, dotfiles_dir=self._dotfiles)
+            ),
             plugins=tuple(self.section_plugins()),
-            skills_rules=tuple(self.section_skills_rules()),
+            censuses=tuple(self.section_censuses()),
+            skills_rules=tuple(self.section_skills_rules(fleet)),
             capabilities=tuple(self.section_capabilities()),
-            uniformity=tuple(self.section_uniformity()),
+            uniformity=tuple(self.section_uniformity(fleet)),
             fleet_doc_stale_days=fleet_doc_stale_days(self._dotfiles, date.today()),
         )
+
+    def fleet(self) -> Fleet:
+        """The single CAN x STANCE x HAVE model every section projects from."""
+        return build_fleet(home=self._home, dotfiles_dir=self._dotfiles)
 
     def section_capabilities(self) -> list[CapabilityRow]:
         """The cross-vendor capability matrix (vendor support + provenance)."""
         return capability_rows()
 
-    def section_uniformity(self) -> list[UniformityRow]:
-        """Per-vendor coverage of the enforced tier: support (matrix) vs deployment.
-
-        active = the vendor supports it AND we've deployed it; gap = supported but
-        not yet deployed (a closable gap); na = the vendor doesn't support it.
-        """
-        support = {cap.key: cap.cells for cap in CAPABILITY_MATRIX}
-        deployed = self._deployment_state()
+    def section_uniformity(self, fleet: Fleet) -> list[UniformityRow]:
+        """Per-vendor coverage of the enforced tier — a pure fleet projection."""
         return [
             UniformityRow(
                 capability=cap,
-                cells={
-                    agent: _coverage(
-                        cap,
-                        agent,
-                        support[cap][agent].status in ("yes", "beta", "ext"),
-                        deployed[agent].get(cap, False),
-                    )
-                    for agent in AGENTS
-                },
+                cells={agent: _coverage(fleet.cell(agent, cap)) for agent in AGENTS},
             )
             for cap in _ENFORCED_TIER
         ]
 
-    def _deployment_state(self) -> dict[str, dict[str, bool]]:
-        """For each vendor, whether OUR deployment of each enforced capability is live.
-
-        Pure path/config probes against $HOME — nothing asserted, everything checked.
-        """
-        per_cap = {
-            "rules": self._deploy_rules(),
-            "skills": self._deploy_skills(),
-            "subagents": self._deploy_subagents(),
-            "statusline": self._deploy_statusline(),
-            "permissions": self._deploy_permissions(),
-            "hooks": self._deploy_hooks(),
-        }
-        return {agent: {cap: states[agent] for cap, states in per_cap.items()} for agent in AGENTS}
-
-    def _deploy_rules(self) -> dict[str, bool]:
-        h = self._home
-        return {
-            v.name: (
-                self._count_cursor_rules(self._cursor_rules_dir()) > 0
-                if v.name == "cursor"
-                else v.paths.exists(h, v.paths.instructions)
-            )
-            for v in VENDORS
-        }
-
-    def _deploy_skills(self) -> dict[str, bool]:
-        h = self._home
-        result: dict[str, bool] = {}
-        for v in VENDORS:
-            if v.paths.skills:
-                result[v.name] = self._count_subdirs(h / v.paths.skills) > 0
-            else:
-                result[v.name] = False
-        return result
-
-    def _deploy_subagents(self) -> dict[str, bool]:
-        h = self._home
-        return {
-            v.name: self._has_md(h / rel) if (rel := v.paths.subagents) else False for v in VENDORS
-        }
-
-    def _deploy_statusline(self) -> dict[str, bool]:
-        h = self._home
-        return {
-            "claude": self._file_contains(surface_path(h, "claude", "settings"), "statusLine"),
-            "cursor": False,
-            "codex": self._file_contains(surface_path(h, "codex", "settings"), "status_line"),
-            "gemini": (h / ".gemini" / "antigravity-cli").is_dir(),
-            "pi": (h / ".pi" / "agent" / "extensions" / "git-status.ts").exists(),
-            "hermes": False,  # no custom statusline surface; Hermes' TUI footer is fixed
-        }
-
-    def _deploy_permissions(self) -> dict[str, bool]:
-        h = self._home
-        return {
-            "claude": self._file_contains(surface_path(h, "claude", "settings"), "permissions"),
-            "cursor": surface_path(h, "cursor", "settings").exists(),
-            "codex": (h / ".codex" / "rules" / "default.rules").exists(),
-            "gemini": surface_path(h, "gemini", "settings").exists(),
-            "pi": (h / ".pi" / "agent" / "permission-policy.json").exists(),
-            "hermes": False,  # tool policy is Hermes-managed (config.yaml + sandbox), not ours
-        }
-
-    def _deploy_hooks(self) -> dict[str, bool]:
-        rows = self.section_hooks()
-        return {agent: any(r.cells.get(agent, False) for r in rows) for agent in AGENTS}
-
-    def _has_md(self, path: Path) -> bool:
-        """True when *path* is a dir holding at least one ``.md`` file."""
-        return path.is_dir() and any(p.suffix == ".md" for p in list_dir(path))
-
-    def _file_contains(self, path: Path, needle: str) -> bool:
-        """True when *path* exists and its text contains *needle*."""
-        return needle in self._read_text(path)
-
     # ------------------------------------------------------------------
-    # Skills & Rules (colocated value matrix: per-agent deployment)
+    # Skills (one census; every skill number anywhere comes from here)
     # ------------------------------------------------------------------
 
-    def _intentional_skill_names(self) -> set[str]:
-        """Skills we own or intentionally track (canonical + external) — vs vendor-bundled."""
-        return canonical_skill_names(self._dotfiles) | external_skill_names(self._dotfiles)
-
-    def _skill_count_cell(self, v: Vendor, home: Path) -> str:
-        """Deployed skill count, annotated by origin: a bare total when every skill is
-        ours, else ``ours+extra`` so vendor-bundled noise (e.g. Hermes' own library) is
-        visible instead of inflating an opaque number."""
-        if not v.paths.skills:
-            return "—"
-        deployed = {p.name for p in list_dir(home / v.paths.skills) if p.is_dir()}
-        extra = len(deployed - self._intentional_skill_names())
-        return f"{len(deployed) - extra}+{extra}" if extra else str(len(deployed))
-
-    def _rules_cell(self, v: Vendor, home: Path) -> str:
-        if v.name == "cursor":
-            return ".mdc" if self._count_cursor_rules(self._cursor_rules_dir()) > 0 else "—"
-        if not v.paths.instructions:
-            return "—"
-        label = "CLAUDE" if v.name == "claude" else "AGENTS"
-        return label if v.paths.exists(home, v.paths.instructions) else "—"
-
-    def section_skills_rules(self) -> list[ValueRow]:
-        """Per-agent skill counts and where each vendor's rules live (files vs embedded)."""
-        h = self._home
+    def section_censuses(self) -> list[SkillCensus]:
+        """One census per vendor with a skills deploy."""
         return [
-            ValueRow(label="skills", cells={v.name: self._skill_count_cell(v, h) for v in VENDORS}),
-            ValueRow(label="rules", cells={v.name: self._rules_cell(v, h) for v in VENDORS}),
+            census
+            for v in VENDORS
+            if (census := skill_census(v, home=self._home, dotfiles_dir=self._dotfiles)) is not None
         ]
 
-    def _cursor_rules_dir(self) -> Path:
-        return self._dotfiles / "ai" / "agents" / "cursor" / "rules"
+    def _rules_cell(self, fleet: Fleet, agent: str) -> str:
+        cell = fleet.cell(agent, "rules")
+        if cell.stance != "deploy" or cell.have is None or cell.have.state != "present":
+            return "—"
+        if agent == "cursor":
+            return ".mdc"
+        return "CLAUDE" if agent == "claude" else "AGENTS"
+
+    def section_skills_rules(self, fleet: Fleet) -> list[ValueRow]:
+        """Per-agent skill counts (census labels) and where each vendor's rules live."""
+        by_vendor = {c.vendor: c for c in self.section_censuses()}
+        skills = {
+            v.name: by_vendor[v.name].label() if v.name in by_vendor else "—" for v in VENDORS
+        }
+        rules = {v.name: self._rules_cell(fleet, v.name) for v in VENDORS}
+        return [
+            ValueRow(label="skills", cells=skills),
+            ValueRow(label="rules", cells=rules),
+        ]
 
     # ------------------------------------------------------------------
-    # Agent surfaces (delegates to AgentVerifyService)
-    # ------------------------------------------------------------------
-
-    def vendor_surfaces(self) -> list[AgentSurface]:
-        """Return agent surface presence checks, delegating to AgentVerifyService."""
-        svc = AgentVerifyService(
-            home=self._home,
-            dotfiles_dir=self._dotfiles,
-            which=self._which,
-        )
-        return svc.vendors()
-
-    # ------------------------------------------------------------------
-    # Section 1: MCP Servers
+    # Section: MCP Servers
     # ------------------------------------------------------------------
 
     def section_mcp(self) -> list[AgentPresenceRow]:
@@ -337,17 +217,31 @@ class AgentOverviewService:
             for name in names
         ]
 
+    def _mcp_deploy_targets(self) -> tuple[str, ...]:
+        """Vendors any MCP server in the shared registry targets — the deploy intent.
+
+        Derived from mcp-servers.json (the file that drives setup's MCP merge),
+        so the overview's "applies" set and the deploy behaviour share a source.
+        """
+
+        registry = load_mcp_servers(
+            self._dotfiles / "ai" / "agents" / "shared" / "mcp-servers.json"
+        )
+        targets = {t for entry in registry.values() for t in entry.targets}
+        return tuple(a for a in AGENTS if a in targets)
+
     def _live_mcp(self) -> dict[str, set[str]]:
         """Server names actually configured per agent, read from live state."""
         h = self._home
         live: dict[str, set[str]] = {}
         for v in VENDORS:
+            deploy = v.deploy("mcp")
             if v.name == "codex":
                 live["codex"] = self._codex_mcp()
-            elif v.name == "pi" or v.paths.mcp is None:
+            elif deploy is None:
                 live[v.name] = set()
             else:
-                live[v.name] = self._mcp_config_servers(h / v.paths.mcp)
+                live[v.name] = self._mcp_config_servers(h / deploy.path)
         return live
 
     def _mcp_config_servers(self, path: Path) -> set[str]:
@@ -399,26 +293,30 @@ class AgentOverviewService:
         return {key.split("@", 1)[0] for key in parse_plugins_yaml(src)}
 
     # ------------------------------------------------------------------
-    # Section 2: Hooks
+    # Section: Hooks (per intent, probed from the LIVE deployed configs)
     # ------------------------------------------------------------------
 
-    def section_hooks(self) -> list[AgentPresenceRow]:
-        """Per-vendor hook coverage by intent, not raw native event name."""
-        agents_dir = self._dotfiles / "ai" / "agents"
-        texts = {
-            "claude": self._read_text(agents_dir / "claude" / "hooks.json"),
-            "cursor": self._read_text(agents_dir / "cursor" / "hooks" / "hooks.json"),
-            "codex": self._read_text(agents_dir / "codex" / "hooks.json"),
-        }
+    def section_hooks(self, fleet: Fleet) -> list[AgentPresenceRow]:
+        """Per-vendor hook coverage by intent, proven against the live hooks config.
+
+        A vendor participates iff its registry hooks stance is a hook-intents
+        deploy; presence per intent = the shared script's basename appearing in
+        that vendor's deployed config text (not the repo source — what's wired,
+        not what we'd wire).
+        """
+        texts: dict[str, str] = {}
+        for v in VENDORS:
+            deploy = v.deploy("hooks")
+            if deploy is not None and deploy.proof == "hook-intents":
+                texts[v.name] = self._read_text(self._home / deploy.path)
         return [
             AgentPresenceRow(
                 label=intent,
                 cells={
-                    agent: texts[agent].find(script) >= 0 if agent in texts else False
-                    for agent in AGENTS
+                    agent: script in texts[agent] if agent in texts else False for agent in AGENTS
                 },
             )
-            for intent, script in _HOOK_INTENTS
+            for intent, script in HOOK_INTENTS
         ]
 
     def _read_text(self, path: Path) -> str:
@@ -437,38 +335,7 @@ class AgentOverviewService:
             return ""
 
     # ------------------------------------------------------------------
-    # Section 3: Skills
-    # ------------------------------------------------------------------
-
-    def section_skills(self) -> SkillsSummary:
-        """Count canonical SKILL.md files and per-vendor deployed skill dirs.
-
-        Deployed counts come from the VENDORS registry — one entry per vendor that
-        declares a skills surface — so gemini/pi/hermes are counted, not just the
-        original claude/cursor/codex trio.
-        """
-        skills_root = self._dotfiles / "ai" / "skills"
-        canonical = 0
-        if skills_root.exists() and skills_root.is_dir():
-            for entry in list_dir(skills_root):
-                if entry.is_dir() and (entry / "SKILL.md").exists():
-                    canonical += 1
-
-        deployed = {
-            v.name: self._count_subdirs(self._home / v.paths.skills)
-            for v in VENDORS
-            if v.paths.skills
-        }
-        return SkillsSummary(canonical_skills=canonical, deployed=deployed)
-
-    def _count_subdirs(self, path: Path) -> int:
-        """Count immediate subdirectory entries under path (0 if not present)."""
-        if not path.exists() or not path.is_dir():
-            return 0
-        return sum(1 for p in list_dir(path) if p.is_dir())
-
-    # ------------------------------------------------------------------
-    # Section 4: Subagents
+    # Section: Subagents
     # ------------------------------------------------------------------
 
     def section_agents(self) -> list[AgentPresenceRow]:
@@ -478,7 +345,9 @@ class AgentOverviewService:
             return []
 
         h = self._home
-        deploy_dirs = {v.name: h / rel if (rel := v.paths.subagents) else None for v in VENDORS}
+        deploy_dirs = {
+            v.name: h / d.path if (d := v.deploy("subagents")) else None for v in VENDORS
+        }
         rows: list[AgentPresenceRow] = []
         for entry in list_dir(agents_root):
             if entry.is_dir() or entry.suffix != ".md":
@@ -500,40 +369,7 @@ class AgentOverviewService:
         return rows
 
     # ------------------------------------------------------------------
-    # Section 5: Rules
-    # ------------------------------------------------------------------
-
-    def section_rules(self) -> RulesSummary:
-        """Count canonical .mdc rules; count deployed in claude/cursor."""
-        canonical = self._count_files_by_ext(self._dotfiles / "ai" / "rules" / "process", ".mdc")
-        claude_deployed = self._count_files_by_ext(self._home / ".claude" / "rules", ".md")
-        cursor_deployed = self._count_cursor_rules(
-            self._dotfiles / "ai" / "agents" / "cursor" / "rules"
-        )
-        return RulesSummary(
-            canonical_rules=canonical,
-            claude_deployed=claude_deployed,
-            cursor_deployed=cursor_deployed,
-        )
-
-    def _count_files_by_ext(self, path: Path, ext: str) -> int:
-        """Count non-directory entries with the given extension under path."""
-        if not path.exists() or not path.is_dir():
-            return 0
-        return sum(1 for e in list_dir(path) if not e.is_dir() and e.suffix == ext)
-
-    def _count_cursor_rules(self, path: Path) -> int:
-        """Count .mdc entries in agents/cursor/rules/."""
-        if not path.exists() or not path.is_dir():
-            return 0
-        count = 0
-        for entry in list_dir(path):
-            if not entry.is_dir() and entry.suffix == ".mdc":
-                count += 1
-        return count
-
-    # ------------------------------------------------------------------
-    # Section 6: Permissions
+    # Section: Permissions
     # ------------------------------------------------------------------
 
     def section_permissions(self) -> list[PermissionRow]:

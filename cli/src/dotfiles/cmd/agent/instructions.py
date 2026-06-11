@@ -22,7 +22,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, RootModel
 
-from dotfiles.agent import VENDORS
+from dotfiles.agent import VENDORS, SurfaceName
 from dotfiles.cmd.agent.catechism import CATECHISM, DOCTRINE, CatechismEntry, DoctrineLayer
 
 
@@ -103,9 +103,9 @@ class InstructionsManifest(BaseModel):
         return [i for i in self.items if i.mode is mode]
 
 
-def _vendor_gaps(surface: str) -> tuple[str, ...]:
-    """Vendor column labels that have no path for *surface* — the ones it skips."""
-    return tuple(v.column for v in VENDORS if getattr(v.paths, surface) is None)
+def _vendor_gaps(surface: SurfaceName) -> tuple[str, ...]:
+    """Vendor column labels with no global deploy for *surface* — the ones it skips."""
+    return tuple(v.column for v in VENDORS if v.deploy(surface) is None)
 
 
 _FRONTMATTER = re.compile(r"^---\n.*?\n---\n", re.DOTALL)

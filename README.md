@@ -345,12 +345,12 @@ dotfiles brew upgrade        # Upgrade all installed packages (brew is the versi
 dotfiles brew stale          # Find packages not declared in packages.toml
 dotfiles dock                # Reset Dock layout
 dotfiles profile-shell       # Profile shell startup time
-dotfiles agent overview      # Live cross-vendor dashboard: capability matrix (14 capabilities × 5 agents), MCP, hooks, skills, subagents, permissions
+dotfiles agent overview      # Live cross-vendor dashboard, all projected from one fleet model (CAN: capability matrix × STANCE: deploy intent × HAVE: live probes) — capability + uniformity matrices, MCP, hooks, skills, subagents, permissions, per-vendor pages with reasons for every intentional n/a
 dotfiles agent capabilities  # The capability matrix with evidence (a probe and/or source URL per cell); --verify runs the probes to confirm the matrix matches reality
 dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi + Hermes (optional --reset-mcp, --clean, --prune); prints the Cursor plugin checklist
 dotfiles agent skills        # List skills by origin (canonical/external/plugin/retired/untracked) with descriptions; vendor builtins hidden (--all to show)
 dotfiles agent skills prune  # Dry-run: bucket deployed skills into retired (ours, deletable) / builtin (vendor, untouched) / untracked; --apply deletes only retired
-dotfiles agent verify        # Check skills/agents deployed + probe MCP servers (--offline skips probes)
+dotfiles agent verify        # Per-vendor deploy health from the same fleet model: canonical skills vs expected (externals/vendor extras labeled, never false drift), subagents, MCP reachability (--offline skips probes)
 dotfiles agent stats         # Skill-usage analytics from Claude + Codex transcripts: leaderboard, dead skills, weak triggers (--since, --json)
 dotfiles agent health        # Bootstrap a repo's code-health backbone: scorecard → docs/health/<scope>/baselines.json + findings.md (--scope, --glob, --run-from, --force)
 dotfiles agent instructions  # The harness manifest as a tree: the five-layer harness model, then context as a tree (in-context now / reachable on demand / active harness / tool surface) with the engineering map + symptom→rite routing folded in and the vendors that skip a surface flagged (--json)

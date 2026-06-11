@@ -44,10 +44,15 @@ def render_setup_results(agent: str, results: list[StepResult]) -> None:
 
 
 def render_vendor(v: AgentVerify) -> None:
-    """Print one agent's verify summary (extracted to keep cmd_verify complexity ≤ 10)."""
-    skills = f"{v.skills_deployed}/{v.skills_expected}" if v.skills_expected else "—"
+    """One agent's verify line: canonical skills vs expected, extras labeled, never alarmed."""
+    skills = f"{v.skills_ours}/{v.skills_expected}" if v.skills_expected else "—"
+    extras = ""
+    if v.skills_external:
+        extras += f" [dim]+{v.skills_external} ext[/]"
+    if v.skills_foreign:
+        extras += f" [dim]+{v.skills_foreign} vendor[/]"
     agents = f"{v.agents_deployed}/{v.agents_expected}" if v.agents_expected else "—"
-    console.print(f"[bold]{v.agent}[/]  skills {skills}  agents {agents}")
+    console.print(f"[bold]{v.agent}[/]  skills {skills}{extras}  agents {agents}")
     for d in v.drift:
         console.print(f"    [yellow]drift:[/] {d}")
     for probe in v.mcp:

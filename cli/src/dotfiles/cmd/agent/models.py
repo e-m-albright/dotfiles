@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 from dotfiles.agent import Agent
 from dotfiles.cmd.agent.capability_matrix import CapabilityRow
+from dotfiles.cmd.agent.skill_census import SkillCensus
 
 
 class AgentPresenceRow(BaseModel):
@@ -35,30 +36,6 @@ class ValueRow(BaseModel):
 
     label: str
     cells: dict[str, str]  # keyed by agent name
-
-
-class SkillsSummary(BaseModel):
-    """Skill counts in the agent overview.
-
-    ``deployed`` maps vendor name → count of deployed skill dirs, built from the
-    VENDORS registry so every vendor with a skills surface is covered (one source,
-    not a hand-listed subset). ``canonical_skills`` is the count in ai/skills.
-    """
-
-    model_config = ConfigDict(frozen=True)
-
-    canonical_skills: int
-    deployed: dict[str, int]
-
-
-class RulesSummary(BaseModel):
-    """Rule counts in the agent overview."""
-
-    model_config = ConfigDict(frozen=True)
-
-    canonical_rules: int
-    claude_deployed: int
-    cursor_deployed: int
 
 
 class PermissionRow(BaseModel):
@@ -144,11 +121,11 @@ class AgentOverview(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     mcp: tuple[AgentPresenceRow, ...]
+    mcp_agents: tuple[str, ...]  # vendors the MCP registry targets (the deploy intent)
     hooks: tuple[AgentPresenceRow, ...]
-    skills: SkillsSummary
     agents: tuple[AgentPresenceRow, ...]
-    rules: RulesSummary
     permissions: tuple[PermissionRow, ...]
+    censuses: tuple[SkillCensus, ...] = ()
     vendor_surfaces: tuple[AgentSurface, ...] = ()
     plugins: tuple[PluginRow, ...] = ()
     skills_rules: tuple[ValueRow, ...] = ()
@@ -232,13 +209,19 @@ class McpProbe(BaseModel):
 
 
 class AgentVerify(BaseModel):
-    """Per-agent skill-health: deployment counts, drift, and MCP probes."""
+    """Per-agent skill-health: census-backed deployment counts, drift, MCP probes.
+
+    ``skills_ours``/``skills_expected`` compare canonical skills only — tracked
+    external skills and vendor-bundled extras are labeled, never called drift.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     agent: Agent
-    skills_deployed: int
+    skills_ours: int
     skills_expected: int
+    skills_external: int  # tracked third-party (external-skills.txt)
+    skills_foreign: int  # vendor-bundled / unknown installs
     agents_deployed: int
     agents_expected: int
     drift: tuple[str, ...]

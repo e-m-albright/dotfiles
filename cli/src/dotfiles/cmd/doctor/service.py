@@ -284,7 +284,7 @@ class DoctorService:
             )
 
         # Claude instructions (~/.claude/CLAUDE.md) — warn if absent
-        claude_md = surface_path(self._home, "claude", "instructions")
+        claude_md = surface_path(self._home, "claude", "rules")
         if claude_md.exists():
             results.append(
                 CheckResult(section=sec, name="Claude instructions", status="ok", detail="exists")
@@ -389,7 +389,7 @@ class DoctorService:
             return []
         results: list[CheckResult] = []
 
-        agents_md = surface_path(self._home, "codex", "instructions")
+        agents_md = surface_path(self._home, "codex", "rules")
         if agents_md.exists():
             results.append(
                 CheckResult(section=sec, name="Codex instructions", status="ok", detail="exists")
