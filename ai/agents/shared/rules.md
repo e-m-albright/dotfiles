@@ -30,6 +30,7 @@ Project-specific rules live in the project's hand-written `AGENTS.md` (with `CLA
 
 - **Respect existing conventions** (formatter, linter, package manager, hook system).
 - **Check the current date** before researching libraries; search for latest docs first. For library/API docs, prefer `ctx7` (Context7 CLI: `ctx7 library <name>` → ID, then `ctx7 docs <id> "<query>"`).
+- **Ground claims about the world; don't deny from stale memory.** Anything that may have changed after your training cutoff — a new model, library, API, release — is a blind spot, not a non-fact. Before asserting something doesn't exist or doesn't work, verify it (web search, `--help`, read the source). Cite the evidence.
 - **TDD when tests exist.** Write/update tests with new logic, refactors, and bug fixes. Run only what's relevant to the change unless asked for the full suite.
 
 ## Voice

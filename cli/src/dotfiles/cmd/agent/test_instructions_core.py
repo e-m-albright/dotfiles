@@ -88,7 +88,7 @@ def test_default_budget_counts_only_default_items(tmp_path: Path) -> None:
 
 def test_harness_config_counts_are_real(tmp_path: Path) -> None:
     manifest = build_manifest(_fake_repo(tmp_path))
-    assert _item(manifest, "guard hooks").count == 2
+    assert _item(manifest, "hooks").count == 2
     assert _item(manifest, "mcp servers").count == 2
     assert _item(manifest, "deny vocabulary").count == 1
     # Harness config shapes behavior, not context — it costs zero tokens.

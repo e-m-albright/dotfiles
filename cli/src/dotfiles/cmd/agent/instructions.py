@@ -188,12 +188,12 @@ def _harness_items(root: Path) -> list[ContextItem]:
     deny = _read(root / "ai" / "agents" / "shared" / "deny-commands.yaml")
     return [
         ContextItem(
-            name="guard hooks",
+            name="hooks",
             source="ai/agents/shared/hooks/*.sh",
             mode=LoadMode.harness,
             est_tokens=0,
             count=len(hooks),
-            note="pre-tool guards (destructive-shell, sensitive-file)",
+            note="pre-tool guards + verify-before-done (K1) + format/notify",
         ),
         ContextItem(
             name="deny vocabulary",
