@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 from enum import StrEnum
+from pathlib import Path
 
 import typer
 from rich.markup import escape
 
 from dotfiles.app.context import app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
-from dotfiles.cmd.agent.capability_matrix import capability_rows, receipts
+from dotfiles.cmd.agent.capability_matrix import capability_rows, receipts, update_fleet_doc
 from dotfiles.cmd.agent.health import HealthError, HealthService, git_root
 from dotfiles.cmd.agent.instructions import build_manifest
 from dotfiles.cmd.agent.overview import AgentOverviewService
@@ -68,6 +69,15 @@ class _AgentChoice(StrEnum):
     hermes = "hermes"
 
 
+def _sync_fleet_doc(dotfiles_dir: Path) -> None:
+    """Regenerate the agent-fleet.md capability table from capability_matrix.py."""
+    changed = update_fleet_doc(dotfiles_dir)
+    if changed is None:
+        print_status(console, "warn", "agent-fleet.md matrix markers missing — table not synced")
+    elif changed:
+        print_status(console, "success", "Regenerated agent-fleet.md capability table")
+
+
 # ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
@@ -122,6 +132,8 @@ def setup(
     results = run_setup(app_ctx, agents=agents, clean=clean, reset_mcp=reset_mcp)
     for result in results:
         render_setup_results(result.agent, result.steps)
+
+    _sync_fleet_doc(app_ctx.dotfiles_dir)
 
     if prune:
         orphans = find_orphans(app_ctx.runner, app_ctx.home, app_ctx.dotfiles_dir)

@@ -10,26 +10,28 @@ The guiding rule: **one source of truth per concern, translated per vendor, drif
 
 ## Capability matrix (vendor support — provenance-backed)
 
-This is the **VENDOR-CAPABILITY** matrix: does each tool *support* the capability? It's the single source of truth — `capability_matrix.py` mirrors it cell-for-cell, a drift test fails if they diverge, and **every supported cell carries a receipt** (a probe that proves it on this machine, and/or a source URL — see the Receipts table). Run the probes with `dotfiles agent capabilities --verify`. *(What WE have deployed/active is the per-agent checklist in `dotfiles agent overview`, a separate layer.)*
+This is the **VENDOR-CAPABILITY** matrix: does each tool *support* the capability? The single source of truth is `capability_matrix.py` — the table below is **generated from it** by `dotfiles agent setup` (a drift test fails if the block is hand-edited or stale), and **every supported cell carries a receipt** (a probe that proves it on this machine, and/or a source URL — see the Receipts table). Run the probes with `dotfiles agent capabilities --verify`. *(What WE have deployed/active is the per-agent checklist in `dotfiles agent overview`, a separate layer.)*
 
 Status tokens: **yes** = generally available · **beta** = preview/partial/auto-only · **ext** = only via an extension (Pi) · **no** = proven absent (with evidence) · **unverified** = no first-party source AND not locally probeable. Reconciliation rule: when a local probe and a doc disagree, **the probe wins** (it's what's installed).
 
-| Capability | Claude | Codex | Cursor | Antigravity | Pi | Hermes |
+<!-- capability-matrix:begin · generated, do not hand-edit -->
+| Capability | Claude Code | Cursor | Codex | Antigravity | Pi | Hermes |
 |---|---|---|---|---|---|---|
 | rules | yes | yes | yes | yes | yes | yes |
 | skills | yes | yes | yes | yes | yes | yes |
 | subagents | yes | yes | yes | yes | ext | yes |
 | mcp | yes | yes | yes | yes | no | beta |
 | hooks | yes | yes | yes | yes | ext | beta |
-| statusline | yes | yes | beta | yes | ext | unverified |
+| statusline | yes | beta | yes | yes | ext | unverified |
 | permissions | yes | yes | yes | yes | ext | beta |
 | plugins | yes | yes | yes | yes | yes | yes |
-| dynamic-workflows | yes | no | unverified | no | yes | beta |
-| memory | yes | beta | unverified | yes | yes | yes |
-| output-styles | beta | yes | no | no | yes | yes |
+| dynamic-workflows | yes | unverified | no | no | yes | beta |
+| memory | yes | unverified | beta | yes | yes | yes |
+| output-styles | beta | no | yes | no | yes | yes |
 | slash-commands | yes | yes | yes | yes | yes | yes |
 | sandboxing | yes | yes | yes | yes | no | yes |
-| model-routing | yes | yes | beta | beta | beta | yes |
+| model-routing | yes | beta | yes | beta | beta | yes |
+<!-- capability-matrix:end -->
 
 **Proven absences** (`no` with positive evidence, not "didn't find"): Pi MCP ("No MCP" by design, README); Pi sandboxing ("Pi does not include a built-in sandbox" — use Docker); Codex dynamic-workflows (`js_repl` removed, `code_mode` WIP); Antigravity dynamic-workflows (its `/workflow` is markdown step-guides, not JS orchestration); Antigravity + Cursor output-styles (no style surface). The **agy `⊘`→`yes` corrections** (skills/subagents/hooks/statusline) were proven by the installed binary's own strings — see Receipts.
 

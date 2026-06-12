@@ -347,7 +347,7 @@ dotfiles dock                # Reset Dock layout
 dotfiles profile-shell       # Profile shell startup time
 dotfiles agent overview      # Live cross-vendor dashboard, all projected from one fleet model (CAN: capability matrix × STANCE: deploy intent × HAVE: live probes) — capability + uniformity matrices, MCP, hooks, skills, subagents, permissions, per-vendor pages with reasons for every intentional n/a
 dotfiles agent capabilities  # The capability matrix with evidence (a probe and/or source URL per cell); --verify runs the probes to confirm the matrix matches reality
-dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi + Hermes (optional --reset-mcp, --clean, --prune); prints the Cursor plugin checklist
+dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi + Hermes (optional --reset-mcp, --clean, --prune); regenerates the agent-fleet.md capability table; prints the Cursor plugin checklist
 dotfiles agent skills        # List skills by origin (canonical/external/plugin/retired/untracked) with descriptions; vendor builtins hidden (--all to show)
 dotfiles agent skills prune  # Dry-run: bucket deployed skills into retired (ours, deletable) / builtin (vendor, untouched) / untracked; --apply deletes only retired
 dotfiles agent verify        # Per-vendor deploy health from the same fleet model: canonical skills vs expected (externals/vendor extras labeled, never false drift), subagents, MCP reachability (--offline skips probes)

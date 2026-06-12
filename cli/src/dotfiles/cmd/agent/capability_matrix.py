@@ -28,7 +28,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from dotfiles.agent import AGENTS
+from dotfiles.agent import AGENTS, VENDORS
 
 CellStatus = Literal["yes", "beta", "ext", "no", "unverified"]
 
@@ -278,7 +278,52 @@ def receipts() -> list[tuple[str, str, Cell]]:
 
 
 # ---------------------------------------------------------------------------
-# Doc staleness (agent-fleet.md mirrors this matrix; warn when its review lapses)
+# Doc generation: the agent-fleet.md matrix table is GENERATED from this module
+# (between the markers below) by `dotfiles agent setup` — never hand-edited.
+# ---------------------------------------------------------------------------
+
+DOC_TABLE_BEGIN = "<!-- capability-matrix:begin · generated, do not hand-edit -->"
+DOC_TABLE_END = "<!-- capability-matrix:end -->"
+
+
+def doc_matrix_table() -> str:
+    """The capability matrix as a markdown table — the doc's generated block."""
+    header = "| Capability | " + " | ".join(v.display_name for v in VENDORS) + " |"
+    rule = "|---" * (len(VENDORS) + 1) + "|"
+    rows = [
+        "| " + " | ".join([cap.key, *(cap.cells[v.name].status for v in VENDORS)]) + " |"
+        for cap in CAPABILITY_MATRIX
+    ]
+    return "\n".join([header, rule, *rows])
+
+
+def doc_table_block() -> str:
+    """The full generated block, markers included."""
+    return f"{DOC_TABLE_BEGIN}\n{doc_matrix_table()}\n{DOC_TABLE_END}"
+
+
+def update_fleet_doc(dotfiles_dir: Path) -> bool | None:
+    """Rewrite the generated matrix block in agent-fleet.md.
+
+    Returns True if the doc changed, False if already current, None when the
+    doc or its markers are missing (nothing to do — surfaced by the drift test,
+    not silently created here).
+    """
+    doc_path = dotfiles_dir.joinpath(*FLEET_DOC_REL)
+    text = _read_text(doc_path)
+    begin, end = text.find(DOC_TABLE_BEGIN), text.find(DOC_TABLE_END)
+    if begin < 0 or end < 0:
+        return None
+    current = text[begin : end + len(DOC_TABLE_END)]
+    block = doc_table_block()
+    if current == block:
+        return False
+    doc_path.write_text(text[:begin] + block + text[end + len(DOC_TABLE_END) :])
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Doc staleness (warn when agent-fleet.md's review lapses)
 # ---------------------------------------------------------------------------
 
 FLEET_DOC_REL = ("docs", "knowledge", "agent-fleet.md")

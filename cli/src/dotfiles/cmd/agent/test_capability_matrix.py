@@ -5,7 +5,8 @@ Three halves:
   carries a receipt (a local probe and/or a source URL); the agy corrections hold.
 - **Tethering** — a live probe runs against an installed binary (skipped if absent)
   to prove the matrix matches reality, not a page.
-- **Drift** — docs/knowledge/agent-fleet.md mirrors the matrix status tokens.
+- **Drift** — docs/knowledge/agent-fleet.md carries the generated matrix block
+  verbatim (rewritten by `dotfiles agent setup`, never hand-edited).
 """
 
 from __future__ import annotations
@@ -20,9 +21,14 @@ import pytest
 from dotfiles.agent import AGENTS
 from dotfiles.cmd.agent.capability_matrix import (
     CAPABILITY_MATRIX,
+    DOC_TABLE_BEGIN,
+    DOC_TABLE_END,
     capability_rows,
+    doc_matrix_table,
+    doc_table_block,
     fleet_doc_stale_days,
     receipts,
+    update_fleet_doc,
 )
 
 _REPO = Path(__file__).resolve().parents[5]
@@ -104,51 +110,50 @@ def test_agy_statusline_probe_actually_passes() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Drift gate: agent-fleet.md matrix tokens mirror the code
+# Drift gate: the agent-fleet.md matrix table is the GENERATED block, verbatim
 # ---------------------------------------------------------------------------
 
-_HEADER_AGENT = {
-    "claude": "claude",
-    "codex": "codex",
-    "cursor": "cursor",
-    "antigravity": "gemini",
-    "pi": "pi",
-    "hermes": "hermes",
-}
 
-
-def _matrix_rows(text: str) -> tuple[list[str], list[list[str]]]:
-    lines = text.splitlines()
-    header_idx = next(
-        i for i, ln in enumerate(lines) if ln.startswith("| Capability") and "Antigravity" in ln
-    )
-    header = [c.strip().lower() for c in lines[header_idx].strip("|").split("|")]
-    rows = []
-    for ln in lines[header_idx + 2 :]:
-        if not ln.startswith("|"):
-            break
-        rows.append([c.strip() for c in ln.strip("|").split("|")])
-    return header, rows
-
-
-def test_doc_table_mirrors_matrix_status() -> None:
+def test_doc_table_is_the_generated_block_verbatim() -> None:
+    """agent-fleet.md's matrix is generated from this module (`dotfiles agent
+    setup` rewrites it between the markers). Exact equality — a hand edit or a
+    matrix change without regeneration both fail here."""
     text = (_REPO / "docs" / "knowledge" / "agent-fleet.md").read_text()
-    header, rows = _matrix_rows(text)
-    col = {_HEADER_AGENT[h]: i for i, h in enumerate(header) if h in _HEADER_AGENT}
-    assert set(col) == set(AGENTS), "doc matrix missing a vendor column"
-    by_key = {c.key: c for c in CAPABILITY_MATRIX}
-    seen: set[str] = set()
-    for cells in rows:
-        key = cells[0].strip().lower()
-        if key not in by_key:
-            continue
-        seen.add(key)
-        for agent, idx in col.items():
-            token = cells[idx].strip().lower().split()[0]  # leading status word
-            assert token == by_key[key].cells[agent].status, (
-                f"drift: {key}/{agent} doc={token} code={by_key[key].cells[agent].status}"
-            )
-    assert seen == set(by_key), f"doc rows {seen} != matrix keys {set(by_key)}"
+    assert doc_table_block() in text, (
+        "agent-fleet.md capability table is stale or hand-edited — run `dotfiles agent setup`"
+    )
+
+
+def test_update_fleet_doc_rewrites_only_the_marked_block(tmp_path: Path) -> None:
+    doc = tmp_path / "docs" / "knowledge" / "agent-fleet.md"
+    doc.parent.mkdir(parents=True)
+    stale = f"prose above\n\n{DOC_TABLE_BEGIN}\nOLD TABLE\n{DOC_TABLE_END}\n\nprose below\n"
+    doc.write_text(stale)
+    assert update_fleet_doc(tmp_path) is True
+    text = doc.read_text()
+    assert doc_table_block() in text
+    assert text.startswith("prose above")
+    assert text.endswith("prose below\n")
+    # Idempotent: a second run reports no change.
+    assert update_fleet_doc(tmp_path) is False
+
+
+def test_update_fleet_doc_without_markers_is_a_loud_no_op(tmp_path: Path) -> None:
+    doc = tmp_path / "docs" / "knowledge" / "agent-fleet.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text("no markers here\n")
+    assert update_fleet_doc(tmp_path) is None
+    assert doc.read_text() == "no markers here\n"
+
+
+def test_doc_matrix_table_covers_every_row_and_vendor() -> None:
+    table = doc_matrix_table()
+    lines = table.splitlines()
+    assert len(lines) == 2 + len(CAPABILITY_MATRIX)  # header + rule + one row per capability
+    for cap in CAPABILITY_MATRIX:
+        row = next(ln for ln in lines if ln.startswith(f"| {cap.key} |"))
+        cells = [c.strip() for c in row.strip("|").split("|")][1:]
+        assert cells == [cap.cells[a].status for a in AGENTS]
 
 
 # ---------------------------------------------------------------------------
