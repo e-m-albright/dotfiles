@@ -58,7 +58,7 @@ def _tilde(path: str, home: Path) -> str:
         return path
 
 
-def _path_link(path: str, home: Path) -> str:
+def path_link(path: str, home: Path) -> str:
     """A clickable file:// link, shown home-relative and dimmed."""
     if not path:
         return ""
@@ -202,7 +202,7 @@ def _render_permissions(rows: Iterable[PermissionRow], home: Path) -> None:
             else f"allow {p.allow}  deny {p.deny}"
         )
         console.print(
-            f"  [{GOLD}]{escape(p.label):<26}[/] {qty:<22} {_path_link(p.source_path, home)}"
+            f"  [{GOLD}]{escape(p.label):<26}[/] {qty:<22} {path_link(p.source_path, home)}"
         )
 
 
@@ -250,7 +250,7 @@ def _render_one_agent_section(
     for s in surfaces:
         glyph = _STATUS_GLYPH.get(s.status, "[dim]·[/]")
         # Path-backed rows link the path; intentional non-deploys show their reason.
-        tail = _path_link(s.path, home) if s.path else f"[dim]{escape(s.detail)}[/dim]"
+        tail = path_link(s.path, home) if s.path else f"[dim]{escape(s.detail)}[/dim]"
         console.print(
             f"  {glyph}  [{GOLD}]{escape(s.label):<14}[/] {escape(s.quantity):<12} {tail}"
         )

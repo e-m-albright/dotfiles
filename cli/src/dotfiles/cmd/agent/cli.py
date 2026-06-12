@@ -9,12 +9,20 @@ from pathlib import Path
 import typer
 from rich.markup import escape
 
+from dotfiles.agent import surface_path
 from dotfiles.app.context import app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.agent.capability_matrix import capability_rows, receipts, update_fleet_doc
+from dotfiles.cmd.agent.detail import deny_list, hook_wirings, subagent_details
+from dotfiles.cmd.agent.fleet import build_fleet
 from dotfiles.cmd.agent.health import HealthError, HealthService, git_root
 from dotfiles.cmd.agent.instructions import build_manifest
 from dotfiles.cmd.agent.overview import AgentOverviewService
+from dotfiles.cmd.agent.render.detail import (
+    render_hook_wirings,
+    render_permission_detail,
+    render_subagent_details,
+)
 from dotfiles.cmd.agent.render.health import (
     gemini_flycut,
     gemini_list,
@@ -354,6 +362,41 @@ def health(
         console.print(f"[red]error:[/] {escape(str(exc))}")
         raise typer.Exit(1) from exc
     render_health(result)
+
+
+@agent_app.command()
+def subagents(ctx: typer.Context) -> None:
+    """Drill-down: every canonical subagent, its description, and where it's live."""
+    app_ctx = app_context(ctx)
+    print_title(console, "agent", "subagents")
+    render_subagent_details(subagent_details(dotfiles_dir=app_ctx.dotfiles_dir, home=app_ctx.home))
+
+
+@agent_app.command()
+def hooks(ctx: typer.Context) -> None:
+    """Drill-down: live hook wiring per vendor, intent by intent."""
+    app_ctx = app_context(ctx)
+    print_title(console, "agent", "hooks")
+    fleet = build_fleet(home=app_ctx.home, dotfiles_dir=app_ctx.dotfiles_dir)
+    render_hook_wirings(hook_wirings(fleet, home=app_ctx.home), app_ctx.home)
+
+
+@agent_app.command()
+def permissions(ctx: typer.Context) -> None:
+    """Drill-down: permission sources with counts, plus the deny floor verbatim."""
+    app_ctx = app_context(ctx)
+    print_title(console, "agent", "permissions")
+    svc = AgentOverviewService(
+        runner=app_ctx.runner, dotfiles_dir=app_ctx.dotfiles_dir, home=app_ctx.home
+    )
+    denies = [
+        d
+        for d in (
+            deny_list("Claude Code (deployed)", surface_path(app_ctx.home, "claude", "settings")),
+        )
+        if d is not None
+    ]
+    render_permission_detail(list(svc.section_permissions()), denies, app_ctx.home)
 
 
 @agent_app.command()

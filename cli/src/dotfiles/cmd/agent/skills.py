@@ -38,7 +38,7 @@ _CAPS_THRESHOLD = 15
 # ---------------------------------------------------------------------------
 
 
-def _parse_frontmatter(text: str) -> tuple[dict[str, str], list[str]]:
+def parse_frontmatter(text: str) -> tuple[dict[str, str], list[str]]:
     """Return (frontmatter_fields, body_lines).
 
     Frontmatter is the YAML block delimited by the first two ``---`` lines.
@@ -180,7 +180,7 @@ def validate_file(
     if yaml_err:
         errors.append(yaml_err)
 
-    fields, body_lines = _parse_frontmatter(text)
+    fields, body_lines = parse_frontmatter(text)
     _check_name(fields.get("name", ""), expected_name, errors, warnings)
     _check_description(fields.get("description", ""), errors, warnings)
     _check_body(body_lines, kind, errors, warnings)

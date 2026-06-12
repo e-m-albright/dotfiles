@@ -350,6 +350,9 @@ dotfiles agent capabilities  # The capability matrix with evidence (a probe and/
 dotfiles agent setup        # Configure Claude + Cursor + Codex + Gemini + Pi + Hermes (optional --reset-mcp, --clean, --prune); regenerates the agent-fleet.md capability table; prints the Cursor plugin checklist
 dotfiles agent skills        # List skills by origin (canonical/external/plugin/retired/untracked) with descriptions; vendor builtins hidden (--all to show)
 dotfiles agent skills prune  # Dry-run: bucket deployed skills into retired (ours, deletable) / builtin (vendor, untouched) / untracked; --apply deletes only retired
+dotfiles agent subagents     # Drill-down: every canonical subagent, its description, and which vendors it's live on
+dotfiles agent hooks         # Drill-down: live hook wiring per vendor, intent by intent (probes the deployed configs)
+dotfiles agent permissions   # Drill-down: permission sources with counts, plus the Claude deny floor verbatim
 dotfiles agent verify        # Per-vendor deploy health from the same fleet model: canonical skills vs expected (externals/vendor extras labeled, never false drift), subagents, MCP reachability (--offline skips probes)
 dotfiles agent stats         # Skill-usage analytics from Claude + Codex transcripts: leaderboard, dead skills, weak triggers (--since, --json)
 dotfiles agent health        # Bootstrap a repo's code-health backbone: scorecard → docs/health/<scope>/baselines.json + findings.md (--scope, --glob, --run-from, --force)

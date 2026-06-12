@@ -24,6 +24,8 @@ Severity: **will-drift** (silently rots) · **friction** (slows change) · **aes
 
 - **2026-06-12** — backlog burn-down (engine: code-health router). Read-ledger-first pass; no re-diagnosis. Landed: (1) **gitleaks full-history secret scan** — `.github/workflows/gitleaks.yml`, weekly cron + dispatch, detection-only (the CI grep only ever saw the working tree; this repo is PUBLIC); (2) **doctor ↔ packages.toml drift gate** — `test_tool_checks_stay_in_sync_with_packages_toml`: every `brew install` hint in `_TOOL_CHECKS` must name an enabled manifest package (cask hints must be cask/auto), closing the unenforced CLAUDE.md invariant; (3) **ledger reconciled** — two gap items were already fixed in-tree but never marked (sensitive-file guard vector suite via `1e9e775`; clean-machine CI job via `016a172`).
 
+- **2026-06-12** (cont.) — fleet open-threads closed (engine: Fable-5, continuing the rearchitecture). (1) **agent-fleet.md matrix generated** (backlog #3 — see below); (2) **cockpit drill-downs** — `agent subagents` (canonical set + descriptions + per-vendor live state), `agent hooks` (live intent wiring per vendor, extension/local stances explained), `agent permissions` (sources + the Claude deny floor verbatim) — all projections of the fleet/census (`detail.py`), no new probes; (3) made `parse_frontmatter`/`path_link` public instead of cross-module private imports. +11 tests.
+
 ## Open backlog (deferred — address when touched or in a focused pass)
 
 Ranked by churn×complexity / drift risk.
