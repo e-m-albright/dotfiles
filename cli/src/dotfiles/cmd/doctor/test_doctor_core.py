@@ -2,9 +2,12 @@
 
 from pathlib import Path
 
+from dotfiles.cmd.brew.service import PackageManifest
 from dotfiles.cmd.doctor.models import CheckResult
-from dotfiles.cmd.doctor.service import DoctorService
+from dotfiles.cmd.doctor.service import _TOOL_CHECKS, DoctorService
 from dotfiles.testing.fakes import FakeProcessRunner, write_tree
+
+_REPO = Path(__file__).resolve().parents[5]
 
 
 def _svc(runner=None, *, fix=False, which=None, home=None, dotfiles_dir=None):
@@ -210,3 +213,37 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
     # satisfied under tmp_path, so a fully-equipped machine has zero failures.
     failures = [r for r in results if r.is_failure]
     assert not failures, f"Unexpected failures: {[(r.name, r.hint) for r in failures]}"
+
+
+# ---------------------------------------------------------------------------
+# packages.toml drift gate
+# ---------------------------------------------------------------------------
+
+
+def test_tool_checks_stay_in_sync_with_packages_toml() -> None:
+    """Drift gate for the CLAUDE.md invariant: doctor must stay in sync with
+    macos/packages.toml (the source of truth for what's installed).
+
+    Every `brew install` hint in the declarative _TOOL_CHECKS table must name a
+    package that exists *and is enabled* in the manifest — so disabling or
+    renaming a package there breaks this test instead of silently leaving
+    doctor checking (and recommending) a tool the repo no longer installs.
+    Non-brew hints ("Run install.sh", curl installers) are out of scope.
+    """
+    manifest = PackageManifest.load(_REPO / "macos" / "packages.toml")
+    enabled = {p.name for s in manifest.sections for p in s.packages if not p.disabled}
+    cask_ok = {p.name for s in manifest.sections if s.kind in ("cask", "auto") for p in s.packages}
+
+    for _section, name, _cmd, hint in _TOOL_CHECKS:
+        if not hint.startswith("brew install"):
+            continue
+        pkg = hint.split()[-1]
+        assert pkg in enabled, (
+            f"doctor checks {name!r} with hint {hint!r}, but {pkg!r} is not an "
+            f"enabled package in macos/packages.toml — update one of them"
+        )
+        if "--cask" in hint:
+            assert pkg in cask_ok, (
+                f"doctor hint {hint!r} says --cask but {pkg!r} is not in a "
+                f"cask/auto section of macos/packages.toml"
+            )

@@ -1,0 +1,28 @@
+name: Secret Scan (full history)
+
+# This repo is public. The CI "secrets patterns" grep only inspects the working
+# tree; a credential committed and later deleted would never be seen. This
+# scheduled run scans the ENTIRE git history with gitleaks. Detection only —
+# a finding fails the run (notification), it never rewrites anything.
+# Ledger: docs/health/cli/findings.md (shell/product-coverage gaps).
+
+on:
+  schedule:
+    - cron: "17 9 * * 1" # weekly, Monday morning UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history — the whole point of this scan
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
