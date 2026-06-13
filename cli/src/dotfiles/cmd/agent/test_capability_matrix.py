@@ -172,6 +172,23 @@ def test_staleness_none_without_stamp(tmp_path: Path) -> None:
     assert fleet_doc_stale_days(tmp_path, date(2026, 6, 9)) is None
 
 
+def test_real_fleet_doc_is_not_stale() -> None:
+    """Teeth for the freshness cadence: the doc's "Last reviewed" date must be
+    within FLEET_STALE_DAYS. Without this the cadence was honor-system — a print-
+    only warning nobody's required to see. Now CI fails when the fleet hasn't been
+    re-checked against vendor changelogs, forcing the date (and the review) forward.
+    """
+    from dotfiles.cmd.agent.capability_matrix import FLEET_STALE_DAYS
+
+    stale = fleet_doc_stale_days(_REPO, date.today())
+    assert stale is not None, "agent-fleet.md is missing its 'Last reviewed' stamp"
+    assert stale <= FLEET_STALE_DAYS, (
+        f"agent-fleet.md was last reviewed {stale}d ago (> {FLEET_STALE_DAYS}d) — "
+        "re-check each vendor's changelog for capability/schema changes, run "
+        "`dotfiles agent capabilities --verify`, then bump the 'Last reviewed' date."
+    )
+
+
 def test_capability_rows_render_shape() -> None:
     rows = capability_rows()
     assert len(rows) == len(CAPABILITY_MATRIX)
