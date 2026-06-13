@@ -60,11 +60,13 @@ def test_chunks_char_count_is_byte_length(tmp_path: Path) -> None:
 
 
 def test_chunks_multibyte_char_count(tmp_path: Path) -> None:
-    content = "café"  # é is 2 bytes in UTF-8 → 5 bytes total
+    # Gemini saved-info limits are character-based, not UTF-8 bytes: "café" is 4
+    # characters (5 bytes). char_count must count characters.
+    content = "café"
     chunks_dir = _make_chunks_dir(tmp_path, ("01-x.md", content))
     svc, _ = _make_service(chunks_dir)
     chunk = svc.chunks()[0]
-    assert chunk.char_count == len(content.encode())  # 5
+    assert chunk.char_count == len(content) == 4
 
 
 def test_chunks_content_roundtrips(tmp_path: Path) -> None:

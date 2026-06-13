@@ -410,7 +410,7 @@ def permissions(ctx: typer.Context) -> None:
     render_permission_detail(list(svc.section_permissions()), denies, app_ctx.home)
 
 
-@agent_app.command()
+@agent_app.command(deprecated=True)
 def catechism(ctx: typer.Context) -> None:
     """Subsumed into `agent instructions` — its doctrine + routing now live in that tree."""
     app_ctx = app_context(ctx)

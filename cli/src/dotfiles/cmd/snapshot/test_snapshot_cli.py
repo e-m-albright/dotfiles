@@ -44,6 +44,43 @@ def test_snapshot_diff_now_against_latest(tmp_path):
     assert "No drift" in result.stdout
 
 
+def test_snapshot_diff_by_older_slug_is_correctly_directed(tmp_path):
+    # Regression: `diff <older-slug>` used to put the token on the NEW side and
+    # diff it against the newest (inverting direction + wrong baseline). Correct:
+    # the older snapshot is OLD, the latest saved is NEW.
+    from datetime import datetime
+
+    from dotfiles.cmd.snapshot.models import BrewState, Snapshot
+    from dotfiles.cmd.snapshot.service import write_snapshot
+
+    ctx = _ctx(tmp_path)
+    state = tmp_path / "state"
+    older = Snapshot(
+        taken_at=datetime(2026, 6, 1),
+        brew=BrewState(leaves=("git", "jq"), casks=()),
+        runtimes={},
+        symlinks=(),
+        agent_config={},
+    )
+    newer = Snapshot(
+        taken_at=datetime(2026, 6, 2),
+        brew=BrewState(leaves=("git", "ripgrep"), casks=()),
+        runtimes={},
+        symlinks=(),
+        agent_config={},
+    )
+    old_path = write_snapshot(state, older)
+    write_snapshot(state, newer)
+
+    result = runner.invoke(app, ["snapshot", "diff", old_path.stem], obj=ctx)
+    assert result.exit_code == 0
+    # From older → latest: ripgrep ADDED, jq REMOVED (not the reverse).
+    assert "+ brew" in result.stdout
+    assert "ripgrep" in result.stdout
+    assert "- brew" in result.stdout
+    assert "jq" in result.stdout
+
+
 def test_snapshot_diff_needs_two_when_no_args(tmp_path):
     ctx = _ctx(tmp_path)
     runner.invoke(app, ["snapshot"], obj=ctx)  # only one

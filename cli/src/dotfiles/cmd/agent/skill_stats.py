@@ -28,6 +28,8 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Protocol, cast
 
+from dotfiles.cmd.agent.skill_prune import canonical_skill_names
+
 # A user-typed slash command surfaces in the transcript as
 # ``<command-name>/skill-name</command-name>``. Built-in commands (/compact,
 # /login) match too but simply never align with a skill name, so they're inert.
@@ -260,19 +262,6 @@ def _iter_lines(path: Path) -> Iterator[str]:
 
 
 # ---------------------------------------------------------------------------
-# Canonical inventory (for dead-skill detection)
-# ---------------------------------------------------------------------------
-
-
-def canonical_skill_names(dotfiles_dir: Path) -> frozenset[str]:
-    """Names of every skill that lives in ``ai/skills/*/SKILL.md``."""
-    skills_dir = dotfiles_dir / "ai" / "skills"
-    if not skills_dir.is_dir():
-        return frozenset()
-    return frozenset(md.parent.name for md in skills_dir.glob("*/SKILL.md"))
-
-
-# ---------------------------------------------------------------------------
 # Report model
 # ---------------------------------------------------------------------------
 
@@ -349,7 +338,7 @@ class SkillUsageService:
 
     def report(self, *, since_days: int, now: datetime) -> SkillUsageReport:
         cutoff = now - timedelta(days=since_days)
-        canonical = canonical_skill_names(self._dotfiles_dir)
+        canonical = frozenset(canonical_skill_names(self._dotfiles_dir))
 
         events: list[SkillEvent] = []
         dropped = 0

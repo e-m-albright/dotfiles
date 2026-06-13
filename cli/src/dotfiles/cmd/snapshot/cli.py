@@ -31,6 +31,19 @@ def _capture_now(app_ctx: AppContext) -> Snapshot:
     )
 
 
+def _one_arg_pair(app_ctx: AppContext, snaps: list[Path], token: str) -> tuple[Snapshot, Snapshot]:
+    """The (old, new) pair for `diff <token>`, directed by recency.
+
+    'now' is the newest point in time → it's the NEW side vs the latest saved; a
+    named (older) snapshot is the OLD side vs the latest saved. The old code put
+    the token on the new side unconditionally, inverting `diff <older-slug>` and
+    diffing it against the wrong baseline.
+    """
+    if token == "now":
+        return load_snapshot(snaps[0]), _capture_now(app_ctx)
+    return _resolve_token(app_ctx, snaps, token, 0), load_snapshot(snaps[0])
+
+
 def _resolve_token(
     app_ctx: AppContext,
     snaps: list[Path],
@@ -115,8 +128,7 @@ def cmd_diff(
         if not snaps:
             print_status(console, "error", "No snapshots saved yet")
             raise typer.Exit(code=1)
-        old = load_snapshot(snaps[0])
-        new = _resolve_token(app_ctx, snaps, a, 0)
+        old, new = _one_arg_pair(app_ctx, snaps, a)
         _render_diff(diff(old, new))
         return
 

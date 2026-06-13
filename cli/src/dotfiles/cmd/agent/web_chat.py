@@ -46,7 +46,7 @@ class GeminiChunksService:
             result.append(
                 GeminiChunk(
                     name=path.name,
-                    char_count=len(content.encode()),
+                    char_count=len(content),  # characters, not UTF-8 bytes
                     content=content,
                 )
             )
