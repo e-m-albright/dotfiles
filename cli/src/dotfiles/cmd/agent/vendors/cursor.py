@@ -1,14 +1,14 @@
 """agent_setup.cursor — Cursor agentic setup.
 
 Configures Cursor agentic setup:
-  - Merge shared MCP servers into dotfiles_dir/editors/cursor/mcp.json (IN-REPO)
+  - Merge shared MCP servers into home/.cursor/mcp.json (the global config the Cursor
+    CLI agent + IDE read, and the path the registry/capability probe checks)
   - Generate dotfiles_dir/ai/agents/cursor/rules/shared-rules.mdc (kernel + YAML frontmatter)
   - Symlink dotfiles_dir/ai/agents/cursor/cli-config.json → home/.cursor/cli-config.json
   - Symlink dotfiles_dir/ai/agents/cursor → home/.cursor/plugins/dotfiles
   - Generate dotfiles_dir/editors/cursor/.cursorignore from shared ignore-patterns
 
 All paths are injected; Path.home() MUST NOT appear here.
-NOTE: cursor's MCP target is IN-REPO (dotfiles_dir/editors/cursor/mcp.json), NOT home.
 """
 
 from __future__ import annotations
@@ -73,16 +73,19 @@ def setup_cursor(
 
 
 def _setup_mcp(dotfiles_dir: Path, home: Path, *, reset_mcp: bool = False) -> list[StepResult]:
-    """Merge shared MCP servers into editors/cursor/mcp.json (in-repo)."""
-    mcp_file = dotfiles_dir / "editors" / "cursor" / "mcp.json"
-    mcp_file.parent.mkdir(parents=True, exist_ok=True)
+    """Merge managed MCP servers into ~/.cursor/mcp.json — the global config the Cursor
+    CLI agent (and IDE) actually read, and the path the registry stance + capability
+    probe check. The merge preserves any user-added servers and prunes retired managed
+    ones, exactly like the codex/gemini deploys; this is what makes the cockpit's
+    "Cursor MCP deployed" readout true on a fresh machine instead of relying on a
+    hand-made symlink."""
     return merge_mcp_json_file(
-        mcp_file,
+        home / ".cursor" / "mcp.json",
         dotfiles_dir,
         "cursor",
         home,
         reset_mcp=reset_mcp,
-        success_message="Configured MCP servers (Cursor, in-repo)",
+        success_message="Configured MCP servers (Cursor, ~/.cursor/mcp.json)",
     )
 
 

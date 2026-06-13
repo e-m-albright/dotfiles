@@ -84,7 +84,7 @@ def _run(dotfiles: Path, home: Path, *, reset_mcp: bool = False) -> list:
 class TestResetMcp:
     def test_reset_mcp_removes_stale_managed_key(self, dotfiles: Path, home: Path) -> None:
         """A stale managed key present before reset_mcp=True must be removed."""
-        mcp_file = dotfiles / "editors" / "cursor" / "mcp.json"
+        mcp_file = home / ".cursor" / "mcp.json"
         mcp_file.parent.mkdir(parents=True, exist_ok=True)
         # Pre-populate with a managed key ("playwright") plus a custom key
         mcp_file.write_text(
@@ -107,7 +107,7 @@ class TestResetMcp:
 
     def test_reset_mcp_drops_removed_managed_key(self, dotfiles: Path, home: Path) -> None:
         """A managed key that no longer exists in mcp-servers.json is removed."""
-        mcp_file = dotfiles / "editors" / "cursor" / "mcp.json"
+        mcp_file = home / ".cursor" / "mcp.json"
         mcp_file.parent.mkdir(parents=True, exist_ok=True)
         # "old-managed" was a managed key that has since been removed from the registry
         mcp_file.write_text(
@@ -144,7 +144,7 @@ class TestResetMcp:
 
     def test_without_reset_mcp_stale_value_preserved(self, dotfiles: Path, home: Path) -> None:
         """Without reset_mcp, an old managed key value is not overridden if we only add."""
-        mcp_file = dotfiles / "editors" / "cursor" / "mcp.json"
+        mcp_file = home / ".cursor" / "mcp.json"
         mcp_file.parent.mkdir(parents=True, exist_ok=True)
         mcp_file.write_text(json.dumps({"mcpServers": {"my-custom": {"command": "custom"}}}))
         _run(dotfiles, home, reset_mcp=False)
@@ -155,44 +155,61 @@ class TestResetMcp:
 
 
 # ---------------------------------------------------------------------------
-# MCP — in-repo target
+# MCP — deployed to ~/.cursor/mcp.json (the path Cursor + the cockpit probe read)
 # ---------------------------------------------------------------------------
 
 
 class TestMcp:
-    def test_creates_mcp_json_in_repo(self, dotfiles: Path, home: Path) -> None:
+    def test_creates_mcp_json_in_home(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
-        assert (dotfiles / "editors" / "cursor" / "mcp.json").is_file()
+        assert (home / ".cursor" / "mcp.json").is_file()
 
-    def test_mcp_json_not_in_home(self, dotfiles: Path, home: Path) -> None:
+    def test_mcp_json_not_written_in_repo(self, dotfiles: Path, home: Path) -> None:
+        # The deploy is to home now; the old in-repo editors/cursor/mcp.json is gone.
         _run(dotfiles, home)
-        assert not (home / ".cursor" / "mcp.json").exists()
+        assert not (dotfiles / "editors" / "cursor" / "mcp.json").exists()
 
     def test_cursor_target_servers_included(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
-        data = json.loads((dotfiles / "editors" / "cursor" / "mcp.json").read_text())
+        data = json.loads((home / ".cursor" / "mcp.json").read_text())
         assert "playwright" in data["mcpServers"]
         assert "context7" in data["mcpServers"]
 
     def test_non_cursor_servers_excluded(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
-        data = json.loads((dotfiles / "editors" / "cursor" / "mcp.json").read_text())
+        data = json.loads((home / ".cursor" / "mcp.json").read_text())
         assert "granola" not in data["mcpServers"]
 
     def test_targets_key_stripped(self, dotfiles: Path, home: Path) -> None:
         _run(dotfiles, home)
-        data = json.loads((dotfiles / "editors" / "cursor" / "mcp.json").read_text())
+        data = json.loads((home / ".cursor" / "mcp.json").read_text())
         for cfg in data["mcpServers"].values():
             assert "targets" not in cfg
 
     def test_preserves_existing_custom_servers(self, dotfiles: Path, home: Path) -> None:
-        mcp_file = dotfiles / "editors" / "cursor" / "mcp.json"
+        mcp_file = home / ".cursor" / "mcp.json"
         mcp_file.parent.mkdir(parents=True, exist_ok=True)
         mcp_file.write_text(json.dumps({"mcpServers": {"my-custom": {"command": "foo"}}}))
         _run(dotfiles, home)
         data = json.loads(mcp_file.read_text())
         assert "my-custom" in data["mcpServers"]
         assert "playwright" in data["mcpServers"]
+
+    def test_replaces_a_stale_home_symlink_with_a_real_file(
+        self, dotfiles: Path, home: Path
+    ) -> None:
+        # Regression: a pre-existing ~/.cursor/mcp.json symlink (the old hand-made
+        # link into the repo) must be replaced by a real managed file, so the deploy
+        # no longer depends on a manual symlink that a fresh machine wouldn't have.
+        cursor = home / ".cursor"
+        cursor.mkdir(parents=True, exist_ok=True)
+        target = dotfiles / "somewhere" / "mcp.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps({"mcpServers": {}}))
+        (cursor / "mcp.json").symlink_to(target)
+        _run(dotfiles, home)
+        assert (cursor / "mcp.json").is_file()
+        assert not (cursor / "mcp.json").is_symlink()
 
     def test_result_mentions_mcp_count(self, dotfiles: Path, home: Path) -> None:
         results = _run(dotfiles, home)
