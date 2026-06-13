@@ -29,6 +29,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from dotfiles.agent import AGENTS, VENDORS
+from dotfiles.fsutil import read_text_or
 
 CellStatus = Literal["yes", "beta", "ext", "no", "unverified"]
 
@@ -310,7 +311,7 @@ def update_fleet_doc(dotfiles_dir: Path) -> bool | None:
     not silently created here).
     """
     doc_path = dotfiles_dir.joinpath(*FLEET_DOC_REL)
-    text = _read_text(doc_path)
+    text = read_text_or(doc_path)
     begin, end = text.find(DOC_TABLE_BEGIN), text.find(DOC_TABLE_END)
     if begin < 0 or end < 0:
         return None
@@ -331,16 +332,9 @@ FLEET_STALE_DAYS = 90
 _REVIEWED_RE = re.compile(r"Last reviewed\D*(\d{4})-(\d{2})-(\d{2})")
 
 
-def _read_text(path: Path) -> str:
-    try:
-        return path.read_text()
-    except OSError:
-        return ""
-
-
 def fleet_doc_reviewed(dotfiles_dir: Path) -> date | None:
     """The 'Last reviewed' date stamped in agent-fleet.md, or None if absent."""
-    match = _REVIEWED_RE.search(_read_text(dotfiles_dir.joinpath(*FLEET_DOC_REL)))
+    match = _REVIEWED_RE.search(read_text_or(dotfiles_dir.joinpath(*FLEET_DOC_REL)))
     if match is None:
         return None
     try:

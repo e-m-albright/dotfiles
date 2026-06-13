@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict
 
 from dotfiles.agent import Vendor
 from dotfiles.cmd.agent.skill_prune import canonical_skill_names, external_skill_names
-from dotfiles.fsutil import list_dir
+from dotfiles.fsutil import subdirs
 
 
 class SkillCensus(BaseModel):
@@ -58,7 +58,7 @@ def skill_census(vendor: Vendor, *, home: Path, dotfiles_dir: Path) -> SkillCens
     canonical = canonical_skill_names(dotfiles_dir)
     external = external_skill_names(dotfiles_dir)
     root = (home if deploy.root == "home" else dotfiles_dir) / deploy.path
-    deployed: set[str] = {p.name for p in list_dir(root) if p.is_dir()} if root.is_dir() else set()
+    deployed: set[str] = {p.name for p in subdirs(root)}
     ours = len(deployed & canonical)
     tracked = len(deployed & (external - canonical))
     return SkillCensus(

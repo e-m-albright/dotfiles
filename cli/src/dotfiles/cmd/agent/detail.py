@@ -15,7 +15,7 @@ from dotfiles.agent import HOOK_INTENTS, VENDORS
 from dotfiles.cmd.agent.config import SettingsWithPermissions, load_config
 from dotfiles.cmd.agent.fleet import Fleet
 from dotfiles.cmd.agent.skills import parse_frontmatter
-from dotfiles.fsutil import list_dir
+from dotfiles.fsutil import list_dir, read_text_or
 
 # ---------------------------------------------------------------------------
 # Subagents — canonical set + per-vendor deployment, with descriptions
@@ -42,11 +42,11 @@ def subagent_details(*, dotfiles_dir: Path, home: Path) -> list[SubagentDetail]:
     for entry in sorted(list_dir(root), key=lambda p: p.name):
         if entry.is_dir() or entry.suffix != ".md":
             continue
-        fields, _body = parse_frontmatter(entry.read_text())
+        fields, _body = parse_frontmatter(read_text_or(entry))
         details.append(
             SubagentDetail(
                 name=entry.stem,
-                description=fields.get("description", ""),
+                description=fields.get("description", "") or "(unreadable)",
                 cells={
                     vendor: (dest / entry.name).exists() for vendor, dest in deploy_dirs.items()
                 },

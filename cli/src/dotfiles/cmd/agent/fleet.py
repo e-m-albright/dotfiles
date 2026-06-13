@@ -30,10 +30,7 @@ from dotfiles.agent import (
     SurfaceName,
 )
 from dotfiles.cmd.agent.capability_matrix import CAPABILITY_MATRIX, Cell
-from dotfiles.fsutil import list_dir
-from dotfiles.logging import get_logger
-
-_log = get_logger(__name__)
+from dotfiles.fsutil import list_dir, read_text_or, subdirs
 
 # The surfaces with a capability row (CAN). "settings" is plumbing — no claim.
 CAPABILITY_SURFACES: tuple[SurfaceName, ...] = (
@@ -103,26 +100,13 @@ class Fleet(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _read_text(path: Path) -> str:
-    """File text, or '' when absent/unreadable (logged, so a permissions failure
-    can't silently masquerade as 'not deployed')."""
-    try:
-        return path.read_text()
-    except FileNotFoundError:
-        return ""
-    except OSError as exc:
-        _log.warning("probe_read_failed", path=str(path), error=str(exc))
-        return ""
-
-
 def _dir_count(path: Path, match: Literal["md", "mdc", "subdir"]) -> int | None:
     """Matching entries in *path*, or None when it isn't a directory."""
     if not path.is_dir():
         return None
-    entries = list_dir(path)
     if match == "subdir":
-        return sum(1 for e in entries if e.is_dir())
-    return sum(1 for e in entries if not e.is_dir() and e.suffix == f".{match}")
+        return len(subdirs(path))
+    return sum(1 for e in list_dir(path) if not e.is_dir() and e.suffix == f".{match}")
 
 
 def _from_count(path: Path, count: int | None) -> Have:
@@ -134,7 +118,7 @@ def _from_count(path: Path, count: int | None) -> Have:
 def _probe_contains(path: Path, needle: str) -> Have:
     if not path.exists():
         return Have(state="missing", path=str(path))
-    state: HaveState = "present" if needle in _read_text(path) else "empty"
+    state: HaveState = "present" if needle in read_text_or(path) else "empty"
     return Have(state=state, path=str(path))
 
 
@@ -142,7 +126,7 @@ def _probe_hook_intents(path: Path) -> Have:
     """All shared hook scripts wired in the live config = present; some = partial."""
     if not path.exists():
         return Have(state="missing", path=str(path))
-    text = _read_text(path)
+    text = read_text_or(path)
     wired = sum(1 for _intent, script in HOOK_INTENTS if script in text)
     state: HaveState = (
         "present" if wired == len(HOOK_INTENTS) else ("partial" if wired else "empty")

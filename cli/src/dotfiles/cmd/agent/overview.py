@@ -44,10 +44,7 @@ from dotfiles.cmd.agent.models import (
 from dotfiles.cmd.agent.skill_census import SkillCensus, skill_census
 from dotfiles.cmd.agent.vendors.claude import parse_plugins_yaml
 from dotfiles.cmd.agent.verify import vendor_surfaces
-from dotfiles.fsutil import list_dir
-from dotfiles.logging import get_logger
-
-_log = get_logger(__name__)
+from dotfiles.fsutil import list_dir, read_text_or
 
 if TYPE_CHECKING:
     from dotfiles.adapters.ports import ProcessRunner
@@ -308,7 +305,7 @@ class AgentOverviewService:
         for v in VENDORS:
             deploy = v.deploy("hooks")
             if deploy is not None and deploy.proof == "hook-intents":
-                texts[v.name] = self._read_text(self._home / deploy.path)
+                texts[v.name] = read_text_or(self._home / deploy.path)
         return [
             AgentPresenceRow(
                 label=intent,
@@ -318,21 +315,6 @@ class AgentOverviewService:
             )
             for intent, script in HOOK_INTENTS
         ]
-
-    def _read_text(self, path: Path) -> str:
-        """File text, or '' when absent/unreadable.
-
-        A present-but-unreadable file (permissions, broken mount) degrades to ''
-        like an absent one, so the probe can't crash. That collapse is logged so
-        a misdiagnosis ("not deployed" when really "couldn't read") is traceable.
-        """
-        try:
-            return path.read_text()
-        except FileNotFoundError:
-            return ""
-        except OSError as exc:
-            _log.warning("probe_read_failed", path=str(path), error=str(exc))
-            return ""
 
     # ------------------------------------------------------------------
     # Section: Subagents
