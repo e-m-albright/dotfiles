@@ -65,6 +65,8 @@ jobs:
         run: just check
       - name: Validate skill/agent markdown (catches silent frontmatter-drop on deploy)
         run: just lint-agents
+      - name: Dependency vulnerability audit (pip-audit)
+        run: just audit
 
   # Clean-machine rehearsal — runs the agentic deploy + health commands against a
   # fresh $HOME with no vendor tools installed. Unit tests run on a configured dev

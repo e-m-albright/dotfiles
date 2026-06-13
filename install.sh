@@ -1,4 +1,12 @@
 #!/bin/bash
+# Fail clearly on a non-macOS host instead of cascading through chsh/defaults/
+# softwareupdate/duti errors. (This is a macOS bootstrap; the clean-machine CI
+# exercises `agent setup`/`doctor` on Linux, not install.sh.)
+if [[ "$OSTYPE" != darwin* ]]; then
+    printf 'install.sh targets macOS (OSTYPE=%s). Aborting.\n' "$OSTYPE" >&2
+    exit 1
+fi
+
 # Get dotfiles dir (so run this script from anywhere)
 export DOTFILES_DIR
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

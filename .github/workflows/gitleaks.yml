@@ -1,12 +1,16 @@
-name: Secret Scan (full history)
+name: Secret Scan
 
-# This repo is public. The CI "secrets patterns" grep only inspects the working
-# tree; a credential committed and later deleted would never be seen. This
-# scheduled run scans the ENTIRE git history with gitleaks. Detection only —
-# a finding fails the run (notification), it never rewrites anything.
+# This repo is public. Two layers, both detection-only (a finding fails the run;
+# nothing is ever rewritten): on every PR/push gitleaks scans the new commits so
+# a secret is caught before it lands, and the weekly scheduled run (fetch-depth 0)
+# re-scans the ENTIRE history in case something slipped in earlier.
 # Ledger: docs/health/cli/findings.md (shell/product-coverage gaps).
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   schedule:
     - cron: "17 9 * * 1" # weekly, Monday morning UTC
   workflow_dispatch:

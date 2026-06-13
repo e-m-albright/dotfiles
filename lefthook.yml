@@ -5,10 +5,12 @@ pre-commit:
   parallel: true
   commands:
     shellcheck:
+      # Blocking: the tree is clean at -S warning, so any new warning fails the
+      # commit here instead of sailing past locally and failing in CI.
       glob: "*.sh"
       run: |
         for f in {staged_files}; do
-          shellcheck -S warning "$f" 2>/dev/null || true
+          shellcheck -S warning "$f"
         done
     syntax-check:
       glob: "*.sh"
@@ -20,14 +22,22 @@ pre-commit:
       glob: "*.{yaml,yml}"
       run: |
         for f in {staged_files}; do
-          yq eval '.' "$f" >/dev/null 2>&1 || echo "Invalid YAML: $f"
+          yq eval '.' "$f" >/dev/null || { echo "Invalid YAML: $f"; exit 1; }
         done
     json-lint:
       glob: "*.json"
       run: |
         for f in {staged_files}; do
-          jq '.' "$f" >/dev/null 2>&1 || echo "Invalid JSON: $f"
+          jq '.' "$f" >/dev/null || { echo "Invalid JSON: $f"; exit 1; }
         done
+    gitleaks:
+      # Public repo: scan staged changes for secrets BEFORE they land, not just
+      # weekly over history. Skips cleanly if gitleaks isn't installed (the
+      # scheduled history scan is the backstop), blocks the commit on a finding.
+      run: |
+        if command -v gitleaks >/dev/null 2>&1; then
+          gitleaks protect --staged --no-banner
+        fi
     cli-check:
       glob: "cli/**/*.py"
       run: just check --fast
@@ -49,3 +59,7 @@ pre-push:
     cli-full-check:
       glob: "cli/**/*.py"
       run: just check
+    shell-check:
+      # A pure-shell change otherwise reaches main having passed no local gate.
+      glob: "*.sh"
+      run: just lint-shell

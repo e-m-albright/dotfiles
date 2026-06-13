@@ -40,6 +40,14 @@ deadcode:
 complexity:
     uv run complexipy src -mx 9
 
+# ShellCheck every shell script (blocking). The shell layer's gate — same -S
+# warning bar the pre-commit hook uses, run over the whole tree for pre-push/CI.
+[group('quality')]
+lint-shell:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    find "{{repo}}" -name '*.sh' -not -path '*/.git/*' -print0 | xargs -0 shellcheck -S warning
+
 # Code-health ratchet for the cli scope. `just ratchet --update` lowers ceilings to actuals.
 # Runs from cli/ (the baseline's run_from); the monotonic guard lives in the script.
 [group('quality')]
