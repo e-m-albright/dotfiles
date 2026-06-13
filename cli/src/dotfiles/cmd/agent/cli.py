@@ -197,7 +197,15 @@ def capabilities(
             f"[dim]{kind}:[/] {escape(proof)}"
         )
     if verify:
-        verify_capability_probes(app_ctx.runner)
+        drift = verify_capability_probes(app_ctx.runner)
+        if drift:
+            # Teeth: a probe is only a tether if disagreement fails. This lets a
+            # scheduled audit or CI step gate on `capabilities --verify` exit code.
+            console.print(
+                f"\n  [red]✗ {drift} capability cell(s) drifted from reality[/] "
+                "[dim]— reconcile the matrix or the probe[/]"
+            )
+            raise typer.Exit(1)
 
 
 @agent_app.command()

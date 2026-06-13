@@ -178,6 +178,35 @@ def test_capability_rows_render_shape() -> None:
     assert all(set(r.cells) == set(AGENTS) for r in rows)
 
 
-# The HAVE ⟹ CAN drift gate now lives in test_fleet.py
+# ---------------------------------------------------------------------------
+# verify-probe teeth: a tether is only a tether if disagreement can FAIL
+# ---------------------------------------------------------------------------
+
+
+def test_verify_returns_drift_count_so_callers_can_fail() -> None:
+    """With every probe exiting 0, the proven-`no` cells (which expect absent)
+    disagree → the function must report that drift, not swallow it."""
+    from dotfiles.cmd.agent.render.health import verify_capability_probes
+    from dotfiles.testing.fakes import FakeProcessRunner
+
+    drift = verify_capability_probes(FakeProcessRunner())  # all probes "present"
+    no_cells_with_tests = sum(1 for _c, _a, cell in receipts() if cell.status == "no" and cell.test)
+    assert drift == no_cells_with_tests
+    assert drift > 0  # there is at least one proven-absent cell with a probe
+
+
+def test_verify_returns_zero_when_every_probe_agrees() -> None:
+    """Script the proven-`no` probes to fail (absent) and all supported probes to
+    pass (present): full agreement → drift 0, so the command exits clean."""
+    from dotfiles.cmd.agent.render.health import verify_capability_probes
+    from dotfiles.testing.fakes import FakeProcessRunner
+
+    runner = FakeProcessRunner()
+    for _cap, _agent, cell in receipts():
+        if cell.status == "no" and cell.test:
+            runner.script(("bash", "-lc", cell.test), exit_code=1)
+    assert verify_capability_probes(runner) == 0
+
+
 # (test_have_implies_can_for_the_whole_registry) and is additionally enforced at
 # runtime by fleet.build_fleet, which raises FleetInvariantError on violation.

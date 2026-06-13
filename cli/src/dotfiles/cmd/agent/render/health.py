@@ -60,12 +60,16 @@ def render_vendor(v: AgentVerify) -> None:
         console.print(f"    {mark} mcp:{probe.server} [dim]{probe.detail}[/]")
 
 
-def verify_capability_probes(runner: ProcessRunner) -> None:
+def verify_capability_probes(runner: ProcessRunner) -> int:
     """Run each cell's probe and check it AGREES with the claimed status — the tether.
 
     A supported claim (yes/beta/ext) expects the probe to exit 0; a proven-absent
     claim (no) expects it to exit non-zero (the capability really isn't there). A
     mismatch means the matrix has drifted from reality.
+
+    Returns the drift count so the caller can FAIL (non-zero exit) on any drift —
+    without that, a scheduled audit or CI step could run this, print red ✗ DRIFT
+    lines, and still pass. The probe is only a tether if disagreement has teeth.
     """
     from dotfiles.cmd.agent.capability_matrix import receipts
 
@@ -87,6 +91,7 @@ def verify_capability_probes(runner: ProcessRunner) -> None:
             f"claim={cell.status} probe={verdict}  [dim]{escape(cell.test[:46])}[/]"
         )
     console.print(f"\n  [dim]{agree} agree · {drift} DRIFT · {skipped} no-probe (source-only)[/]")
+    return drift
 
 
 def render_health(r: HealthBootstrap) -> None:
