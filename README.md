@@ -184,12 +184,12 @@ Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs
 | **Cursor** | Cursor | active | AI-native editor with shared MCP servers, hooks, skills, agents |
 | **Codex CLI** | OpenAI | active | Terminal coding agent (open-source, o4-mini default) |
 | **Pi** | earendil-works | active | Local-first lightweight terminal agent (shares `~/.agents/skills`); repo-owned extensions and vendored `safe-git` guardrail, no external Pi package dependency. See [docs/pi-power-setup.md](docs/pi-power-setup.md) |
+| **Antigravity** (`agy`) | Google | active | The 5th fleet slot (`~/.gemini` config); rules (AGENTS.md), MCP, permissions, and skills deployed. Replaced Gemini CLI 2026-06-09 |
 | **Hermes** | NousResearch | active | Terminal/TUI coding agent ([`hermes-agent`](https://github.com/NousResearch/hermes-agent)); **skills-only** slot — we symlink `ai/skills` into `~/.hermes/skills`. Rules come from project `AGENTS.md`; no global rules/MCP/hooks deploy |
+| **GWS CLI** | Google | active | Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin) |
 | **Copilot CLI** | GitHub | disabled | Terminal coding agent (fleet mode, cloud delegation) |
 | **Codex Desktop** | OpenAI | disabled | macOS app for parallel coding agents |
-| **GWS CLI** | Google | active | Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin) |
-| **Gemini CLI** | Google | disabled | Terminal coding agent (Gemini 2.5 Pro, free tier) |
-| **Antigravity** | Google | disabled | AI-native IDE (dual Editor/Manager view) |
+| **Gemini CLI** | Google | disabled | Superseded by Antigravity CLI (`agy`) 2026-06-09 |
 
 **Cursor extensions** (managed in `editors/extensions.sh`):
 
