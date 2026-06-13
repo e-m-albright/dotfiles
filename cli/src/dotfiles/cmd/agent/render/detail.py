@@ -7,7 +7,7 @@ from pathlib import Path
 from rich.markup import escape
 
 from dotfiles.agent import HOOK_INTENTS, VENDORS
-from dotfiles.cmd.agent.detail import DenyList, HookWiring, SubagentDetail
+from dotfiles.cmd.agent.detail import DenyList, HookWiring, K1Liveness, SubagentDetail
 from dotfiles.cmd.agent.models import PermissionRow
 from dotfiles.cmd.agent.render.overview import GOLD, path_link
 from dotfiles.console import console
@@ -80,3 +80,23 @@ def render_permission_detail(rows: list[PermissionRow], denies: list[DenyList], 
         )
         for entry in deny.entries:
             console.print(f"  [red]✗[/] {escape(entry)}")
+
+
+def render_k1_liveness(k1: K1Liveness, home: Path) -> None:
+    """The verify-before-done (K1) gate's live wiring — the one safety hook the
+    uniform matrix can't see. ✗ here means an unverified-done claim could slip past."""
+    head = "[green]✓[/]" if k1.live else "[red]✗[/]"
+    console.print(
+        f"\n{head} [bold]K1 verify-before-done gate[/] "
+        "[dim](Claude Stop + SubagentStop — outside the uniform hook matrix)[/]"
+    )
+    for event, wired in k1.events.items():
+        mark = "[green]✓ wired[/]" if wired else "[red]✗ MISSING[/]"
+        console.print(f"      {mark:<18} {event}")
+    console.print(f"      [dim]{path_link(k1.settings_path, home)}[/]")
+    if not k1.live:
+        console.print(
+            "  [red]K1 is not fully wired in the DEPLOYED settings[/] "
+            "[dim]— a Claude update or partial setup may have dropped it; "
+            "run `dotfiles agent setup claude` to restore[/]"
+        )

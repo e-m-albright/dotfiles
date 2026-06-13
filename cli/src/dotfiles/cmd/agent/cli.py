@@ -13,13 +13,14 @@ from dotfiles.agent import surface_path
 from dotfiles.app.context import app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.agent.capability_matrix import capability_rows, receipts, update_fleet_doc
-from dotfiles.cmd.agent.detail import deny_list, hook_wirings, subagent_details
+from dotfiles.cmd.agent.detail import deny_list, hook_wirings, k1_liveness, subagent_details
 from dotfiles.cmd.agent.fleet import build_fleet
 from dotfiles.cmd.agent.health import HealthError, HealthService, git_root
 from dotfiles.cmd.agent.instructions import build_manifest
 from dotfiles.cmd.agent.overview import AgentOverviewService
 from dotfiles.cmd.agent.render.detail import (
     render_hook_wirings,
+    render_k1_liveness,
     render_permission_detail,
     render_subagent_details,
 )
@@ -111,7 +112,7 @@ def cmd_verify(
     ctx: typer.Context,
     offline: bool = typer.Option(False, "--offline", help="skip live MCP probes"),
 ) -> None:
-    """Verify skills/agents are deployed and MCP servers are reachable."""
+    """Verify skills/agents are deployed, MCP reachable, and the K1 gate is live."""
     app_ctx = app_context(ctx)
     verifies = SkillHealthService(
         runner=app_ctx.runner,
@@ -121,6 +122,7 @@ def cmd_verify(
     ).verify(offline=offline)
     for v in verifies:
         render_vendor(v)
+    render_k1_liveness(k1_liveness(app_ctx.home), app_ctx.home)
 
 
 @agent_app.command()
@@ -387,6 +389,7 @@ def hooks(ctx: typer.Context) -> None:
     print_title(console, "agent", "hooks")
     fleet = build_fleet(home=app_ctx.home, dotfiles_dir=app_ctx.dotfiles_dir)
     render_hook_wirings(hook_wirings(fleet, home=app_ctx.home), app_ctx.home)
+    render_k1_liveness(k1_liveness(app_ctx.home), app_ctx.home)
 
 
 @agent_app.command()

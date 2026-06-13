@@ -6,8 +6,74 @@ import json
 from pathlib import Path
 
 from dotfiles.agent import AGENTS
-from dotfiles.cmd.agent.detail import deny_list, hook_wirings, subagent_details
+from dotfiles.cmd.agent.detail import (
+    K1_EVENTS,
+    K1_SCRIPT,
+    deny_list,
+    hook_wirings,
+    k1_events_in,
+    k1_liveness,
+    subagent_details,
+)
 from dotfiles.cmd.agent.fleet import build_fleet
+
+_REPO = Path(__file__).resolve().parents[5]
+
+
+def test_repo_claude_hooks_wire_k1_in_both_events() -> None:
+    """The durable gate: the canonical ai/agents/claude/hooks.json MUST wire the K1
+    verify hook in both Stop and SubagentStop, so setup always deploys a live gate.
+    Pairs with k1_liveness (which checks the deployed copy) to close the loop —
+    if anyone ever stops wiring K1 at the source, this fails."""
+    events = k1_events_in(_REPO / "ai" / "agents" / "claude" / "hooks.json")
+    for event in K1_EVENTS:
+        assert events[event], f"ai/agents/claude/hooks.json must wire {K1_SCRIPT} in {event}"
+
+
+def _write_claude_settings(home: Path, hooks: dict[str, object]) -> None:
+    settings = home / ".claude" / "settings.json"
+    settings.parent.mkdir(parents=True, exist_ok=True)
+    settings.write_text(json.dumps({"hooks": hooks}))
+
+
+def _k1_entry() -> dict[str, object]:
+    return {"matcher": "", "hooks": [{"type": "command", "command": f"bash path/{K1_SCRIPT}"}]}
+
+
+def test_k1_live_when_wired_in_both_events(tmp_path: Path) -> None:
+    _write_claude_settings(tmp_path, {"Stop": [_k1_entry()], "SubagentStop": [_k1_entry()]})
+    k1 = k1_liveness(tmp_path)
+    assert k1.live
+    assert k1.events == {"Stop": True, "SubagentStop": True}
+
+
+def test_k1_not_live_when_subagentstop_drops_it(tmp_path: Path) -> None:
+    # The exact drift the probe exists to catch: Stop kept, SubagentStop rewritten.
+    _write_claude_settings(tmp_path, {"Stop": [_k1_entry()], "SubagentStop": []})
+    k1 = k1_liveness(tmp_path)
+    assert not k1.live
+    assert k1.events["Stop"] is True
+    assert k1.events["SubagentStop"] is False
+
+
+def test_k1_not_live_when_settings_absent(tmp_path: Path) -> None:
+    k1 = k1_liveness(tmp_path)  # no settings.json at all
+    assert not k1.live
+
+
+def test_k1_structural_not_substring(tmp_path: Path) -> None:
+    # The script name appears in the file (e.g. a stray top-level field) but NOT as
+    # a command value inside a Stop/SubagentStop entry — a grep would false-positive;
+    # the structural probe must not.
+    settings = tmp_path / ".claude" / "settings.json"
+    settings.parent.mkdir(parents=True, exist_ok=True)
+    settings.write_text(
+        json.dumps(
+            {"_note": f"we used to wire {K1_SCRIPT}", "hooks": {"Stop": [], "SubagentStop": []}}
+        )
+    )
+    assert not k1_liveness(tmp_path).live
+
 
 # ---------------------------------------------------------------------------
 # Subagents

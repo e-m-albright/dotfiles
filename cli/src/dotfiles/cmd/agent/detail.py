@@ -132,3 +132,69 @@ def deny_list(label: str, path: Path) -> DenyList | None:
         return None
     entries = tuple(str(e) for e in cfg.permissions.deny)
     return DenyList(label=label, path=str(path), entries=entries)
+
+
+# ---------------------------------------------------------------------------
+# K1 liveness — the verify-before-done gate the uniform hook matrix can't see
+# ---------------------------------------------------------------------------
+
+K1_SCRIPT = "verify-before-done.sh"
+K1_EVENTS: tuple[str, ...] = ("Stop", "SubagentStop")
+
+
+class _HookCommand(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    command: str = ""
+
+
+class _HookEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    hooks: list[_HookCommand] = []
+
+
+class _SettingsHooks(BaseModel):
+    """Just the hooks map of a Claude settings.json (event name → entries)."""
+
+    model_config = ConfigDict(extra="ignore")
+    hooks: dict[str, list[_HookEntry]] = {}
+
+
+class K1Liveness(BaseModel):
+    """Whether the verify-before-done (K1) gate is wired in the DEPLOYED Claude
+    settings, per event.
+
+    K1 sits outside the uniform HOOK_INTENTS the cockpit matrix checks, so without
+    this probe a silently dropped gate — a Claude update rewriting settings.json, a
+    partial setup — would read as all-green while the most safety-critical hook is
+    dead. The check is structural (the script must be a real ``command`` value in
+    the event's entries, not just a substring somewhere in the file)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    settings_path: str
+    events: dict[str, bool]  # event name → the K1 script wired there
+
+    @property
+    def live(self) -> bool:
+        return bool(self.events) and all(self.events.values())
+
+
+def k1_events_in(settings_path: Path) -> dict[str, bool]:
+    """Per-event: is the K1 script a real ``command`` value in that event's entries?
+
+    Structural (parsed, not grepped) and path-agnostic, so the runtime probe (the
+    deployed ~/.claude/settings.json) and the source-of-truth gate (the repo's
+    ai/agents/claude/hooks.json) verify the K1 wiring the exact same way."""
+    cfg = load_config(settings_path, _SettingsHooks)
+    hooks = cfg.hooks if cfg is not None else {}
+    return {
+        event: any(K1_SCRIPT in h.command for entry in hooks.get(event, []) for h in entry.hooks)
+        for event in K1_EVENTS
+    }
+
+
+def k1_liveness(home: Path) -> K1Liveness:
+    """Structurally probe ~/.claude/settings.json for the K1 verify hook in each of
+    Stop and SubagentStop — parsed, not grepped."""
+    settings = home / ".claude" / "settings.json"
+    return K1Liveness(settings_path=str(settings), events=k1_events_in(settings))
