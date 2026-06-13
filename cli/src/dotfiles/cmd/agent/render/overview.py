@@ -132,6 +132,7 @@ def render_capability_matrix(rows: Iterable[CapabilityRow]) -> None:
 
 _COVERAGE_GLYPH: dict[str, tuple[str, str]] = {
     "active": ("✓", "green"),  # supported AND deployed (or native to the vendor)
+    "partial": ("◑", "yellow"),  # deployed but incomplete (e.g. some hook intents)
     "gap": ("✗", "red"),  # supported, not deployed, CLOSABLE by a global deploy
     "local": ("○", "yellow"),  # supported but only workspace-local/extension/beta
     "na": ("·", "dim"),  # vendor doesn't support it
@@ -153,7 +154,8 @@ def _render_uniformity_matrix(rows: Iterable[UniformityRow]) -> None:
         cells = "".join(_coverage_cell(row.cells.get(a, "na")) for a in _AGENT_COLS)
         console.print(f"  {escape(row.capability):<{_LABEL_W}}{cells}")
     console.print(
-        "  [dim][green]✓[/green] deployed · [red]✗[/red] closable gap · "
+        "  [dim][green]✓[/green] deployed · [yellow]◑[/yellow] partial · "
+        "[red]✗[/red] closable gap · "
         "[yellow]○[/yellow] supported but workspace-local/ext/beta · · n/a "
         "· rows = the enforced tier[/]"
     )

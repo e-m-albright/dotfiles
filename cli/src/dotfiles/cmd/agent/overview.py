@@ -31,7 +31,7 @@ from dotfiles.cmd.agent.config import (
     load_config,
     load_mcp_servers,
 )
-from dotfiles.cmd.agent.fleet import Fleet, FleetCell, build_fleet
+from dotfiles.cmd.agent.fleet import Fleet, FleetCell, HaveState, build_fleet
 from dotfiles.cmd.agent.models import (
     AgentOverview,
     AgentPresenceRow,
@@ -66,10 +66,21 @@ _ENFORCED_TIER: tuple[str, ...] = (
 _SUPPORTED = ("yes", "beta", "ext")
 
 
+# A deployed surface's live state → its uniformity classification. ``partial``
+# (e.g. some but not all hook intents wired) reads as ◑ here AND as ○ on the
+# per-vendor page — not ✗ in one view and ○ in the other.
+_DEPLOY_COVERAGE: dict[HaveState, CoverageState] = {
+    "present": "active",
+    "partial": "partial",
+    "empty": "gap",
+    "missing": "gap",
+}
+
+
 def _coverage(cell: FleetCell) -> CoverageState:
-    """Classify one fleet cell for the uniformity matrix: active / gap / local / na."""
+    """Classify one fleet cell for the uniformity matrix: active/partial/gap/local/na."""
     if cell.stance == "deploy":
-        return "active" if cell.have is not None and cell.have.state == "present" else "gap"
+        return _DEPLOY_COVERAGE[cell.have.state] if cell.have else "gap"
     if cell.stance == "native":
         return "active"
     if cell.stance == "local":

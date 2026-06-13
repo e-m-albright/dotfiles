@@ -93,7 +93,7 @@ class GeminiChunk(BaseModel):
     content: str
 
 
-CoverageState = Literal["active", "gap", "local", "na"]
+CoverageState = Literal["active", "partial", "gap", "local", "na"]
 
 
 class UniformityRow(BaseModel):

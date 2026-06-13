@@ -243,11 +243,13 @@ class TestSectionUniformity:
         rows = {r.capability: r for r in _uniformity(tmp_path / "d", home)}
         assert rows["hooks"].cells["claude"] == "active"
 
-    def test_partially_wired_hooks_are_a_gap_not_active(self, tmp_path: Path) -> None:
+    def test_partially_wired_hooks_read_partial_not_gap(self, tmp_path: Path) -> None:
+        # Some-but-not-all intents wired → "partial" in the HAVE matrix, matching the
+        # ○ the per-vendor page shows for the same state (not ✗ in one, ○ in the other).
         home = tmp_path / "home"
         _seed_live_intents(home, _CLAUDE_HOOKS, ["guard-file"])
         rows = {r.capability: r for r in _uniformity(tmp_path / "d", home)}
-        assert rows["hooks"].cells["claude"] == "gap"
+        assert rows["hooks"].cells["claude"] == "partial"
 
     def test_workspace_local_capabilities_are_not_closable_gaps(self, tmp_path: Path) -> None:
         # agy subagents/hooks (workspace-local) and cursor statusline (beta) are
