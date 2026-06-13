@@ -53,6 +53,18 @@ def test_canonical_string_present_in_vendor_file(surface: str, entry_id: str, st
     )
 
 
+def test_claude_allow_and_deny_are_disjoint() -> None:
+    """A command in both allow and deny is an ambiguous safety floor: deny wins at
+    runtime, but the contradicting allow is noise that could mislead a maintainer
+    or flip meaning if precedence ever changed. The two lists must not intersect.
+    """
+    import json
+
+    perms = json.loads((_REPO / "ai" / "agents" / "claude" / "permissions.json").read_text())
+    overlap = set(perms["allow"]) & set(perms["deny"])
+    assert not overlap, f"these patterns are in BOTH allow and deny: {sorted(overlap)}"
+
+
 def test_pi_policy_covers_all_pi_entries() -> None:
     """Pi is the locked-down floor — every pi-surface string must be in its policy."""
     pi_strings = set(strings_for_surface(_REPO, "pi"))

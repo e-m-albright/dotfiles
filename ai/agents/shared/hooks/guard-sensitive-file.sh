@@ -23,6 +23,8 @@ case "$base" in
     .env | .env.* | *.env | *credentials* | *secrets.json | *secrets.yaml | *secrets.yml) deny=1 ;;
     id_rsa | id_dsa | id_ecdsa | id_ed25519 | id_rsa.* | id_dsa.* | id_ecdsa.* | id_ed25519.*) deny=1 ;;
     *.pem | *.p12 | *.pfx | *.key | *.keystore | *.jks | .netrc | .pgpass | .npmrc | .pypirc) deny=1 ;;
+    # Cloud / OAuth credential files common in 2026 agent workflows.
+    *service-account*.json | *service_account*.json | token.json | *oauth*token* | gha-creds-*.json) deny=1 ;;
 esac
 
 if [[ -n "$deny" ]]; then

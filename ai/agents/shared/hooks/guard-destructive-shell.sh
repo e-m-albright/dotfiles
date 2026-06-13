@@ -48,7 +48,7 @@ esac
 
 # --- Destructive git ---------------------------------------------------------
 # Force push (any --force form)
-if printf '%s' "$CMD" | grep -qE '(^|[[:space:]])git[[:space:]]+push[[:space:]]+([^&;|]*[[:space:]])?(--force([^-]|$)|-f[[:space:]])'; then
+if printf '%s' "$CMD" | grep -qE '(^|[[:space:]])git[[:space:]]+push[[:space:]]+([^&;|]*[[:space:]])?(--force([^-]|$)|-f([[:space:]]|$))'; then
     block 'force push detected. Use --force-with-lease only with explicit user authorization.'
 fi
 # Hard reset

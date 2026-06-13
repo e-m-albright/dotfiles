@@ -60,6 +60,7 @@ BLOCK = [
     "sudo dd if=/dev/zero of=/dev/disk0",
     "git push --force origin main",
     "git push -f origin main",
+    "git push -f",  # bypass: bare -f, no trailing arg (regex required trailing space)
     "git reset --hard HEAD~1",
     "git clean -fd",
     "git branch -D feature",
@@ -121,6 +122,11 @@ BLOCK_FILE = [
     "k8s/secrets.yaml",
     ".npmrc",
     ".netrc",
+    "service-account.json",  # GCP service-account key
+    "gcp-service_account.json",
+    "token.json",  # OAuth token store
+    "creds/oauth_token.json",
+    "gha-creds-abc123.json",  # google-github-actions credential file
 ]
 
 # Files the guard MUST allow (templates, public keys, ordinary source).
