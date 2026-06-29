@@ -9,7 +9,7 @@ Project-specific rules live in the project's hand-written `AGENTS.md` (with `CLA
 - **Verify before claiming done.** Run tests/builds and show output before saying something works. Evidence before assertions.
 - **Brainstorm before building.** For non-trivial features, confirm requirements and approach before writing code. Ask clarifying questions.
 - **Plan multi-step work.** For 3+ step tasks, write a brief plan and get alignment before executing.
-- **Minimize surface area.** Make the smallest change that solves the request.
+- **Minimize surface area.** Make the smallest change that solves the request. Once you understand the problem, climb the ladder and stop at the first rung that holds: (1) does this need to exist at all? (YAGNI) (2) does the codebase already do it — reuse the helper/pattern, don't rewrite it (3) does the stdlib or a native platform feature cover it (4) does an already-installed dependency (5) can it be one line — only then write the minimum custom code. The smallest change in the *wrong* place is a second bug, not laziness.
 - **Detect stack and tooling** from existing project files; **prefer existing scripts/task runners** over introducing new ones.
 - **If assumptions are required,** state them briefly and proceed with the safest default.
 
@@ -25,6 +25,7 @@ Project-specific rules live in the project's hand-written `AGENTS.md` (with `CLA
 - **Build on bedrock, not quicksand.** Fix root causes; don't paper over with suppressions (`# noqa`, `type: ignore`, `@ts-expect-error`) as a first move.
 - **No competing versions.** When a new implementation replaces an old one, delete the old one — no `*_v2` / `*_legacy` lingering in active code.
 - **Don't game metrics.** Make the check pass by satisfying its intent, not by weakening it.
+- **Mark intentional shortcuts.** When you deliberately take the simpler path with a known ceiling (global lock, O(n²) scan, naive heuristic), leave one comment that names the ceiling *and* the upgrade path. Simpler ≠ flimsier: between two equal-size options, pick the edge-case-correct one.
 
 ## Context & testing
 
