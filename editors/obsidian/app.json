@@ -10,6 +10,6 @@
   "strictLineBreaks": false,
   "alwaysUpdateLinks": true,
   "showUnsupportedFiles": true,
-  "livePreview": false,
+  "livePreview": true,
   "showLineNumber": true
 }
