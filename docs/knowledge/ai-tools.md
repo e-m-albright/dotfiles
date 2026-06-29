@@ -640,12 +640,14 @@ To start using Cursor Automations:
 | Tool | What It Does | Why Watch |
 |------|--------------|-----------|
 | **Caveman** | Claude Code skill forcing compressed "caveman-speak" output | 45k+ stars; 65% avg output token reduction (22-87% range); three intensity levels; `/caveman-commit`, `/caveman-compress` commands |
+| **ponytail** | Multi-agent ruleset forcing minimal *generated code* ("lazy senior dev"; 7-rung YAGNI ladder) | 63k+ stars; MIT; ships one ruleset to 16 agents via per-vendor plugin/hook scaffolding; claims ~54% less code. **Inspected 2026-06-28: rejected the plugin** (auto-updating 3rd-party marketplace + node hooks every turn, counter to our repo-owned kernel; redundant with form-prune/converge) — **insourced its decision-ladder + ceiling-comment ideas into `rules.md`** instead. Hooks were clean (no network/telemetry/exec). |
 | **caveman-compression** | Semantic compression library for LLM input context | 800+ stars; strips predictable grammar from context; 40-58% token reduction; 100% factual preservation; LLM/MLM/NLP methods |
 | **oogaboogalm** | Fine-tunes caveman-speak directly into model weights | Bakes terseness into the model instead of system prompt overhead |
 | **laconic** | Variant using short common words and contextual brevity | Lighter-touch approach to output compression |
 
 **Links**:
 - Caveman: https://github.com/JuliusBrussee/caveman
+- ponytail: https://github.com/DietrichGebert/ponytail | https://ponytail.dev/
 - caveman-compression: https://github.com/wilpel/caveman-compression
 - oogaboogalm: https://github.com/Mintzs/oogaboogalm
 - laconic: https://github.com/GabrielBarberini/laconic
