@@ -174,7 +174,7 @@ ns_shell() {
 # INVARIANT: every name here must also appear in sub_help and the zsh completion
 # file (shell/completions/_dotfiles) — enforced by app/test_command_tree.py so
 # the lists can't silently drift.
-PY_CLI_COMMANDS=" remote session doctor benchmark brew snapshot tui "
+PY_CLI_COMMANDS=" remote session doctor benchmark brew snapshot tui repo email "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi

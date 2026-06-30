@@ -26,6 +26,12 @@ _COMPLETIONS = _REPO / "shell" / "completions" / "_dotfiles"
 
 _PANELS = {PANEL_MACHINE, PANEL_CONTROL, PANEL_AI}
 
+# Top-level commands the shim handles natively in Bash (the `case` arms + the
+# `agent` special-case), so they are registered in the Typer app for help/rendering
+# but intentionally absent from PY_CLI_COMMANDS. Every other registered command MUST
+# be routed to the Python CLI — see test_every_registered_command_is_reachable.
+_BASH_NATIVE = {"install", "update", "clean", "dock", "profile-shell", "agent"}
+
 
 def _routed_commands() -> set[str]:
     """Extract the command names from the PY_CLI_COMMANDS=" a b c " shim line."""
@@ -59,6 +65,25 @@ def test_every_routed_command_is_registered_and_completable() -> None:
     assert not missing_from_completions, (
         f"PY_CLI_COMMANDS missing from shell/completions/_dotfiles: {missing_from_completions}"
     )
+
+
+def test_every_registered_command_is_reachable() -> None:
+    """The hole this closes: a command registered in the Typer app (so it shows in help)
+    but absent from PY_CLI_COMMANDS is rejected by the shim as 'not a known command'.
+    Every registered top-level command must be routed to Python or be Bash-native."""
+    registered = _registered().keys()
+    reachable = _routed_commands() | _BASH_NATIVE
+    unreachable = registered - reachable
+    assert not unreachable, (
+        f"registered but unroutable via bin/dotfiles (add to PY_CLI_COMMANDS or _BASH_NATIVE): "
+        f"{unreachable}"
+    )
+
+
+def test_bash_native_commands_are_registered() -> None:
+    """Guard the other direction: a stale _BASH_NATIVE entry no longer in the app."""
+    stale = _BASH_NATIVE - _registered().keys()
+    assert not stale, f"_BASH_NATIVE names no longer registered in the Typer app: {stale}"
 
 
 def test_every_top_level_command_is_grouped_into_a_known_panel() -> None:

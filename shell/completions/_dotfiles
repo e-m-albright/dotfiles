@@ -17,6 +17,8 @@ commands=(
     'session:zellij sessions (ls, attach, new, kill, picker)'
     'tui:Launch the Mission Control TUI'
     'snapshot:Machine-state snapshots (ls, diff)'
+    'repo:Assert repos follow the Canon (audit)'
+    'email:iCloud Hide My Email aliases (mask, list, deactivate, delete)'
     'agent:Agent namespace (global, local, web)'
     'brew:Brew namespace (install, upgrade, stale)'
     'profile-shell:Profile shell startup time'
