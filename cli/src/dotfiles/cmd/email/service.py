@@ -10,7 +10,7 @@ inject a fake. Keeping `create_mask` provider-agnostic means the generate→rese
 from __future__ import annotations
 
 import shutil
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict
@@ -32,18 +32,36 @@ class ReservedMask(BaseModel):
     anonymous_id: str | None = None
 
 
+class Mask(BaseModel):
+    """An existing alias as iCloud lists it. `anonymous_id` is the handle for mutations."""
+
+    model_config = ConfigDict(frozen=True)
+
+    address: str
+    label: str
+    anonymous_id: str
+    active: bool
+
+
 @runtime_checkable
 class MaskProvider(Protocol):
     """Source of Hide My Email aliases — iCloud in prod, a fake in tests.
 
-    Mirrors the two iCloud calls a generation needs. `reserve` returns the raw
-    iCloud result map (``hme``, ``anonymousId``, …); `create_mask` parses it so the
-    adapter stays a thin pass-through.
+    Mirrors the iCloud calls each operation needs. The methods return iCloud's raw
+    result maps (``hme``, ``anonymousId``, ``isActive``, …); the core functions below
+    parse them, so the adapter stays a thin pass-through. iCloud's own
+    `HideMyEmailService` satisfies this Protocol structurally.
     """
 
     def generate(self) -> str | None: ...
 
     def reserve(self, email: str, label: str) -> Mapping[str, object]: ...
+
+    def __iter__(self) -> Iterator[Mapping[str, object]]: ...
+
+    def delete(self, anonymous_id: str) -> Mapping[str, object]: ...
+
+    def deactivate(self, anonymous_id: str) -> Mapping[str, object]: ...
 
 
 def create_mask(provider: MaskProvider, label: str) -> ReservedMask:
@@ -59,6 +77,31 @@ def create_mask(provider: MaskProvider, label: str) -> ReservedMask:
         label=label,
         anonymous_id=str(anon) if anon else None,
     )
+
+
+def list_masks(provider: MaskProvider) -> list[Mask]:
+    """Return all existing aliases, newest iCloud order preserved."""
+    return [_parse_mask(raw) for raw in provider]
+
+
+def _parse_mask(raw: Mapping[str, object]) -> Mask:
+    """Project one iCloud ``hmeEmails`` record onto a Mask (tolerant of missing keys)."""
+    return Mask(
+        address=str(raw.get("hme", "")),
+        label=str(raw.get("label", "")),
+        anonymous_id=str(raw.get("anonymousId", "")),
+        active=bool(raw.get("isActive", True)),
+    )
+
+
+def find_mask(masks: list[Mask], selector: str) -> Mask:
+    """Resolve *selector* (an address or an anonymous id) to exactly one alias."""
+    matches = [m for m in masks if selector in (m.address, m.anonymous_id)]
+    if not matches:
+        raise MaskError(f"No Hide My Email alias matching {selector!r}.")
+    if len(matches) > 1:
+        raise MaskError(f"{selector!r} matches several aliases — use the anonymous id.")
+    return matches[0]
 
 
 def copy_to_clipboard(

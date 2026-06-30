@@ -2,7 +2,7 @@
 
 import subprocess
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -109,11 +109,15 @@ class FakeMaskProvider:
         *,
         address: str | None = "abc123xyz@icloud.com",
         anonymous_id: str | None = "anon-1",
+        existing: Sequence[Mapping[str, object]] | None = None,
     ) -> None:
         self.address = address
         self.anonymous_id = anonymous_id
+        self.existing = list(existing or [])
         self.generated = 0
         self.reserved: list[tuple[str, str]] = []
+        self.deleted: list[str] = []
+        self.deactivated: list[str] = []
 
     def generate(self) -> str | None:
         self.generated += 1
@@ -125,6 +129,17 @@ class FakeMaskProvider:
         if self.anonymous_id is not None:
             result["anonymousId"] = self.anonymous_id
         return result
+
+    def __iter__(self) -> Iterator[Mapping[str, object]]:
+        return iter(self.existing)
+
+    def delete(self, anonymous_id: str) -> Mapping[str, object]:
+        self.deleted.append(anonymous_id)
+        return {}
+
+    def deactivate(self, anonymous_id: str) -> Mapping[str, object]:
+        self.deactivated.append(anonymous_id)
+        return {}
 
 
 class FakeSessionLauncher:

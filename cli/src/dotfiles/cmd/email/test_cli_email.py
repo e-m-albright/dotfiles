@@ -10,11 +10,22 @@ from dotfiles.testing.fakes import FakeMaskProvider, FakeProcessRunner, make_fak
 
 runner = CliRunner()
 
+_ME = "me@icloud.com"
+_RECORDS = [
+    {"hme": "a@icloud.com", "label": "Shopping", "anonymousId": "id-a", "isActive": True},
+    {"hme": "b@icloud.com", "label": "Spam", "anonymousId": "id-b", "isActive": False},
+]
 
-def test_email_help_lists_mask() -> None:
+
+def _ctx_with(provider: FakeMaskProvider, *, account: str = _ME) -> object:
+    return make_fake_context(mask_provider=provider, settings=Settings(apple_id=account))
+
+
+def test_email_help_lists_all_commands() -> None:
     result = runner.invoke(app, ["email", "--help"])
     assert result.exit_code == 0
-    assert "mask" in result.output
+    for cmd in ("mask", "list", "delete", "deactivate"):
+        assert cmd in result.output
 
 
 def test_mask_generates_reserves_and_copies() -> None:
@@ -69,3 +80,54 @@ def test_mask_reports_generation_failure() -> None:
     result = runner.invoke(app, ["email", "mask"], obj=ctx)
     assert result.exit_code == 1
     assert "declined to generate" in result.output
+
+
+# ---------------------------------------------------------------------------
+# list / deactivate / delete
+# ---------------------------------------------------------------------------
+
+
+def test_list_renders_addresses_and_inactive_marker() -> None:
+    ctx = _ctx_with(FakeMaskProvider(existing=_RECORDS))
+    result = runner.invoke(app, ["email", "list"], obj=ctx)
+    assert result.exit_code == 0
+    assert "a@icloud.com" in result.output
+    assert "b@icloud.com" in result.output
+    assert "inactive" in result.output  # the deactivated alias is flagged
+
+
+def test_list_empty_is_friendly() -> None:
+    ctx = _ctx_with(FakeMaskProvider(existing=[]))
+    result = runner.invoke(app, ["email", "list"], obj=ctx)
+    assert result.exit_code == 0
+    assert "No aliases yet" in result.output
+
+
+def test_deactivate_calls_provider_with_resolved_id() -> None:
+    provider = FakeMaskProvider(existing=_RECORDS)
+    result = runner.invoke(app, ["email", "deactivate", "a@icloud.com"], obj=_ctx_with(provider))
+    assert result.exit_code == 0
+    assert provider.deactivated == ["id-a"]
+
+
+def test_delete_is_dry_run_by_default() -> None:
+    provider = FakeMaskProvider(existing=_RECORDS)
+    result = runner.invoke(app, ["email", "delete", "a@icloud.com"], obj=_ctx_with(provider))
+    assert result.exit_code == 0
+    assert "Would delete" in result.output
+    assert provider.deleted == []  # nothing removed without --yes
+
+
+def test_delete_with_yes_commits() -> None:
+    provider = FakeMaskProvider(existing=_RECORDS)
+    result = runner.invoke(app, ["email", "delete", "id-b", "--yes"], obj=_ctx_with(provider))
+    assert result.exit_code == 0
+    assert provider.deleted == ["id-b"]
+
+
+def test_delete_unknown_selector_errors() -> None:
+    provider = FakeMaskProvider(existing=_RECORDS)
+    result = runner.invoke(app, ["email", "delete", "ghost@icloud.com"], obj=_ctx_with(provider))
+    assert result.exit_code == 1
+    assert "No Hide My Email alias" in result.output
+    assert provider.deleted == []
