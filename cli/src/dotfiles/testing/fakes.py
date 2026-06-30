@@ -101,6 +101,32 @@ class FakeMultiPostHttpClient(FakeHttpClient):
         return {}
 
 
+class FakeMaskProvider:
+    """In-memory MaskProvider: records calls, returns a scripted address + reserve result."""
+
+    def __init__(
+        self,
+        *,
+        address: str | None = "abc123xyz@icloud.com",
+        anonymous_id: str | None = "anon-1",
+    ) -> None:
+        self.address = address
+        self.anonymous_id = anonymous_id
+        self.generated = 0
+        self.reserved: list[tuple[str, str]] = []
+
+    def generate(self) -> str | None:
+        self.generated += 1
+        return self.address
+
+    def reserve(self, email: str, label: str) -> Mapping[str, object]:
+        self.reserved.append((email, label))
+        result: dict[str, object] = {"hme": email}
+        if self.anonymous_id is not None:
+            result["anonymousId"] = self.anonymous_id
+        return result
+
+
 class FakeSessionLauncher:
     """Records pick/attach calls; returns a scripted selection."""
 
@@ -140,15 +166,19 @@ def make_fake_context(
     http: FakeHttpClient | None = None,
     llm_settings: LlmSettings | None = None,
     state_dir: Path | None = None,
+    mask_provider: FakeMaskProvider | None = None,
+    settings: Settings | None = None,
 ) -> AppContext:
     """Build an AppContext backed by fakes for CLI tests."""
     home_path = home or Path("/home/evan")
+    provider = mask_provider or FakeMaskProvider()
     return AppContext(
         runner=runner or FakeProcessRunner(),
-        settings=Settings(),
+        settings=settings or Settings(),
         interactive=interactive,
         home=home_path,
         launcher=launcher or FakeSessionLauncher(),
+        mask_provider_factory=lambda _account: provider,
         http=http or FakeHttpClient(),
         llm_settings=llm_settings or LlmSettings(),
         dotfiles_dir=dotfiles_dir or Path("/home/evan/dotfiles"),

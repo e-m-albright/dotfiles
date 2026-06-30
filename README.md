@@ -374,6 +374,8 @@ dotfiles session attach <name>
                              # attach (create if needed; resurrects an exited one)
 dotfiles session kill <name> # kill a running session
 dotfiles session prune       # delete old/excess exited sessions (--dry-run, --max-age-days, --max-count)
+dotfiles email mask "<label>"
+                             # Generate an iCloud Hide My Email alias, reserve it under <label>, copy to clipboard (needs iCloud+; set DOTFILES_APPLE_ID, first run prompts for password + 2FA)
 dotfiles remote web          # Experimental: serve sessions to a browser (status)
 dotfiles remote web --start  # Start the zellij web server (daemonized)
 dotfiles repo audit [path]   # Assert a repo follows the Canon: justfile, lefthook, CI, README/AGENTS.md, .gitignore, stack linter/lockfile, ratchet — graded report (exits non-zero on failures)

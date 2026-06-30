@@ -30,6 +30,7 @@ from dotfiles.cmd.agent.cli import agent_app
 from dotfiles.cmd.benchmark.cli import benchmark_app
 from dotfiles.cmd.brew.cli import brew_app
 from dotfiles.cmd.doctor.cli import doctor_command
+from dotfiles.cmd.email.cli import email_app
 from dotfiles.cmd.remote.cli import remote_app
 from dotfiles.cmd.repo.cli import repo_app
 from dotfiles.cmd.session.cli import session_app
@@ -138,6 +139,7 @@ def tui() -> None:
 
 app.add_typer(remote_app, name="remote", rich_help_panel=PANEL_CONTROL)
 app.add_typer(session_app, name="session", rich_help_panel=PANEL_CONTROL)
+app.add_typer(email_app, name="email", rich_help_panel=PANEL_CONTROL)
 
 # --- AI ----------------------------------------------------------------------
 app.add_typer(agent_app, name="agent", rich_help_panel=PANEL_AI)

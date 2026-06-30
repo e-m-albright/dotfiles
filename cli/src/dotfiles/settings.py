@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = "WARNING"
     default_session: str = "mobile"
+    apple_id: str = ""  # iCloud account for `dotfiles email`; set via DOTFILES_APPLE_ID
 
 
 class LlmSettings(BaseSettings):

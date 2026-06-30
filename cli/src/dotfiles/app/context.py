@@ -4,6 +4,7 @@ Tests inject a fake AppContext via `runner.invoke(app, args, obj=fake_ctx)`.
 """
 
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from dotfiles.adapters.http import UrllibHttpClient
 from dotfiles.adapters.launcher import FzfExecLauncher
 from dotfiles.adapters.ports import HttpClient, ProcessRunner
 from dotfiles.adapters.process import SubprocessRunner
+from dotfiles.cmd.email.icloud import build_icloud_provider
+from dotfiles.cmd.email.service import MaskProvider
 from dotfiles.cmd.session.service import SessionLauncher
 from dotfiles.settings import LlmSettings, Settings
 
@@ -29,6 +32,8 @@ class AppContext:
     interactive: bool
     home: Path
     launcher: SessionLauncher
+    # Builds a Hide My Email provider for an account, on demand (no login at wiring time).
+    mask_provider_factory: Callable[[str], MaskProvider] = build_icloud_provider
     http: HttpClient = field(default_factory=UrllibHttpClient)
     llm_settings: LlmSettings = field(default_factory=LlmSettings)
     dotfiles_dir: Path = _REPO_ROOT
