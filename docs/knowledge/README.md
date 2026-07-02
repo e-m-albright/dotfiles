@@ -4,6 +4,7 @@ Durable, opinionated knowledge that isn't tied to one language stack. Reference 
 
 - [ai-tools.md](ai-tools.md) — AI frameworks, evals, coding-assistant landscape
 - [ai-coding-frameworks.md](ai-coding-frameworks.md) — agent meta-framework notes
+- [research-tooling.md](research-tooling.md) — autonomous research tools by autonomy tier (AI scientists, agents, deep-research APIs, substrates) + cost tiering + Hermes nightly-research pitch
 - [token-efficiency.md](token-efficiency.md) — token efficiency, task decomposition, model routing
 - [browser-tooling.md](browser-tooling.md) — tiered browser/UI automation tools
 - [customer-discovery.md](customer-discovery.md) — customer-interview methodology (Mom Test)

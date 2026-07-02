@@ -165,6 +165,17 @@ export const selectUserSchema = createSelectSchema(users);
 - Generate Zod schemas from Drizzle tables (`drizzle-zod`) rather than maintaining both.
 - Transactions: `await db.transaction(async (tx) => { ... })`.
 
+## Exploring / watch
+
+Not adopted — evaluation notes, argue before pulling in.
+
+- **[Effect](https://effect.website) (effect.ts)** — a full functional effect-system + standard library for TypeScript (the `Effect<A, E, R>` type: typed success, **typed error channel**, and a dependency/context `R`). Ships schema, dependency injection, structured concurrency, retries/scheduling, resource safety, streams, observability. Think ZIO-for-TS. **Why it's interesting to us:** it directly targets pain points we already legislate by hand — typed errors instead of `try/catch` discipline, `Schema` overlapping **Zod**, discriminated-union state overlapping the **Effect** type, and built-in retry/concurrency/OTel overlapping our Phase-2/3 picks. **The tension:** it's a *paradigm*, not a drop-in — high learning curve, all-or-nothing gravity (code tends to become "Effect code"), and it cuts against our "simplicity over ceremony / fundamentals over frameworks" lean. **Evaluate when:** a service has genuinely complex error/concurrency/resource orchestration where the type-level guarantees earn their weight — not for thin SSR proxies or CRUD. Start with `@effect/schema` in isolation (as a Zod alternative) before adopting the runtime. Verify current API against effect.website — the ecosystem moves fast.
+- **[TanStack](https://tanstack.com)** (Tanner Linsley's family) — headless, type-safe, framework-agnostic libraries. **Svelte-supported (Svelte 5 runes):** **Query** (server-state cache/mutations), **Table** + **Virtual** (headless data grids + virtualization), **Form** (headless form state), **DB** (reactive client store: collections, live queries, optimistic mutations). ⚠️ **Router and Start (the meta-framework) are React/Solid only — not Svelte.** **Fit to us:** in the thin-SSR-proxy posture, server state is loaded server-side so **Query** earns its keep mainly in client-heavy / realtime UIs; **Table + Virtual** are the strongest pulls (data grids are painful to hand-roll). Not a suite to adopt wholesale — reach for the individual library when the need is concrete.
+- **The rest of the named ecosystem (quick classifier)** — you'll keep hearing these; the filter is *headless + framework-agnostic + solves a pain we actually have → evaluate; React-coupled → skip for our Svelte stack.*
+  - *Validation:* **Zod** is the de-facto standard (our pick). **[Valibot](https://valibot.dev)** (tiny, tree-shakeable) and **[ArkType](https://arktype.io)** (fastest) are alternatives; the 2026 **[Standard Schema](https://standardschema.dev)** spec (from the Zod/Valibot/ArkType authors) makes them interchangeable — relevant since our tooling speaks Zod.
+  - *Type-safe API:* **[tRPC](https://trpc.io)** (end-to-end types, no codegen) and **[Hono](https://hono.dev)** (edge web framework) — largely **N/A in our polyglot-backend posture**; only relevant when the backend is TypeScript.
+  - *State machines:* **[XState](https://stately.ai/docs/xstate)** (framework-agnostic) for genuinely complex UI flows; zustand/jotai/valtio are React-world.
+
 ## Ask first
 
 - Adding new dependencies.
