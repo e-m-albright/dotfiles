@@ -136,11 +136,11 @@ The shared **visual language** is the amber/sage ramp, identical tiers everywher
 | gold | `#d3b15f` | ≥ 55% |
 | sage | `#8fa879` | < 55% |
 
-Every statusline starts with the tool identity before workspace context, so mixed terminal panes are scannable: `π` for Pi, `claude` for Claude Code, Codex's built-in `app-name`, and `agy` for Antigravity.
+Every command-rendered statusline starts with the tool identity before workspace context, so mixed terminal panes are scannable: `π` for Pi, `claude` for Claude Code, and `agy` for Antigravity. Codex's declarative statusline no longer exposes a valid identity segment in the deployed config.
 
 - **Pi** (`ai/agents/pi/extensions/git-status.ts`) — the reference. `amberRamp()` defines the tiers. Shows context %, auth/cost, git detail, model, token I/O, and cache I/O. It does **not** show Codex 5h/7d/Fast telemetry today because Pi's provider event did not expose that data in practice.
 - **Claude** (`ai/agents/claude/statusline.sh`) — Pi-shaped one-line renderer: `claude <cwd> (<git>) · ctx: n% · 5h: n% left · 7d: n% left · <model>`. Same ramp, same git counters; Claude exposes 5h/7d used %, so the script renders left % to match Codex.
-- **Codex** (`ai/agents/codex/statusline.toml`) — closest declarative Pi-shaped ordering: app-name · current-dir · git · context% · 5h · 7d · fast-mode · model. Codex only exposes a theme name, not custom per-segment rendering/colors.
+- **Codex** (`ai/agents/codex/statusline.toml`) — closest declarative Pi-shaped ordering: current-dir · git · context% · 5h · 7d · fast-mode · model. Codex only exposes a theme name, not custom per-segment rendering/colors.
 - **Antigravity/agy** (`ai/agents/gemini/statusline.sh`) — Pi-shaped one-line `/statusline <command>` renderer deployed through the Antigravity config slot (`~/.gemini/antigravity-cli/statusLine`). Its payload is vendor-private, so the script parses multiple likely field names and degrades to tool + workspace/git.
 - **Cursor** — beta/vendor-controlled statusline surface. No dotfiles-owned renderer is deployed until Cursor exposes a stable command/config contract; identity remains handled by the GUI chrome.
 

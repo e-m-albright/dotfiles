@@ -208,7 +208,7 @@ Setup is automated via `dotfiles agent setup` (also runs during install):
 
 - **Global instructions**: `~/.codex/AGENTS.md` deployed from shared rules
 - **Config**: `~/.codex/config.toml` with MCP servers and `project_doc_fallback_filenames = ["CODEX.md"]`
-- **Statusline**: `[tui]` theme + status-line text segments installed from `ai/agents/codex/statusline.toml` (Codex-declarative Pi ordering: app-name/current-dir/git/context/limits/Fast/model)
+- **Statusline**: `[tui]` theme + status-line text segments installed from `ai/agents/codex/statusline.toml` (Codex-declarative Pi ordering: current-dir/git/context/limits/Fast/model)
 - **Hooks**: Format-on-save (reuses Claude's hook), sensitive file guard, terminal notifications
 - **Skills**: deployed from `ai/skills/` via `npx skills`
 - **MCP servers**: From shared source (`ai/agents/shared/mcp-servers.json`) — servers with `codex` in `targets`
