@@ -436,7 +436,7 @@ async def test_agent_matched_by_session_env_shows_on_row():
     runner.script(("pgrep", "-x", "codex"), stdout="999\n")
     runner.script(
         ("ps", "eww", "-p", "999", "-o", "command="),
-        stdout="codex PWD=/Users/evan/proj ZELLIJ_SESSION_NAME=work\n",
+        stdout="codex PWD=/Users/dev/proj ZELLIJ_SESSION_NAME=work\n",
     )
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -463,7 +463,7 @@ async def test_unmatched_agent_shows_in_elsewhere_line():
         from dotfiles.cmd.session.pane import SessionsPane
 
         pane = app.query_one(SessionsPane)
-        agent = AgentActivity(agent="claude", session=None, cwd="/Users/evan/public")
+        agent = AgentActivity(agent="claude", session=None, cwd="/Users/dev/public")
         await pane._apply_sessions([Session(name="work", running=True, current=True)], [agent])
         await pilot.pause()
         line = getattr(app.query_one("#active-agents", Static).render(), "plain", "")

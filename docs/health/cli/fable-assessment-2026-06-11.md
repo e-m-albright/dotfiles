@@ -5,7 +5,7 @@
 > gospel. Status of each is tracked in [findings.md](findings.md). Verified items
 > actioned this pass: the guard `rm -rf` bypasses (finding #1) — fixed + tested.
 
-# Adversarial Assessment — /Users/evan/dotfiles (2026-06-11)
+# Adversarial Assessment — dotfiles repo (2026-06-11)
 
 Independent skeptical read. Read-only; no changes made. Findings verified against source where cited (guard hooks, doctor, overview/render read directly; breadth via three parallel explore passes).
 
@@ -81,7 +81,7 @@ Ranked by what's uncovered, not generic:
 | Proposal | For | Against | Verdict |
 |---|---|---|---|
 | **CUT `git-worktree-manager`** | 60-line wrapper over a 1-command CLI; `disable-model-invocation` means it's a man page | Cheap to keep; user-invoked only | **Cut.** `git worktree` help is better than a stale skill. |
-| **MOVE `migration-writer`, audits `sqlx-cache.md`, `rust-contracts.md`, `migration-safety.md` to the project that uses them (Ophira)** | Goose/Drizzle/D1/sqlx are project-stack, not dotfiles; CLAUDE.md itself says stack opinions live in `docs/stacks/`, not deployed surface | They deploy globally so any repo benefits; near-zero token cost when unfired | **Move the skill; keep the audits** (audits cost nothing undeployed; the skill occupies the model's skill-selection budget on every session). |
+| **MOVE `migration-writer`, audits `sqlx-cache.md`, `rust-contracts.md`, `migration-safety.md` to the project that uses them** | Goose/Drizzle/D1/sqlx are project-stack, not dotfiles; CLAUDE.md itself says stack opinions live in `docs/stacks/`, not deployed surface | They deploy globally so any repo benefits; near-zero token cost when unfired | **Move the skill; keep the audits** (audits cost nothing undeployed; the skill occupies the model's skill-selection budget on every session). |
 | **MERGE `session-recovery` + `context-session-breakdown` + `workflow-closeout-learning`** | Three session-lifecycle skills, ~374 lines combined, overlapping triggers (handoff/crash/closeout); a model choosing between them mid-crisis is the worst time for taxonomy | They fire at genuinely different moments; merging risks a bloated router | **Merge to one `session-lifecycle` skill with three modes + references/.** Cuts ~200 lines of trigger surface. |
 | **SPLIT the 250+ line skills (`agentic-e2e-debugging`, `workspace-health-audit`) into core + references/** | `converge` already proves the pattern in-repo; these are the 2 biggest token hits | Effort; references can go stale | **Do it.** Mechanical, pattern exists. |
 | **ALTER `review` vs `code-reviewer` subagent dedupe** | Both do pre-merge correctness vs Canon; double-invocation yields duplicate findings | Deliberate inline-vs-dispatched split | **Alter, don't cut:** make `code-reviewer`'s prompt delegate its rubric to the `review` skill text so there's one rubric source (Article III.7). |

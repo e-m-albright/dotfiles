@@ -248,7 +248,7 @@ def test_sequences_detects_recurring_chains(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _codex_exec(*skills: str, ts: datetime, workdir: str = "/x/ophira") -> str:
+def _codex_exec(*skills: str, ts: datetime, workdir: str = "/x/acme") -> str:
     cmd = " ; ".join(f"sed -n '1,200p' .agents/skills/{s}/SKILL.md" for s in skills)
     return json.dumps(
         {
@@ -293,7 +293,7 @@ def test_codex_reader_counts_skill_opens(tmp_path: Path) -> None:
     assert events[0].skill == "code-quality-audit"
     assert events[0].vendor == "codex"
     assert events[0].explicit is False
-    assert events[0].project == "ophira"
+    assert events[0].project == "acme"
 
 
 def test_codex_dedupes_skill_per_session(tmp_path: Path) -> None:
