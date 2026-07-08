@@ -168,7 +168,7 @@ packages = [
   { name = "docker-desktop",   note = "Consider OrbStack instead (faster, lower resource usage on macOS)", disabled = true },
   { name = "orbstack",         note = "Docker Desktop alternative (faster, better macOS integration)" },
   { name = "axiom",            note = "Axiom observability CLI (requires axiomhq/tap)" },
-  { name = "gcloud-cli",       note = "Google Cloud SDK (cask renamed from google-cloud-sdk; disabled — install per-project if needed)", disabled = true },
+  { name = "gcloud-cli",       note = "Google Cloud SDK (cask renamed from google-cloud-sdk). Re-enabled 2026-07-06: hard dependency of `gws auth setup` (OAuth client provisioning)" },
 ]
 
 [[section]]
