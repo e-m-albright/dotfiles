@@ -202,6 +202,8 @@ Preview pane auto-uses the installed companions: `poppler` (PDFs), `resvg` (SVGs
 
 See `docs/knowledge/ai-tools.md` for the full landscape and investigation notes.
 
+**Deep research (`research`)**: autonomous multi-agent research runs on the Hermes kanban swarm. `research go "<question>"` seeds a scout → diver → skeptic → synthesist board (role contracts in `ai/skills/research-*`); artifacts land in `~/.research/runs/<slug>/` and `research report` prints the cited report. Background: `docs/knowledge/research-tooling.md`.
+
 ### Codex CLI
 
 Setup is automated via `dotfiles agent setup` (also runs during install):
