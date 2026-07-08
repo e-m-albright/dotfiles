@@ -313,7 +313,9 @@ See `ai/agents/cursor/` for all configuration files.
 
 ### Homebrew
 
-Edit `macos/packages.toml` to customize packages. Organized by category with opt-in feature flags. Essentials include Chrome and Tailscale.
+Edit `macos/packages.toml` to customize packages. Organized by category with opt-in feature flags. Essentials include Chrome, Google Drive, and Tailscale.
+
+**Google Drive** is configured for *selective* two-way sync: keep the default **streaming** mode (files stay in the cloud, appear in Finder under `~/Google Drive`, download on open), right-click folders → **Available offline** for the ones you want local, and add specific Mac folders to upload under **Settings → My MacBook**. Don't switch to "Mirror files" — that pulls the entire Drive down.
 
 ```bash
 # Sync packages from packages.toml (idempotent)

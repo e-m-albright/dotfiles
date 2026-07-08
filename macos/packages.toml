@@ -128,6 +128,7 @@ name = "Essentials"
 kind = "cask"
 packages = [
   { name = "google-chrome",   note = "Web browser" },
+  { name = "google-drive",    note = "Drive <-> Mac selective sync. Use STREAMING mode (default; nothing bulk-downloaded) + per-folder 'Available offline' for local copies; pick which Mac folders upload under Settings > My MacBook. Never enable 'Mirror files' (would pull all of Drive)" },
   { name = "tailscale-app",   note = "Mesh VPN for secure laptop access" },
   { name = "iterm2",          note = "Terminal emulator", disabled = true },
 ]
