@@ -21,20 +21,8 @@ Use **Gemma 4 E4B** for now.
 
 Reason: speed is the priority. Gemma 4 E4B should feel substantially snappier than larger MoE/dense options while still supporting image input, reasoning, and tool calling.
 
-Dotfiles config:
-
-- Pi default: `agents/pi/settings.json`
-- LM Studio provider/model registry: `agents/pi/models.json`
-- Deployed to: `~/.pi/agent/settings.json` and `~/.pi/agent/models.json`
-
-Current Pi default:
-
-```json
-{
-  "defaultProvider": "lm-studio",
-  "defaultModel": "google/gemma-4-e4b"
-}
-```
+The managed LM Studio model and context settings live in `macos/lmstudio.sh`.
+Agent-specific model routing belongs to Workbench, not this host repository.
 
 ## Models evaluated
 

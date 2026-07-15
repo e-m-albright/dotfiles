@@ -12,7 +12,6 @@ from dotfiles.cmd.brew.service import (
     PackageManifest,
     add_taps,
     install_claude_code,
-    install_hermes,
     install_npm_globals,
     install_packages,
     install_rust,
@@ -102,6 +101,13 @@ def test_add_taps_success(tmp_path: Path) -> None:
     assert all(r.level == "success" for r in results)
     assert ("brew", "tap", "ariga/tap") in runner.calls
     assert ("brew", "tap", "infisical/get-cli") in runner.calls
+
+
+def test_add_taps_dry_run_reports_without_mutating(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    results = add_taps(load(tmp_path), runner, dry_run=True)
+    assert runner.calls == []
+    assert all("DRY RUN: brew tap" in step.message for step in results)
 
 
 def test_add_taps_error(tmp_path: Path) -> None:
@@ -250,13 +256,13 @@ def test_install_packages_respects_flag_gating(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_install_rust_skips_when_present(tmp_path: Path) -> None:
+def test_install_rust_skips_when_present() -> None:
     runner = FakeProcessRunner()
     runner.script(
         ("sh", "-c", "command -v rustup || command -v cargo"),
         stdout="/usr/bin/cargo\n",
     )
-    results = install_rust(runner, home=tmp_path)
+    results = install_rust(runner)
     assert len(results) == 1
     assert results[0].level == "info"
     assert "already installed" in results[0].message
@@ -275,17 +281,17 @@ def test_install_rust_runs_installer_when_absent(tmp_path: Path) -> None:
         ),
         exit_code=0,
     )
-    # Create a tmp .zprofile so the append path can write to it
+    # A tracked .zprofile may be symlinked into HOME; installation must not mutate it.
     zprofile = tmp_path / ".zprofile"
-    zprofile.write_text("")
-    results = install_rust(runner, home=tmp_path)
+    zprofile.write_text("# tracked\n")
+    results = install_rust(runner)
     assert any("rustup.rs" in " ".join(c) for c in runner.calls)
     assert results[0].level == "success"
     # The TMP zprofile (not the real one) received the cargo line
-    assert ".cargo/env" in zprofile.read_text()
+    assert zprofile.read_text() == "# tracked\n"
 
 
-def test_install_rust_error_on_install_failure(tmp_path: Path) -> None:
+def test_install_rust_error_on_install_failure() -> None:
     runner = FakeProcessRunner()
     runner.script(("sh", "-c", "command -v rustup || command -v cargo"), stdout="")
     runner.script(
@@ -297,7 +303,7 @@ def test_install_rust_error_on_install_failure(tmp_path: Path) -> None:
         exit_code=1,
         stderr="network error",
     )
-    results = install_rust(runner, home=tmp_path)
+    results = install_rust(runner)
     assert results[0].level == "error"
 
 
@@ -336,43 +342,6 @@ def test_install_claude_code_error_on_failure() -> None:
         stderr="download failed",
     )
     results = install_claude_code(runner)
-    assert results[0].level == "error"
-
-
-# ---------------------------------------------------------------------------
-# install_hermes
-# ---------------------------------------------------------------------------
-
-_HERMES_INSTALL_CMD = (
-    "sh",
-    "-c",
-    "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --non-interactive",
-)
-
-
-def test_install_hermes_skips_when_present() -> None:
-    runner = FakeProcessRunner()
-    runner.script(("sh", "-c", "command -v hermes"), stdout="/Users/x/.local/bin/hermes\n")
-    results = install_hermes(runner)
-    assert results[0].level == "info"
-    assert "already installed" in results[0].message
-    assert not any("nousresearch" in " ".join(c) for c in runner.calls)
-
-
-def test_install_hermes_runs_installer() -> None:
-    runner = FakeProcessRunner()
-    runner.script(("sh", "-c", "command -v hermes"), stdout="")
-    runner.script(_HERMES_INSTALL_CMD, exit_code=0)
-    results = install_hermes(runner)
-    assert any("nousresearch" in " ".join(c) for c in runner.calls)
-    assert results[0].level == "success"
-
-
-def test_install_hermes_error_on_failure() -> None:
-    runner = FakeProcessRunner()
-    runner.script(("sh", "-c", "command -v hermes"), stdout="")
-    runner.script(_HERMES_INSTALL_CMD, exit_code=1, stderr="download failed")
-    results = install_hermes(runner)
     assert results[0].level == "error"
 
 
@@ -555,3 +524,18 @@ def test_upgrade_reports_error_when_upgrade_fails() -> None:
     errors = [s for s in steps if s.level == "error"]
     assert len(errors) == 1
     assert "boom" in (errors[0].details or "")
+
+
+def test_upgrade_stops_when_update_fails() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("brew", "update"), exit_code=1, stderr="offline")
+    steps = upgrade(runner)
+    assert [step.level for step in steps] == ["error"]
+    assert ("brew", "upgrade") not in runner.calls
+
+
+def test_upgrade_reports_cleanup_failure() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("brew", "cleanup", "--prune=30"), exit_code=1, stderr="busy")
+    steps = upgrade(runner)
+    assert any(step.level == "warn" and "cleanup" in step.message for step in steps)

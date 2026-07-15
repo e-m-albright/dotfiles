@@ -26,6 +26,7 @@ pre-commit:
         done
     json-lint:
       glob: "*.json"
+      exclude: "editors/**"
       run: |
         for f in {staged_files}; do
           jq '.' "$f" >/dev/null || { echo "Invalid JSON: $f"; exit 1; }
@@ -41,19 +42,6 @@ pre-commit:
     cli-check:
       glob: "cli/**/*.py"
       run: just check --fast
-    agent-lint:
-      glob: "ai/{skills,subagents,agents}/**/*.md"
-      run: just lint-agents
-    voice:
-      # *.md gets the slop-phrase block; code gets the em-dash advisory (warn).
-      glob: "*.{md,py,sh,ts,tsx,rs,go,js,mjs}"
-      run: just lint-prose {staged_files}
-
-commit-msg:
-  commands:
-    voice:
-      run: just lint-prose {1}
-
 pre-push:
   commands:
     cli-full-check:

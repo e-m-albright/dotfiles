@@ -294,11 +294,16 @@ class RemoteService:
             ]
         staging = self._home / ".dotfiles-sshd-remote.conf"
         staging.write_text(_HARDEN_CONTENT)
-        out = [self._sudo(("mkdir", "-p", _HARDEN_DIR), dry_run=False)]
-        out.append(self._sudo(("install", "-m", "644", str(staging), _HARDEN_PATH), dry_run=False))
-        out.append(
-            self._sudo(("launchctl", "kickstart", "-k", "system/com.openssh.sshd"), dry_run=False)
-        )
+        out: list[StepResult] = []
+        for command in (
+            ("mkdir", "-p", _HARDEN_DIR),
+            ("install", "-m", "644", str(staging), _HARDEN_PATH),
+            ("launchctl", "kickstart", "-k", "system/com.openssh.sshd"),
+        ):
+            step = self._sudo(command, dry_run=False)
+            out.append(step)
+            if step.level in ("error", "warn"):
+                return out
         out.append(StepResult(level="success", message="SSH hardened for key-only login"))
         return out
 

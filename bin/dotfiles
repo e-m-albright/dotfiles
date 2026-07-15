@@ -11,8 +11,13 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Get dotfiles dir (so run this script from anywhere)
+SOURCE="${BASH_SOURCE[0]}"
+if [[ -L "$SOURCE" ]]; then
+    TARGET="$(readlink "$SOURCE")"
+    [[ "$TARGET" == /* ]] && SOURCE="$TARGET" || SOURCE="$(dirname "$SOURCE")/$TARGET"
+fi
 export DOTFILES_DIR EXTRA_DIR
-DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+DOTFILES_DIR="$(cd "$(dirname "$SOURCE")/.." && pwd)"
 
 sub_help () {
     # Banner + the full command tree are rendered by the Python CLI (Typer/Rich),
@@ -57,13 +62,6 @@ sub_update () {
         fnm use --install-if-missing lts-latest
         fnm default lts-latest
         print_success "Node.js LTS: $(node --version)"
-    fi
-
-    # --- Bun ---
-    if command -v bun >/dev/null 2>&1; then
-        print_section "Bun"
-        bun upgrade
-        print_success "Bun: $(bun --version)"
     fi
 
     # --- Rust (rustup) ---
@@ -174,17 +172,18 @@ ns_shell() {
 # INVARIANT: every name here must also appear in sub_help and the zsh completion
 # file (shell/completions/_dotfiles) — enforced by app/test_command_tree.py so
 # the lists can't silently drift.
-PY_CLI_COMMANDS=" remote session doctor benchmark brew snapshot tui repo email "
+PY_CLI_COMMANDS=" remote session doctor brew tui email-mask "
+if [[ "${1:-}" == "email" ]]; then
+    shift
+    if [[ "${1:-}" == "mask" ]]; then
+        shift
+        set -- email-mask create "$@"
+    else
+        set -- email-mask "$@"
+    fi
+fi
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
-fi
-
-# agent: every subcommand is Python now — machine setup (setup/overview/lint/verify) + web (browser chats).
-# Bare `agent` defaults to the overview dashboard, matching the old dispatcher.
-if [[ "${1:-}" == "agent" ]]; then
-    shift
-    [[ $# -eq 0 ]] && exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent overview
-    exec uv run --project "$DOTFILES_DIR/cli" dotfiles agent "$@"
 fi
 
 case $COMMAND_NAME in

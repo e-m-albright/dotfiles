@@ -12,19 +12,4 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = "WARNING"
     default_session: str = "mobile"
-    apple_id: str = ""  # iCloud account for `dotfiles email`; set via DOTFILES_APPLE_ID
-
-
-class LlmSettings(BaseSettings):
-    """LM Studio bench settings — env var names match llm-bench.sh exactly (no prefix).
-
-    pydantic-settings uppercases field names to match env vars automatically when
-    env_prefix="" (e.g. field `lms_host` reads env `LMS_HOST`).
-    """
-
-    model_config = SettingsConfigDict(env_prefix="", extra="ignore")
-
-    lms_host: str = "http://localhost:1234"
-    pp_tokens: int = 128
-    tg_tokens: int = 256
-    load_ctx: int = 32768
+    apple_id: str = ""  # iCloud account for `dotfiles email-mask`; set via DOTFILES_APPLE_ID

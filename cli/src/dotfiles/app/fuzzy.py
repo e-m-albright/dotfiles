@@ -3,10 +3,9 @@
 When a subcommand isn't an exact match, resolve it to the *single* closest known
 command — a singular/plural variant, a unique prefix, or a one-character typo — and
 only when exactly one candidate qualifies. Ambiguous or distant input falls through
-to Typer's normal "no such command" error. So `dotfiles agents` runs `agent` and
-`dotfiles agent overviw` runs `overview`, but `dotfiles agent s` still errs (three
-commands start with "s"). The resolution is announced on stderr so the real name is
-learnable, and never touches stdout.
+to Typer's normal "no such command" error. So `dotfiles sessions` runs `session`
+and `dotfiles session attch` runs `attach`. The resolution is announced on stderr
+so the real name is learnable, and never touches stdout.
 """
 
 from __future__ import annotations

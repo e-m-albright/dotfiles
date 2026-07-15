@@ -55,7 +55,7 @@ plugins=(
 )
 
 # Custom completions (e.g. _dotfiles). Must precede oh-my-zsh, which runs compinit.
-fpath=("$HOME/dotfiles/shell/completions" "${fpath[@]}")
+fpath=("$HOME/code/public/dotfiles/shell/completions" "${fpath[@]}")
 
 source $ZSH/oh-my-zsh.sh
 
@@ -329,9 +329,6 @@ if command -v zoxide &>/dev/null; then
     eval "$(zoxide init zsh)"
 fi
 
-# Bun completions
-[[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
-
 # OrbStack
 # shellcheck source=/dev/null
 [[ -f ~/.orbstack/shell/init.zsh ]] && source ~/.orbstack/shell/init.zsh
@@ -344,4 +341,3 @@ fi
 
 # LM Studio CLI (lms) on PATH
 export PATH="$HOME/.lmstudio/bin:$PATH"
-

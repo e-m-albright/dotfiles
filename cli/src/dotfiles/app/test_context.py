@@ -17,7 +17,6 @@ def test_build_real_context_wires_real_adapters() -> None:
 def test_app_context_is_constructible_with_fakes() -> None:
     from dotfiles.settings import Settings
     from dotfiles.testing.fakes import (
-        FakeHttpClient,
         FakeProcessRunner,
         FakeSessionLauncher,
     )
@@ -28,7 +27,6 @@ def test_app_context_is_constructible_with_fakes() -> None:
         interactive=False,
         home=Path("/home/evan"),
         launcher=FakeSessionLauncher(),
-        http=FakeHttpClient(),
         dotfiles_dir=Path("/home/evan/dotfiles"),
     )
     assert ctx.home == Path("/home/evan")

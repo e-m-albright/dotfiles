@@ -63,10 +63,14 @@ def doctor_command(
     console.print()
 
     failures = [r for r in results if r.is_failure]
+    warnings = [r for r in results if r.status == "warn"]
     if fix:
-        console.print("  [dim]Run 'dotfiles agent setup' to redeploy agent configs.[/]")
+        console.print("  [dim]Run 'workbench sync' to reconcile agent configs.[/]")
 
     if failures:
         print_status(console, "warn", "Some tools are missing — run install.sh or install each.")
         raise typer.Exit(1)
+    if warnings:
+        print_status(console, "warn", f"Checks completed with {len(warnings)} warning(s).")
+        return
     print_status(console, "success", "All checks passed!")

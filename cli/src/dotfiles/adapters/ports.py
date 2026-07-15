@@ -6,12 +6,9 @@ inject fakes. `CommandResult` lives here because it's the `ProcessRunner` payloa
 
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict
-
-# Alias for unstructured external JSON data (LM Studio API responses).
-JsonDict = dict[str, Any]
 
 
 class CommandResult(BaseModel):
@@ -42,29 +39,3 @@ class ProcessRunner(Protocol):
         stdin: str | None = None,
         cwd: Path | None = None,
     ) -> CommandResult: ...
-
-
-class HttpError(RuntimeError):
-    """Raised by an HttpClient on a non-2xx response or a connection failure.
-
-    Part of the port contract (not the urllib adapter) so consumers can catch it
-    without coupling to a concrete implementation. ``status`` is the HTTP code
-    when the server answered, or ``None`` when the connection never completed —
-    the distinction a reachability probe needs (answered ≠ reachable-failure).
-    """
-
-    def __init__(self, message: str, *, status: int | None = None) -> None:
-        super().__init__(message)
-        self.status = status
-
-
-@runtime_checkable
-class HttpClient(Protocol):
-    """HTTP client port — mockable seam for LM Studio API calls.
-
-    Both methods raise ``HttpError`` on a non-2xx response or connection failure.
-    """
-
-    def get_json(self, url: str) -> JsonDict: ...
-
-    def post_json(self, url: str, body: JsonDict) -> JsonDict: ...

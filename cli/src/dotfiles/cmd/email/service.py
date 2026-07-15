@@ -1,4 +1,4 @@
-"""Core logic for `dotfiles email`: the Hide My Email port + the pure orchestration.
+"""Core logic for `dotfiles email-mask`: the Hide My Email port + pure orchestration.
 
 The `MaskProvider` port is the seam between this strict, fully-testable core and the
 untyped iCloud network adapter in `icloud.py`. iCloud's own `HideMyEmailService`
@@ -66,10 +66,16 @@ class MaskProvider(Protocol):
 
 def create_mask(provider: MaskProvider, label: str) -> ReservedMask:
     """Generate a new alias and reserve it under *label* (the orchestration core)."""
-    address = provider.generate()
+    try:
+        address = provider.generate()
+    except Exception as exc:
+        raise MaskError(f"iCloud address generation failed: {exc}") from exc
     if not address:
         raise MaskError("iCloud declined to generate an address (quota reached, or not iCloud+?).")
-    result = provider.reserve(address, label)
+    try:
+        result = provider.reserve(address, label)
+    except Exception as exc:
+        raise MaskError(f"iCloud address reservation failed: {exc}") from exc
     reserved = result.get("hme") or address  # reserve echoes the canonical address
     anon = result.get("anonymousId")
     return ReservedMask(
@@ -81,7 +87,33 @@ def create_mask(provider: MaskProvider, label: str) -> ReservedMask:
 
 def list_masks(provider: MaskProvider) -> list[Mask]:
     """Return all existing aliases, newest iCloud order preserved."""
-    return [_parse_mask(raw) for raw in provider]
+    try:
+        return [_parse_mask(raw) for raw in provider]
+    except Exception as exc:
+        raise MaskError(f"iCloud alias listing failed: {exc}") from exc
+
+
+def deactivate_mask(provider: MaskProvider, anonymous_id: str) -> None:
+    """Deactivate an alias and normalize provider failures at the boundary."""
+    _mutate(provider.deactivate, anonymous_id, operation_name="deactivation")
+
+
+def delete_mask(provider: MaskProvider, anonymous_id: str) -> None:
+    """Delete an alias and normalize provider failures at the boundary."""
+    _mutate(provider.delete, anonymous_id, operation_name="deletion")
+
+
+def _mutate(
+    operation: Callable[[str], Mapping[str, object]], anonymous_id: str, *, operation_name: str = ""
+) -> None:
+    label = operation_name or "mutation"
+    try:
+        result = operation(anonymous_id)
+    except Exception as exc:
+        raise MaskError(f"iCloud alias {label} failed: {exc}") from exc
+    if result.get("success") is False or result.get("error"):
+        detail = result.get("error") or result.get("message") or "provider rejected the request"
+        raise MaskError(f"iCloud alias {label} failed: {detail}")
 
 
 def _parse_mask(raw: Mapping[str, object]) -> Mask:

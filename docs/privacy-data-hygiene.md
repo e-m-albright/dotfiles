@@ -4,7 +4,7 @@ Last updated: 2026-05-25
 
 > Default-deny posture on AI training and scraping of private/personal content. Two separate risks to manage: (1) training use - your data improving someone's model - and (2) retention/exposure - your data sitting on their servers (or your disk) to be breached, subpoenaed, or reviewed. Different controls fix each. This doc is the practical playbook across the tools used in this setup.
 
-Companion docs: [lm-studio-local-models.md](./lm-studio-local-models.md) (the local tier) and [pi-power-setup.md](./pi-power-setup.md) (local-first agent).
+Companion doc: [lm-studio-local-models.md](./lm-studio-local-models.md) (the local tier).
 
 ---
 
@@ -12,7 +12,7 @@ Companion docs: [lm-studio-local-models.md](./lm-studio-local-models.md) (the lo
 
 Three tiers, by how far your prompt travels:
 
-1. **On-device only** - LM Studio, and Pi when pointed at `lm-studio`. Prompts never leave the machine. No training, no retention, no breach surface beyond your own disk. This is the tier for anything genuinely sensitive.
+1. **On-device only** - LM Studio with a local model. Prompts never leave the machine. No training, no retention, no breach surface beyond your own disk. This is the tier for anything genuinely sensitive.
 2. **Cloud consumer** (ChatGPT, Gemini, Claude Free/Pro/Max) - trained on by default unless you opt out, multi-year retention if you don't. The toggles below exist precisely because the default is "yes, use my data."
 3. **Cloud commercial / API** (Anthropic API, OpenAI API/Business/Enterprise, Workspace, GitHub Business/Enterprise) - not trained on by default, short retention (about 30 days), zero-data-retention (ZDR) available on request. Categorically better than consumer.
 
@@ -63,7 +63,7 @@ Three tiers, by how far your prompt travels:
 
 ---
 
-## The local tier - LM Studio + Pi (the safe default for sensitive work)
+## The local tier - LM Studio
 
 **LM Studio** runs inference fully on-device. Prompts never leave the machine, so no training, no retention, no third party. This is the tier for genuinely sensitive content. See [lm-studio-local-models.md](./lm-studio-local-models.md) for model choices.
 
@@ -72,12 +72,6 @@ Three tiers, by how far your prompt travels:
 - LM Studio can run fully offline - a hard test is to pull the network and confirm inference still works. Disable any update/telemetry checks in its settings.
 - Model downloads come from Hugging Face (weights coming in, not your data going out) - fine. Your prompts and the model's outputs stay local.
 - Local does not mean immortal-safe: the only remaining surface is your disk, so full-disk encryption plus not syncing the chat store to cloud backup is what closes the loop.
-
-**Pi** is local-first as configured here (`defaultProvider: lm-studio`), but it is not automatically private:
-- Provider/model swap mid-session can route your prompt to any of 40+ cloud providers. The moment you swap to a cloud model, you are back in cloud-consumer/API territory.
-- The `oracle` extension (on the eval list) deliberately consults cloud Claude/Codex for a second opinion - that exfiltrates context by design.
-- Recommended: add the `filter-output` / `security` extension (michalvavra/agents) to redact tokens/secrets from tool output, and keep the `lm-studio` provider as the default for any sensitive repo.
-- `safe-git` gates destructive git ops, not data egress - don't mistake it for a privacy control.
 
 ---
 

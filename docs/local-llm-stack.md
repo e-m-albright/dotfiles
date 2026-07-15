@@ -143,11 +143,9 @@ When considering a new local model:
    leaderboard](https://aider.chat/docs/leaderboards/), SWE-Bench Verified,
    and Terminal-Bench 2.0. For coding work, Terminal-Bench is the most
    predictive of real agentic behavior.
-6. **Speed bench:** run `dotfiles llm bench <model>` for repeatable tok/s +
-   TTFT + reasoning-token check. Target: > 40 tok/s gen for interactive use,
-   > 100 for autocomplete.
-7. **Reasoning-mode check:** look at `reasoning_tokens` in the bench output.
-   If > 0, factor the thinking tax into your max_tokens budgets.
+6. **Speed check:** use LM Studio's current runtime metrics during a representative
+   prompt. Target: > 40 tok/s generation for interactive use and > 100 for
+   autocomplete.
 
 ## Process learnings (this session)
 
@@ -160,13 +158,3 @@ When considering a new local model:
 - **GUI vs CLI defaults diverge.** LM Studio's CLI-loaded context doesn't
   persist as a model default — only GUI "Save as default" does. Document the
   one-time GUI step rather than expect CLI flags to stick.
-
-## How to use the bench tool
-
-```bash
-dotfiles llm list                          # what's loaded
-dotfiles llm bench                         # bench currently-loaded model
-dotfiles llm bench <model-id>              # load + bench specific model
-dotfiles llm estimate <model-id> 262144    # context size estimate
-dotfiles llm compare <a> <b>               # head-to-head two models
-```

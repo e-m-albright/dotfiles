@@ -2,7 +2,7 @@
 
 The whole command tree — including the handful of commands still implemented in
 the bash shim — is registered here. Commands are grouped into named Rich panels
-(Machine / Control / AI); the panel title carries the section descriptor that the
+(Machine / Control); the panel title carries the section descriptor that the
 old hand-rolled help showed. Per-command help (`dotfiles <sub> --help`) uses
 Typer's native renderer; the branded top-level help (`render_help_tree`) draws a
 custom tree so each group's subcommands are visible on the front door.
@@ -26,22 +26,17 @@ if TYPE_CHECKING:
     from typer.core import TyperGroup
 
 from dotfiles.app.context import AppContext, build_real_context
-from dotfiles.cmd.agent.cli import agent_app
-from dotfiles.cmd.benchmark.cli import benchmark_app
 from dotfiles.cmd.brew.cli import brew_app
 from dotfiles.cmd.doctor.cli import doctor_command
-from dotfiles.cmd.email.cli import email_app
+from dotfiles.cmd.email.cli import email_mask_app
 from dotfiles.cmd.remote.cli import remote_app
-from dotfiles.cmd.repo.cli import repo_app
 from dotfiles.cmd.session.cli import session_app
-from dotfiles.cmd.snapshot.cli import snapshot_app
 from dotfiles.logging import configure_logging
 
 # Rich help-panel titles. The em-dash descriptor is part of the panel title, so
 # the grouped boxes read the same as the legacy `sub_help` section headers.
 PANEL_MACHINE = "Machine — setup, maintenance, and machine-state"
 PANEL_CONTROL = "Control — drive this Mac locally or from your phone"
-PANEL_AI = "AI — agentic tooling and local models"
 
 # Repo root (cli/src/dotfiles/app/main.py -> parents[4]), so the thin wrappers
 # below can hand back to the bash shim for commands not yet ported to Python.
@@ -54,7 +49,7 @@ _PASSTHROUGH = {"allow_extra_args": True, "ignore_unknown_options": True}
 app = typer.Typer(
     cls=FuzzyTyperGroup,
     name="dotfiles",
-    help="Curated Mac dev environment: machine setup, remote control, and agentic tooling.",
+    help="Curated Mac dev environment: machine setup, remote control, and utilities.",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -120,10 +115,6 @@ def dock(ctx: typer.Context) -> None:
     _delegate_to_shim("dock", ctx.args)
 
 
-app.add_typer(snapshot_app, name="snapshot", rich_help_panel=PANEL_MACHINE)
-app.add_typer(repo_app, name="repo", rich_help_panel=PANEL_MACHINE)
-
-
 @app.command("profile-shell", rich_help_panel=PANEL_MACHINE, context_settings=_PASSTHROUGH)
 def profile_shell(ctx: typer.Context) -> None:
     """Profile shell startup time."""
@@ -139,11 +130,7 @@ def tui() -> None:
 
 app.add_typer(remote_app, name="remote", rich_help_panel=PANEL_CONTROL)
 app.add_typer(session_app, name="session", rich_help_panel=PANEL_CONTROL)
-app.add_typer(email_app, name="email", rich_help_panel=PANEL_CONTROL)
-
-# --- AI ----------------------------------------------------------------------
-app.add_typer(agent_app, name="agent", rich_help_panel=PANEL_AI)
-app.add_typer(benchmark_app, name="benchmark", rich_help_panel=PANEL_AI)
+app.add_typer(email_mask_app, name="email-mask", rich_help_panel=PANEL_CONTROL)
 
 
 def _subcommand_rows(group: TyperGroup) -> list[tuple[Text, Text]]:
@@ -162,7 +149,7 @@ def _subcommand_rows(group: TyperGroup) -> list[tuple[Text, Text]]:
 
 
 def _command_panel(root: TyperGroup, panel_title: str) -> Panel:
-    """Build one Machine/Control/AI panel: every leaf command and group assigned to
+    """Build one Machine/Control panel: every leaf command and group assigned to
     it (registration order), each group trailed by its subcommands as a branch."""
     from rich import box
     from rich.panel import Panel
@@ -186,8 +173,8 @@ def _command_panel(root: TyperGroup, panel_title: str) -> Panel:
 def render_help_tree(console: Console) -> None:
     """Render the branded top-level help with every sub-app's subcommands nested in.
 
-    Typer's flat renderer hides each group's capabilities behind a single row
-    (`agent` alone buries nine subcommands). This draws the *full* command tree —
+    Typer's flat renderer hides each group's capabilities behind a single row.
+    This draws the *full* command tree —
     each group followed by its subcommands as an indented, dimmed branch — so the
     front door advertises what the CLI can actually do.
 
@@ -222,8 +209,8 @@ def render_help_tree(console: Console) -> None:
         Panel(options, title="Options", title_align="left", box=box.ROUNDED, padding=(0, 1))
     )
 
-    # One panel per Machine/Control/AI group, subcommands nested beneath each group.
-    for panel_title in (PANEL_MACHINE, PANEL_CONTROL, PANEL_AI):
+    # One panel per Machine/Control group, subcommands nested beneath each group.
+    for panel_title in (PANEL_MACHINE, PANEL_CONTROL):
         console.print(_command_panel(root, panel_title))
 
 

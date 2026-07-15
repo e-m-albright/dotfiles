@@ -7,4 +7,4 @@
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
 # Dotfiles CLI + UV / Python tools
-export PATH="$HOME/dotfiles/bin:$HOME/.local/bin:$PATH"
+export PATH="$HOME/code/public/dotfiles/bin:$HOME/.local/bin:$PATH"

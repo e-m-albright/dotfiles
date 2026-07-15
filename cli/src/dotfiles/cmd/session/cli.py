@@ -1,7 +1,6 @@
 """`dotfiles session` commands: list, attach, new, kill, prune zellij sessions."""
 
 from collections.abc import Sequence
-from datetime import datetime
 
 import typer
 from rich.console import Console
@@ -17,7 +16,6 @@ from dotfiles.cmd.session.service import (
     DEFAULT_MAX_COUNT,
     exited_sessions,
     humanize_age,
-    maybe_prune,
     sessions_to_prune,
 )
 from dotfiles.cmd.session.zellij import SessionError, Zellij
@@ -30,13 +28,6 @@ _PROGRAM_STYLE = "#cdbf80"
 def _zellij(app_ctx: AppContext) -> Zellij:
     """The zellij seam for this host, built from the injected runner and home."""
     return Zellij(app_ctx.runner, home=app_ctx.home)
-
-
-def _sweep(app_ctx: AppContext) -> None:
-    """Run the once-a-day guarded retention sweep when a session list is loaded."""
-    maybe_prune(
-        _zellij(app_ctx), state_file=app_ctx.state_dir / "session-prune", now=datetime.now()
-    )
 
 
 session_app = typer.Typer(
@@ -52,7 +43,6 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
         return
     app_ctx = app_context(ctx)
     zellij = _zellij(app_ctx)
-    _sweep(app_ctx)
     try:
         sessions = zellij.list_sessions()
     except SessionError as exc:
@@ -155,7 +145,6 @@ def _enriched_rows(
 def cmd_list_sessions(ctx: typer.Context) -> None:
     """List zellij sessions with what's running and which agents are active."""
     app_ctx = app_context(ctx)
-    _sweep(app_ctx)
     try:
         sessions = _zellij(app_ctx).list_sessions()
     except SessionError as exc:

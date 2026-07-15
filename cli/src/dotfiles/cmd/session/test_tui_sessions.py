@@ -149,19 +149,17 @@ async def test_attach_action_requests_handoff(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_tui_reload_runs_guarded_prune(tmp_path):
+async def test_tui_reload_never_prunes_resurrectable_sessions():
     runner = FakeProcessRunner()
     runner.script(
         ("zellij", "list-sessions", "--no-formatting"),
         stdout=("mobile (current)\nancient [Created 30d ago] (EXITED - attach to resurrect)\n"),
     )
-    app = MissionControlApp(ctx=make_fake_context(runner=runner, state_dir=tmp_path))
+    app = MissionControlApp(ctx=make_fake_context(runner=runner))
     async with app.run_test() as pilot:
         await pilot.pause()
         await pilot.pause()
-        # The opportunistic sweep ran on load and dropped the >14d session.
-        assert ("zellij", "delete-session", "ancient") in runner.calls
-        assert (tmp_path / "session-prune").exists()
+        assert not any(c[:2] == ("zellij", "delete-session") for c in runner.calls)
 
 
 @pytest.mark.asyncio

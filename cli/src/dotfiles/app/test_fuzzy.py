@@ -6,33 +6,31 @@ import pytest
 
 from dotfiles.app.fuzzy import _within_one_edit, closest_command
 
-_AGENT_COMMANDS = ["overview", "instructions", "catechism", "skills", "setup", "stats", "verify"]
+_SESSION_COMMANDS = ["list", "attach", "new", "kill", "prune"]
 
 
-@pytest.mark.parametrize("typed", ["agent", "agnt", "agemt"])  # exact-ish / typo
+@pytest.mark.parametrize("typed", ["session", "sesion", "sessioo"])  # exact-ish / typo
 def test_singular_plural_toggle_and_typos(typed: str) -> None:
-    # the canonical case the QOL is for: `dfs agents` should find `agent`.
-    assert closest_command("agents", ["agent", "brew", "doctor"]) == "agent"
-    assert closest_command(typed, ["agent", "brew", "doctor"]) == "agent"
+    assert closest_command("sessions", ["session", "brew", "doctor"]) == "session"
+    assert closest_command(typed, ["session", "brew", "doctor"]) == "session"
 
 
 @pytest.mark.parametrize(
     ("typed", "expected"),
     [
-        ("overviw", "overview"),  # one-char deletion
-        ("overvieww", "overview"),  # one-char insertion
-        ("instru", "instructions"),  # unique prefix
+        ("attch", "attach"),  # one-char deletion
+        ("attachh", "attach"),  # one-char insertion
+        ("pru", "prune"),  # unique prefix
     ],
 )
 def test_resolves_unambiguous_near_miss(typed: str, expected: str) -> None:
-    assert closest_command(typed, _AGENT_COMMANDS) == expected
+    assert closest_command(typed, _SESSION_COMMANDS) == expected
 
 
-@pytest.mark.parametrize("typed", ["s", "", "zzzplugh", "verfiy"])
+@pytest.mark.parametrize("typed", ["", "zzzplugh", "atatch"])
 def test_conservative_when_ambiguous_or_distant(typed: str) -> None:
-    # "s" → 3 candidates; "" → none; distant → none; "verfiy" → a transposition
-    # (two edits), which we deliberately don't guess. None of these resolve.
-    assert closest_command(typed, _AGENT_COMMANDS) is None
+    # Empty and distant commands do not resolve; a transposition is two edits.
+    assert closest_command(typed, _SESSION_COMMANDS) is None
 
 
 @pytest.mark.parametrize(

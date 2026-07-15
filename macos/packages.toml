@@ -56,7 +56,7 @@ packages = [
   { name = "iftop",              note = "Network traffic monitoring" },
   { name = "nmap",               note = "Network mapping" },
   { name = "dockutil",           note = "Dock management" },
-  { name = "terminal-notifier",  note = "macOS notifications from CLI (used by Claude Code hooks)" },
+  { name = "terminal-notifier",  note = "Disabled 2026-07-15: native Claude and Codex notifications replaced the custom hook", disabled = true },
   { name = "duti",               note = "Set default app for file types (used by file-associations.sh)" },
 ]
 
@@ -71,7 +71,7 @@ packages = [
   { name = "graphite",       note = "Stacked PRs", disabled = true, reason = "removed, not useful enough (requires withgraphite/tap)" },
   { name = "atlas",          note = "Database schema migration tool (requires ariga/tap)" },
   { name = "duckdb",         note = "Fast analytical database (SQL for analytics)" },
-  { name = "railway",        note = "Railway.app CLI (deploy, logs, manage projects)" },
+  { name = "railway",        note = "Railway.app CLI", disabled = true, reason = "Removed 2026-07-15: no active Railway projects; keep the host free of unused deployment clients" },
   { name = "opentofu",       note = "Open-source Terraform alternative" },
   { name = "flyctl",         note = "Fly.io CLI (deploy, manage apps)" },
   { name = "ngrok",          note = "Secure tunnels to localhost (webhook testing, demos)" },
@@ -97,10 +97,11 @@ packages = [
 ]
 
 [[section]]
-name = "Node.js"
+name = "JavaScript / TypeScript"
 kind = "formula"
 packages = [
-  { name = "fnm", note = "Fast Node Manager (node version switching)" },
+  { name = "deno", note = "Selected future JavaScript / TypeScript runtime; install with the first Deno project", disabled = true, reason = "Deferred 2026-07-15: no active Deno projects yet; Node via fnm remains the compatibility baseline" },
+  { name = "fnm",  note = "Node version manager for compatibility with Node-only projects" },
 ]
 
 [[section]]
@@ -130,6 +131,7 @@ packages = [
   { name = "google-chrome",   note = "Web browser" },
   { name = "google-drive",    note = "Drive <-> Mac selective sync. Use STREAMING mode (default; nothing bulk-downloaded) + per-folder 'Available offline' for local copies; pick which Mac folders upload under Settings > My MacBook. Never enable 'Mirror files' (would pull all of Drive)" },
   { name = "tailscale-app",   note = "Mesh VPN for secure laptop access" },
+  { name = "termius",         note = "Phone client for remote access; the macOS app adds no value on the host", disabled = true, reason = "Host exclusion 2026-07-15: keep using Termius on the phone" },
   { name = "iterm2",          note = "Terminal emulator", disabled = true },
 ]
 
@@ -137,9 +139,9 @@ packages = [
 name = "IDE"
 kind = "cask"
 packages = [
-  { name = "cursor",              note = "Primary: AI-native editor (VS Code compatible)" },
-  { name = "zed",                 note = "Secondary: GPU-native Rust editor with ACP agent panel (eval — see docs/ides.md)" },
-  { name = "visual-studio-code",  note = "Disabled: using Cursor exclusively", disabled = true },
+  { name = "cursor",              note = "Disabled 2026-07-15: extra editor/agent control plane did not earn its overlap with Zed + Claude/Codex", disabled = true },
+  { name = "zed",                 note = "Primary GPU-native editor with ACP agent panel" },
+  { name = "visual-studio-code",  note = "Disabled: Zed is the managed editor", disabled = true },
 ]
 
 [[section]]
@@ -155,6 +157,7 @@ packages = [
   { name = "caffeine",         note = "Intel-only, requires Rosetta" },
   { name = "flux-app",         note = "Screen color temperature" },
   { name = "granola",          note = "AI notepad for meetings" },
+  { name = "perplexity",       note = "Disabled 2026-07-14: desktop app removed; use web only if needed", disabled = true, reason = "No Homebrew cask; app was installed manually" },
   { name = "wispr-flow",       note = "Disabled 2026-05-29: switched to TypeWhisper (on-device Parakeet ASR + local Gemma / Apple Intelligence cleanup)", disabled = true, reason = "No Homebrew cask exists; installed via special.typewhisper block" },
   { name = "aqua-voice",       note = "Voice dictation alternative (consider vs Wispr Flow)", disabled = true },
   { name = "obsidian",         note = "Knowledge base & note-taking (Markdown)" },
@@ -208,17 +211,17 @@ packages = [
   { name = "claude",               note = "Claude Desktop (macOS app)" },
   { name = "conductor",            note = "Claude Code parallelisation (disabled — prefer native subagents)", disabled = true },
   { name = "codex",                note = "OpenAI Codex CLI (terminal agent) — or: npm i -g @openai/codex" },
-  { name = "codex-app",            note = "Disabled 2026-05-07: CLI-first, no need for desktop", disabled = true },
+  { name = "chatgpt",              note = "OpenAI ChatGPT desktop app: Codex mode, plugins, and scheduled local tasks" },
   { name = "googleworkspace-cli",  note = "Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin)" },
   { name = "jules",                note = "Disabled 2026-05-07: cloud-only (jules.google.com), local CLI is just a launcher", disabled = true },
   { name = "gemini-cli",           note = "Replaced 2026-06-09 by antigravity-cli (Gemini CLI sunsets Pro/Ultra/free 2026-06-18)", disabled = true },
-  { name = "antigravity-cli",      note = "Google Antigravity CLI (`agy`) — successor to Gemini CLI; reads ~/.gemini config" },
+  { name = "antigravity-cli",      note = "Disabled 2026-07-15: focus active agent support on Claude and Codex", disabled = true },
   { name = "antigravity",          note = "Google Antigravity IDE (AI-native editor) — the GUI; the CLI is antigravity-cli above", disabled = true },
   { name = "copilot",              note = "GitHub Copilot CLI (terminal agent) — or: npm i -g @github/copilot", disabled = true },
-  { name = "cmux",                 note = "Terminal multiplexer for AI agents (nice but not helpful over Ghostty)", disabled = true },
-  { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex + Cursor" },
-  { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex + Cursor" },
-  { name = "opencode",             note = "Vendor-neutral terminal coding agent", disabled = true, reason = "Disabled 2026-06-01: vendor-neutral CLIs rolled back (subscription economics); standardized on Claude Code + Codex + Cursor" },
+  { name = "cmux",                 note = "Disabled 2026-07-15: pleasant, but did not add enough beyond Ghostty + Zellij session control", disabled = true },
+  { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
+  { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
+  { name = "opencode",             note = "Vendor-neutral terminal coding agent", disabled = true, reason = "Disabled 2026-06-01: vendor-neutral CLIs rolled back (subscription economics); standardized on Claude Code + Codex" },
   { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server" },
   { name = "huggingface-cli",      note = "Hugging Face CLI (disabled — install per-project if needed)", disabled = true },
 ]
@@ -257,13 +260,6 @@ flag = "ai"
 url = "https://claude.ai/install.sh"
 post_install = "claude install latest"
 note = "Tracks `latest`, not the lagging `stable` cask. Migrated off npm global 2026-05-28."
-
-[special.hermes]
-method = "curl_install"
-flag = "ai"
-url = "https://hermes-agent.nousresearch.com/install.sh"
-args = ["--non-interactive"]
-note = "NousResearch hermes-agent (terminal/TUI coding agent). No brew cask; self-contained uv/Node install under ~/.hermes. Skills deployed by `dotfiles agent setup hermes`."
 
 # =============================================================================
 # npm globals (no brew formula available / brew formula is wrong package)

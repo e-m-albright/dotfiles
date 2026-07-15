@@ -18,6 +18,8 @@ client: Termius connects to the laptop over Mosh and runs everything *there*.
   than one client is live.
 - A session that lives *on the phone itself* does not exist. The phone is always a
   client of the laptop.
+- Termius is installed only on the phone. The laptop is the SSH/Mosh host and
+  does not need the Termius desktop application.
 
 (Cross-*machine* sessions — attaching from laptop B to laptop A — are the
 `dotfiles remote web` experiment, not this daily flow. See the bottom.)

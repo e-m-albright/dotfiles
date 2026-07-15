@@ -1,4 +1,4 @@
-"""Tests for the `dotfiles email mask` Typer command."""
+"""Tests for the `dotfiles email-mask` Typer command."""
 
 from __future__ import annotations
 
@@ -22,9 +22,9 @@ def _ctx_with(provider: FakeMaskProvider, *, account: str = _ME) -> object:
 
 
 def test_email_help_lists_all_commands() -> None:
-    result = runner.invoke(app, ["email", "--help"])
+    result = runner.invoke(app, ["email-mask", "--help"])
     assert result.exit_code == 0
-    for cmd in ("mask", "list", "delete", "deactivate"):
+    for cmd in ("create", "list", "delete", "deactivate"):
         assert cmd in result.output
 
 
@@ -36,7 +36,7 @@ def test_mask_generates_reserves_and_copies() -> None:
         mask_provider=provider,
         settings=Settings(apple_id="me@icloud.com"),
     )
-    result = runner.invoke(app, ["email", "mask", "Shopping"], obj=ctx)
+    result = runner.invoke(app, ["email-mask", "create", "Shopping"], obj=ctx)
     assert result.exit_code == 0
     assert "new@icloud.com" in result.output
     assert provider.reserved == [("new@icloud.com", "Shopping")]
@@ -51,7 +51,7 @@ def test_mask_no_copy_skips_clipboard() -> None:
         mask_provider=FakeMaskProvider(),
         settings=Settings(apple_id="me@icloud.com"),
     )
-    result = runner.invoke(app, ["email", "mask", "--no-copy"], obj=ctx)
+    result = runner.invoke(app, ["email-mask", "create", "--no-copy"], obj=ctx)
     assert result.exit_code == 0
     assert ("pbcopy",) not in proc.calls
 
@@ -59,14 +59,22 @@ def test_mask_no_copy_skips_clipboard() -> None:
 def test_mask_uses_default_label_when_omitted() -> None:
     provider = FakeMaskProvider()
     ctx = make_fake_context(mask_provider=provider, settings=Settings(apple_id="me@icloud.com"))
-    result = runner.invoke(app, ["email", "mask"], obj=ctx)
+    result = runner.invoke(app, ["email-mask", "create"], obj=ctx)
+    assert result.exit_code == 0
+    assert provider.reserved[0][1] == "dotfiles"
+
+
+def test_bare_email_mask_creates_and_copies() -> None:
+    provider = FakeMaskProvider()
+    ctx = make_fake_context(mask_provider=provider, settings=Settings(apple_id="me@icloud.com"))
+    result = runner.invoke(app, ["email-mask"], obj=ctx)
     assert result.exit_code == 0
     assert provider.reserved[0][1] == "dotfiles"
 
 
 def test_mask_errors_without_account() -> None:
     ctx = make_fake_context(settings=Settings(apple_id=""))
-    result = runner.invoke(app, ["email", "mask"], obj=ctx)
+    result = runner.invoke(app, ["email-mask", "create"], obj=ctx)
     assert result.exit_code == 1
     assert "No iCloud account" in result.output
 
@@ -77,7 +85,7 @@ def test_mask_reports_generation_failure() -> None:
         mask_provider=FakeMaskProvider(address=None),
         settings=Settings(apple_id="me@icloud.com"),
     )
-    result = runner.invoke(app, ["email", "mask"], obj=ctx)
+    result = runner.invoke(app, ["email-mask", "create"], obj=ctx)
     assert result.exit_code == 1
     assert "declined to generate" in result.output
 
@@ -89,7 +97,7 @@ def test_mask_reports_generation_failure() -> None:
 
 def test_list_renders_addresses_and_inactive_marker() -> None:
     ctx = _ctx_with(FakeMaskProvider(existing=_RECORDS))
-    result = runner.invoke(app, ["email", "list"], obj=ctx)
+    result = runner.invoke(app, ["email-mask", "list"], obj=ctx)
     assert result.exit_code == 0
     assert "a@icloud.com" in result.output
     assert "b@icloud.com" in result.output
@@ -98,21 +106,23 @@ def test_list_renders_addresses_and_inactive_marker() -> None:
 
 def test_list_empty_is_friendly() -> None:
     ctx = _ctx_with(FakeMaskProvider(existing=[]))
-    result = runner.invoke(app, ["email", "list"], obj=ctx)
+    result = runner.invoke(app, ["email-mask", "list"], obj=ctx)
     assert result.exit_code == 0
     assert "No aliases yet" in result.output
 
 
 def test_deactivate_calls_provider_with_resolved_id() -> None:
     provider = FakeMaskProvider(existing=_RECORDS)
-    result = runner.invoke(app, ["email", "deactivate", "a@icloud.com"], obj=_ctx_with(provider))
+    result = runner.invoke(
+        app, ["email-mask", "deactivate", "a@icloud.com"], obj=_ctx_with(provider)
+    )
     assert result.exit_code == 0
     assert provider.deactivated == ["id-a"]
 
 
 def test_delete_is_dry_run_by_default() -> None:
     provider = FakeMaskProvider(existing=_RECORDS)
-    result = runner.invoke(app, ["email", "delete", "a@icloud.com"], obj=_ctx_with(provider))
+    result = runner.invoke(app, ["email-mask", "delete", "a@icloud.com"], obj=_ctx_with(provider))
     assert result.exit_code == 0
     assert "Would delete" in result.output
     assert provider.deleted == []  # nothing removed without --yes
@@ -120,14 +130,16 @@ def test_delete_is_dry_run_by_default() -> None:
 
 def test_delete_with_yes_commits() -> None:
     provider = FakeMaskProvider(existing=_RECORDS)
-    result = runner.invoke(app, ["email", "delete", "id-b", "--yes"], obj=_ctx_with(provider))
+    result = runner.invoke(app, ["email-mask", "delete", "id-b", "--yes"], obj=_ctx_with(provider))
     assert result.exit_code == 0
     assert provider.deleted == ["id-b"]
 
 
 def test_delete_unknown_selector_errors() -> None:
     provider = FakeMaskProvider(existing=_RECORDS)
-    result = runner.invoke(app, ["email", "delete", "ghost@icloud.com"], obj=_ctx_with(provider))
+    result = runner.invoke(
+        app, ["email-mask", "delete", "ghost@icloud.com"], obj=_ctx_with(provider)
+    )
     assert result.exit_code == 1
     assert "No Hide My Email alias" in result.output
     assert provider.deleted == []

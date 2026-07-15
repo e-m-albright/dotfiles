@@ -5,7 +5,6 @@ from collections.abc import Callable
 from pathlib import Path
 
 from dotfiles.adapters.ports import ProcessRunner
-from dotfiles.agent import surface_path
 from dotfiles.cmd.doctor.models import CheckResult
 from dotfiles.fsutil import symlink as _make_symlink
 
@@ -15,7 +14,6 @@ _TOOL_CHECKS: tuple[tuple[str, str, str, str], ...] = (
     ("Core Tools", "Git", "git", "brew install git"),
     ("Core Tools", "jq", "jq", "brew install jq"),
     ("Core Tools", "yq", "yq", "brew install yq"),
-    ("Editors", "Cursor", "cursor", "brew install --cask cursor"),
     ("Editors", "Zed", "zed", "brew install --cask zed"),
     ("Dev Tools", "Just", "just", "brew install just"),
     ("Dev Tools", "Delta", "delta", "brew install git-delta"),
@@ -65,7 +63,7 @@ class DoctorService:
 
     def _symlink(self, section: str, name: str, src: Path, dest: Path) -> CheckResult:
         """Check (and optionally fix) a symlink from dest -> src."""
-        if dest.is_symlink() and str(src) in str(dest.readlink()):
+        if dest.is_symlink() and dest.resolve(strict=False) == src.resolve(strict=False):
             return CheckResult(section=section, name=name, status="ok", detail="symlinked")
         if self._fix:
             _make_symlink(src, dest)
@@ -107,12 +105,11 @@ class DoctorService:
         ]
 
     def _check_editors(self) -> list[CheckResult]:
-        return [self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[4:6]]
+        return [self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[4:5]]
 
     def _check_runtimes(self) -> list[CheckResult]:
         sec = "Runtimes"
         results: list[CheckResult] = [
-            self._tool(sec, "Bun", "bun", "curl -fsSL https://bun.sh/install | bash"),
             self._tool(sec, "FNM", "fnm", "curl -fsSL https://fnm.vercel.app/install | bash"),
             self._tool(sec, "UV", "uv", "curl -LsSf https://astral.sh/uv/install.sh | sh"),
             self._tool(sec, "Go", "go", "brew install go"),
@@ -206,51 +203,57 @@ class DoctorService:
                 "Claude Code",
                 "claude",
                 "curl -fsSL https://claude.ai/install.sh | bash",
-            )
+            ),
+            self._tool(sec, "Codex", "codex", "brew install --cask codex"),
         ]
-        results.extend(self._check_gh_mcp(sec))
+        results.extend(self._check_workbench(sec))
         return results
 
-    def _check_gh_mcp(self, sec: str) -> list[CheckResult]:
-        """gh-mcp extension — only checked if gh present."""
-        if self._which("gh") is None:
-            return []
-        ext_result = self._runner.run(("gh", "extension", "list"))
-        if ext_result.ok and "gh-mcp" in ext_result.stdout:
-            return [CheckResult(section=sec, name="gh-mcp", status="ok", detail="installed")]
-        if self._fix:
-            install = self._runner.run(("gh", "extension", "install", "shuymn/gh-mcp"))
-            if install.ok:
-                return [CheckResult(section=sec, name="gh-mcp", status="fixed", detail="fixed")]
+    def _check_workbench(self, sec: str) -> list[CheckResult]:
+        """Run workbench's live desired-state reconciliation when available."""
+        command = self._which("workbench")
+        if command is None:
+            candidate = self._home / "code" / "public" / "workbench" / "bin" / "workbench"
+            command = str(candidate) if candidate.exists() else None
+        if command is None:
             return [
                 CheckResult(
                     section=sec,
-                    name="gh-mcp",
+                    name="Workbench",
                     status="missing",
-                    hint="gh auth login, then: gh extension install shuymn/gh-mcp",
+                    hint="Clone ~/code/public/workbench, then run: workbench sync",
                 )
             ]
+
+        checked = self._runner.run((command, "check"))
+        if checked.ok:
+            return [
+                CheckResult(
+                    section=sec,
+                    name="Workbench",
+                    status="ok",
+                    detail="managed agent config matches",
+                )
+            ]
+        detail = next(
+            (line.strip() for line in checked.stdout.splitlines() if line.strip()),
+            "managed agent config has drifted",
+        )
         return [
             CheckResult(
                 section=sec,
-                name="gh-mcp",
-                status="missing",
-                hint="Run: gh extension install shuymn/gh-mcp",
+                name="Workbench",
+                status="warn",
+                detail=detail,
+                hint="Run: workbench sync",
             )
         ]
 
     def _check_dev_tools(self) -> list[CheckResult]:
-        return [self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[6:9]]
+        return [self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[5:8]]
 
     def _check_remote_shell(self) -> list[CheckResult]:
-        sec = "Remote Shell"
-        results: list[CheckResult] = [
-            self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[9:]
-        ]
-        results.append(
-            self._app(sec, "Termius", self._apps_dir / "Termius.app", "brew install --cask termius")
-        )
-        return results
+        return [self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[8:]]
 
     def _check_configuration(self) -> list[CheckResult]:
         sec = "Configuration"
@@ -283,151 +286,8 @@ class DoctorService:
                 )
             )
 
-        # Claude instructions (~/.claude/CLAUDE.md) — warn if absent
-        claude_md = surface_path(self._home, "claude", "rules")
-        if claude_md.exists():
-            results.append(
-                CheckResult(section=sec, name="Claude instructions", status="ok", detail="exists")
-            )
-        else:
-            results.append(
-                CheckResult(
-                    section=sec,
-                    name="Claude instructions",
-                    status="warn",
-                    hint="Run: dotfiles agent-setup",
-                )
-            )
-
-        results.extend(self._check_claude_settings(sec))
-        results.extend(self._check_claude_mcp(sec))
-        results.extend(self._check_codex(sec))
         results.extend(self._check_ghostty(sec))
         results.extend(self._check_zellij(sec))
-
-        return results
-
-    def _jq_count(self, expr: str, path: Path) -> int:
-        """Run jq expr against path; return parsed int or 0 on failure."""
-        if not path.exists() or self._which("jq") is None:
-            return 0
-        result = self._runner.run(("jq", expr, str(path)))
-        if result.ok and result.stdout.strip().isdigit():
-            return int(result.stdout.strip())
-        return 0
-
-    def _check_claude_settings(self, sec: str) -> list[CheckResult]:
-        """Claude plugins + hooks from ~/.claude/settings.json."""
-        settings = surface_path(self._home, "claude", "settings")
-        if not settings.exists() or self._which("jq") is None:
-            return []
-        results: list[CheckResult] = []
-
-        plugin_count = self._jq_count(".enabledPlugins // {} | length", settings)
-        if plugin_count > 0:
-            results.append(
-                CheckResult(
-                    section=sec,
-                    name="Claude plugins",
-                    status="ok",
-                    detail=f"{plugin_count} plugins enabled",
-                )
-            )
-        else:
-            results.append(
-                CheckResult(
-                    section=sec,
-                    name="Claude plugins",
-                    status="warn",
-                    hint="Run: dotfiles agent-setup",
-                )
-            )
-
-        hook_count = self._jq_count(".hooks // {} | keys | length", settings)
-        if hook_count > 0:
-            results.append(
-                CheckResult(
-                    section=sec,
-                    name="Claude hooks",
-                    status="ok",
-                    detail=f"{hook_count} events configured",
-                )
-            )
-        else:
-            results.append(
-                CheckResult(
-                    section=sec,
-                    name="Claude hooks",
-                    status="warn",
-                    hint="Run: dotfiles agent-setup",
-                )
-            )
-
-        return results
-
-    def _check_claude_mcp(self, sec: str) -> list[CheckResult]:
-        """Claude MCP servers from ~/.claude.json."""
-        claude_json = surface_path(self._home, "claude", "mcp")
-        if not claude_json.exists() or self._which("jq") is None:
-            return []
-        mcp_count = self._jq_count(".mcpServers // {} | length", claude_json)
-        if mcp_count > 0:
-            return [
-                CheckResult(
-                    section=sec, name="Claude MCP", status="ok", detail=f"{mcp_count} servers"
-                )
-            ]
-        return [
-            CheckResult(
-                section=sec, name="Claude MCP", status="warn", hint="Run: dotfiles agent-setup"
-            )
-        ]
-
-    def _check_codex(self, sec: str) -> list[CheckResult]:
-        """Codex instructions/hooks/MCP — only if codex on PATH."""
-        if self._which("codex") is None:
-            return []
-        results: list[CheckResult] = []
-
-        agents_md = surface_path(self._home, "codex", "rules")
-        if agents_md.exists():
-            results.append(
-                CheckResult(section=sec, name="Codex instructions", status="ok", detail="exists")
-            )
-        else:
-            results.append(
-                CheckResult(
-                    section=sec,
-                    name="Codex instructions",
-                    status="warn",
-                    hint="Run: dotfiles agent-setup",
-                )
-            )
-
-        hooks_json = surface_path(self._home, "codex", "hooks")
-        if hooks_json.exists():
-            results.append(
-                CheckResult(section=sec, name="Codex hooks", status="ok", detail="configured")
-            )
-        else:
-            results.append(
-                CheckResult(
-                    section=sec, name="Codex hooks", status="warn", hint="Run: dotfiles agent-setup"
-                )
-            )
-
-        config_toml = surface_path(self._home, "codex", "mcp")
-        toml_content = config_toml.read_text() if config_toml.exists() else ""
-        if "mcp_servers" in toml_content:
-            results.append(
-                CheckResult(section=sec, name="Codex MCP", status="ok", detail="configured")
-            )
-        else:
-            results.append(
-                CheckResult(
-                    section=sec, name="Codex MCP", status="warn", hint="Run: dotfiles agent-setup"
-                )
-            )
 
         return results
 

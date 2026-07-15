@@ -5,19 +5,18 @@ Tests inject a fake AppContext via `runner.invoke(app, args, obj=fake_ctx)`.
 
 import os
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import typer
 
-from dotfiles.adapters.http import UrllibHttpClient
 from dotfiles.adapters.launcher import FzfExecLauncher
-from dotfiles.adapters.ports import HttpClient, ProcessRunner
+from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.adapters.process import SubprocessRunner
 from dotfiles.cmd.email.icloud import build_icloud_provider
 from dotfiles.cmd.email.service import MaskProvider
 from dotfiles.cmd.session.service import SessionLauncher
-from dotfiles.settings import LlmSettings, Settings
+from dotfiles.settings import Settings
 
 # Repo root: cli/src/dotfiles/cli/context.py → parents[4] = repo root
 _REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -34,10 +33,7 @@ class AppContext:
     launcher: SessionLauncher
     # Builds a Hide My Email provider for an account, on demand (no login at wiring time).
     mask_provider_factory: Callable[[str], MaskProvider] = build_icloud_provider
-    http: HttpClient = field(default_factory=UrllibHttpClient)
-    llm_settings: LlmSettings = field(default_factory=LlmSettings)
     dotfiles_dir: Path = _REPO_ROOT
-    state_dir: Path = _REPO_ROOT / ".local-state"  # overridden by build_real_context
     # Feature flags enabled via the environment (AI/PRODUCTIVITY/SOCIAL); read in
     # the composition root, never via os.environ inside a command.
     feature_flags: frozenset[str] = frozenset({"ai", "productivity", "social"})
@@ -63,17 +59,12 @@ def _env_feature_flags() -> frozenset[str]:
 def build_real_context(*, interactive: bool) -> AppContext:
     dotfiles_dir = Path(os.environ["DOTFILES_DIR"]) if "DOTFILES_DIR" in os.environ else _REPO_ROOT
     home = Path.home()
-    xdg_state = os.environ.get("XDG_STATE_HOME")
-    state_root = Path(xdg_state) if xdg_state else home / ".local" / "state"
     return AppContext(
         runner=SubprocessRunner(),
         settings=Settings(),
         interactive=interactive,
         home=home,
         launcher=FzfExecLauncher(),
-        http=UrllibHttpClient(),
-        llm_settings=LlmSettings(),
         dotfiles_dir=dotfiles_dir,
-        state_dir=state_root / "dotfiles",
         feature_flags=_env_feature_flags(),
     )

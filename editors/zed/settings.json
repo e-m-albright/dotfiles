@@ -5,29 +5,19 @@
 // (cmd-?) and authenticate in-thread:
 //   claude-acp → /login → "Log in with Claude Code"  (Max subscription)
 //   codex-acp  → "Login with ChatGPT"                 (ChatGPT subscription)
-//   gemini     → "Login" (Google account)            (free tier)
 // The "agent.default_model" / "inline_assistant_model" below are the SEPARATE
 // built-in providers — those DO use API keys (billed per token).
 {
   "agent_servers": {
-    "pi-acp": {
-      "type": "registry"
-    },
-    "cursor": {
-      "type": "registry"
-    },
     "claude-acp": {
       "type": "registry"
     },
     "codex-acp": {
       "type": "registry"
-    },
-    "gemini": {
-      "type": "registry"
     }
   },
   "project_panel": {
-    "dock": "right"
+    "dock": "left"
   },
   "outline_panel": {
     "dock": "right"
@@ -39,12 +29,11 @@
     "dock": "right"
   },
   "agent": {
-    // Terminal approvals for ACP agents (Codex, Pi, Claude, Gemini) run THROUGH
-    // Zed are governed here — not by each agent's own config.toml/policy. Zed's
+    // Terminal approvals for Claude/Codex ACP sessions launched through Zed are
+    // governed here, not by each agent's own config. Zed's
     // order is: built-in security -> always_deny -> always_allow -> default.
-    // We keep default "allow" for flow and add a hard-stop deny floor mirroring
-    // ai/agents/shared/deny-commands.yaml (drift-gated by
-    // test_deny_commands_sync.py). See docs/knowledge/agent-fleet.md.
+    // We keep default "allow" for flow and retain this small destructive-command
+    // floor locally because Zed owns this permission surface.
     "tool_permissions": {
       "tools": {
         "terminal": {

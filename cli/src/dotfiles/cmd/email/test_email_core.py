@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from dotfiles.cmd.email.service import MaskError, create_mask, find_mask, list_masks
+from dotfiles.cmd.email.service import (
+    MaskError,
+    create_mask,
+    deactivate_mask,
+    delete_mask,
+    find_mask,
+    list_masks,
+)
 from dotfiles.cmd.email.service import copy_to_clipboard as copy
 from dotfiles.testing.fakes import FakeMaskProvider, FakeProcessRunner
 
@@ -44,6 +51,30 @@ def test_create_mask_raises_when_generate_returns_none() -> None:
     with pytest.raises(MaskError, match="declined to generate"):
         create_mask(provider, "x")
     assert provider.reserved == []  # never attempts to reserve a non-existent address
+
+
+def test_provider_exception_becomes_mask_error() -> None:
+    class BrokenProvider(FakeMaskProvider):
+        def generate(self) -> str | None:
+            raise RuntimeError("network down")
+
+    with pytest.raises(MaskError, match="network down"):
+        create_mask(BrokenProvider(), "x")
+
+
+def test_mutations_reject_explicit_provider_failure() -> None:
+    class RejectingProvider(FakeMaskProvider):
+        def deactivate(self, anonymous_id: str) -> dict[str, object]:
+            return {"success": False, "error": "rejected"}
+
+        def delete(self, anonymous_id: str) -> dict[str, object]:
+            raise RuntimeError("offline")
+
+    provider = RejectingProvider()
+    with pytest.raises(MaskError, match="rejected"):
+        deactivate_mask(provider, "id")
+    with pytest.raises(MaskError, match="offline"):
+        delete_mask(provider, "id")
 
 
 # ---------------------------------------------------------------------------

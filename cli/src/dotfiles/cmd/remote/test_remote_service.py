@@ -142,6 +142,8 @@ def test_sudo_failure_surfaces_underlying_stderr(tmp_path: Path) -> None:
     err = [s for s in steps if s.level == "error"]
     assert err, "expected an error step on sudo failure"
     assert "Operation not permitted" in err[0].message
+    assert not any("SSH hardened" in step.message for step in steps)
+    assert not any(call[:2] == ("sudo", "install") for call in runner.calls)
 
 
 def _base_runner() -> FakeProcessRunner:

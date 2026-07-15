@@ -12,7 +12,6 @@ from dotfiles.cmd.brew.service import (
     PackageManifest,
     add_taps,
     install_claude_code,
-    install_hermes,
     install_npm_globals,
     install_packages,
     install_rust,
@@ -75,7 +74,7 @@ def install(
 
     # Taps
     print_section(console, "Taps")
-    tap_steps = add_taps(manifest, runner)
+    tap_steps = add_taps(manifest, runner, dry_run=dry_run)
     render_steps(console, tap_steps)
     all_steps.extend(tap_steps)
 
@@ -88,21 +87,16 @@ def install(
     if not dry_run:
         # Rust
         print_section(console, "Rust (rustup)")
-        rust_steps = install_rust(runner, home=app_ctx.home)
+        rust_steps = install_rust(runner)
         render_steps(console, rust_steps)
         all_steps.extend(rust_steps)
 
-        # Claude Code + Hermes (ai flag)
+        # Claude Code (ai flag)
         if "ai" in flags:
             print_section(console, "Claude Code")
             cc_steps = install_claude_code(runner)
             render_steps(console, cc_steps)
             all_steps.extend(cc_steps)
-
-            print_section(console, "Hermes")
-            hermes_steps = install_hermes(runner)
-            render_steps(console, hermes_steps)
-            all_steps.extend(hermes_steps)
 
         # TypeWhisper (productivity flag)
         if "productivity" in flags:

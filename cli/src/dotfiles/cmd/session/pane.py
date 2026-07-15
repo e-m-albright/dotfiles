@@ -8,7 +8,6 @@ session. (Detaching is a zellij keybind, `Ctrl o d`, not a list action.)
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, cast
 
@@ -24,7 +23,7 @@ from dotfiles.app.context import AppContext
 from dotfiles.cmd.session import session_name
 from dotfiles.cmd.session.agent_sessions import agents_by_session, live_agents
 from dotfiles.cmd.session.models import AgentActivity, Session
-from dotfiles.cmd.session.service import exited_sessions, humanize_age, maybe_prune
+from dotfiles.cmd.session.service import exited_sessions, humanize_age
 from dotfiles.cmd.session.zellij import (
     SessionError,
     Zellij,
@@ -174,17 +173,16 @@ class SessionsPane(Container):
 
     @work(thread=True, exclusive=True)
     def action_reload(self) -> None:
-        # Once-a-day guarded retention sweep, opportunistically on load (the daily
-        # guard keeps the 4s auto-refresh from thrashing it).
-        maybe_prune(
-            self._zellij,
-            state_file=self._ctx.state_dir / "session-prune",
-            now=datetime.now(),
-        )
         try:
             sessions = self._zellij.list_sessions()
         except SessionError:
-            sessions = []
+            self._app.call_from_thread(
+                self.notify,
+                "Could not list Zellij sessions.",
+                title="Sessions",
+                severity="error",
+            )
+            return
         agents = live_agents(self._ctx.runner)
         clients = self._zellij.attached_client_count() if in_zellij() else None
         programs = {s.name: self._zellij.program_titles(s.name) for s in sessions if s.running}
@@ -335,12 +333,20 @@ class SessionsPane(Container):
         if action in ("attach", "resurrect"):
             self._handoff(session.name)
         elif action == "kill":
-            self._zellij.kill_session(session.name)
-            self.notify(f"Killed {session.name}", title="Sessions", severity="warning")
+            result = self._zellij.kill_session(session.name)
+            self.notify(
+                result.message,
+                title="Sessions",
+                severity="error" if result.level == "error" else "warning",
+            )
             self.action_reload()
         elif action == "delete":
-            self._zellij.delete_session(session.name)
-            self.notify(f"Deleted {session.name}", title="Sessions", severity="warning")
+            result = self._zellij.delete_session(session.name)
+            self.notify(
+                result.message,
+                title="Sessions",
+                severity="error" if result.level == "error" else "warning",
+            )
             self.action_reload()
 
     def _on_new_session(self, name: str | None) -> None:

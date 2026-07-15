@@ -1,7 +1,9 @@
 #!/bin/bash
+set -euo pipefail
+
 # Fail clearly on a non-macOS host instead of cascading through chsh/defaults/
 # softwareupdate/duti errors. (This is a macOS bootstrap; the clean-machine CI
-# exercises `agent setup`/`doctor` on Linux, not install.sh.)
+# exercises `doctor` on Linux, not install.sh.)
 if [[ "$OSTYPE" != darwin* ]]; then
     printf 'install.sh targets macOS (OSTYPE=%s). Aborting.\n' "$OSTYPE" >&2
     exit 1
@@ -78,7 +80,7 @@ fi
 
 ################################################################################
 # Set up SSH for Git + Homebrew
-. "$DOTFILES_DIR/macos/ssh.sh"
+"$DOTFILES_DIR/macos/ssh.sh"
 
 # Homebrew bootstrap — must come before any brew/dotfiles-brew calls
 print_section "Homebrew"
@@ -130,11 +132,11 @@ else
 fi
 
 # Setup macos dock
-. "$DOTFILES_DIR/macos/dock.sh"
+"$DOTFILES_DIR/macos/dock.sh"
 # Set file-type defaults (Zed for .md/.txt, etc.) — requires duti from packages.toml
-. "$DOTFILES_DIR/macos/file-associations.sh"
+"$DOTFILES_DIR/macos/file-associations.sh"
 # Configure local LLM: download model + pin context window — requires lm-studio from packages.toml
-. "$DOTFILES_DIR/macos/lmstudio.sh"
+"$DOTFILES_DIR/macos/lmstudio.sh"
 ################################################################################
 
 # Languages & Runtimes
@@ -201,26 +203,8 @@ if command -v fnm >/dev/null 2>&1; then
         print_info "Corepack enabled (pnpm/yarn support)"
     fi
     
-    # Install Railway CLI (deployment platform)
-    if ! command -v railway >/dev/null 2>&1; then
-        print_action "Installing Railway CLI..."
-        npm install -g @railway/cli >/dev/null 2>&1 || true
-        print_success "Railway CLI installed"
-    else
-        print_info "Railway CLI already installed"
-    fi
-
-    # Install OpenAI Codex CLI (code review & task delegation from Claude Code)
-    if ! command -v codex >/dev/null 2>&1; then
-        print_action "Installing OpenAI Codex CLI..."
-        npm install -g @openai/codex >/dev/null 2>&1 || true
-        print_success "OpenAI Codex CLI installed"
-    else
-        print_info "OpenAI Codex CLI already installed"
-    fi
-
     # Stable symlinks for node/npx in /opt/homebrew/bin
-    # GUI apps (Claude Desktop, Cursor) can't find fnm-managed node because they
+    # GUI apps such as Claude Desktop can't find fnm-managed node because they
     # don't source .zshrc. Symlinks in a PATH they do search solve this.
     node_bin="$(command -v node 2>/dev/null)"
     npx_bin="$(command -v npx 2>/dev/null)"
@@ -229,19 +213,6 @@ if command -v fnm >/dev/null 2>&1; then
         ln -sf "$npx_bin" /opt/homebrew/bin/npx
         print_success "Node/npx symlinked to /opt/homebrew/bin (GUI app support)"
     fi
-fi
-
-# -- Bun (Preferred JavaScript package manager / runtime)
-print_section "Bun"
-if ! command -v bun >/dev/null 2>&1; then
-    print_action "Installing Bun..."
-    if curl -fsSL https://bun.sh/install | bash >/dev/null 2>&1; then
-        print_success "Bun installed"
-    else
-        print_warning "Bun install failed — install manually: curl -fsSL https://bun.sh/install | bash"
-    fi
-else
-    print_info "Bun already installed"
 fi
 
 # -- Python / UV
@@ -258,7 +229,7 @@ else
 fi
 
 # Only install Python 3.14 if it's not already installed via UV
-if ! command -v python3.14 >/dev/null 2>&1; then
+if command -v uv >/dev/null 2>&1 && ! command -v python3.14 >/dev/null 2>&1; then
     print_action "Installing Python 3.14 via UV..."
     uv python install 3.14 >/dev/null 2>&1
     print_success "Python 3.14 installed"
@@ -279,16 +250,6 @@ if command -v ghostty >/dev/null 2>&1 || [[ -d "/Applications/Ghostty.app" ]]; t
     print_success "Ghostty configured (notifications enabled)"
 else
     print_info "Ghostty not installed — skipping config"
-fi
-
-# Micro
-print_section "Micro"
-if command -v micro >/dev/null 2>&1; then
-    mkdir -p ~/.config/micro
-    ln -sf "$DOTFILES_DIR/terminal/micro/settings.json" ~/.config/micro/settings.json 2>/dev/null || true
-    print_success "Micro configured (atom-dark theme)"
-else
-    print_info "Micro not installed — skipping config"
 fi
 
 # Yazi
@@ -325,43 +286,13 @@ fi
 # Editor configurations
 print_header "📝 Editor Configuration"
 
-# Cursor
-if command -v cursor >/dev/null 2>&1; then
-    print_section "Cursor"
-    . "$DOTFILES_DIR/editors/cursor/extensions.sh"
-    mkdir -p ~/Library/Application\ Support/Cursor/User
-    ln -sf "$DOTFILES_DIR/editors/cursor/settings.json" ~/Library/Application\ Support/Cursor/User/settings.json 2>/dev/null || true
-    ln -sf "$DOTFILES_DIR/editors/cursor/keybindings.json" ~/Library/Application\ Support/Cursor/User/keybindings.json 2>/dev/null || true
-    # Install Cursor CLI agent (command-line tool)
-    if ! command -v agent >/dev/null 2>&1; then
-        print_action "Installing Cursor CLI agent..."
-        curl -fsS https://cursor.com/install | bash >/dev/null 2>&1 || true
-        print_success "Cursor CLI agent installed"
-    else
-        print_info "Cursor CLI agent already installed"
-    fi
-
-    # Agentic config (MCP, rules, hooks, plugin registration)
-    "$DOTFILES_DIR/bin/dotfiles" agent setup cursor
-
-    print_success "Cursor configured"
-fi
-
 # Zed
 if command -v zed >/dev/null 2>&1; then
     print_section "Zed"
     mkdir -p ~/.config/zed
     ln -sf "$DOTFILES_DIR/editors/zed/settings.json" ~/.config/zed/settings.json 2>/dev/null || true
     ln -sf "$DOTFILES_DIR/editors/zed/keymap.json" ~/.config/zed/keymap.json 2>/dev/null || true
-    print_success "Zed configured (settings + keymap symlinked; ACP agents: claude/codex/gemini)"
-fi
-
-# Pi (local-first terminal agent — uses ~/.agents/skills shared with Codex)
-if command -v pi >/dev/null 2>&1; then
-    print_section "Pi"
-    mkdir -p ~/.pi/agent
-    ln -sf "$DOTFILES_DIR/ai/agents/pi/models.json" ~/.pi/agent/models.json 2>/dev/null || true
-    print_success "Pi configured (models.json → LM Studio; skills via ~/.agents/skills)"
+    print_success "Zed configured (settings + keymap symlinked)"
 fi
 
 # Obsidian
@@ -387,46 +318,41 @@ else
     print_info "Obsidian vault not found at $OBSIDIAN_VAULT — skipping config"
 fi
 
-# Prompts
-print_header "📚 Prompts"
-# Make scripts executable
-chmod +x "$DOTFILES_DIR/ai/.agents/generate-permissions.sh" 2>/dev/null || true
-# Remove old 'recipe' symlink if it exists (deprecated)
-rm -f "$DOTFILES_DIR/bin/recipe" 2>/dev/null || true
-print_success "Prompt assets ready"
-
-# Claude Code (instructions, plugins, voice, permissions)
-print_header "🤖 Claude Code"
-
-# gh mcp-server extension (required for GitHub MCP server)
-print_section "GitHub MCP Extension"
-if command -v gh >/dev/null 2>&1; then
-    if gh extension list 2>/dev/null | grep -q "gh-mcp"; then
-        print_info "gh-mcp extension already installed"
-    else
-        print_action "Installing gh-mcp extension (GitHub MCP server)..."
-        if gh extension install shuymn/gh-mcp >/dev/null 2>&1; then
-            print_success "gh-mcp extension installed"
-        else
-            print_warn "gh-mcp install failed — run 'gh auth login' first, then retry"
-        fi
-    fi
-else
-    print_info "gh not found — skipping MCP extension (installed via packages.toml)"
-fi
+# Workbench (Claude/Codex instructions, skills, MCP, hooks, and prompts)
+print_header "🤖 Workbench"
 
 print_section "Setup"
-"$DOTFILES_DIR/bin/dotfiles" agent setup claude
+WORKBENCH_DIR="${WORKBENCH_DIR:-$HOME/code/public/workbench}"
+if [[ ! -d "$WORKBENCH_DIR/.git" ]]; then
+    print_action "Cloning workbench..."
+    mkdir -p "$(dirname "$WORKBENCH_DIR")"
+    if ! git clone https://github.com/e-m-albright/workbench.git "$WORKBENCH_DIR"; then
+        print_error "Workbench clone failed"
+        exit 1
+    fi
+fi
+mkdir -p "$HOME/.local/bin"
+ln -sf "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/workbench"
+if ! "$WORKBENCH_DIR/bin/workbench" sync all; then
+    print_error "Workbench sync failed"
+    exit 1
+fi
+if ! "$WORKBENCH_DIR/bin/workbench" check all; then
+    print_error "Workbench verification found managed drift"
+    exit 1
+fi
+print_success "Workbench synced to Claude and Codex"
 
-# Agent Permissions (tiered profiles: scout, dev, yolo)
-print_section "Agent Permissions"
-"$DOTFILES_DIR/ai/.agents/generate-permissions.sh" claude || true
+if command -v lefthook >/dev/null 2>&1; then
+    lefthook install
+    print_success "Git hooks installed"
+fi
 
 # Clear cache (execute, don't source — avoids re-evaluating the CLI dispatcher
 # in the installer's shell)
 "$DOTFILES_DIR/bin/dotfiles" clean
 
-mkdir -p ~/code
+mkdir -p "$HOME/code/public"
 
 # Final completion message
 print_completion "✨ Dotfiles setup complete!"
@@ -437,19 +363,13 @@ print_completion "✨ Dotfiles setup complete!"
 print_header "📋 Next Steps"
 printf "\n"
 printf "  ${BOLD}Required:${NC}\n"
-print_todo "Run ${CYAN}claude${NC} to authenticate (plugins auto-configured)"
+print_todo "Run ${CYAN}claude${NC} and ${CYAN}codex${NC} to authenticate"
 print_todo "Run ${CYAN}gh auth login${NC} to authenticate GitHub CLI"
-print_todo "Open Cursor chat and install required plugins:"
-print_dim "    /add-plugin superpowers"
-print_dim "    /add-plugin context7-plugin"
-# Neon plugin disabled 2026-04-09 — revisit when actively using Neon projects
 print_todo "Open Rectangle and grant Accessibility permissions"
 print_todo "Verify git identity: ${CYAN}git config user.name && git config user.email${NC}"
 printf "\n"
 printf "  ${BOLD}Optional:${NC}\n"
-print_todo_optional "Cursor MCP servers are auto-configured — edit ${CYAN}~/dotfiles/ai/agents/cursor/mcp.json${NC} to customize"
-print_todo_optional "When you want dotfiles-managed MCPs reset to profile defaults: ${CYAN}dotfiles agent setup --reset-mcp${NC}"
-print_todo_optional "Edit ${CYAN}~/dotfiles/ai/agents/claude/plugins.yaml${NC} to customize Claude Code plugins"
+print_todo_optional "Complete any browser-based plugin OAuth prompts shown by Claude or Codex"
 printf "\n"
 printf "  Run ${CYAN}dotfiles doctor${NC} to verify everything is set up correctly.\n"
 printf "\n"

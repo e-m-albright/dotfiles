@@ -18,19 +18,19 @@ from pathlib import Path
 
 from rich.console import Console
 
-from dotfiles.app.main import PANEL_AI, PANEL_CONTROL, PANEL_MACHINE, app, render_help_tree
+from dotfiles.app.main import PANEL_CONTROL, PANEL_MACHINE, app, render_help_tree
 
 _REPO = Path(__file__).resolve().parents[4]
 _SHIM = _REPO / "bin" / "dotfiles"
 _COMPLETIONS = _REPO / "shell" / "completions" / "_dotfiles"
 
-_PANELS = {PANEL_MACHINE, PANEL_CONTROL, PANEL_AI}
+_PANELS = {PANEL_MACHINE, PANEL_CONTROL}
 
 # Top-level commands the shim handles natively in Bash (the `case` arms + the
-# `agent` special-case), so they are registered in the Typer app for help/rendering
+# Bash `case` arms, so they are registered in the Typer app for help/rendering
 # but intentionally absent from PY_CLI_COMMANDS. Every other registered command MUST
 # be routed to the Python CLI — see test_every_registered_command_is_reachable.
-_BASH_NATIVE = {"install", "update", "clean", "dock", "profile-shell", "agent"}
+_BASH_NATIVE = {"install", "update", "clean", "dock", "profile-shell"}
 
 
 def _routed_commands() -> set[str]:
@@ -105,14 +105,12 @@ def test_top_level_help_nests_every_sub_apps_subcommands() -> None:
     the front door, not hidden behind one row. Sample one subcommand per sub-app —
     each is reachable only as `dfs <group> <sub>`, so its presence proves nesting."""
     out = _render()
-    for hidden_subcommand in ("catechism", "estimate", "prune", "status", "stale", "diff"):
+    for hidden_subcommand in ("status", "stale", "attach", "deactivate"):
         assert hidden_subcommand in out, f"{hidden_subcommand!r} missing from the nested help tree"
 
 
 def test_subcommands_render_under_their_parent_group() -> None:
-    """`catechism` is an `agent` subcommand and `compare` a `benchmark` one; each must
-    appear after its parent and before the next group, i.e. inside the right branch."""
+    """Nested commands appear after their parent group."""
     out = _render()
-    assert (
-        out.index("agent") < out.index("catechism") < out.index("benchmark") < out.index("compare")
-    )
+    assert out.index("brew") < out.index("stale")
+    assert out.index("email-mask") < out.index("deactivate")

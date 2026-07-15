@@ -7,8 +7,4 @@
 # Homebrew
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-# Bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
 # Rust — sourced in .zshenv, no need to duplicate here

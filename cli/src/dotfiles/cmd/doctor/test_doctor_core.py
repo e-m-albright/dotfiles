@@ -80,6 +80,15 @@ def test_symlink_check_and_fix(tmp_path: Path) -> None:
         _svc(home=tmp_path / "home")._symlink("Configuration", ".zshrc", src, dest).status == "ok"
     )
 
+    wrong = src.with_name(".zshrc.backup")
+    wrong.write_text("# wrong")
+    dest.unlink()
+    dest.symlink_to(wrong)
+    assert (
+        _svc(home=tmp_path / "home")._symlink("Configuration", ".zshrc", src, dest).status
+        == "missing"
+    )
+
 
 # ---------------------------------------------------------------------------
 # run() — full check list
@@ -90,9 +99,8 @@ _ALL_TOOLS = {
     "git",
     "jq",
     "yq",
-    "cursor",
     "zed",
-    "bun",
+    "deno",
     "fnm",
     "uv",
     "go",
@@ -108,6 +116,7 @@ _ALL_TOOLS = {
     "zellij",
     "codex",
     "tailscale",
+    "workbench",
 }
 
 
@@ -122,21 +131,7 @@ def _fully_equipped_runner(home: Path) -> FakeProcessRunner:
     runner.script(("node", "--version"), stdout="v20.0.0\n")
     # python3.14 version
     runner.script(("python3.14", "--version"), stdout="Python 3.14.0\n")
-    # gh extension list — contains gh-mcp
-    runner.script(("gh", "extension", "list"), stdout="shuymn/gh-mcp\n")
-    # jq counts: plugins=1, hooks=1, mcp=1
-    runner.script(
-        ("jq", ".enabledPlugins // {} | length", str(home / ".claude" / "settings.json")),
-        stdout="1\n",
-    )
-    runner.script(
-        ("jq", ".hooks // {} | keys | length", str(home / ".claude" / "settings.json")),
-        stdout="1\n",
-    )
-    runner.script(
-        ("jq", ".mcpServers // {} | length", str(home / ".claude.json")),
-        stdout="1\n",
-    )
+    runner.script(("/usr/bin/workbench", "check"), stdout="OK managed config matches\n")
     return runner
 
 
@@ -178,7 +173,6 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
     # System-path checks resolved under tmp_path (injected), so no host dependence.
     apps_dir = tmp_path / "Applications"
     apps_dir.mkdir()
-    (apps_dir / "Termius.app").mkdir()  # _app() only checks the bundle exists
     brew_bin = tmp_path / "brew-bin"
     brew_bin.mkdir()
     real_node = tmp_path / "node-real"
@@ -189,12 +183,6 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
         home,
         {
             ".gitconfig.local": "[user]\n  email = test@test.com\n",
-            ".claude/CLAUDE.md": "# Claude\n",
-            ".claude/settings.json": '{"enabledPlugins": {"x": 1}, "hooks": {"a": []}}\n',
-            ".claude.json": '{"mcpServers": {"x": {}}}\n',
-            ".codex/AGENTS.md": "# Codex\n",
-            ".codex/hooks.json": "{}\n",
-            ".codex/config.toml": "[mcp_servers]\n",
             ".config/ghostty/config": "font-size = 14\n",
         },
     )
@@ -213,6 +201,16 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
     # satisfied under tmp_path, so a fully-equipped machine has zero failures.
     failures = [r for r in results if r.is_failure]
     assert not failures, f"Unexpected failures: {[(r.name, r.hint) for r in failures]}"
+
+
+def test_workbench_check_reports_live_drift() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("/usr/bin/workbench", "check"), stdout="DRIFT Claude rules\n", exit_code=1)
+    result = _svc(runner, which=lambda n: "/usr/bin/workbench" if n == "workbench" else None)
+    check = result._check_workbench("AI Tools")[0]
+    assert check.status == "warn"
+    assert check.detail == "DRIFT Claude rules"
+    assert check.hint == "Run: workbench sync"
 
 
 # ---------------------------------------------------------------------------

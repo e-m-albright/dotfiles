@@ -8,7 +8,7 @@ runner = CliRunner()
 def test_help_lists_top_level_command_tree() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    for command in ("remote", "session", "doctor", "brew", "agent", "benchmark"):
+    for command in ("remote", "session", "doctor", "brew", "tui", "email-mask"):
         assert command in result.output
 
 

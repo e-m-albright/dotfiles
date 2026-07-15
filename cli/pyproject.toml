@@ -9,7 +9,6 @@ dependencies = [
     "pydantic>=2.10",
     "pydantic-settings>=2.7",
     "structlog>=24.4",
-    "pyyaml>=6.0.3",
     "textual>=8.2.7",
     "pyicloud>=2.6",
 ]

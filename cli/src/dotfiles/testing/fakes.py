@@ -1,16 +1,12 @@
 """In-memory fakes implementing the core ports. Tests only."""
 
 import subprocess
-import tempfile
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
-from typing import Any
 
 from dotfiles.adapters.ports import CommandResult
 from dotfiles.app.context import AppContext
-from dotfiles.settings import LlmSettings, Settings
-
-_JsonDict = dict[str, Any]
+from dotfiles.settings import Settings
 
 
 class FakeProcessRunner:
@@ -58,47 +54,6 @@ class FakeProcessRunner:
                 result.exit_code, list(key), output=result.stdout, stderr=result.stderr
             )
         return result
-
-
-class FakeHttpClient:
-    """Records HTTP calls; returns scripted JSON responses, defaulting to {}."""
-
-    def __init__(self) -> None:
-        self.gets: list[str] = []
-        self.posts: list[tuple[str, _JsonDict]] = []
-        self._get_scripts: dict[str, _JsonDict] = {}
-        self._post_scripts: dict[str, _JsonDict] = {}
-
-    def script_get(self, url: str, payload: _JsonDict) -> None:
-        self._get_scripts[url] = payload
-
-    def script_post(self, url: str, payload: _JsonDict) -> None:
-        self._post_scripts[url] = payload
-
-    def get_json(self, url: str) -> _JsonDict:
-        self.gets.append(url)
-        return self._get_scripts.get(url, {})
-
-    def post_json(self, url: str, body: _JsonDict) -> _JsonDict:
-        self.posts.append((url, body))
-        return self._post_scripts.get(url, {})
-
-
-class FakeMultiPostHttpClient(FakeHttpClient):
-    """Returns POST responses in FIFO order, falling back to empty dict."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._post_queue: list[_JsonDict] = []
-
-    def queue_post(self, payload: _JsonDict) -> None:
-        self._post_queue.append(payload)
-
-    def post_json(self, url: str, body: _JsonDict) -> _JsonDict:
-        self.posts.append((url, body))
-        if self._post_queue:
-            return self._post_queue.pop(0)
-        return {}
 
 
 class FakeMaskProvider:
@@ -178,9 +133,6 @@ def make_fake_context(
     home: Path | None = None,
     launcher: FakeSessionLauncher | None = None,
     dotfiles_dir: Path | None = None,
-    http: FakeHttpClient | None = None,
-    llm_settings: LlmSettings | None = None,
-    state_dir: Path | None = None,
     mask_provider: FakeMaskProvider | None = None,
     settings: Settings | None = None,
 ) -> AppContext:
@@ -194,10 +146,5 @@ def make_fake_context(
         home=home_path,
         launcher=launcher or FakeSessionLauncher(),
         mask_provider_factory=lambda _account: provider,
-        http=http or FakeHttpClient(),
-        llm_settings=llm_settings or LlmSettings(),
         dotfiles_dir=dotfiles_dir or Path("/home/evan/dotfiles"),
-        # A fresh, writable, isolated temp dir per call: code that writes state
-        # (e.g. the session-prune stamp) stays fast and can't leak across tests.
-        state_dir=state_dir or Path(tempfile.mkdtemp(prefix="dotfiles-state-")),
     )

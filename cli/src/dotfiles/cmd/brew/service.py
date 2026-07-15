@@ -294,10 +294,15 @@ class InstallPlan:
 # ---------------------------------------------------------------------------
 
 
-def add_taps(manifest: PackageManifest, runner: ProcessRunner) -> list[StepResult]:
+def add_taps(
+    manifest: PackageManifest, runner: ProcessRunner, *, dry_run: bool = False
+) -> list[StepResult]:
     """Run `brew tap` for each enabled tap. Idempotent — brew tap is a no-op if present."""
     results: list[StepResult] = []
     for tap in manifest.taps.items:
+        if dry_run:
+            results.append(StepResult(level="info", message=f"DRY RUN: brew tap {tap}"))
+            continue
         res = runner.run(("brew", "tap", tap))
         if res.exit_code == 0:
             results.append(StepResult(level="success", message=f"tap {tap}"))
@@ -387,17 +392,14 @@ _RUSTUP_INSTALL = (
     "-c",
     "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
 )
-_CARGO_ENV_LINE = '[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"'
 
 
-def install_rust(runner: ProcessRunner, *, home: Path) -> list[StepResult]:
+def install_rust(runner: ProcessRunner) -> list[StepResult]:
     """Install Rust via rustup if not already present.
 
     Idempotency guard: skips if `rustup` or `cargo` is on PATH.
-    Post-install: ensures <home>/.zprofile sources ~/.cargo/env.
-
-    ``home`` must be injected by the caller (never Path.home() inside core) so
-    that tests can pass a tmp_path and never touch the real home directory.
+    Shell startup already sources ``~/.cargo/env`` from the tracked ``.zshenv``;
+    this installer must not write through the tracked ``.zprofile`` symlink.
     """
     check = runner.run(_RUSTUP_CHECK)
     if check.stdout.strip():
@@ -406,16 +408,6 @@ def install_rust(runner: ProcessRunner, *, home: Path) -> list[StepResult]:
     res = runner.run(_RUSTUP_INSTALL)
     if res.exit_code != 0:
         return [StepResult(level="error", message=f"rustup installer failed: {res.stderr.strip()}")]
-
-    # Idempotent .zprofile patch via pathlib (no runner needed for file I/O)
-    zprofile = home / ".zprofile"
-    try:
-        existing = zprofile.read_text() if zprofile.exists() else ""
-        if ".cargo/env" not in existing:
-            with zprofile.open("a") as fh:
-                fh.write(f"\n# Rust (rustup)\n{_CARGO_ENV_LINE}\n")
-    except OSError:
-        pass  # Non-fatal; user can add manually
 
     return [StepResult(level="success", message="Rust installed via rustup")]
 
@@ -445,33 +437,6 @@ def install_claude_code(runner: ProcessRunner) -> list[StepResult]:
     runner.run(_CLAUDE_CODE_PIN)
 
     return [StepResult(level="success", message="claude-code installed")]
-
-
-_HERMES_CHECK = ("sh", "-c", "command -v hermes")
-_HERMES_INSTALL = (
-    "sh",
-    "-c",
-    "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --non-interactive",
-)
-
-
-def install_hermes(runner: ProcessRunner) -> list[StepResult]:
-    """Install Hermes (NousResearch hermes-agent) via its native installer if absent.
-
-    Idempotency guard: skips if `hermes` is on PATH. The installer is self-contained
-    (uv-managed Python + Node under ~/.hermes); `--non-interactive` skips the setup
-    wizard so a fresh-machine run doesn't block. Skills are deployed separately by
-    `dotfiles agent setup hermes`.
-    """
-    check = runner.run(_HERMES_CHECK)
-    if check.stdout.strip():
-        return [StepResult(level="info", message="hermes already installed — skipping")]
-
-    res = runner.run(_HERMES_INSTALL)
-    if res.exit_code != 0:
-        return [StepResult(level="error", message=f"hermes installer failed: {res.stderr.strip()}")]
-
-    return [StepResult(level="success", message="hermes installed")]
 
 
 _TW_APP_PATH = "/Applications/TypeWhisper.app"
@@ -608,8 +573,14 @@ def upgrade(runner: ProcessRunner) -> list[StepResult]:
     the one-shot "bring my packages current" convenience.
     """
     results: list[StepResult] = []
-    runner.run(("brew", "update"))
-    results.append(StepResult(level="success", message="Updated Homebrew index"))
+    update = runner.run(("brew", "update"))
+    if update.ok:
+        results.append(StepResult(level="success", message="Updated Homebrew index"))
+    else:
+        results.append(
+            StepResult(level="error", message="brew update failed", details=update.stderr.strip())
+        )
+        return results
     res = runner.run(("brew", "upgrade"))
     if res.ok:
         results.append(StepResult(level="success", message="Upgraded formulae + casks"))
@@ -617,6 +588,11 @@ def upgrade(runner: ProcessRunner) -> list[StepResult]:
         results.append(
             StepResult(level="error", message="brew upgrade failed", details=res.stderr.strip())
         )
-    runner.run(("brew", "cleanup", "--prune=30"))
-    results.append(StepResult(level="info", message="Pruned caches older than 30 days"))
+    cleanup = runner.run(("brew", "cleanup", "--prune=30"))
+    if cleanup.ok:
+        results.append(StepResult(level="info", message="Pruned caches older than 30 days"))
+    else:
+        results.append(
+            StepResult(level="warn", message="brew cleanup failed", details=cleanup.stderr.strip())
+        )
     return results

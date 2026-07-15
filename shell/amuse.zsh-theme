@@ -72,7 +72,7 @@ _prompt_duration_compute() {
 # -----------------------------------------------------------------------------
 # Git: branch + staged/unstaged/untracked/conflict + ahead/behind counts.
 # Single `git status --porcelain=v2 --branch` call; clean repos show branch + ✓,
-# matching the Pi statusline.
+# matching the compact agent status lines.
 # -----------------------------------------------------------------------------
 _prompt_git_compute() {
     _git_segment=""

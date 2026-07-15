@@ -1,5 +1,5 @@
 {
-  "readableLineLength": false,
+  "readableLineLength": true,
   "spellcheck": true,
   "foldHeading": true,
   "foldIndent": true,

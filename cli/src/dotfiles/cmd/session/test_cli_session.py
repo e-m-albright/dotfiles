@@ -1,4 +1,3 @@
-from datetime import datetime
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -33,7 +32,7 @@ def _ctx_with_sessions(*, selection=None):
     return make_fake_context(runner=r, launcher=launcher), launcher
 
 
-def _ctx_with_exited(*, state_dir: Path | None = None):
+def _ctx_with_exited():
     r = FakeProcessRunner()
     r.script(
         ("zellij", "list-sessions", "--no-formatting"),
@@ -43,23 +42,14 @@ def _ctx_with_exited(*, state_dir: Path | None = None):
             "ancient [Created 30d ago] (EXITED - attach to resurrect)\n"
         ),
     )
-    return make_fake_context(runner=r, state_dir=state_dir), r
+    return make_fake_context(runner=r), r
 
 
-def test_ls_runs_guarded_prune_sweep(tmp_path: Path) -> None:
-    ctx, r = _ctx_with_exited(state_dir=tmp_path)
+def test_ls_never_prunes_resurrectable_sessions(tmp_path: Path) -> None:
+    ctx, r = _ctx_with_exited()
     result = runner.invoke(app, ["session", "ls"], obj=ctx)
     assert result.exit_code == 0
-    # The opportunistic sweep dropped the >14d session; the stamp was written.
-    assert ("zellij", "delete-session", "ancient") in r.calls
-    assert (tmp_path / "session-prune").exists()
-
-
-def test_ls_sweep_is_guarded_by_recent_stamp(tmp_path: Path) -> None:
-    (tmp_path / "session-prune").write_text(datetime.now().isoformat())
-    ctx, r = _ctx_with_exited(state_dir=tmp_path)
-    runner.invoke(app, ["session", "ls"], obj=ctx)
-    # Swept within the last day → no deletions this load.
+    assert "ancient" in result.output
     assert not any(c[:2] == ("zellij", "delete-session") for c in r.calls)
 
 
@@ -96,11 +86,8 @@ def test_ls_lists_sessions() -> None:
     assert "work" in result.output
 
 
-def test_ls_shows_age_on_exited_rows(tmp_path: Path) -> None:
-    # Guard the sweep so the row is only formatted, not deleted mid-list.
-
-    (tmp_path / "session-prune").write_text(datetime.now().isoformat())
-    ctx, _ = _ctx_with_exited(state_dir=tmp_path)
+def test_ls_shows_age_on_exited_rows() -> None:
+    ctx, _ = _ctx_with_exited()
     result = runner.invoke(app, ["session", "ls"], obj=ctx)
     assert result.exit_code == 0
     assert "exited · 30d" in result.output

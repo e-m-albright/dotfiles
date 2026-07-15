@@ -1,4 +1,4 @@
-"""`dotfiles email` commands: manage iCloud Hide My Email aliases from the terminal."""
+"""`dotfiles email-mask` commands: manage iCloud Hide My Email aliases."""
 
 from __future__ import annotations
 
@@ -13,12 +13,18 @@ from dotfiles.cmd.email.service import (
     MaskProvider,
     copy_to_clipboard,
     create_mask,
+    deactivate_mask,
+    delete_mask,
     find_mask,
     list_masks,
 )
 from dotfiles.console import console, print_field, print_status, print_title
 
-email_app = typer.Typer(cls=FuzzyTyperGroup, help="Manage iCloud Hide My Email aliases.")
+email_mask_app = typer.Typer(
+    cls=FuzzyTyperGroup,
+    help="Create and manage iCloud Hide My Email aliases.",
+    invoke_without_command=True,
+)
 
 # Reused across every command; defaults to $DOTFILES_APPLE_ID via Settings.
 _AppleId = Annotated[
@@ -49,8 +55,31 @@ def _fail(exc: MaskError) -> NoReturn:
     raise typer.Exit(code=1) from exc
 
 
-@email_app.command()
-def mask(
+def _create(ctx: typer.Context, label: str, apple_id: str | None, copy: bool) -> None:
+    """Create and render one alias."""
+    print_title(console, "email-mask", "create")
+    provider = _provider(ctx, apple_id)
+    try:
+        reserved = create_mask(provider, label)
+    except MaskError as exc:
+        _fail(exc)
+    print_status(console, "success", "New Hide My Email created")
+    print_field(console, "address", reserved.address, soft_wrap=True)
+    print_field(console, "label", reserved.label)
+    if copy and copy_to_clipboard(app_context(ctx).runner, reserved.address):
+        print_status(console, "info", "Copied to clipboard")
+    console.print()
+
+
+@email_mask_app.callback()
+def email_mask(ctx: typer.Context) -> None:
+    """Create a mask with the default label when no subcommand is given."""
+    if ctx.invoked_subcommand is None:
+        _create(ctx, "dotfiles", None, True)
+
+
+@email_mask_app.command()
+def create(
     ctx: typer.Context,
     label: Annotated[
         str, typer.Argument(help="Label to file the alias under in iCloud settings.")
@@ -65,24 +94,13 @@ def mask(
     First run prompts (once) for the iCloud password and a two-factor code, then
     persists the session — subsequent runs are non-interactive. Requires iCloud+.
     """
-    print_title(console, "email", "mask")
-    provider = _provider(ctx, apple_id)
-    try:
-        reserved = create_mask(provider, label)
-    except MaskError as exc:
-        _fail(exc)
-    print_status(console, "success", "New Hide My Email created")
-    print_field(console, "address", reserved.address, soft_wrap=True)
-    print_field(console, "label", reserved.label)
-    if copy and copy_to_clipboard(app_context(ctx).runner, reserved.address):
-        print_status(console, "info", "Copied to clipboard")
-    console.print()
+    _create(ctx, label, apple_id, copy)
 
 
-@email_app.command("list")
+@email_mask_app.command("list")
 def list_aliases(ctx: typer.Context, apple_id: _AppleId = None) -> None:
     """List your aliases — address, label, and whether forwarding is active."""
-    print_title(console, "email", "list")
+    print_title(console, "email-mask", "list")
     provider = _provider(ctx, apple_id)
     try:
         masks = list_masks(provider)
@@ -99,21 +117,21 @@ def list_aliases(ctx: typer.Context, apple_id: _AppleId = None) -> None:
     console.print()
 
 
-@email_app.command()
+@email_mask_app.command()
 def deactivate(ctx: typer.Context, selector: _Selector, apple_id: _AppleId = None) -> None:
     """Stop an alias forwarding mail but keep it in your list (reversible)."""
-    print_title(console, "email", "deactivate")
+    print_title(console, "email-mask", "deactivate")
     provider = _provider(ctx, apple_id)
     try:
         target = find_mask(list_masks(provider), selector)
-        provider.deactivate(target.anonymous_id)
+        deactivate_mask(provider, target.anonymous_id)
     except MaskError as exc:
         _fail(exc)
     print_status(console, "success", f"Deactivated {target.address}")
     console.print()
 
 
-@email_app.command()
+@email_mask_app.command()
 def delete(
     ctx: typer.Context,
     selector: _Selector,
@@ -123,7 +141,7 @@ def delete(
     ] = False,
 ) -> None:
     """Permanently delete an alias. Dry-run by default; pass --yes to commit (irreversible)."""
-    print_title(console, "email", "delete")
+    print_title(console, "email-mask", "delete")
     provider = _provider(ctx, apple_id)
     try:
         target = find_mask(list_masks(provider), selector)
@@ -136,7 +154,7 @@ def delete(
             )
             console.print()
             return
-        provider.delete(target.anonymous_id)
+        delete_mask(provider, target.anonymous_id)
     except MaskError as exc:
         _fail(exc)
     print_status(console, "success", f"Deleted {target.address}")

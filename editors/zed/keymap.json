@@ -6,8 +6,7 @@
   {
     "bindings": {
       "cmd-alt-a": ["agent::NewExternalAgentThread", { "agent": "claude-acp" }],
-      "cmd-alt-o": ["agent::NewExternalAgentThread", { "agent": "codex-acp" }],
-      "cmd-alt-g": ["agent::NewExternalAgentThread", { "agent": "gemini" }]
+      "cmd-alt-o": ["agent::NewExternalAgentThread", { "agent": "codex-acp" }]
     }
   }
 ]
