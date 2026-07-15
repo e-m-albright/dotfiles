@@ -56,7 +56,7 @@ packages = [
   { name = "iftop",              note = "Network traffic monitoring" },
   { name = "nmap",               note = "Network mapping" },
   { name = "dockutil",           note = "Dock management" },
-  { name = "terminal-notifier",  note = "Disabled 2026-07-15: native Claude and Codex notifications replaced the custom hook", disabled = true },
+  { name = "terminal-notifier",  note = "Native Claude and Codex notifications replaced the custom hook", disabled = true, reason = "Disabled 2026-07-15: native Claude and Codex notifications replaced the custom hook" },
   { name = "duti",               note = "Set default app for file types (used by file-associations.sh)" },
 ]
 
@@ -77,13 +77,13 @@ packages = [
   { name = "ngrok",          note = "Secure tunnels to localhost (webhook testing, demos)" },
   { name = "neonctl",        note = "Neon Postgres CLI (projects, DBs, roles)" },
   { name = "infisical",      note = "Secrets management CLI (requires infisical/get-cli tap)" },
-  { name = "git-filter-repo", note = "Git history rewriting (secrets scrub)", disabled = true },
+  { name = "git-filter-repo", note = "Git history rewriting (secrets scrub)", disabled = true, reason = "Disabled 2026-07-15: rarely needed; install temporarily when a repository history rewrite is required" },
   { name = "libpq",          note = "PostgreSQL client library (psql, pg_dump)" },
   { name = "sccache",        note = "Shared compilation cache (Rust/C/C++ build speedup)" },
   { name = "temporal",       note = "Temporal workflow CLI", disabled = true, reason = "Disabled 2026-06-01: experiment; reinstall if revisiting durable workflows" },
   { name = "pulumi",         note = "IaC in real languages", disabled = true, reason = "Disabled 2026-06-01: experiment; opentofu is the active IaC tool" },
-  { name = "sentry-cli",     note = "Sentry error tracking (releases, source maps, deploys)", disabled = true },
-  { name = "datadog-ci",     note = "Datadog CI test visibility & synthetics", disabled = true },
+  { name = "sentry-cli",     note = "Sentry error tracking (releases, source maps, deploys)", disabled = true, reason = "Disabled 2026-07-15: no active personal Sentry usage; originally installed only for agent-driven service administration" },
+  { name = "datadog-ci",     note = "Datadog CI test visibility & synthetics", disabled = true, reason = "Disabled 2026-07-15: no active personal Datadog usage; originally installed only for agent-driven service administration" },
 ]
 
 [[section]]
@@ -132,16 +132,16 @@ packages = [
   { name = "google-drive",    note = "Drive <-> Mac selective sync. Use STREAMING mode (default; nothing bulk-downloaded) + per-folder 'Available offline' for local copies; pick which Mac folders upload under Settings > My MacBook. Never enable 'Mirror files' (would pull all of Drive)" },
   { name = "tailscale-app",   note = "Mesh VPN for secure laptop access" },
   { name = "termius",         note = "Phone client for remote access; the macOS app adds no value on the host", disabled = true, reason = "Host exclusion 2026-07-15: keep using Termius on the phone" },
-  { name = "iterm2",          note = "Terminal emulator", disabled = true },
+  { name = "iterm2",          note = "Terminal emulator", disabled = true, reason = "Disabled 2026-07-15: switched to Ghostty" },
 ]
 
 [[section]]
 name = "IDE"
 kind = "cask"
 packages = [
-  { name = "cursor",              note = "Disabled 2026-07-15: extra editor/agent control plane did not earn its overlap with Zed + Claude/Codex", disabled = true },
+  { name = "cursor",              note = "AI-native editor", disabled = true, reason = "Disabled 2026-07-15: extra editor/agent control plane did not earn its overlap with Zed + Claude/Codex" },
   { name = "zed",                 note = "Primary GPU-native editor with ACP agent panel" },
-  { name = "visual-studio-code",  note = "Disabled: Zed is the managed editor", disabled = true },
+  { name = "visual-studio-code",  note = "General-purpose editor", disabled = true, reason = "Disabled 2026-07-15: Zed is the opinionated primary editor after moving through VS Code and Cursor" },
 ]
 
 [[section]]
@@ -150,16 +150,16 @@ kind = "cask"
 flag = "productivity"
 packages = [
   { name = "rectangle",        note = "Window management" },
-  { name = "flycut",           note = "Clipboard manager", disabled = true },
-  { name = "raycast",          note = "Launcher + actions; can replace Rectangle/Flycut", disabled = true },
-  { name = "warp",             note = "AI terminal", disabled = true },
+  { name = "flycut",           note = "Clipboard manager" },
+  { name = "raycast",          note = "Launcher + actions; can replace Rectangle/Flycut", disabled = true, reason = "Disabled 2026-07-15: grab-bag productivity suite did not solve a recurring problem worth learning" },
+  { name = "warp",             note = "AI terminal", disabled = true, reason = "Disabled 2026-07-15: Ghostty plus Claude Code and Codex provide the preferred terminal and AI interfaces" },
   { name = "ghostty",          note = "GPU-accelerated terminal" },
   { name = "caffeine",         note = "Intel-only, requires Rosetta" },
   { name = "flux-app",         note = "Screen color temperature" },
   { name = "granola",          note = "AI notepad for meetings" },
   { name = "perplexity",       note = "Disabled 2026-07-14: desktop app removed; use web only if needed", disabled = true, reason = "No Homebrew cask; app was installed manually" },
   { name = "wispr-flow",       note = "Disabled 2026-05-29: switched to TypeWhisper (on-device Parakeet ASR + local Gemma / Apple Intelligence cleanup)", disabled = true, reason = "No Homebrew cask exists; installed via special.typewhisper block" },
-  { name = "aqua-voice",       note = "Voice dictation alternative (consider vs Wispr Flow)", disabled = true },
+  { name = "aqua-voice",       note = "Voice dictation alternative", disabled = true, reason = "Disabled 2026-07-15: local TypeWhisper is private, adequate, and subscription-free" },
   { name = "obsidian",         note = "Knowledge base & note-taking (Markdown)" },
   { name = "qlmarkdown",       note = "Quick Look: rendered .md previews (sbarex)" },
   { name = "syntax-highlight", note = "Quick Look: syntax highlighting for code, yaml, toml, json, cfg, etc. (sbarex)" },
@@ -169,7 +169,7 @@ packages = [
 name = "Development Apps"
 kind = "cask"
 packages = [
-  { name = "docker-desktop",   note = "Consider OrbStack instead (faster, lower resource usage on macOS)", disabled = true },
+  { name = "docker-desktop",   note = "Container desktop runtime", disabled = true, reason = "Disabled 2026-07-15: switched to OrbStack as the active macOS container runtime" },
   { name = "orbstack",         note = "Docker Desktop alternative (faster, better macOS integration)" },
   { name = "axiom",            note = "Axiom observability CLI (requires axiomhq/tap)" },
   { name = "gcloud-cli",       note = "Google Cloud SDK (cask renamed from google-cloud-sdk). Re-enabled 2026-07-06: hard dependency of `gws auth setup` (OAuth client provisioning)" },
@@ -182,12 +182,12 @@ flag = "social"
 packages = [
   { name = "spotify",             note = "" },
   { name = "slack",               note = "" },
-  { name = "slack-cli",           note = "Slack platform dev CLI (app development, not chat)", disabled = true },
+  { name = "slack-cli",           note = "Slack platform dev CLI (app development, not chat)", disabled = true, reason = "Disabled 2026-07-15: Slack is infrequently used and does not need local automation" },
   { name = "zoom",                note = "" },
-  { name = "discord",             note = "", disabled = true },
+  { name = "discord",             note = "Chat client", disabled = true, reason = "Disabled 2026-07-15: not actively used" },
   { name = "whatsapp",            note = "" },
-  { name = "super-productivity",  note = "", disabled = true },
-  { name = "signal",              note = "", disabled = true },
+  { name = "super-productivity",  note = "Task and time management", disabled = true, reason = "Disabled 2026-07-15: the workflow did not click and was not worth further investment" },
+  { name = "signal",              note = "Encrypted messaging", disabled = true, reason = "Disabled 2026-07-15: no current need for a dedicated encrypted-messaging client" },
 ]
 
 [[section]]
@@ -195,11 +195,6 @@ name = "Fonts"
 kind = "cask"
 packages = [
   { name = "font-fira-code-nerd-font",        note = "Active terminal font (Ghostty primary)" },
-  { name = "font-jetbrains-mono-nerd-font",   note = "Alternate; Ghostty's default-ish vibe with glyphs", disabled = true },
-  { name = "font-maple-mono-nf",              note = "Editorial-leaning, sharp letterforms", disabled = true },
-  { name = "font-monaspace-nerd-font",        note = "GitHub Monaspace — five variants, texture-healing", disabled = true },
-  { name = "font-mononoki-nerd-font",         note = "Humanist mono with character", disabled = true },
-  { name = "font-symbols-only-nerd-font",     note = "Glyph-only overlay (use as fallback for non-patched primary)", disabled = true },
 ]
 
 [[section]]
@@ -207,23 +202,23 @@ name = "AI CLI Tools"
 kind = "auto"
 flag = "ai"
 packages = [
-  { name = "claude-code",          note = "Disabled 2026-05-17: cask tracks `stable` dist-tag (lags by days/weeks); installed via special.claude_code block", disabled = true },
+  { name = "claude-code",          note = "Installed via the special.claude_code block", disabled = true, reason = "Disabled 2026-05-17: cask tracks the stable dist-tag and can lag releases by days or weeks" },
   { name = "claude",               note = "Claude Desktop (macOS app)" },
-  { name = "conductor",            note = "Claude Code parallelisation (disabled — prefer native subagents)", disabled = true },
+  { name = "conductor",            note = "Claude Code parallelisation", disabled = true, reason = "Disabled 2026-07-15: large agent fleets do not solve a current problem; native subagents and Ghostty tabs cover the desired maximum of roughly five concurrent agents" },
   { name = "codex",                note = "OpenAI Codex CLI (terminal agent) — or: npm i -g @openai/codex" },
   { name = "chatgpt",              note = "OpenAI ChatGPT desktop app: Codex mode, plugins, and scheduled local tasks" },
   { name = "googleworkspace-cli",  note = "Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin)" },
-  { name = "jules",                note = "Disabled 2026-05-07: cloud-only (jules.google.com), local CLI is just a launcher", disabled = true },
-  { name = "gemini-cli",           note = "Replaced 2026-06-09 by antigravity-cli (Gemini CLI sunsets Pro/Ultra/free 2026-06-18)", disabled = true },
-  { name = "antigravity-cli",      note = "Disabled 2026-07-15: focus active agent support on Claude and Codex", disabled = true },
-  { name = "antigravity",          note = "Google Antigravity IDE (AI-native editor) — the GUI; the CLI is antigravity-cli above", disabled = true },
-  { name = "copilot",              note = "GitHub Copilot CLI (terminal agent) — or: npm i -g @github/copilot", disabled = true },
-  { name = "cmux",                 note = "Disabled 2026-07-15: pleasant, but did not add enough beyond Ghostty + Zellij session control", disabled = true },
+  { name = "jules",                note = "Google cloud coding agent launcher", disabled = true, reason = "Disabled 2026-05-07: cloud-only service; the local CLI is only a launcher" },
+  { name = "gemini-cli",           note = "Google terminal coding agent", disabled = true, reason = "Disabled 2026-06-09: replaced during the Antigravity evaluation; active agent support is now focused on Claude and Codex" },
+  { name = "antigravity-cli",      note = "Google Antigravity CLI", disabled = true, reason = "Disabled 2026-07-15: focus active agent support on Claude and Codex" },
+  { name = "antigravity",          note = "Google Antigravity AI-native IDE", disabled = true, reason = "Disabled 2026-07-15: overlaps Cursor and other agentic editors without offering a needed current capability; open to reevaluation" },
+  { name = "copilot",              note = "GitHub Copilot CLI terminal agent", disabled = true, reason = "Disabled 2026-07-15: did not remain competitive for AI development; standardized on Claude Code and Codex" },
+  { name = "cmux",                 note = "Terminal workspace", disabled = true, reason = "Disabled 2026-07-15: did not add enough beyond Ghostty and Zellij session control" },
   { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
   { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
   { name = "opencode",             note = "Vendor-neutral terminal coding agent", disabled = true, reason = "Disabled 2026-06-01: vendor-neutral CLIs rolled back (subscription economics); standardized on Claude Code + Codex" },
   { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server" },
-  { name = "huggingface-cli",      note = "Hugging Face CLI (disabled — install per-project if needed)", disabled = true },
+  { name = "huggingface-cli",      note = "Hugging Face CLI", disabled = true, reason = "Disabled 2026-07-15: no model-development workflow needs it; install per-project if local-model experimentation resumes" },
 ]
 
 [[section]]

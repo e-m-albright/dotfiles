@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from dotfiles.cmd.brew.service import (
     PackageManifest,
@@ -43,7 +44,7 @@ kind = "cask"
 flag = "productivity"
 packages = [
   { name = "obsidian", note = "Notes" },
-  { name = "warp", note = "AI terminal", disabled = true },
+  { name = "warp", note = "AI terminal", disabled = true, reason = "not needed" },
 ]
 
 [[section]]
@@ -120,6 +121,12 @@ def test_load_disabled_package(tmp_path: Path) -> None:
     assert ffmpeg.name == "ffmpeg"
     assert ffmpeg.disabled is True
     assert ffmpeg.reason == "too big"
+
+
+def test_load_rejects_disabled_package_without_reason(tmp_path: Path) -> None:
+    content = MINIMAL_TOML.replace(', reason = "too big"', "")
+    with pytest.raises(ValidationError, match="disabled package 'ffmpeg' requires a reason"):
+        PackageManifest.load(make_toml(tmp_path, content))
 
 
 def test_load_section_flag(tmp_path: Path) -> None:

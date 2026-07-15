@@ -27,8 +27,9 @@ async def test_sessions_pane_lists_sessions():
         assert pane.session_names() == ["work", "mobile"]
 
 
-def test_action_sheet_snapshot(snap_compare):
+def test_action_sheet_snapshot(snap_compare, monkeypatch):
     """Golden snapshot of the action sheet: brand button colors + aligned text."""
+    monkeypatch.delenv("NO_COLOR", raising=False)
     runner = FakeProcessRunner()
     runner.script(("zellij", "list-sessions", "--no-formatting"), stdout="work [created]\n")
     app = MissionControlApp(ctx=make_fake_context(runner=runner))

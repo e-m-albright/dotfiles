@@ -43,6 +43,12 @@ class Package(BaseModel):
     reason: str = ""
     flag: str | None = None
 
+    @model_validator(mode="after")
+    def disabled_requires_reason(self) -> Package:
+        if self.disabled and not self.reason.strip():
+            raise ValueError(f"disabled package {self.name!r} requires a reason")
+        return self
+
 
 class Section(BaseModel):
     """A named group of packages sharing a kind and optional feature flag."""
@@ -89,6 +95,12 @@ class NpmPackage(BaseModel):
     note: str = ""
     disabled: bool = False
     reason: str = ""
+
+    @model_validator(mode="after")
+    def disabled_requires_reason(self) -> NpmPackage:
+        if self.disabled and not self.reason.strip():
+            raise ValueError(f"disabled npm package {self.name!r} requires a reason")
+        return self
 
 
 class Flags(BaseModel):

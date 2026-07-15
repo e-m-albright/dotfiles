@@ -46,8 +46,9 @@ async def test_dashboard_has_gradient_banner_header():
         assert "█" in text
 
 
-def test_dashboard_snapshot(snap_compare):
+def test_dashboard_snapshot(snap_compare, monkeypatch):
     """Golden snapshot of the booted dashboard (banner + Remote + Sessions panes)."""
+    monkeypatch.delenv("NO_COLOR", raising=False)
     app = MissionControlApp(ctx=make_fake_context())
     assert snap_compare(app)
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typer.testing import CliRunner
 
 from dotfiles.app.main import app
+from dotfiles.cmd.email.service import copy_to_clipboard
 from dotfiles.settings import Settings
 from dotfiles.testing.fakes import FakeMaskProvider, FakeProcessRunner, make_fake_context
 
@@ -28,9 +29,15 @@ def test_email_help_lists_all_commands() -> None:
         assert cmd in result.output
 
 
-def test_mask_generates_reserves_and_copies() -> None:
+def test_mask_generates_reserves_and_copies(monkeypatch) -> None:
     provider = FakeMaskProvider(address="new@icloud.com")
     proc = FakeProcessRunner()
+    monkeypatch.setattr(
+        "dotfiles.cmd.email.cli.copy_to_clipboard",
+        lambda process, text: copy_to_clipboard(
+            process, text, which=lambda _name: "/usr/bin/pbcopy"
+        ),
+    )
     ctx = make_fake_context(
         runner=proc,
         mask_provider=provider,
