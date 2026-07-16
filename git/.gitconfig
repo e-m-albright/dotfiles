@@ -18,8 +18,14 @@
     editor = zed --wait
     autocrlf = input
     pager = delta
-    # Better performance on large repos
-    fsmonitor = true
+    # untrackedcache speeds up status on large repos with no downside.
+    # fsmonitor is intentionally OFF: its daemon can't open its IPC socket
+    # inside the Claude Code sandbox, so every git command an agent runs emits
+    # "fsmonitor_ipc__send_query" errors that masquerade as failures and choke
+    # stderr-sensitive hooks (e.g. gitleaks). The perf win is marginal on these
+    # small repos; re-enable per-repo (git config core.fsmonitor true) if you
+    # ever work in a monorepo large enough to need it.
+    fsmonitor = false
     untrackedcache = true
 
 [column]
