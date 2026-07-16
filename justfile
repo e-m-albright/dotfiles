@@ -40,8 +40,7 @@ deadcode:
 complexity:
     uv run complexipy src -mx 9
 
-# ShellCheck every shell script (blocking). The shell layer's gate — same -S
-# warning bar the pre-commit hook uses, run over the whole tree for pre-push/CI.
+# ShellCheck every shell script at the pre-commit warning threshold.
 [group('quality')]
 lint-shell:
     #!/usr/bin/env bash
@@ -115,5 +114,5 @@ scrub mode='all':
 [default]
 help:
     #!/usr/bin/env bash
-    export JUST_LIST_HEADING=$'\e[1;34m dotfiles CLI\e[0m — dev tasks (cwd: cli/)\n'
+    export JUST_LIST_HEADING=$'\e[1;38;2;242;169;0m dotfiles CLI\e[0m · dev tasks (cwd: cli/)\n'
     exec just --justfile "{{justfile()}}" --list --unsorted

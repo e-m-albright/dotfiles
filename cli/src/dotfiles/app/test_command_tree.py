@@ -13,6 +13,7 @@ command lands outside a known Rich help panel (which would render it un-grouped)
 from __future__ import annotations
 
 import re
+import subprocess
 from io import StringIO
 from pathlib import Path
 
@@ -114,3 +115,47 @@ def test_subcommands_render_under_their_parent_group() -> None:
     out = _render()
     assert out.index("brew") < out.index("stale")
     assert out.index("email-mask") < out.index("deactivate")
+
+
+def test_unknown_shim_command_uses_branded_visual_error() -> None:
+    result = subprocess.run(
+        [str(_SHIM), "not-a-command"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 2
+    assert "╭─ Error" in result.stderr
+    assert "not-a-command" in result.stderr
+    assert "Machine" in result.stderr
+    assert "\033[" not in result.stderr
+
+
+def test_bash_native_help_is_safe_and_consistent() -> None:
+    for command in sorted(_BASH_NATIVE):
+        for flag in ("--help", "-h"):
+            result = subprocess.run(
+                [str(_SHIM), command, flag],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            assert result.returncode == 0, (command, flag, result.stderr)
+            assert "Usage:" in result.stdout, (command, flag)
+            assert command in result.stdout, (command, flag)
+
+
+def test_bash_native_commands_reject_unexpected_arguments_before_execution() -> None:
+    for command in sorted(_BASH_NATIVE):
+        result = subprocess.run(
+            [str(_SHIM), command, "unexpected"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 2, (command, result.stderr)
+        assert "╭─ Error" in result.stderr, command
+        assert "accepts no arguments" in result.stderr, command

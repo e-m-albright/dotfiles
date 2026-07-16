@@ -170,7 +170,7 @@ def _command_panel(root: TyperGroup, panel_title: str) -> Panel:
     return Panel(table, title=panel_title, title_align="left", box=box.ROUNDED, padding=(0, 1))
 
 
-def render_help_tree(console: Console) -> None:
+def render_help_tree(console: Console, *, error: str | None = None) -> None:
     """Render the branded top-level help with every sub-app's subcommands nested in.
 
     Typer's flat renderer hides each group's capabilities behind a single row.
@@ -193,12 +193,27 @@ def render_help_tree(console: Console) -> None:
     root = typer.main.get_command(app)
     assert isinstance(root, TyperGroup)  # the top-level app is always a group
 
+    if error:
+        console.print(
+            Panel(
+                Text.assemble(("✗", "bold red"), "  ", error),
+                title="Error",
+                title_align="left",
+                border_style="red",
+                box=box.ROUNDED,
+                padding=(0, 1),
+            )
+        )
+
     # Usage + description, kept faithful to Typer's own top-of-help layout.
     console.print()
-    console.print(Text.assemble((" Usage: ", "bold"), "dfs [OPTIONS] COMMAND [ARGS]..."))
+    console.print(Text.assemble((" Usage: ", "bold"), "dotfiles [OPTIONS] COMMAND [ARGS]..."))
     if app.info.help:
         console.print()
         console.print(Padding(Text(app.info.help), (0, 0, 0, 1)))
+        console.print(
+            Padding(Text("The shorter `dfs` launcher is equivalent to `dotfiles`."), (0, 0, 0, 1))
+        )
     console.print()
 
     options = Table.grid(padding=(0, 2))
@@ -214,14 +229,15 @@ def render_help_tree(console: Console) -> None:
         console.print(_command_panel(root, panel_title))
 
 
-def print_help() -> None:
+def print_help(*, error: str | None = None) -> None:
     """Print the brand banner, then the unified Rich help. Called by the bash shim."""
     from rich.console import Console
 
     from dotfiles.banner import print_banner
 
-    print_banner()
-    render_help_tree(Console())
+    console = Console(stderr=error is not None)
+    print_banner(console=console)
+    render_help_tree(console, error=error)
 
 
 if __name__ == "__main__":  # pragma: no cover

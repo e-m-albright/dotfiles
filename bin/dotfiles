@@ -4,7 +4,6 @@ BIN_NAME=$(basename "$0")
 COMMAND_NAME=$1
 
 ARROW="￫"
-RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
@@ -25,7 +24,15 @@ sub_help () {
     # catalog and its Machine/Control/AI grouping live in dotfiles.app.main; this
     # shim no longer hand-maintains a parallel list. Fall back to a one-liner if
     # the Python env can't be reached (e.g. uv missing), so help never hard-fails.
-    uv run --project "$DOTFILES_DIR/cli" python -c "from dotfiles.app.main import print_help; print_help()" 2>/dev/null \
+    local error="${1:-}"
+    if [[ -n "$error" ]]; then
+        DOTFILES_HELP_ERROR="$error" uv run --project "$DOTFILES_DIR/cli" python -c \
+            'import os; from dotfiles.app.main import print_help; print_help(error=os.environ["DOTFILES_HELP_ERROR"])' \
+            || printf "%s Error: %s\n%s Usage: %s <command>\n" "$ARROW" "$error" "$ARROW" "$BIN_NAME" >&2
+        return
+    fi
+    uv run --project "$DOTFILES_DIR/cli" python -c \
+        "from dotfiles.app.main import print_help; print_help()" 2>/dev/null \
         || printf "%s Usage: ${YELLOW}%s <command>${NC} (run \`dfs doctor\` — Python CLI unreachable)\n" "$ARROW" "$BIN_NAME"
 }
 
@@ -163,7 +170,7 @@ ns_shell() {
     local sub="${1:-profile}"; shift || true
     case "$sub" in
         profile) sub_shell_profile "$@" ;;
-        *) printf "${RED}%b Unknown: shell %s${NC} (try: profile)\n" "$ARROW" "$sub" >&2; exit 1 ;;
+        *) sub_help "Unknown compatibility command 'shell $sub'. Use 'dfs profile-shell'."; exit 2 ;;
     esac
 }
 
@@ -186,6 +193,22 @@ if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
 fi
 
+# Bash-native commands accept no arguments. Route their help through Typer so
+# `dfs install --help` can never enter the installer, and reject every other
+# argument before dispatch for the same reason.
+BASH_NATIVE_COMMANDS=" install update clean dock profile-shell "
+if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && "${2:-}" == "--help" ]]; then
+    exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+fi
+if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && "${2:-}" == "-h" ]]; then
+    set -- "$1" --help
+    exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+fi
+if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && $# -gt 1 ]]; then
+    sub_help "Command '$1' accepts no arguments. Run 'dfs $1 --help' for details."
+    exit 2
+fi
+
 case $COMMAND_NAME in
     "" | "-h" | "--help") sub_help ;;
 
@@ -206,9 +229,8 @@ case $COMMAND_NAME in
             shift
             "sub_${COMMAND_NAME}" "$@"
         else
-            printf "${RED}%b Error: '%s' is not a known command.${NC}\n" "$ARROW" "$COMMAND_NAME" >&2
-            sub_help
-            exit 1
+            sub_help "'$COMMAND_NAME' is not a known command. Choose a command below."
+            exit 2
         fi
         ;;
 esac
