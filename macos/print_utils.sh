@@ -90,16 +90,6 @@ print_update() {
     printf "  ${UPDATE} %s ${DIM}(updated)${NC}\n" "$1"
 }
 
-# --- Checklist items ---
-
-print_todo() {
-    printf "  ${YELLOW}[ ]${NC} %b\n" "$1"
-}
-
-print_todo_optional() {
-    printf "  ${CYAN}[-]${NC} ${DIM}%b${NC}\n" "$1"
-}
-
 # --- Package install messages ---
 
 print_pkg_installed() {

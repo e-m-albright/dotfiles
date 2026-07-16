@@ -31,18 +31,26 @@ read_bundle_id() {
     fi
 }
 
-# Returns 0=already-set (silent), 1=newly-set, 2=failed. Only deltas print a
-# line; callers tally the silent no-ops into one summary so a re-run doesn't
-# dump ~45 "already set" rows.
+# Returns 0=already-set (silent), 1=newly-set, 2=failed, 3=unroutable. Only
+# deltas print a line; callers tally the silent no-ops into one summary so a
+# re-run doesn't dump ~45 "already set" rows.
+#
+# "Unroutable" (3) means the extension has no static UTI on this system, so
+# LaunchServices synthesizes a `dyn.*` type it refuses to bind a handler to
+# (error -10822). Retrying never helps, so it's a quiet fact, not a warning.
 set_default() {
-    local bundle_id="$1" type="$2" label="$3"
+    local bundle_id="$1" type="$2" label="$3" err
     # `duti -x` lists current default; match the bundle id to detect no-op.
     if duti -x "$type" 2>/dev/null | grep -qx "$bundle_id"; then
         return 0
     fi
-    if duti -s "$bundle_id" "$type" all 2>/dev/null; then
+    if err="$(duti -s "$bundle_id" "$type" all 2>&1)"; then
         print_success "$label: $type → $bundle_id"
         return 1
+    fi
+    # Bare extension with only a dynamic UTI — provably unbindable, not an error.
+    if [[ "$err" == *"dyn."* ]]; then
+        return 3
     fi
     print_warning "$label: could not set $type → $bundle_id"
     return 2
@@ -65,20 +73,26 @@ ZED_UTIS=(
 ZED_EXTENSIONS=(
     md txt
     yaml yml json toml ini cfg
-    scss less cjs jsx ts tsx
+    scss less cjs jsx ts tsx  # .jsx has no static UTI here; reported unroutable
     py rb rs go c h cpp hpp cc java swift php lua sql bash dockerfile
 )
 ZED_ID="$(read_bundle_id /Applications/Zed.app)"
 if [[ -n "$ZED_ID" ]]; then
     unchanged=0
-    for uti in "${ZED_UTIS[@]}"; do
-        if set_default "$ZED_ID" "$uti" "Zed"; then unchanged=$((unchanged + 1)); fi
-    done
-    for ext in "${ZED_EXTENSIONS[@]}"; do
-        if set_default "$ZED_ID" ".$ext" "Zed"; then unchanged=$((unchanged + 1)); fi
+    unroutable=()
+    for type in "${ZED_UTIS[@]}" "${ZED_EXTENSIONS[@]/#/.}"; do
+        rc=0
+        set_default "$ZED_ID" "$type" "Zed" || rc=$?
+        case $rc in
+            0) unchanged=$((unchanged + 1)) ;;
+            3) unroutable+=("$type") ;;
+        esac
     done
     if [[ $unchanged -gt 0 ]]; then
         print_skip "Zed: $unchanged file types already routed to Zed"
+    fi
+    if [[ ${#unroutable[@]} -gt 0 ]]; then
+        print_dim "Zed: ${#unroutable[@]} type(s) left to macOS default (no static UTI): ${unroutable[*]}"
     fi
 else
     print_warning "Zed not found at /Applications/Zed.app, skipping text-file associations"

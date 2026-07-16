@@ -341,18 +341,28 @@ fi
 mkdir -p "$HOME/.local/bin"
 ln -sf "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/workbench"
 ln -sf "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/wb"
-if ! "$WORKBENCH_DIR/bin/workbench" sync all; then
+# The workbench tool prints its own verbose banners and boxes (and has no quiet
+# flag). Capture its output so this section stays in the installer's own visual
+# language, replaying the raw output only when something actually fails.
+if ! wb_out="$("$WORKBENCH_DIR/bin/workbench" sync all 2>&1)"; then
+    printf '%s\n' "$wb_out"
     print_error "Workbench sync failed"
     exit 1
 fi
-if ! "$WORKBENCH_DIR/bin/workbench" check all; then
+if ! wb_out="$("$WORKBENCH_DIR/bin/workbench" check all 2>&1)"; then
+    printf '%s\n' "$wb_out"
     print_error "Workbench verification found managed drift"
     exit 1
 fi
 print_success "Workbench synced to Claude and Codex"
 
 if command -v lefthook >/dev/null 2>&1; then
-    lefthook install
+    # lefthook prints its own terse "sync hooks: ..." line; keep our vocabulary.
+    if ! lh_out="$(lefthook install 2>&1)"; then
+        printf '%s\n' "$lh_out"
+        print_error "Git hook installation failed"
+        exit 1
+    fi
     print_success "Git hooks installed"
 fi
 
@@ -364,20 +374,3 @@ mkdir -p "$HOME/code/public"
 
 # Final completion message
 print_completion "✨ Dotfiles setup complete!"
-
-# ==========================================================================
-# Manual Follow-Up Checklist
-# ==========================================================================
-print_header "📋 Next Steps"
-printf "\n"
-printf "  ${BOLD}Required:${NC}\n"
-print_todo "Run ${CYAN}claude${NC} and ${CYAN}codex${NC} to authenticate"
-print_todo "Run ${CYAN}gh auth login${NC} to authenticate GitHub CLI"
-print_todo "Open Rectangle and grant Accessibility permissions"
-print_todo "Verify git identity: ${CYAN}git config user.name && git config user.email${NC}"
-printf "\n"
-printf "  ${BOLD}Optional:${NC}\n"
-print_todo_optional "Complete any browser-based plugin OAuth prompts shown by Claude or Codex"
-printf "\n"
-printf "  Run ${CYAN}dotfiles doctor${NC} to verify everything is set up correctly.\n"
-printf "\n"
