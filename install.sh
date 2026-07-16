@@ -333,6 +333,7 @@ if [[ ! -d "$WORKBENCH_DIR/.git" ]]; then
 fi
 mkdir -p "$HOME/.local/bin"
 ln -sf "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/workbench"
+ln -sf "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/wb"
 if ! "$WORKBENCH_DIR/bin/workbench" sync all; then
     print_error "Workbench sync failed"
     exit 1
