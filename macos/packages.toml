@@ -100,6 +100,7 @@ packages = [
 name = "JavaScript / TypeScript"
 kind = "formula"
 packages = [
+  { name = "bun",  note = "JS runtime + package manager. Hard dependency of the evan personal site (~/code/private/evan: Astro build, tests, scripts). Re-added 2026-07-15 after an accidental uninstall broke that repo. Interested in moving the site off Bun eventually — just not today; keep installed until that migration happens." },
   { name = "deno", note = "Selected future JavaScript / TypeScript runtime; install with the first Deno project", disabled = true, reason = "Deferred 2026-07-15: no active Deno projects yet; Node via fnm remains the compatibility baseline" },
   { name = "fnm",  note = "Node version manager for compatibility with Node-only projects" },
 ]
