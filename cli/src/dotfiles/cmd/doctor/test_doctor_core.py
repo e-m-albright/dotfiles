@@ -213,6 +213,22 @@ def test_workbench_check_reports_live_drift() -> None:
     assert check.hint == "Run: workbench sync"
 
 
+def test_notes_launchers_are_checked_and_fixable(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    source = home / "code/private/notes/bin/notes"
+    source.parent.mkdir(parents=True)
+    source.write_text("#!/bin/sh\n")
+
+    missing = _svc(home=home)._check_notes_launchers("Configuration")
+    assert [result.name for result in missing] == ["notes CLI", "nts alias"]
+    assert all(result.status == "missing" for result in missing)
+
+    fixed = _svc(home=home, fix=True)._check_notes_launchers("Configuration")
+    assert all(result.status == "fixed" for result in fixed)
+    assert (home / ".local/bin/notes").resolve() == source.resolve()
+    assert (home / ".local/bin/nts").resolve() == source.resolve()
+
+
 # ---------------------------------------------------------------------------
 # packages.toml drift gate
 # ---------------------------------------------------------------------------

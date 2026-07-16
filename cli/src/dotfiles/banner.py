@@ -1,4 +1,4 @@
-"""Brand banner: the DOTFILES wordmark with a horizontal gold gradient.
+"""Brand banner: the DOTFILES wordmark with a horizontal topaz gradient.
 
 Presentation-only (adapter side). Built on rich.Text so it degrades gracefully on
 non-truecolor terminals. Palette matches the TUI theme (#e8c34a).
@@ -28,8 +28,8 @@ COMPACT_LINES: tuple[str, ...] = (
     "░▀▀░░▀▀▀░░▀░░▀░░░▀▀▀░▀▀▀░▀▀▀░▀▀▀",
 )
 
-# pale gold -> theme gold -> dark goldenrod
-_STOPS = ((255, 233, 168), (245, 215, 110), (232, 195, 74), (184, 134, 11))
+# pale topaz -> honey topaz -> amber -> deep imperial topaz
+_STOPS = ((255, 240, 179), (255, 200, 87), (242, 169, 0), (184, 107, 0))
 
 
 def _grad(t: float) -> tuple[int, int, int]:
@@ -42,7 +42,7 @@ def _grad(t: float) -> tuple[int, int, int]:
 
 
 def gradient_banner(lines: Sequence[str] = BLOCK_LINES) -> Text:
-    """Build the wordmark as a rich.Text with a per-column horizontal gold gradient."""
+    """Build the wordmark with a per-column horizontal topaz gradient."""
     width = max((len(line) for line in lines), default=1)
     text = Text(no_wrap=True)
     for line in lines:

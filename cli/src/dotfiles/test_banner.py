@@ -4,7 +4,13 @@ from io import StringIO
 
 from rich.console import Console
 
-from dotfiles.banner import BLOCK_LINES, COMPACT_LINES, gradient_banner, print_banner
+from dotfiles.banner import (
+    _STOPS,
+    BLOCK_LINES,
+    COMPACT_LINES,
+    gradient_banner,
+    print_banner,
+)
 
 
 def test_compact_banner_matches_lines():
@@ -25,3 +31,5 @@ def test_gradient_banner_preserves_glyphs_and_colors():
     assert len(rows) == len(BLOCK_LINES)
     # per-character color spans were applied
     assert len(banner.spans) > 0
+    assert _STOPS[0] == (255, 240, 179)
+    assert _STOPS[-1] == (184, 107, 0)

@@ -288,8 +288,20 @@ class DoctorService:
 
         results.extend(self._check_ghostty(sec))
         results.extend(self._check_zellij(sec))
+        results.extend(self._check_notes_launchers(sec))
 
         return results
+
+    def _check_notes_launchers(self, sec: str) -> list[CheckResult]:
+        """Check private Notes launchers when the vault is present."""
+        source = self._home / "code" / "private" / "notes" / "bin" / "notes"
+        if not source.exists():
+            return []
+        bin_dir = self._home / ".local" / "bin"
+        return [
+            self._symlink(sec, "notes CLI", source, bin_dir / "notes"),
+            self._symlink(sec, "nts alias", source, bin_dir / "nts"),
+        ]
 
     def _check_zellij(self, sec: str) -> list[CheckResult]:
         """Zellij config symlink — only when zellij is installed."""

@@ -318,6 +318,13 @@ else
     print_info "Obsidian vault not found at $OBSIDIAN_VAULT — skipping config"
 fi
 
+if [[ -x "$OBSIDIAN_VAULT/bin/notes" ]]; then
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/notes"
+    ln -sf "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/nts"
+    print_success "Notes CLI linked as notes and nts"
+fi
+
 # Workbench (Claude/Codex instructions, skills, MCP, hooks, and prompts)
 print_header "🤖 Workbench"
 
