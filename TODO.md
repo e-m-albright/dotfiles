@@ -1,5 +1,12 @@
 # TODO
 
+## backup posture
+
+- No Time Machine / external drive by design - the machine is treated as
+  near-stateless, restorable from cloud services and git remotes.
+- If a gap ever matters: an hourly `tmutil localsnapshot` launchd agent is a free,
+  no-hardware 24h undo for local file damage.
+
 ## remote command
 
 - **Is `dfs remote on`/`off` toggling necessary, or just added security?**

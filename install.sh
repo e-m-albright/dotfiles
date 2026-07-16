@@ -137,6 +137,8 @@ fi
 "$DOTFILES_DIR/macos/file-associations.sh"
 # Configure local LLM: download model + pin context window — requires lm-studio from packages.toml
 "$DOTFILES_DIR/macos/lmstudio.sh"
+# Login items for apps that don't self-register (Flycut)
+"$DOTFILES_DIR/macos/login-items.sh"
 ################################################################################
 
 # Languages & Runtimes

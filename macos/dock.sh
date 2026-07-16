@@ -25,14 +25,17 @@ print_success "Auto-hide enabled (no delay, fast animation, no recents)"
 
 # Desired dock, in left-to-right order. This list is DECLARATIVE: the dock is
 # pruned to exactly these apps (anything else in the apps section is removed).
-# Deliberately omitted (launched via terminal/Raycast, or live in the menu bar):
-# Tailscale, TypeWhisper, LM Studio, Slack.
+# Deliberately omitted: menu-bar apps stay out of the dock (Caffeine, Granola,
+# OrbStack, TypeWhisper, Google Drive, Flycut, Tailscale, Rectangle, Flux);
+# LM Studio is terminal-launched; Slack stays off until it's habitual again;
+# zoom.us and WhatsApp are easy enough to reach without dock slots.
 apps=(
     "/Applications/Google Chrome.app"
     "/Applications/Obsidian.app"
     "/Applications/Spotify.app"
     "/Applications/Zed.app"
     "/Applications/Claude.app"
+    "/Applications/ChatGPT.app"
     "/Applications/Ghostty.app"
 )
 
