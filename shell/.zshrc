@@ -74,7 +74,6 @@ export HOMEBREW_NO_ANALYTICS=1
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
-alias co='cd ~/code'
 
 # Files
 alias ll='ls -lh'
@@ -147,14 +146,36 @@ alias j='just'
 
 # Editors
 alias cu='cursor'
-# cc: Claude Code with permission profiles/modes
-# Usage: cc [-w] [-a|-p|-e] [--chrome] [--scout|--dev|--yolo] [claude args...]
+# co: Codex with reasoning profiles and judgment-based approvals
+# Usage: co [-q|--quick|-d|--deep] [codex args...]
+# Default: configured model at medium effort; on-request approval; workspace-write sandbox
+co() {
+    local profile=""
+    local args=()
+    for arg in "$@"; do
+        case "$arg" in
+            -q|--quick) profile="quick" ;;
+            -d|--deep)  profile="deep" ;;
+            *)          args+=("$arg") ;;
+        esac
+    done
+    local cmd=(codex --ask-for-approval on-request --sandbox workspace-write)
+    if [[ -n "$profile" ]]; then
+        cmd+=(--profile "$profile")
+    fi
+    "${cmd[@]}" "${args[@]}"
+}
+
+# cc: Claude Code with reasoning and permission profiles/modes
+# Usage: cc [-q|--quick|-d|--deep] [-w] [-a|-p|-e] [--chrome] [--scout|--dev|--yolo] [claude args...]
 #   -w  worktree    -a  auto mode    -p  plan mode    -e  accept edits
+#   -q  quick effort    -d  deep effort
 #   --chrome  open in Chrome (web app mode)
 # Default profile: dev (override with CLAUDE_PROFILE env var)
 cc() {
     local profile="${CLAUDE_PROFILE:-dev}"
-    local permission_mode=""
+    local permission_mode="${CLAUDE_PERMISSION_MODE:-auto}"
+    local effort=""
     local use_worktree=false
     local use_chrome=false
     local args=()
@@ -164,6 +185,8 @@ cc() {
             -a|--auto)     permission_mode="auto" ;;
             -p|--plan)     permission_mode="plan" ;;
             -e|--edit)     permission_mode="acceptEdits" ;;
+            -q|--quick)    effort="low" ;;
+            -d|--deep)     effort="high" ;;
             --chrome)      use_chrome=true ;;
             --scout)       profile="scout" ;;
             --dev)         profile="dev" ;;
@@ -183,6 +206,9 @@ cc() {
     fi
     if [[ -n "$permission_mode" ]]; then
         cmd+=(--permission-mode "$permission_mode")
+    fi
+    if [[ -n "$effort" ]]; then
+        cmd+=(--effort "$effort")
     fi
     "${cmd[@]}" "${args[@]}"
 }
