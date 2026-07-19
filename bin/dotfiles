@@ -14,6 +14,25 @@ DOTFILES_DIR="$(cd "$(dirname "$SOURCE")/.." && pwd)"
 # shellcheck source=../macos/print_utils.sh
 source "$DOTFILES_DIR/macos/print_utils.sh"
 
+# Prefer the synced venv (fast path, no resolver); fall back to uv run, which
+# can provision or heal the environment when the venv is missing or broken.
+cli_python () {
+    local py="$DOTFILES_DIR/cli/.venv/bin/python"
+    if [[ -x "$py" ]]; then
+        "$py" "$@"
+    else
+        uv run --project "$DOTFILES_DIR/cli" python "$@"
+    fi
+}
+
+cli_dotfiles () {
+    local bin="$DOTFILES_DIR/cli/.venv/bin/dotfiles"
+    if [[ -x "$bin" ]]; then
+        exec "$bin" "$@"
+    fi
+    exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+}
+
 sub_help () {
     # Banner + the full command tree are rendered by the Python CLI (Typer/Rich),
     # so this top-level help matches every `dfs <command> --help` exactly. The
@@ -22,12 +41,12 @@ sub_help () {
     # the Python env can't be reached (e.g. uv missing), so help never hard-fails.
     local error="${1:-}"
     if [[ -n "$error" ]]; then
-        DOTFILES_HELP_ERROR="$error" uv run --project "$DOTFILES_DIR/cli" python -c \
+        DOTFILES_HELP_ERROR="$error" cli_python -c \
             'import os; from dotfiles.app.main import print_help; print_help(error=os.environ["DOTFILES_HELP_ERROR"])' \
             || printf "%s Error: %s\n%s Usage: %s <command>\n" "$ARROW" "$error" "$ARROW" "$BIN_NAME" >&2
         return
     fi
-    uv run --project "$DOTFILES_DIR/cli" python -c \
+    cli_python -c \
         "from dotfiles.app.main import print_help; print_help()" 2>/dev/null \
         || printf "%s Usage: ${YELLOW}%s <command>${NC} (run \`dfs doctor\` — Python CLI unreachable)\n" "$ARROW" "$BIN_NAME"
 }
@@ -158,7 +177,7 @@ if [[ "${1:-}" == "email" ]]; then
     fi
 fi
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
-    exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+    cli_dotfiles "$@"
 fi
 
 # Bash-native commands accept no arguments. Route their help through Typer so
@@ -166,11 +185,11 @@ fi
 # argument before dispatch for the same reason.
 BASH_NATIVE_COMMANDS=" install update clean dock profile-shell "
 if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && "${2:-}" == "--help" ]]; then
-    exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+    cli_dotfiles "$@"
 fi
 if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && "${2:-}" == "-h" ]]; then
     set -- "$1" --help
-    exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+    cli_dotfiles "$@"
 fi
 if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && $# -gt 1 ]]; then
     sub_help "Command '$1' accepts no arguments. Run 'dfs $1 --help' for details."
