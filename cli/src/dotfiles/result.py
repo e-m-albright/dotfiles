@@ -19,8 +19,3 @@ class StepResult(BaseModel):
     level: StepLevel
     message: str
     details: str = ""
-
-    @property
-    def ok(self) -> bool:
-        """True unless this step is an error — the success/fail view used by setup steps."""
-        return self.level != "error"

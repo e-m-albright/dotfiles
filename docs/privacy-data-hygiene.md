@@ -4,7 +4,7 @@ Last updated: 2026-05-25
 
 > Default-deny posture on AI training and scraping of private/personal content. Two separate risks to manage: (1) training use - your data improving someone's model - and (2) retention/exposure - your data sitting on their servers (or your disk) to be breached, subpoenaed, or reviewed. Different controls fix each. This doc is the practical playbook across the tools used in this setup.
 
-Companion doc: [lm-studio-local-models.md](./lm-studio-local-models.md) (the local tier).
+Companion doc: [local-llm-stack.md](./local-llm-stack.md) (the local tier).
 
 ---
 
@@ -65,7 +65,7 @@ Three tiers, by how far your prompt travels:
 
 ## The local tier - LM Studio
 
-**LM Studio** runs inference fully on-device. Prompts never leave the machine, so no training, no retention, no third party. This is the tier for genuinely sensitive content. See [lm-studio-local-models.md](./lm-studio-local-models.md) for model choices.
+**LM Studio** runs inference fully on-device. Prompts never leave the machine, so no training, no retention, no third party. This is the tier for genuinely sensitive content. See [local-llm-stack.md](./local-llm-stack.md) for model choices.
 
 **Hygiene standard for "is this actually private?":**
 - Confirm LM Studio is running the local server / local model, not a remote/proxy provider. The whole guarantee is that nothing leaves the machine - verify that's true before trusting it with sensitive input.

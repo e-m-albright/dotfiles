@@ -1,4 +1,4 @@
-"""Tests for core/brew.py: manifest models, parser, and install-plan logic."""
+"""Tests for Brew manifest models, parsing, and install-plan logic."""
 
 from pathlib import Path
 
@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from dotfiles.cmd.brew.service import (
+    BrewInventoryError,
     PackageManifest,
     enabled_packages,
     installed_casks,
@@ -252,6 +253,12 @@ def test_package_level_flag_respected(tmp_path: Path) -> None:
     assert "social-only" not in names
 
 
+def test_manifest_rejects_unknown_feature_flags(tmp_path: Path) -> None:
+    content = PACKAGE_FLAG_TOML.replace('flag = "ai"', 'flag = "typo"')
+    with pytest.raises(ValidationError):
+        PackageManifest.load(make_toml(tmp_path, content))
+
+
 # ---------------------------------------------------------------------------
 # Real packages.toml smoke test
 # ---------------------------------------------------------------------------
@@ -289,6 +296,22 @@ def test_installed_formulae_empty() -> None:
     runner = FakeProcessRunner()
     runner.script(("brew", "list", "--formula", "-1"), stdout="")
     assert installed_formulae(runner) == set()
+
+
+@pytest.mark.parametrize(
+    ("command", "inventory"),
+    [
+        (("brew", "list", "--formula", "-1"), installed_formulae),
+        (("brew", "list", "--cask", "-1"), installed_casks),
+        (("brew", "leaves", "--installed-on-request"), requested_formulae),
+    ],
+)
+def test_inventory_failure_is_not_an_empty_machine(command, inventory) -> None:
+    runner = FakeProcessRunner()
+    runner.script(command, exit_code=1, stderr="Homebrew unavailable")
+
+    with pytest.raises(BrewInventoryError, match="Homebrew unavailable"):
+        inventory(runner)
 
 
 def test_installed_casks_parses_output() -> None:

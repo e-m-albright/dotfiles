@@ -16,13 +16,61 @@ pyicloud is imported lazily inside `_login` so the rest of the CLI never pays it
 from __future__ import annotations
 
 import getpass
+from collections.abc import Iterator, Mapping
 
-from dotfiles.cmd.email.service import MaskError, MaskProvider
+from dotfiles.cmd.email.service import Mask, MaskError, MaskProvider, ReservedMask
+
+
+class ICloudMaskProvider:
+    """Translate pyicloud's raw field names into the local mask model."""
+
+    def __init__(self, service) -> None:
+        self._service = service
+
+    def generate(self) -> str | None:
+        return self._service.generate()
+
+    def reserve(self, email: str, label: str) -> ReservedMask:
+        raw = self._service.reserve(email, label)
+        anonymous_id = raw.get("anonymousId")
+        return ReservedMask(
+            address=str(raw.get("hme") or email),
+            label=label,
+            anonymous_id=str(anonymous_id) if anonymous_id else None,
+        )
+
+    def __iter__(self) -> Iterator[Mask]:
+        return (parse_icloud_mask(raw) for raw in self._service)
+
+    def delete(self, anonymous_id: str) -> Mapping[str, object]:
+        return self._service.delete(anonymous_id)
+
+    def deactivate(self, anonymous_id: str) -> Mapping[str, object]:
+        return self._service.deactivate(anonymous_id)
+
+
+def parse_icloud_mask(raw: Mapping[str, object]) -> Mask:
+    """Parse one provider record, rejecting aliases that cannot be addressed safely."""
+    address = raw.get("hme")
+    anonymous_id = raw.get("anonymousId")
+    active = raw.get("isActive", True)
+    if not isinstance(address, str) or not address:
+        raise ValueError("alias address is missing")
+    if not isinstance(anonymous_id, str) or not anonymous_id:
+        raise ValueError("alias id is missing")
+    if not isinstance(active, bool):
+        raise ValueError("alias active state is not a boolean")
+    return Mask(
+        address=address,
+        label=str(raw.get("label", "")),
+        anonymous_id=anonymous_id,
+        active=active,
+    )
 
 
 def build_icloud_provider(apple_id: str) -> MaskProvider:
     """Log into iCloud and return its Hide My Email service as a `MaskProvider`."""
-    return _login(apple_id)
+    return ICloudMaskProvider(_login(apple_id))
 
 
 def _login(apple_id: str):

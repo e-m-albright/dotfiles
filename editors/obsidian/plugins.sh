@@ -12,66 +12,49 @@ source "$DOTFILES_DIR/macos/print_utils.sh"
 VAULT="${1:-$HOME/code/private/notes}"
 PLUGINS_DIR="$VAULT/.obsidian/plugins"
 
-# Plugin registry: "id|github_repo" per line
-# Add new plugins here. Run `dotfiles install` or `./plugins.sh` to install.
-PLUGIN_LIST=(
-    # ── Study & Retention ──────────────────────────────────────────────────────
-    "obsidian-spaced-repetition|st3v3nmw/obsidian-spaced-repetition"
+PLUGIN_LOCK="$SCRIPT_DIR/plugins.lock"
 
-    # ── Power Tools ────────────────────────────────────────────────────────────
-    "dataview|blacksmithgu/obsidian-dataview"
-    "templater-obsidian|SilentVoid13/Templater"
-    "calendar|liamcain/obsidian-calendar-plugin"
-    "nldates-obsidian|argenos/nldates-obsidian"
-    "obsidian-linter|platers/obsidian-linter"
-
-    # ── UI Cleanup ───────────────────────────────────────────────────────────
-    "hide-folders|JonasDoesThings/obsidian-hide-folders"
-)
+verify_hash() {
+    local file="$1" expected="$2" actual
+    actual=$(shasum -a 256 "$file" | awk '{print $1}')
+    [[ "$actual" == "$expected" ]]
+}
 
 install_plugin() {
-    local id="$1" repo="$2"
+    local id="$1" repo="$2" tag="$3" main_hash="$4" manifest_hash="$5" styles_hash="$6"
     local plugin_dir="$PLUGINS_DIR/$id"
+    local installed_version=""
 
-    # Skip if already installed (has main.js)
-    if [[ -f "$plugin_dir/main.js" ]]; then
+    if [[ -f "$plugin_dir/manifest.json" ]]; then
+        installed_version=$(grep -m1 '"version"' "$plugin_dir/manifest.json" | sed 's/.*: *"//;s/".*//')
+    fi
+    if [[ "$installed_version" == "${tag#v}" ]]; then
         print_skip "$id"
         return 0
     fi
 
-    mkdir -p "$plugin_dir"
-
-    # Fetch latest release tag
-    local release_url="https://api.github.com/repos/$repo/releases/latest"
-    local tag
-    tag=$(curl -fsSL "$release_url" 2>/dev/null | grep '"tag_name"' | head -1 | sed 's/.*: "//;s/".*//')
-
-    if [[ -z "$tag" ]]; then
-        print_warn "Could not fetch latest release for $id ($repo)"
-        rm -rf "$plugin_dir"
-        return 1
-    fi
-
     local base_url="https://github.com/$repo/releases/download/$tag"
-    local ok=true
-
-    for file in main.js manifest.json; do
-        if ! curl -fsSL "$base_url/$file" -o "$plugin_dir/$file" 2>/dev/null; then
-            print_warn "Failed to download $file for $id"
-            ok=false
-        fi
-    done
-
-    # styles.css is optional
-    curl -fsSL "$base_url/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || true
-
-    if $ok; then
-        print_step "Installed $id ($tag)"
-    else
-        rm -rf "$plugin_dir"
-        print_error "Failed to install $id"
+    local staging
+    staging=$(mktemp -d "$PLUGINS_DIR/.${id}.XXXXXX")
+    if ! curl -fsSL "$base_url/main.js" -o "$staging/main.js" \
+        || ! curl -fsSL "$base_url/manifest.json" -o "$staging/manifest.json" \
+        || ! verify_hash "$staging/main.js" "$main_hash" \
+        || ! verify_hash "$staging/manifest.json" "$manifest_hash"; then
+        rm -rf "$staging"
+        print_error "Failed to verify $id ($tag)"
         return 1
     fi
+    if [[ "$styles_hash" != "-" ]]; then
+        if ! curl -fsSL "$base_url/styles.css" -o "$staging/styles.css" \
+            || ! verify_hash "$staging/styles.css" "$styles_hash"; then
+            rm -rf "$staging"
+            print_error "Failed to verify $id styles ($tag)"
+            return 1
+        fi
+    fi
+    rm -rf "$plugin_dir"
+    mv "$staging" "$plugin_dir"
+    print_step "Installed $id ($tag)"
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -93,25 +76,22 @@ else
     print_step "Linked community-plugins.json"
 fi
 
-# Symlink plugin configs (data.json for each plugin that has one)
-if [[ -d "$SCRIPT_DIR/plugin-configs" ]]; then
-    for config_file in "$SCRIPT_DIR/plugin-configs"/*.json; do
-        [[ -f "$config_file" ]] || continue
-        local_id="$(basename "$config_file" .json)"
-        config_dest="$PLUGINS_DIR/$local_id/data.json"
-        mkdir -p "$PLUGINS_DIR/$local_id"
-        if [[ -L "$config_dest" ]] && [[ "$(readlink "$config_dest")" == "$config_file" ]]; then
-            print_skip "$local_id config"
-        else
-            ln -sf "$config_file" "$config_dest"
-            print_step "Linked $local_id config"
-        fi
-    done
-fi
-
 # Install plugins from GitHub releases
-for entry in "${PLUGIN_LIST[@]}"; do
-    id="${entry%%|*}"
-    repo="${entry##*|}"
-    install_plugin "$id" "$repo"
+while IFS='|' read -r id repo tag main_hash manifest_hash styles_hash; do
+    [[ -n "$id" ]] || continue
+    install_plugin "$id" "$repo" "$tag" "$main_hash" "$manifest_hash" "$styles_hash"
+done < "$PLUGIN_LOCK"
+
+# Link tracked plugin configuration after installation replaces stale plugin dirs.
+for config_file in "$SCRIPT_DIR/plugin-configs"/*.json; do
+    [[ -f "$config_file" ]] || continue
+    local_id="$(basename "$config_file" .json)"
+    config_dest="$PLUGINS_DIR/$local_id/data.json"
+    mkdir -p "$PLUGINS_DIR/$local_id"
+    if [[ -L "$config_dest" ]] && [[ "$(readlink "$config_dest")" == "$config_file" ]]; then
+        print_skip "$local_id config"
+    else
+        ln -sf "$config_file" "$config_dest"
+        print_step "Linked $local_id config"
+    fi
 done

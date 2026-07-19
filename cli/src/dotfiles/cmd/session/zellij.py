@@ -90,7 +90,7 @@ def attach_command(
     """
     if layout and not exists:
         return ("zellij", "--session", name, "--layout", layout)
-    if layout and exists:
+    if layout:
         return ("zellij", "attach", name)
     return ("zellij", "attach", "--create", name)
 

@@ -1,4 +1,4 @@
-"""In-memory fakes implementing the core ports. Tests only."""
+"""In-memory fakes implementing application ports. Tests only."""
 
 import subprocess
 from collections.abc import Iterator, Mapping, Sequence
@@ -6,6 +6,8 @@ from pathlib import Path
 
 from dotfiles.adapters.ports import CommandResult
 from dotfiles.app.context import AppContext
+from dotfiles.cmd.email.icloud import parse_icloud_mask
+from dotfiles.cmd.email.service import Mask, ReservedMask
 from dotfiles.settings import Settings
 
 
@@ -78,15 +80,12 @@ class FakeMaskProvider:
         self.generated += 1
         return self.address
 
-    def reserve(self, email: str, label: str) -> Mapping[str, object]:
+    def reserve(self, email: str, label: str) -> ReservedMask:
         self.reserved.append((email, label))
-        result: dict[str, object] = {"hme": email}
-        if self.anonymous_id is not None:
-            result["anonymousId"] = self.anonymous_id
-        return result
+        return ReservedMask(address=email, label=label, anonymous_id=self.anonymous_id)
 
-    def __iter__(self) -> Iterator[Mapping[str, object]]:
-        return iter(self.existing)
+    def __iter__(self) -> Iterator[Mask]:
+        return (parse_icloud_mask(record) for record in self.existing)
 
     def delete(self, anonymous_id: str) -> Mapping[str, object]:
         self.deleted.append(anonymous_id)

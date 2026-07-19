@@ -19,7 +19,7 @@ if ! declare -f print_step >/dev/null 2>&1; then
 fi
 
 if ! command -v duti >/dev/null 2>&1; then
-    print_warning "duti not installed — skipping file associations (install via packages.toml)"
+    print_warn "duti not installed — skipping file associations (install via packages.toml)"
     return 0 2>/dev/null || exit 0
 fi
 
@@ -52,7 +52,7 @@ set_default() {
     if [[ "$err" == *"dyn."* ]]; then
         return 3
     fi
-    print_warning "$label: could not set $type → $bundle_id"
+    print_warn "$label: could not set $type → $bundle_id"
     return 2
 }
 
@@ -95,7 +95,7 @@ if [[ -n "$ZED_ID" ]]; then
         print_dim "Zed: ${#unroutable[@]} type(s) left to macOS default (no static UTI): ${unroutable[*]}"
     fi
 else
-    print_warning "Zed not found at /Applications/Zed.app, skipping text-file associations"
+    print_warn "Zed not found at /Applications/Zed.app, skipping text-file associations"
 fi
 
 # --- Quick Look extensions (sbarex) ---

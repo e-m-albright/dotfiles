@@ -9,13 +9,10 @@ import typer
 from dotfiles.app.context import app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.brew.service import (
+    BrewInventoryError,
+    FeatureFlag,
     PackageManifest,
-    add_taps,
-    install_claude_code,
-    install_npm_globals,
-    install_packages,
-    install_rust,
-    install_typewhisper,
+    install_software,
     missing_packages,
     stale_packages,
 )
@@ -28,7 +25,6 @@ from dotfiles.console import (
     print_title,
     render_steps,
 )
-from dotfiles.result import StepResult
 
 brew_app = typer.Typer(cls=FuzzyTyperGroup, help="Manage Homebrew packages from packages.toml.")
 
@@ -40,11 +36,16 @@ def _manifest(ctx: typer.Context) -> PackageManifest:
 
 
 def _flags_on(
-    env_flags: frozenset[str], *, no_ai: bool, no_productivity: bool, no_social: bool
-) -> set[str]:
-    """Intersect the env-enabled feature flags with the per-run --no-* overrides."""
+    defaults: set[FeatureFlag],
+    env_flags: frozenset[FeatureFlag],
+    *,
+    no_ai: bool,
+    no_productivity: bool,
+    no_social: bool,
+) -> set[FeatureFlag]:
+    """Apply environment and per-run overrides to manifest defaults."""
     disabled = {"ai": no_ai, "productivity": no_productivity, "social": no_social}
-    return {flag for flag in env_flags if not disabled.get(flag, False)}
+    return {flag for flag in defaults & env_flags if not disabled[flag]}
 
 
 @brew_app.command()
@@ -65,51 +66,28 @@ def install(
     app_ctx = app_context(ctx)
     manifest = _manifest(ctx)
     flags = _flags_on(
-        app_ctx.feature_flags, no_ai=no_ai, no_productivity=no_productivity, no_social=no_social
+        manifest.flags.enabled(),
+        app_ctx.feature_flags,
+        no_ai=no_ai,
+        no_productivity=no_productivity,
+        no_social=no_social,
     )
     runner = app_ctx.runner
 
-    all_steps: list[StepResult] = []
     print_title(console, "brew", "install")
-
-    # Taps
-    print_section(console, "Taps")
-    tap_steps = add_taps(manifest, runner, dry_run=dry_run)
-    render_steps(console, tap_steps)
-    all_steps.extend(tap_steps)
-
-    # Packages
-    print_section(console, "Packages")
-    pkg_steps = install_packages(manifest, runner, flags_on=flags, dry_run=dry_run)
-    render_steps(console, pkg_steps)
-    all_steps.extend(pkg_steps)
-
-    if not dry_run:
-        # Rust
-        print_section(console, "Rust (rustup)")
-        rust_steps = install_rust(runner)
-        render_steps(console, rust_steps)
-        all_steps.extend(rust_steps)
-
-        # Claude Code (ai flag)
-        if "ai" in flags:
-            print_section(console, "Claude Code")
-            cc_steps = install_claude_code(runner)
-            render_steps(console, cc_steps)
-            all_steps.extend(cc_steps)
-
-        # TypeWhisper (productivity flag)
-        if "productivity" in flags:
-            print_section(console, "TypeWhisper")
-            tw_steps = install_typewhisper(runner, dotfiles_dir=app_ctx.dotfiles_dir)
-            render_steps(console, tw_steps)
-            all_steps.extend(tw_steps)
-
-        # npm globals
-        print_section(console, "npm globals")
-        npm_steps = install_npm_globals(manifest, runner, flags_on=flags)
-        render_steps(console, npm_steps)
-        all_steps.extend(npm_steps)
+    print_section(console, "Software")
+    try:
+        all_steps = install_software(
+            manifest,
+            runner,
+            flags_on=flags,
+            dotfiles_dir=app_ctx.dotfiles_dir,
+            dry_run=dry_run,
+        )
+    except BrewInventoryError as exc:
+        print_status(console, "error", str(exc))
+        raise typer.Exit(code=1) from exc
+    render_steps(console, all_steps)
 
     console.print()
     if has_errors(all_steps):
@@ -136,8 +114,14 @@ def stale(ctx: typer.Context) -> None:
     manifest = _manifest(ctx)
     runner = app_ctx.runner
 
-    stale_list = stale_packages(manifest, runner)
-    missing_list = missing_packages(manifest, runner, flags_on=set(app_ctx.feature_flags))
+    try:
+        stale_list = stale_packages(manifest, runner)
+        missing_list = missing_packages(
+            manifest, runner, flags_on=manifest.flags.enabled() & set(app_ctx.feature_flags)
+        )
+    except BrewInventoryError as exc:
+        print_status(console, "error", str(exc))
+        raise typer.Exit(code=1) from exc
 
     print_title(console, "brew", "stale")
     print_section(console, "Stale packages", "installed but not declared")

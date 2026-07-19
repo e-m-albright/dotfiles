@@ -1,10 +1,7 @@
 from rich.console import Console
 
-from dotfiles.console import console, err_console
+from dotfiles.console import console
 
 
-def test_consoles_are_rich_and_distinct() -> None:
+def test_console_is_rich() -> None:
     assert isinstance(console, Console)
-    assert isinstance(err_console, Console)
-    assert err_console.stderr is True
-    assert console.stderr is False

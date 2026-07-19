@@ -483,6 +483,21 @@ def test_kill_sessions_runs_pkill_without_disabling_remote_login(tmp_path: Path)
     assert any(s.level == "success" for s in steps)
 
 
+def test_kill_sessions_reports_command_failures(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-un"), stdout="evan\n")
+    runner.script(("pkill", "-u", "evan", "mosh-server"), exit_code=1)
+    runner.script(("pkill", "-u", "evan", "sshd"), exit_code=2, stderr="permission denied")
+    service = RemoteService(runner=runner, interactive=True, home=tmp_path)
+
+    steps = service.kill_sessions(dry_run=False)
+
+    assert steps[0].level == "info"
+    assert "no mosh-server" in steps[0].message.lower()
+    assert steps[1].level == "error"
+    assert "permission denied" in steps[1].message
+
+
 def test_kill_sessions_dry_run_does_not_execute_pkill(tmp_path: Path) -> None:
     """kill_sessions(dry_run=True) must only emit DRY RUN messages, never call pkill."""
     runner = FakeProcessRunner()

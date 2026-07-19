@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import TYPE_CHECKING, ClassVar, Literal, NamedTuple, cast
 
 from rich.markup import escape
 from textual import work
@@ -21,9 +21,13 @@ from textual.widgets import Button, Input, Label, ListItem, ListView, Static
 
 from dotfiles.app.context import AppContext
 from dotfiles.cmd.session import session_name
-from dotfiles.cmd.session.agent_sessions import agents_by_session, live_agents
 from dotfiles.cmd.session.models import AgentActivity, Session
-from dotfiles.cmd.session.service import exited_sessions, humanize_age
+from dotfiles.cmd.session.service import (
+    exited_sessions,
+    humanize_age,
+    live_sessions,
+    read_session_inventory,
+)
 from dotfiles.cmd.session.zellij import (
     SessionError,
     Zellij,
@@ -36,6 +40,15 @@ if TYPE_CHECKING:
 
 _NEW_ROW_ID = "new-session"
 _REFRESH_SECONDS = 4.0  # live deck: cheap (one `zellij list-sessions` + a dir scan)
+
+SessionAction = Literal["attach", "kill", "resurrect", "delete"]
+ButtonVariant = Literal["primary", "success", "error"]
+
+
+class SessionActionButton(NamedTuple):
+    label: str
+    action: SessionAction | Literal["cancel"]
+    variant: ButtonVariant
 
 
 def _elsewhere_line(unmatched: list[AgentActivity], clients: int | None = None) -> str:
@@ -54,11 +67,6 @@ def _elsewhere_line(unmatched: list[AgentActivity], clients: int | None = None) 
 def _agent_badge(agents: Sequence[AgentActivity]) -> str:
     """Green badge of agent names active in a session, e.g. ``claude`` or ``claude · codex``."""
     return " · ".join(f"[green]{a.agent}[/]" for a in agents)
-
-
-def live_sessions(sessions: list[Session]) -> list[Session]:
-    """Running sessions only, current first then by name (the TUI manages live ones)."""
-    return sorted((s for s in sessions if s.running), key=lambda s: (not s.current, s.name))
 
 
 def _programs_line(programs: Sequence[str], limit: int = 3) -> str:
@@ -105,7 +113,7 @@ def _session_item(
     )
 
 
-def session_action_buttons(s: Session) -> list[tuple[str, str, str]]:
+def session_action_buttons(s: Session) -> list[SessionActionButton]:
     """(label, button-id, variant) for the per-session action sheet.
 
     Button-ids map to actions: ``attach`` (attach/switch), ``kill``, ``resurrect``
@@ -114,18 +122,43 @@ def session_action_buttons(s: Session) -> list[tuple[str, str, str]]:
     killing it would tear down this very TUI — so it's view-only.
     """
     if s.current:
-        return [("[u]C[/u]ancel", "cancel", "primary")]
+        return [SessionActionButton("[u]C[/u]ancel", "cancel", "primary")]
     if not s.running:  # exited → resurrect or delete its saved state
         return [
-            ("[u]R[/u]esurrect", "resurrect", "success"),
-            ("[u]D[/u]elete", "delete", "error"),
-            ("[u]C[/u]ancel", "cancel", "primary"),
+            SessionActionButton("[u]R[/u]esurrect", "resurrect", "success"),
+            SessionActionButton("[u]D[/u]elete", "delete", "error"),
+            SessionActionButton("[u]C[/u]ancel", "cancel", "primary"),
         ]
     return [
-        ("[u]A[/u]ttach", "attach", "success"),
-        ("[u]K[/u]ill", "kill", "error"),
-        ("[u]C[/u]ancel", "cancel", "primary"),
+        SessionActionButton("[u]A[/u]ttach", "attach", "success"),
+        SessionActionButton("[u]K[/u]ill", "kill", "error"),
+        SessionActionButton("[u]C[/u]ancel", "cancel", "primary"),
     ]
+
+
+def _session_list_signature(
+    live: list[Session],
+    exited: list[Session],
+    programs: dict[str, list[str]],
+    matched: dict[str, list[AgentActivity]],
+) -> tuple[object, ...]:
+    live_rows = tuple(
+        (
+            session.name,
+            session.current,
+            session.running,
+            tuple(programs.get(session.name, ())),
+            tuple(agent.agent for agent in matched.get(session.name, [])),
+        )
+        for session in live
+    )
+    return live_rows, tuple(session.name for session in exited)
+
+
+def _restore_highlight(view: ListView, item_id: str) -> None:
+    restored = next((i for i, item in enumerate(view.children) if item.id == item_id), None)
+    if restored is not None:
+        view.index = restored
 
 
 class SessionsPane(Container):
@@ -153,7 +186,7 @@ class SessionsPane(Container):
         # Signatures of the last render, so an unchanged auto-refresh is a no-op
         # (rebuilding the list every tick made it visibly flash).
         self._list_sig: tuple[object, ...] | None = None
-        self._agents_sig: str | None = None
+        self._elsewhere_sig: str | None = None
 
     @property
     def _app(self) -> MissionControlApp:
@@ -174,7 +207,7 @@ class SessionsPane(Container):
     @work(thread=True, exclusive=True)
     def action_reload(self) -> None:
         try:
-            sessions = self._zellij.list_sessions()
+            inventory = read_session_inventory(self._zellij, self._ctx.runner)
         except SessionError:
             self._app.call_from_thread(
                 self.notify,
@@ -183,12 +216,14 @@ class SessionsPane(Container):
                 severity="error",
             )
             return
-        agents = live_agents(self._ctx.runner)
         clients = self._zellij.attached_client_count() if in_zellij() else None
-        programs = {s.name: self._zellij.program_titles(s.name) for s in sessions if s.running}
-        matched, unmatched = agents_by_session(agents)
         self._app.call_from_thread(
-            self._apply_sessions, sessions, unmatched, clients, programs, matched
+            self._apply_sessions,
+            inventory.sessions,
+            inventory.unmatched_agents,
+            clients,
+            inventory.programs,
+            inventory.matched_agents,
         )
 
     async def _apply_sessions(
@@ -207,25 +242,13 @@ class SessionsPane(Container):
         # Only touch the DOM when the rendered content actually changes — an
         # unchanged auto-refresh tick must not flash the list or the elsewhere line.
         elsewhere = _elsewhere_line(unmatched, clients)
-        if elsewhere != self._agents_sig:
+        if elsewhere != self._elsewhere_sig:
             self.query_one("#active-agents", Static).update(elsewhere)
-            self._agents_sig = elsewhere
+            self._elsewhere_sig = elsewhere
         # Exited rows key on name only (their age ticks every second). Matched
         # agents key on NAMES only, not idle minutes — so an agent starting/stopping
         # rebuilds the row, but a ticking minute never flashes the list.
-        list_sig = (
-            tuple(
-                (
-                    s.name,
-                    s.current,
-                    s.running,
-                    tuple(programs.get(s.name, ())),
-                    tuple(a.agent for a in matched.get(s.name, [])),
-                )
-                for s in self._sessions
-            ),
-            tuple(s.name for s in self._exited),
-        )
+        list_sig = _session_list_signature(self._sessions, self._exited, programs, matched)
         if list_sig == self._list_sig:
             return
         self._list_sig = list_sig
@@ -239,9 +262,7 @@ class SessionsPane(Container):
         await view.clear()
         self._populate_rows(view, programs, matched)
         if prev_id is not None:
-            restored = next((i for i, it in enumerate(view.children) if it.id == prev_id), None)
-            if restored is not None:
-                view.index = restored
+            _restore_highlight(view, prev_id)
 
     def _populate_rows(
         self,
@@ -262,9 +283,6 @@ class SessionsPane(Container):
             )
             for s in self._exited:
                 view.append(_exited_item(s))
-
-    def session_names(self) -> list[str]:
-        return [s.name for s in self._sessions]
 
     def _managed(self) -> list[Session]:
         """Every row the user can act on: live sessions plus resurrectable ones."""
@@ -329,7 +347,7 @@ class SessionsPane(Container):
             lambda ok, s=session: self._on_action(s, "kill") if ok else None,
         )
 
-    def _on_action(self, session: Session, action: str | None) -> None:
+    def _on_action(self, session: Session, action: SessionAction | None) -> None:
         if action in ("attach", "resurrect"):
             self._handoff(session.name)
         elif action == "kill":
@@ -361,7 +379,7 @@ class SessionsPane(Container):
         self._app.request_handoff(command)
 
 
-class _SessionActions(ModalScreen[str | None]):
+class _SessionActions(ModalScreen[SessionAction | None]):
     """Per-session action sheet: attach/switch or kill. Each option has a hotkey
     (the underlined letter); attach/kill are inert for the current session."""
 
@@ -383,11 +401,15 @@ class _SessionActions(ModalScreen[str | None]):
         state = "attached here" if s.current else ("running" if s.running else "exited")
         with Vertical(id="confirm-box"):
             yield Label(f"[b]{s.name}[/]  [dim]· {state}[/]")
-            for label, button_id, variant in session_action_buttons(s):
-                yield Button(label, variant=variant, id=button_id)  # type: ignore[arg-type]
+            for label, action, variant in session_action_buttons(s):
+                yield Button(label, variant=variant, id=action)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.dismiss(None if event.button.id == "cancel" else event.button.id)
+        action = event.button.id
+        if action == "cancel":
+            self.dismiss(None)
+        elif action in ("attach", "kill", "resurrect", "delete"):
+            self.dismiss(action)
 
     def action_attach(self) -> None:
         if self._s.running and not self._s.current:  # only a live, non-current session attaches

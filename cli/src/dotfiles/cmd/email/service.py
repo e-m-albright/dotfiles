@@ -47,17 +47,14 @@ class Mask(BaseModel):
 class MaskProvider(Protocol):
     """Source of Hide My Email aliases — iCloud in prod, a fake in tests.
 
-    Mirrors the iCloud calls each operation needs. The methods return iCloud's raw
-    result maps (``hme``, ``anonymousId``, ``isActive``, …); the core functions below
-    parse them, so the adapter stays a thin pass-through. iCloud's own
-    `HideMyEmailService` satisfies this Protocol structurally.
+    Provider-specific records are normalized by the adapter before entering the core.
     """
 
     def generate(self) -> str | None: ...
 
-    def reserve(self, email: str, label: str) -> Mapping[str, object]: ...
+    def reserve(self, email: str, label: str) -> ReservedMask: ...
 
-    def __iter__(self) -> Iterator[Mapping[str, object]]: ...
+    def __iter__(self) -> Iterator[Mask]: ...
 
     def delete(self, anonymous_id: str) -> Mapping[str, object]: ...
 
@@ -73,22 +70,15 @@ def create_mask(provider: MaskProvider, label: str) -> ReservedMask:
     if not address:
         raise MaskError("iCloud declined to generate an address (quota reached, or not iCloud+?).")
     try:
-        result = provider.reserve(address, label)
+        return provider.reserve(address, label)
     except Exception as exc:
         raise MaskError(f"iCloud address reservation failed: {exc}") from exc
-    reserved = result.get("hme") or address  # reserve echoes the canonical address
-    anon = result.get("anonymousId")
-    return ReservedMask(
-        address=str(reserved),
-        label=label,
-        anonymous_id=str(anon) if anon else None,
-    )
 
 
 def list_masks(provider: MaskProvider) -> list[Mask]:
     """Return all existing aliases, newest iCloud order preserved."""
     try:
-        return [_parse_mask(raw) for raw in provider]
+        return list(provider)
     except Exception as exc:
         raise MaskError(f"iCloud alias listing failed: {exc}") from exc
 
@@ -104,26 +94,15 @@ def delete_mask(provider: MaskProvider, anonymous_id: str) -> None:
 
 
 def _mutate(
-    operation: Callable[[str], Mapping[str, object]], anonymous_id: str, *, operation_name: str = ""
+    operation: Callable[[str], Mapping[str, object]], anonymous_id: str, *, operation_name: str
 ) -> None:
-    label = operation_name or "mutation"
     try:
         result = operation(anonymous_id)
     except Exception as exc:
-        raise MaskError(f"iCloud alias {label} failed: {exc}") from exc
+        raise MaskError(f"iCloud alias {operation_name} failed: {exc}") from exc
     if result.get("success") is False or result.get("error"):
         detail = result.get("error") or result.get("message") or "provider rejected the request"
-        raise MaskError(f"iCloud alias {label} failed: {detail}")
-
-
-def _parse_mask(raw: Mapping[str, object]) -> Mask:
-    """Project one iCloud ``hmeEmails`` record onto a Mask (tolerant of missing keys)."""
-    return Mask(
-        address=str(raw.get("hme", "")),
-        label=str(raw.get("label", "")),
-        anonymous_id=str(raw.get("anonymousId", "")),
-        active=bool(raw.get("isActive", True)),
-    )
+        raise MaskError(f"iCloud alias {operation_name} failed: {detail}")
 
 
 def find_mask(masks: list[Mask], selector: str) -> Mask:
@@ -145,5 +124,4 @@ def copy_to_clipboard(
     """Copy *text* to the macOS clipboard via pbcopy. Returns False off macOS (no pbcopy)."""
     if which("pbcopy") is None:
         return False
-    runner.run(("pbcopy",), stdin=text)
-    return True
+    return runner.run(("pbcopy",), stdin=text).ok

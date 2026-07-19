@@ -4,6 +4,9 @@
 evaluated and dropped. Two models kept: Qwen3.6-35B-A3B (coding/agents) and
 Gemma-4-E4B (vision/quick chat).
 
+The managed model and context settings live in `macos/lmstudio.sh`. Agent-specific
+model routing belongs to Workbench, not this host repository.
+
 ## Hardware envelope
 
 - **M4 Pro, 48 GB unified memory**

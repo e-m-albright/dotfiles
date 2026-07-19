@@ -159,3 +159,29 @@ def test_brew_install_dry_run_no_mutating_runner_calls(tmp_path: Path) -> None:
         or any("rustup.rs" in part for part in c)
     ]
     assert mutating == [], f"Unexpected mutating calls in dry-run: {mutating}"
+
+
+def test_brew_install_only_runs_specials_declared_by_manifest(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    result = runner.invoke(app, ["brew", "install"], obj=ctx)
+
+    assert result.exit_code == 0, result.output
+    assert not any("rustup.rs" in part for call in ctx.runner.calls for part in call)
+
+
+def test_manifest_flag_default_can_disable_a_section(tmp_path: Path) -> None:
+    manifest = _PACKAGES_TOML.replace("ai = true", "ai = false").replace(
+        'name = "Core"', 'name = "Core"\nflag = "ai"'
+    )
+    macos_dir = tmp_path / "macos"
+    macos_dir.mkdir(parents=True)
+    (macos_dir / "packages.toml").write_text(manifest)
+    fake = FakeProcessRunner()
+    fake.script(("brew", "list", "--formula", "-1"), stdout="")
+    fake.script(("brew", "list", "--cask", "-1"), stdout="")
+    ctx = make_fake_context(runner=fake, dotfiles_dir=tmp_path)
+
+    result = runner.invoke(app, ["brew", "install", "--dry-run"], obj=ctx)
+
+    assert result.exit_code == 0, result.output
+    assert "brew install git" not in result.output

@@ -4,10 +4,25 @@ Personal macOS bootstrap and operating configuration. This repo turns a fresh
 MacBook into the host environment I want: packages, shell, terminal, editors,
 privacy utilities, local models, and remote session control.
 
+Dotfiles is the base layer of a three-repository capability stack, described
+canonically in workbench's
+[`STACK.md`](https://github.com/e-m-albright/workbench/blob/main/STACK.md):
+
+```text
+dotfiles   host foundation and machine capabilities
+    ↓
+workbench  reusable agent intelligence and engineering standards
+    ↓
+notes      private knowledge and operating layer
+```
+
 Agent behavior and engineering guidance live in the separate
 [`workbench`](https://github.com/e-m-albright/workbench) repo. Dotfiles installs
 it and asks it to configure Claude Code and Codex, but does not duplicate that
-logic.
+logic. A private knowledge-and-operations layer sits above both public
+repositories; its data and operating details are intentionally not published,
+and neither public repository requires it. Each layer stands alone and
+integrates through CLI contracts, not Python imports.
 
 ## Install
 
@@ -24,7 +39,7 @@ The installer is macOS-only and safe to rerun. It:
 3. Reconciles packages from `macos/packages.toml`.
 4. Applies macOS, Dock, terminal, editor, and Obsidian configuration.
 5. Clones `~/code/public/workbench`, runs `workbench sync all`, and fails the
-   install if `workbench check all` detects managed drift.
+   install if `workbench drift all` detects managed drift.
 
 Secrets and personal Git identity stay outside the repository. The installer
 writes Git identity to `~/.gitconfig.local`.
@@ -44,7 +59,7 @@ dotfiles profile-shell          profile shell startup
 ```
 
 There are no machine-state snapshots. `doctor`, `brew stale`, and
-`workbench check` compare desired state with the live machine directly, so there
+`workbench drift` compares desired state with the live machine directly, so there
 is no stored observation to become stale.
 
 ## Remote Control
@@ -88,8 +103,7 @@ LM Studio remains part of the machine setup for local inference, but the old
 benchmark command was removed. Model fit and speed are easy to inspect directly
 in LM Studio or with upstream tools when an evaluation is actually needed.
 
-See [`docs/local-llm-stack.md`](docs/local-llm-stack.md) and
-[`docs/lm-studio-local-models.md`](docs/lm-studio-local-models.md).
+See [`docs/local-llm-stack.md`](docs/local-llm-stack.md).
 
 ## Package Manifest
 
@@ -136,3 +150,11 @@ just lint-shell
 The repo deliberately has no custom health scorecard, scheduled AI audit, or
 project-bootstrap framework. Those concerns belong in workbench or in the
 project that adopts them.
+
+## Reuse
+
+This is a personal setup, published as fork-and-adapt material rather than a
+framework. If you want something similar, start from `macos/packages.toml` and
+`install.sh`, replace the package choices and identity-specific pieces with
+your own, and delete what you don't use. Nothing here is designed to be
+depended on as a package.

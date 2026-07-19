@@ -1,6 +1,8 @@
-"""Tests for DoctorService core logic."""
+"""Tests for DoctorService checks."""
 
 from pathlib import Path
+
+import pytest
 
 from dotfiles.cmd.brew.service import PackageManifest
 from dotfiles.cmd.doctor.models import CheckResult
@@ -234,7 +236,16 @@ def test_notes_launchers_are_checked_and_fixable(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_tool_checks_stay_in_sync_with_packages_toml() -> None:
+@pytest.mark.parametrize(
+    ("name", "hint"),
+    [
+        (name, hint)
+        for checks in _TOOL_CHECKS.values()
+        for name, _command, hint in checks
+        if hint.startswith("brew install")
+    ],
+)
+def test_tool_checks_stay_in_sync_with_packages_toml(name: str, hint: str) -> None:
     """Drift gate for the CLAUDE.md invariant: doctor must stay in sync with
     macos/packages.toml (the source of truth for what's installed).
 
@@ -248,16 +259,13 @@ def test_tool_checks_stay_in_sync_with_packages_toml() -> None:
     enabled = {p.name for s in manifest.sections for p in s.packages if not p.disabled}
     cask_ok = {p.name for s in manifest.sections if s.kind in ("cask", "auto") for p in s.packages}
 
-    for _section, name, _cmd, hint in _TOOL_CHECKS:
-        if not hint.startswith("brew install"):
-            continue
-        pkg = hint.split()[-1]
-        assert pkg in enabled, (
-            f"doctor checks {name!r} with hint {hint!r}, but {pkg!r} is not an "
-            f"enabled package in macos/packages.toml — update one of them"
+    pkg = hint.split()[-1]
+    assert pkg in enabled, (
+        f"doctor checks {name!r} with hint {hint!r}, but {pkg!r} is not an "
+        "enabled package in macos/packages.toml — update one of them"
+    )
+    if "--cask" in hint:
+        assert pkg in cask_ok, (
+            f"doctor hint {hint!r} says --cask but {pkg!r} is not in a "
+            "cask/auto section of macos/packages.toml"
         )
-        if "--cask" in hint:
-            assert pkg in cask_ok, (
-                f"doctor hint {hint!r} says --cask but {pkg!r} is not in a "
-                f"cask/auto section of macos/packages.toml"
-            )

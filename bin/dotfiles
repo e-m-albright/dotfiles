@@ -3,12 +3,6 @@
 BIN_NAME=$(basename "$0")
 COMMAND_NAME=$1
 
-ARROW="￫"
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
 # Get dotfiles dir (so run this script from anywhere)
 SOURCE="${BASH_SOURCE[0]}"
 if [[ -L "$SOURCE" ]]; then
@@ -17,6 +11,8 @@ if [[ -L "$SOURCE" ]]; then
 fi
 export DOTFILES_DIR EXTRA_DIR
 DOTFILES_DIR="$(cd "$(dirname "$SOURCE")/.." && pwd)"
+# shellcheck source=../macos/print_utils.sh
+source "$DOTFILES_DIR/macos/print_utils.sh"
 
 sub_help () {
     # Banner + the full command tree are rendered by the Python CLI (Typer/Rich),
@@ -92,25 +88,6 @@ sub_update () {
         print_success "Global npm packages updated"
     fi
 
-    # --- Go tools ---
-    if command -v go >/dev/null 2>&1; then
-        print_section "Go tools"
-        local go_tools=(
-            "golang.org/x/tools/gopls@latest"
-            "github.com/go-delve/delve/cmd/dlv@latest"
-            "github.com/air-verse/air@latest"
-            "github.com/sqlc-dev/sqlc/cmd/sqlc@latest"
-            "github.com/pressly/goose/v3/cmd/goose@latest"
-            "github.com/a-h/templ/cmd/templ@latest"
-            "honnef.co/go/tools/cmd/staticcheck@latest"
-        )
-        for tool in "${go_tools[@]}"; do
-            local tool_name
-            tool_name=$(basename "${tool%%@*}")
-            go install "$tool" 2>/dev/null && print_success "$tool_name" || print_warn "Failed: $tool_name"
-        done
-    fi
-
     print_completion "All updates finished"
 }
 
@@ -133,7 +110,7 @@ sub_clean () {
 
 sub_dock () {
     . "$DOTFILES_DIR/macos/dock.sh"
-    printf "${GREEN}%b Success! MacOS dock command finished.${NC}\n" "$ARROW"
+    print_success "macOS Dock configured"
 }
 
 sub_install() {
@@ -163,15 +140,6 @@ sub_shell_profile() {
     done
     printf "\n"
     printf "  ${YELLOW}Tip:${NC} If startup is slow, check for heavy evals (fnm env, brew shellenv).\n"
-}
-
-# --- Namespace dispatchers ---
-ns_shell() {
-    local sub="${1:-profile}"; shift || true
-    case "$sub" in
-        profile) sub_shell_profile "$@" ;;
-        *) sub_help "Unknown compatibility command 'shell $sub'. Use 'dfs profile-shell'."; exit 2 ;;
-    esac
 }
 
 # Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
@@ -221,16 +189,5 @@ case $COMMAND_NAME in
     # profile-shell is a canonical flat command (Machine group in sub_help)
     profile-shell) shift; sub_shell_profile "$@" ;;
 
-    # Silent back-compat for the old `shell profile` single-item namespace
-    shell)  shift; ns_shell "$@" ;;
-
-    *)
-        if declare -f "sub_${COMMAND_NAME}" >/dev/null 2>&1; then
-            shift
-            "sub_${COMMAND_NAME}" "$@"
-        else
-            sub_help "'$COMMAND_NAME' is not a known command. Choose a command below."
-            exit 2
-        fi
-        ;;
+    *) sub_help "'$COMMAND_NAME' is not a known command. Choose a command below."; exit 2 ;;
 esac

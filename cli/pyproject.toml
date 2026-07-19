@@ -26,8 +26,6 @@ dev = [
     "vulture>=2.14",
     "complexipy>=2.0",
     "pip-audit>=2.7",
-    "hypothesis>=6.122",
-    "dirty-equals>=0.8",
     "pytest-textual-snapshot>=1.0.0",
     "pytest-asyncio>=1.4.0",
 ]
@@ -63,7 +61,7 @@ venv = ".venv"
 
 [tool.pytest.ini_options]
 addopts = "--timeout=30 --strict-markers"
-testpaths = ["src/dotfiles"]
+testpaths = ["src/dotfiles", "../macos"]
 asyncio_mode = "auto"
 
 [tool.coverage.run]

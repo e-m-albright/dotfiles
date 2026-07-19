@@ -7,14 +7,39 @@ hand-off (which is fzf/exec, not zellij).
 """
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from dotfiles.cmd.session.models import Session
+from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.cmd.session.agent_sessions import agents_by_session, live_agents
+from dotfiles.cmd.session.models import AgentActivity, Session
+from dotfiles.cmd.session.zellij import Zellij
 
 # Default retention for exited sessions: drop those older than 14 days, and keep
 # at most the 20 newest. Tunable per call (the `session prune` CLI exposes both).
 DEFAULT_MAX_AGE_DAYS = 14
 DEFAULT_MAX_COUNT = 20
+
+
+@dataclass(frozen=True)
+class SessionInventory:
+    sessions: list[Session]
+    programs: dict[str, list[str]]
+    matched_agents: dict[str, list[AgentActivity]]
+    unmatched_agents: list[AgentActivity]
+
+
+def read_session_inventory(zellij: Zellij, runner: ProcessRunner) -> SessionInventory:
+    """Read sessions and their pane/agent enrichment once for any presentation."""
+    sessions = zellij.list_sessions()
+    programs = {s.name: zellij.program_titles(s.name) for s in sessions if s.running}
+    matched, unmatched = agents_by_session(live_agents(runner))
+    return SessionInventory(sessions, programs, matched, unmatched)
+
+
+def live_sessions(sessions: Sequence[Session]) -> list[Session]:
+    """Running sessions only, current first then by name."""
+    return sorted((s for s in sessions if s.running), key=lambda s: (not s.current, s.name))
 
 
 def humanize_age(seconds: int | None) -> str:

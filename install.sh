@@ -12,6 +12,10 @@ fi
 # Get dotfiles dir (so run this script from anywhere)
 export DOTFILES_DIR
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+OH_MY_ZSH_COMMIT="677a4592b18c08ddea737f8aca70bac0e9fc9313"
+HOMEBREW_INSTALL_COMMIT="fea42d9aedd20a82bea800a6898dcde19401ab1f"
+WORKBENCH_COMMIT="dfadab4f9f8f1cccfb2bb5ea4921b2627ef05367"
+UV_VERSION="0.11.29"
 
 # Source shared print functions
 source "$DOTFILES_DIR/macos/print_utils.sh"
@@ -19,10 +23,10 @@ source "$DOTFILES_DIR/macos/print_utils.sh"
 # Install oh-my-zsh if not already installed
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
     print_action "Installing Oh My Zsh..."
-    if RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" >/dev/null 2>&1; then
+    if RUNZSH=no sh -c "$(curl -fsSL "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/$OH_MY_ZSH_COMMIT/tools/install.sh")" >/dev/null 2>&1; then
         print_success "Oh My Zsh installed"
     else
-        print_warning "Oh My Zsh install failed — continuing anyway"
+        print_warn "Oh My Zsh install failed — continuing anyway"
     fi
 fi
 
@@ -86,7 +90,7 @@ fi
 print_section "Homebrew"
 if ! command -v brew >/dev/null 2>&1; then
     print_action "Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    /bin/bash -c "$(curl -fsSL "https://raw.githubusercontent.com/Homebrew/install/$HOMEBREW_INSTALL_COMMIT/install.sh")"
 
     # Add Homebrew to PATH for this session and persist for future shells.
     # SC2016: single quotes are intentional — we want the literal string written to .zprofile, not expanded.
@@ -112,12 +116,12 @@ print_success "Homebrew index updated"
 print_section "uv (Python package manager)"
 if ! command -v uv >/dev/null 2>&1; then
     print_action "Installing uv..."
-    if curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; then
+    if curl -LsSf "https://astral.sh/uv/$UV_VERSION/install.sh" | sh >/dev/null 2>&1; then
         # Reload PATH so uv is findable in the same shell session
         export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
         print_success "uv installed"
     else
-        print_warn "uv install failed — install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+        print_warn "uv $UV_VERSION install failed"
     fi
 else
     print_info "uv already installed ($(uv --version))"
@@ -151,27 +155,6 @@ if ! command -v go >/dev/null 2>&1; then
 else
     print_info "Go already installed ($(go version | awk '{print $3}'))"
 fi
-GO_TOOLS=(
-    "golang.org/x/tools/gopls@latest"
-    "github.com/go-delve/delve/cmd/dlv@latest"
-    "github.com/air-verse/air@latest"
-    "github.com/sqlc-dev/sqlc/cmd/sqlc@latest"
-    "github.com/pressly/goose/v3/cmd/goose@latest"
-    "github.com/a-h/templ/cmd/templ@latest"
-    "honnef.co/go/tools/cmd/staticcheck@latest"
-)
-if command -v go >/dev/null 2>&1; then
-    for tool in "${GO_TOOLS[@]}"; do
-        tool_name=$(basename "${tool%@*}")
-        if ! command -v "$tool_name" >/dev/null 2>&1; then
-            go install "$tool" >/dev/null 2>&1 && print_info "  $tool_name installed" || print_info "  $tool_name skipped"
-        else
-            print_info "  $tool_name already installed"
-        fi
-    done
-    print_success "Go tools configured"
-fi
-
 # -- Node.js / FNM (Fast Node Manager — installed via packages.toml)
 print_section "Node.js / FNM"
 if ! command -v fnm >/dev/null 2>&1; then
@@ -218,18 +201,6 @@ if command -v fnm >/dev/null 2>&1; then
 fi
 
 # -- Python / UV
-print_section "Python / UV"
-if ! command -v uv >/dev/null 2>&1; then
-    print_action "Installing UV..."
-    if curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; then
-        print_success "UV installed"
-    else
-        print_warning "UV install failed — install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
-    fi
-else
-    print_info "UV already installed"
-fi
-
 # Only install Python 3.14 if it's not already installed via UV
 if command -v uv >/dev/null 2>&1 && ! command -v python3.14 >/dev/null 2>&1; then
     print_action "Installing Python 3.14 via UV..."
@@ -305,12 +276,7 @@ if [[ -d "$OBSIDIAN_VAULT/.obsidian" ]]; then
     for cfg in "${OBSIDIAN_CONFIGS[@]}"; do
         local_file="$DOTFILES_DIR/editors/obsidian/${cfg}.json"
         vault_file="$OBSIDIAN_VAULT/.obsidian/${cfg}.json"
-        if [[ -L "$vault_file" ]] && [[ "$(readlink "$vault_file")" == "$local_file" ]]; then
-            print_skip "${cfg}.json"
-        else
-            ln -sf "$local_file" "$vault_file"
-            print_step "Linked ${cfg}.json"
-        fi
+        _link "$local_file" "$vault_file"
     done
     # Community plugins
     chmod +x "$DOTFILES_DIR/editors/obsidian/plugins.sh"
@@ -335,7 +301,8 @@ WORKBENCH_DIR="${WORKBENCH_DIR:-$HOME/code/public/workbench}"
 if [[ ! -d "$WORKBENCH_DIR/.git" ]]; then
     print_action "Cloning workbench..."
     mkdir -p "$(dirname "$WORKBENCH_DIR")"
-    if ! git clone https://github.com/e-m-albright/workbench.git "$WORKBENCH_DIR"; then
+    if ! git clone https://github.com/e-m-albright/workbench.git "$WORKBENCH_DIR" \
+        || ! git -C "$WORKBENCH_DIR" checkout --detach "$WORKBENCH_COMMIT"; then
         print_error "Workbench clone failed"
         exit 1
     fi
@@ -351,7 +318,7 @@ if ! wb_out="$("$WORKBENCH_DIR/bin/workbench" sync all 2>&1)"; then
     print_error "Workbench sync failed"
     exit 1
 fi
-if ! wb_out="$("$WORKBENCH_DIR/bin/workbench" check all 2>&1)"; then
+if ! wb_out="$("$WORKBENCH_DIR/bin/workbench" drift all 2>&1)"; then
     printf '%s\n' "$wb_out"
     print_error "Workbench verification found managed drift"
     exit 1

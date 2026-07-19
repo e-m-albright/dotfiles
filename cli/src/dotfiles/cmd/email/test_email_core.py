@@ -1,9 +1,10 @@
-"""Tests for the Hide My Email core: create_mask + copy_to_clipboard."""
+"""Tests for Hide My Email behavior."""
 
 from __future__ import annotations
 
 import pytest
 
+from dotfiles.cmd.email.icloud import parse_icloud_mask
 from dotfiles.cmd.email.service import (
     MaskError,
     create_mask,
@@ -99,6 +100,19 @@ def test_list_masks_tolerates_missing_keys() -> None:
     assert mask.active is True
 
 
+@pytest.mark.parametrize(
+    "record",
+    [
+        {"anonymousId": "id-x"},
+        {"hme": "x@icloud.com"},
+        {"hme": "x@icloud.com", "anonymousId": "id-x", "isActive": "false"},
+    ],
+)
+def test_list_masks_rejects_unusable_provider_records(record: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="alias"):
+        parse_icloud_mask(record)
+
+
 def test_list_masks_empty() -> None:
     assert list_masks(FakeMaskProvider(existing=[])) == []
 
@@ -146,3 +160,9 @@ def test_copy_to_clipboard_no_op_without_pbcopy() -> None:
     runner = FakeProcessRunner()
     assert copy(runner, "a@icloud.com", which=lambda _name: None) is False
     assert runner.calls == []  # nothing run off macOS
+
+
+def test_copy_to_clipboard_reports_execution_failure() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("pbcopy",), exit_code=1)
+    assert copy(runner, "a@icloud.com", which=lambda _name: "/usr/bin/pbcopy") is False

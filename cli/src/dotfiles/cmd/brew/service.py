@@ -17,7 +17,9 @@ from __future__ import annotations
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from shutil import rmtree
+from tempfile import mkdtemp
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -27,9 +29,18 @@ from dotfiles.result import StepResult
 
 _log = get_logger(__name__)
 
+
+class BrewInventoryError(RuntimeError):
+    """Homebrew's installed state could not be read safely."""
+
+
 # ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
+
+FeatureFlag = Literal["ai", "productivity", "social"]
+PackageKind = Literal["formula", "cask", "auto"]
+SpecialMethod = Literal["rustup", "github_dmg", "curl_install"]
 
 
 class Package(BaseModel):
@@ -41,7 +52,7 @@ class Package(BaseModel):
     note: str = ""
     disabled: bool = False
     reason: str = ""
-    flag: str | None = None
+    flag: FeatureFlag | None = None
 
     @model_validator(mode="after")
     def disabled_requires_reason(self) -> Package:
@@ -56,8 +67,8 @@ class Section(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str
-    kind: Literal["formula", "cask", "auto"]
-    flag: str | None = None
+    kind: PackageKind
+    flag: FeatureFlag | None = None
     packages: list[Package] = []
 
 
@@ -66,23 +77,9 @@ class SpecialInstaller(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    # The key under [special.*] becomes the installer name; remaining fields
-    # are stored loosely so the model doesn't need to know every installer's
-    # shape up front.
-    method: str
-    flag: str | None = None
-    extra: dict[str, Any] = {}
-
-    @model_validator(mode="before")
-    @classmethod
-    def absorb_extra(cls, data: dict[str, Any]) -> dict[str, Any]:
-        known = {"method", "flag"}
-        extra = {k: v for k, v in data.items() if k not in known}
-        return {
-            "method": data.get("method", ""),
-            "flag": data.get("flag"),
-            "extra": extra,
-        }
+    method: SpecialMethod
+    flag: FeatureFlag | None = None
+    note: str = ""
 
 
 class NpmPackage(BaseModel):
@@ -91,7 +88,8 @@ class NpmPackage(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str
-    flag: str | None = None
+    version: str = ""
+    flag: FeatureFlag | None = None
     note: str = ""
     disabled: bool = False
     reason: str = ""
@@ -103,6 +101,16 @@ class NpmPackage(BaseModel):
         return self
 
 
+class GoPackage(BaseModel):
+    """A version-pinned Go command installed with `go install`."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    module: str
+    version: str
+
+
 class Flags(BaseModel):
     """Feature flag defaults (all true by default; override via env)."""
 
@@ -111,6 +119,14 @@ class Flags(BaseModel):
     ai: bool = True
     productivity: bool = True
     social: bool = True
+
+    def enabled(self) -> set[FeatureFlag]:
+        values: dict[FeatureFlag, bool] = {
+            "ai": self.ai,
+            "productivity": self.productivity,
+            "social": self.social,
+        }
+        return {name for name, enabled in values.items() if enabled}
 
 
 class Taps(BaseModel):
@@ -131,6 +147,7 @@ class PackageManifest(BaseModel):
     sections: list[Section] = []
     specials: dict[str, SpecialInstaller] = {}
     npm_packages: list[NpmPackage] = []
+    go_packages: list[GoPackage] = []
 
     @classmethod
     def load(cls, path: Path) -> PackageManifest:
@@ -148,6 +165,7 @@ class PackageManifest(BaseModel):
             specials[key] = SpecialInstaller.model_validate(value)
 
         npm_packages = [NpmPackage.model_validate(n) for n in raw.get("npm_package", [])]
+        go_packages = [GoPackage.model_validate(n) for n in raw.get("go_package", [])]
 
         return cls(
             flags=flags,
@@ -155,6 +173,7 @@ class PackageManifest(BaseModel):
             sections=sections,
             specials=specials,
             npm_packages=npm_packages,
+            go_packages=go_packages,
         )
 
 
@@ -163,15 +182,15 @@ class PackageManifest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _flag_active(flag: str | None, flags_on: set[str]) -> bool:
+def _flag_active(flag: FeatureFlag | None, flags_on: set[FeatureFlag]) -> bool:
     """Return True if flag is None (always active) or present in flags_on."""
     return flag is None or flag in flags_on
 
 
 def _section_enabled_packages(
     section: Section,
-    flags_on: set[str],
-) -> list[tuple[str, str]]:
+    flags_on: set[FeatureFlag],
+) -> list[tuple[str, PackageKind]]:
     """Return enabled (name, kind) pairs from a single section."""
     return [
         (pkg.name, section.kind)
@@ -183,8 +202,8 @@ def _section_enabled_packages(
 def enabled_packages(
     manifest: PackageManifest,
     *,
-    flags_on: set[str],
-) -> list[tuple[str, str]]:
+    flags_on: set[FeatureFlag],
+) -> list[tuple[str, PackageKind]]:
     """Return (name, kind) pairs for all non-disabled, flag-gated packages.
 
     A package is included when:
@@ -192,7 +211,7 @@ def enabled_packages(
     - Its own flag (if any) is in flags_on
     - disabled = False
     """
-    result: list[tuple[str, str]] = []
+    result: list[tuple[str, PackageKind]] = []
     for section in manifest.sections:
         if not _flag_active(section.flag, flags_on):
             continue
@@ -202,11 +221,7 @@ def enabled_packages(
 
 def _all_declared_names(manifest: PackageManifest) -> set[str]:
     """All package names declared in the manifest, enabled OR disabled."""
-    names: set[str] = set()
-    for section in manifest.sections:
-        for pkg in section.packages:
-            names.add(pkg.name)
-    return names
+    return {pkg.name for section in manifest.sections for pkg in section.packages}
 
 
 # ---------------------------------------------------------------------------
@@ -228,12 +243,14 @@ def _strip_version(name: str) -> str:
 def installed_formulae(runner: ProcessRunner) -> set[str]:
     """Return the set of formulae currently installed via Homebrew."""
     result = runner.run(("brew", "list", "--formula", "-1"))
+    _require_inventory(result.exit_code, result.stderr)
     return {line for line in result.stdout.splitlines() if line.strip()}
 
 
 def installed_casks(runner: ProcessRunner) -> set[str]:
     """Return the set of casks currently installed via Homebrew."""
     result = runner.run(("brew", "list", "--cask", "-1"))
+    _require_inventory(result.exit_code, result.stderr)
     return {line for line in result.stdout.splitlines() if line.strip()}
 
 
@@ -249,7 +266,13 @@ def requested_formulae(runner: ProcessRunner) -> set[str]:
     # (ariga/tap/atlas), while packages.toml declares the short name (atlas).
     # Strip the tap prefix so declared-matching stays aligned with installed_*.
     result = runner.run(("brew", "leaves", "--installed-on-request"))
+    _require_inventory(result.exit_code, result.stderr)
     return {line.rsplit("/", 1)[-1] for line in result.stdout.splitlines() if line.strip()}
+
+
+def _require_inventory(exit_code: int, stderr: str) -> None:
+    if exit_code != 0:
+        raise BrewInventoryError(stderr.strip() or f"Homebrew inventory failed ({exit_code})")
 
 
 def stale_packages(
@@ -264,8 +287,8 @@ def missing_packages(
     manifest: PackageManifest,
     runner: ProcessRunner,
     *,
-    flags_on: set[str],
-) -> list[tuple[str, str]]:
+    flags_on: set[FeatureFlag],
+) -> list[tuple[str, PackageKind]]:
     """Return (name, kind) pairs for enabled packages not currently installed."""
     return InstallPlan.compute(manifest, runner, flags_on=flags_on).missing
 
@@ -274,7 +297,7 @@ def missing_packages(
 class InstallPlan:
     """Computed install plan: what's missing vs stale on this machine."""
 
-    missing: list[tuple[str, str]]
+    missing: list[tuple[str, PackageKind]]
     stale: list[str]
 
     @classmethod
@@ -283,14 +306,16 @@ class InstallPlan:
         manifest: PackageManifest,
         runner: ProcessRunner,
         *,
-        flags_on: set[str],
+        flags_on: set[FeatureFlag],
     ) -> InstallPlan:
         formulae = installed_formulae(runner)
         casks = installed_casks(runner)
         installed = formulae | casks
         satisfied = installed | {_strip_version(name) for name in installed}
         wanted = enabled_packages(manifest, flags_on=flags_on)
-        missing = [(name, kind) for name, kind in wanted if name not in satisfied]
+        missing: list[tuple[str, PackageKind]] = [
+            (name, kind) for name, kind in wanted if name not in satisfied
+        ]
         declared = _all_declared_names(manifest)
         requested = requested_formulae(runner)
         stale = sorted(
@@ -353,7 +378,7 @@ def _install_auto(name: str, runner: ProcessRunner) -> StepResult:
     return StepResult(level="error", message=f"brew install {name} failed (tried formula + cask)")
 
 
-def _install_one(name: str, kind: str, runner: ProcessRunner) -> StepResult:
+def _install_one(name: str, kind: PackageKind, runner: ProcessRunner) -> StepResult:
     if kind == "formula":
         return _install_formula(name, runner)
     if kind == "cask":
@@ -365,7 +390,7 @@ def install_packages(
     manifest: PackageManifest,
     runner: ProcessRunner,
     *,
-    flags_on: set[str],
+    flags_on: set[FeatureFlag],
     dry_run: bool = False,
 ) -> list[StepResult]:
     """Install each missing (name, kind) pair from the manifest.
@@ -398,12 +423,23 @@ def install_packages(
 # Special installers
 # ---------------------------------------------------------------------------
 
+
+def _download_verified(
+    runner: ProcessRunner, *, url: str, sha256: str, directory: Path, filename: str
+) -> Path | None:
+    target = directory / filename
+    if not runner.run(("curl", "-fsSL", "-o", str(target), url)).ok:
+        return None
+    checked = runner.run(
+        ("shasum", "-a", "256", "-c", "-"),
+        stdin=f"{sha256}  {target}\n",
+    )
+    return target if checked.ok else None
+
+
 _RUSTUP_CHECK = ("sh", "-c", "command -v rustup || command -v cargo")
-_RUSTUP_INSTALL = (
-    "sh",
-    "-c",
-    "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
-)
+_RUSTUP_URL = "https://static.rust-lang.org/rustup/archive/1.28.2/aarch64-apple-darwin/rustup-init"
+_RUSTUP_SHA256 = "20ef5516c31b1ac2290084199ba77dbbcaa1406c45c1d978ca68558ef5964ef5"
 
 
 def install_rust(runner: ProcessRunner) -> list[StepResult]:
@@ -417,15 +453,29 @@ def install_rust(runner: ProcessRunner) -> list[StepResult]:
     if check.stdout.strip():
         return [StepResult(level="info", message="Rust already installed — skipping")]
 
-    res = runner.run(_RUSTUP_INSTALL)
-    if res.exit_code != 0:
-        return [StepResult(level="error", message=f"rustup installer failed: {res.stderr.strip()}")]
-
-    return [StepResult(level="success", message="Rust installed via rustup")]
+    install_dir = Path(mkdtemp(prefix="dotfiles-rustup-"))
+    try:
+        installer = _download_verified(
+            runner,
+            url=_RUSTUP_URL,
+            sha256=_RUSTUP_SHA256,
+            directory=install_dir,
+            filename="rustup-init",
+        )
+        if installer is None:
+            return [StepResult(level="error", message="rustup download verification failed")]
+        runner.run(("chmod", "+x", str(installer)))
+        installed = runner.run((str(installer), "-y"))
+        if not installed.ok:
+            return [StepResult(level="error", message="rustup installer failed")]
+        return [StepResult(level="success", message="Rust installed via rustup")]
+    finally:
+        rmtree(install_dir)
 
 
 _CLAUDE_CODE_CHECK = ("sh", "-c", "command -v claude")
-_CLAUDE_CODE_INSTALL = ("sh", "-c", "curl -fsSL https://claude.ai/install.sh | bash")
+_CLAUDE_CODE_URL = "https://claude.ai/install.sh"
+_CLAUDE_CODE_SHA256 = "b3f79015b54c751440a6488f07b1b64f9088742b9052bc1bd356d13108320d2a"
 _CLAUDE_CODE_PIN = ("claude", "install", "latest")
 
 
@@ -439,19 +489,25 @@ def install_claude_code(runner: ProcessRunner) -> list[StepResult]:
     if check.stdout.strip():
         return [StepResult(level="info", message="claude-code already installed — skipping")]
 
-    res = runner.run(_CLAUDE_CODE_INSTALL)
-    if res.exit_code != 0:
-        return [
-            StepResult(level="error", message=f"claude-code installer failed: {res.stderr.strip()}")
-        ]
-
-    # Pin to latest (non-fatal if this fails)
-    runner.run(_CLAUDE_CODE_PIN)
-
-    return [StepResult(level="success", message="claude-code installed")]
+    install_dir = Path(mkdtemp(prefix="dotfiles-claude-"))
+    try:
+        installer = _download_verified(
+            runner,
+            url=_CLAUDE_CODE_URL,
+            sha256=_CLAUDE_CODE_SHA256,
+            directory=install_dir,
+            filename="install.sh",
+        )
+        if installer is None or not runner.run(("bash", str(installer))).ok:
+            return [StepResult(level="error", message="claude-code installer failed")]
+        runner.run(_CLAUDE_CODE_PIN)
+        return [StepResult(level="success", message="claude-code installed")]
+    finally:
+        rmtree(install_dir)
 
 
 _TW_APP_PATH = "/Applications/TypeWhisper.app"
+_TW_TEAM_ID = "2D8ALY3LCL"
 _TW_FETCH_URL = (
     "sh",
     "-c",
@@ -460,7 +516,6 @@ _TW_FETCH_URL = (
     "| grep -viE 'daily|-rc|plugin' "
     "| head -1",
 )
-_TW_DMG_PATH = "/tmp/TypeWhisper-install.dmg"
 
 
 def install_typewhisper(runner: ProcessRunner, *, dotfiles_dir: Path) -> list[StepResult]:
@@ -498,33 +553,37 @@ def _download_typewhisper(runner: ProcessRunner) -> list[StepResult]:
             StepResult(level="error", message="TypeWhisper: no stable DMG found on GitHub Releases")
         ]
 
-    # Download. argv form (no shell) so the GitHub-sourced URL is never parsed
-    # by a shell — removes the injection footgun of interpolating tw_url into sh -c.
-    dl_res = runner.run(("curl", "-fsSL", "-o", _TW_DMG_PATH, tw_url))
-    if dl_res.exit_code != 0:
-        return [StepResult(level="error", message="TypeWhisper: download failed")]
+    install_dir = Path(mkdtemp(prefix="dotfiles-typewhisper-"))
+    dmg_path = str(install_dir / "TypeWhisper.dmg")
+    tw_mount = ""
+    try:
+        dl_res = runner.run(("curl", "-fsSL", "-o", dmg_path, tw_url))
+        if dl_res.exit_code != 0:
+            return [StepResult(level="error", message="TypeWhisper: download failed")]
 
-    # Mount (genuine pipeline → needs a shell; only the constant path is interpolated)
-    _mount_cmd = (
-        f"hdiutil attach {_TW_DMG_PATH!r} -nobrowse -noautoopen 2>/dev/null"
-        " | grep -oE '/Volumes/.*' | tail -1"
-    )
-    mount_res = runner.run(("sh", "-c", _mount_cmd))
-    tw_mount = mount_res.stdout.strip()
-    if not tw_mount:
-        return [StepResult(level="error", message="TypeWhisper: DMG mount failed")]
+        mount_cmd = (
+            f"hdiutil attach {dmg_path!r} -nobrowse -noautoopen 2>/dev/null"
+            " | grep -oE '/Volumes/.*' | tail -1"
+        )
+        tw_mount = runner.run(("sh", "-c", mount_cmd)).stdout.strip()
+        if not tw_mount:
+            return [StepResult(level="error", message="TypeWhisper: DMG mount failed")]
 
-    # Copy — argv form (no shell).
-    copy_res = runner.run(("cp", "-R", f"{tw_mount}/TypeWhisper.app", "/Applications/"))
+        app_path = f"{tw_mount}/TypeWhisper.app"
+        verified = runner.run(("codesign", "--verify", "--deep", "--strict", app_path))
+        identity = runner.run(("codesign", "-dv", "--verbose=4", app_path))
+        signature = identity.stdout + identity.stderr
+        if not verified.ok or f"TeamIdentifier={_TW_TEAM_ID}" not in signature:
+            return [StepResult(level="error", message="TypeWhisper: signature verification failed")]
 
-    # Detach + cleanup (best-effort; argv, exit code ignored).
-    runner.run(("hdiutil", "detach", tw_mount, "-quiet"))
-    runner.run(("rm", "-f", _TW_DMG_PATH))
-
-    if copy_res.exit_code != 0:
-        return [StepResult(level="error", message="TypeWhisper: copy to /Applications failed")]
-
-    return [StepResult(level="success", message="TypeWhisper installed")]
+        copied = runner.run(("cp", "-R", app_path, "/Applications/"))
+        if not copied.ok:
+            return [StepResult(level="error", message="TypeWhisper: copy to /Applications failed")]
+        return [StepResult(level="success", message="TypeWhisper installed")]
+    finally:
+        if tw_mount:
+            runner.run(("hdiutil", "detach", tw_mount, "-quiet"))
+        rmtree(install_dir)
 
 
 def _apply_typewhisper_config(runner: ProcessRunner, dotfiles_dir: Path) -> list[StepResult]:
@@ -552,30 +611,115 @@ def install_npm_globals(
     manifest: PackageManifest,
     runner: ProcessRunner,
     *,
-    flags_on: set[str],
+    flags_on: set[FeatureFlag],
+    dry_run: bool = False,
 ) -> list[StepResult]:
     """Install npm global packages declared in [[npm_package]] sections.
 
     Idempotency guard: skips each package if `which <name>` succeeds.
     Flag-gated: packages with a flag are skipped when that flag is not in flags_on.
     """
-    steps = (_install_one_npm(pkg, runner, flags_on=flags_on) for pkg in manifest.npm_packages)
+    steps = (
+        _install_one_npm(pkg, runner, flags_on=flags_on, dry_run=dry_run)
+        for pkg in manifest.npm_packages
+    )
     return [s for s in steps if s is not None]
 
 
+def install_go_tools(
+    manifest: PackageManifest, runner: ProcessRunner, *, dry_run: bool
+) -> list[StepResult]:
+    """Install the exact Go tool versions declared by the manifest."""
+    return [_install_one_go(package, runner, dry_run=dry_run) for package in manifest.go_packages]
+
+
+def _install_one_go(package: GoPackage, runner: ProcessRunner, *, dry_run: bool) -> StepResult:
+    target = f"{package.module}@{package.version}"
+    if dry_run:
+        return StepResult(level="info", message=f"DRY RUN: go install {target}")
+    located = runner.run(("which", package.name))
+    if located.ok:
+        version = runner.run(("go", "version", "-m", located.stdout.strip()))
+        if package.version in version.stdout:
+            return StepResult(level="info", message=f"{package.name} {package.version} installed")
+    installed = runner.run(("go", "install", target))
+    return StepResult(level="success" if installed.ok else "error", message=f"go install {target}")
+
+
 def _install_one_npm(
-    pkg: NpmPackage, runner: ProcessRunner, *, flags_on: set[str]
+    pkg: NpmPackage,
+    runner: ProcessRunner,
+    *,
+    flags_on: set[FeatureFlag],
+    dry_run: bool,
 ) -> StepResult | None:
     """Install one npm global, or None if it's disabled/flag-gated. Idempotent."""
     if pkg.disabled or not _flag_active(pkg.flag, flags_on):
         return None
-    check = runner.run(("sh", "-c", f"command -v {pkg.name}"))
+    target = f"{pkg.name}@{pkg.version}" if pkg.version else pkg.name
+    if dry_run:
+        return StepResult(level="info", message=f"DRY RUN: npm install -g {target}")
+    check_command = (
+        ("npm", "list", "-g", "--depth=0", target)
+        if pkg.version
+        else ("sh", "-c", f"command -v {pkg.name}")
+    )
+    check = runner.run(check_command)
     if check.stdout.strip() or check.exit_code == 0:
         return StepResult(level="info", message=f"{pkg.name} already installed — skipping")
-    res = runner.run(("npm", "install", "-g", pkg.name))
+    res = runner.run(("npm", "install", "-g", target))
     if res.exit_code == 0:
-        return StepResult(level="success", message=f"npm install -g {pkg.name}")
-    return StepResult(level="error", message=f"npm install -g {pkg.name} failed")
+        return StepResult(level="success", message=f"npm install -g {target}")
+    return StepResult(level="error", message=f"npm install -g {target} failed")
+
+
+def install_specials(
+    manifest: PackageManifest,
+    runner: ProcessRunner,
+    *,
+    flags_on: set[FeatureFlag],
+    dotfiles_dir: Path,
+    dry_run: bool,
+) -> list[StepResult]:
+    """Run only the special installers declared and enabled by the manifest."""
+    results: list[StepResult] = []
+    for name, installer in manifest.specials.items():
+        if not _flag_active(installer.flag, flags_on):
+            continue
+        if dry_run:
+            results.append(StepResult(level="info", message=f"DRY RUN: install {name}"))
+        elif installer.method == "rustup":
+            results.extend(install_rust(runner))
+        elif installer.method == "curl_install":
+            results.extend(install_claude_code(runner))
+        else:
+            results.extend(install_typewhisper(runner, dotfiles_dir=dotfiles_dir))
+    return results
+
+
+def install_software(
+    manifest: PackageManifest,
+    runner: ProcessRunner,
+    *,
+    flags_on: set[FeatureFlag],
+    dotfiles_dir: Path,
+    dry_run: bool,
+) -> list[StepResult]:
+    """Reconcile every software source declared by the manifest."""
+    results = add_taps(manifest, runner, dry_run=dry_run)
+    results.extend(install_packages(manifest, runner, flags_on=flags_on, dry_run=dry_run))
+    results.extend(
+        install_specials(
+            manifest,
+            runner,
+            flags_on=flags_on,
+            dotfiles_dir=dotfiles_dir,
+            dry_run=dry_run,
+        )
+    )
+    results.extend(install_npm_globals(manifest, runner, flags_on=flags_on, dry_run=dry_run))
+    results.extend(install_go_tools(manifest, runner, dry_run=dry_run))
+    return results
 
 
 def upgrade(runner: ProcessRunner) -> list[StepResult]:

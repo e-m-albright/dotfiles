@@ -20,11 +20,12 @@ async def test_sessions_pane_lists_sessions():
     async with app.run_test() as pilot:
         await pilot.pause()
         await pilot.pause()
-        from dotfiles.cmd.session.pane import SessionsPane
+        from textual.widgets import ListView
 
-        pane = app.query_one(SessionsPane)
         # Current session is surfaced first within the ACTIVE group.
-        assert pane.session_names() == ["work", "mobile"]
+        view = app.query_one("#session-list", ListView)
+        ids = [item.id for item in view.children if item.id and item.id.startswith("sess-")]
+        assert ids == ["sess-work", "sess-mobile"]
 
 
 def test_action_sheet_snapshot(snap_compare, monkeypatch):
@@ -65,7 +66,7 @@ def test_session_action_buttons_vary_by_state():
 
 def test_live_sessions_keeps_running_current_first():
     from dotfiles.cmd.session.models import Session
-    from dotfiles.cmd.session.pane import live_sessions
+    from dotfiles.cmd.session.service import live_sessions
 
     sessions = [
         Session(name="mobile", running=True, current=False),
@@ -610,12 +611,6 @@ async def test_exited_sessions_listed_as_resurrectable():
         await pilot.pause()
         from textual.widgets import ListItem, ListView
 
-        from dotfiles.cmd.session.pane import SessionsPane
-
-        pane = app.query_one(SessionsPane)
-        # The live group is unchanged; the exited session is now surfaced too.
-        assert pane.session_names() == ["work"]
-        assert [s.name for s in pane._exited] == ["old"]
         view = app.query_one("#session-list", ListView)
         rows = {i.id for i in view.query(ListItem) if "session-row" in i.classes}
         assert rows == {"sess-work", "sess-old"}

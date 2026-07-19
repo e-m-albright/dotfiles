@@ -11,7 +11,6 @@ from dotfiles.result import StepLevel, StepResult
 # NOTE: tests that capture output should inject their own Console(file=StringIO());
 # do not rely on patching these globals.
 console = Console()
-err_console = Console(stderr=True)
 
 _GLYPH: dict[StepLevel, str] = {
     "success": "[green]✓[/]",

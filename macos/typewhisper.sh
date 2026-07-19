@@ -11,7 +11,7 @@ TYPEWHISPER_PREFS="$HOME/Library/Preferences/com.typewhisper.mac.plist"
 TYPEWHISPER_APP="/Applications/TypeWhisper.app"
 
 usage() {
-    printf "Usage: dotfiles typewhisper <status|apply> [--quit] [--reopen]\n"
+    printf "Usage: macos/typewhisper.sh <status|apply> [--quit] [--reopen]\n"
     printf "\n"
     printf "Commands:\n"
     printf "  status          Show installed app, running state, configured workflow summary\n"
@@ -167,6 +167,9 @@ import uuid
 config_dir = pathlib.Path(sys.argv[1])
 prefs_path = pathlib.Path(sys.argv[2])
 support_dir = pathlib.Path(sys.argv[3])
+sys.path.insert(0, str(config_dir.parent))
+
+from typewhisper_config import normalize_correction, normalize_term, normalize_workflow
 
 settings = json.loads((config_dir / "settings.json").read_text())["preferences"]
 workflows = json.loads((config_dir / "workflows.json").read_text())["workflows"]
@@ -193,6 +196,8 @@ workflow_store = support_dir / "workflows.store"
 if not workflow_store.exists():
     raise SystemExit(f"Missing workflow store: {workflow_store}. Open TypeWhisper once, then retry.")
 
+# TypeWhisper stores dates and IDs in Apple's Core Data schema: seconds since
+# 2001, plus Z_PK/Z_ENT/Z_OPT bookkeeping mirrored in Z_PRIMARYKEY.
 mac_epoch_offset = 978307200
 now = time.time() - mac_epoch_offset
 con = sqlite3.connect(workflow_store)
@@ -202,29 +207,13 @@ try:
     z_ent = int(z_ent_row[0]) if z_ent_row else 1
 
     for index, workflow in enumerate(workflows):
-        name = workflow["name"]
+        spec = normalize_workflow(workflow, index)
+        name = spec.name
         existing = con.execute("select Z_PK, Z_OPT, ZCREATEDAT from ZWORKFLOW where ZNAME=?", (name,)).fetchone()
-        behavior = dict(workflow.get("behavior", {}))
-        behavior = {key: value for key, value in behavior.items() if value is not None}
-        output = dict(workflow.get("output", {}))
-        output = {key: value for key, value in output.items() if value is not None}
-        trigger = dict(workflow.get("trigger", {}))
-        trigger = {key: value for key, value in trigger.items() if value is not None}
-        trigger.setdefault("kind", "global")
-        trigger.setdefault("appBundleIdentifiers", [])
-        trigger.setdefault("websitePatterns", [])
-        trigger.setdefault("hotkeys", [])
-        trigger.setdefault("hotkeyBehavior", "startDictation")
-
-        behavior_blob = json.dumps(behavior, separators=(",", ":")).encode("utf-8")
-        output_blob = json.dumps(output, separators=(",", ":")).encode("utf-8")
-        trigger_blob = json.dumps(trigger, separators=(",", ":")).encode("utf-8")
-        app_identifier = ",".join(trigger.get("appBundleIdentifiers", []))
-        website_pattern = ",".join(trigger.get("websitePatterns", []))
-        enabled = 1 if workflow.get("enabled", True) else 0
-        sort_order = int(workflow.get("sortOrder", index))
-        template = workflow.get("template", "custom")
-        trigger_kind = trigger.get("kind", "global")
+        behavior_blob = json.dumps(spec.behavior, separators=(",", ":")).encode("utf-8")
+        output_blob = json.dumps(spec.output, separators=(",", ":")).encode("utf-8")
+        trigger_blob = json.dumps(spec.trigger, separators=(",", ":")).encode("utf-8")
+        enabled = 1 if spec.enabled else 0
 
         if existing:
             z_pk, z_opt, created_at = existing
@@ -239,12 +228,12 @@ try:
                 (
                     int(z_opt) + 1,
                     enabled,
-                    sort_order,
+                    spec.sort_order,
                     now,
-                    template,
-                    app_identifier,
-                    trigger_kind,
-                    website_pattern,
+                    spec.template,
+                    spec.app_identifier,
+                    spec.trigger_kind,
+                    spec.website_pattern,
                     behavior_blob,
                     output_blob,
                     trigger_blob,
@@ -266,14 +255,14 @@ try:
                     z_pk,
                     z_ent,
                     enabled,
-                    sort_order,
+                    spec.sort_order,
                     now,
                     now,
                     name,
-                    template,
-                    app_identifier,
-                    trigger_kind,
-                    website_pattern,
+                    spec.template,
+                    spec.app_identifier,
+                    spec.trigger_kind,
+                    spec.website_pattern,
                     uuid.uuid4().bytes,
                     behavior_blob,
                     output_blob,
@@ -306,24 +295,17 @@ try:
         con.execute("update Z_PRIMARYKEY set Z_MAX=max(Z_MAX, ?) where Z_NAME='DictionaryEntry'", (z_pk,))
 
     for term in terms:
-        if isinstance(term, str):
-            original = term.strip()
-            case_sensitive = False
-            enabled = True
-        else:
-            original = str(term.get("term", term.get("original", ""))).strip()
-            case_sensitive = bool(term.get("caseSensitive", False))
-            enabled = bool(term.get("enabled", True))
-        if not original:
+        spec = normalize_term(term)
+        if spec is None:
             continue
         existing = con.execute(
             "select Z_PK from ZDICTIONARYENTRY where ZENTRYTYPE='term' and lower(ZORIGINAL)=lower(?)",
-            (original,),
+            (spec.original,),
         ).fetchone()
         if existing:
             con.execute(
                 "update ZDICTIONARYENTRY set ZCASESENSITIVE=?, ZISENABLED=? where Z_PK=?",
-                (1 if case_sensitive else 0, 1 if enabled else 0, existing[0]),
+                (1 if spec.case_sensitive else 0, 1 if spec.enabled else 0, existing[0]),
             )
         else:
             z_pk = next_pk()
@@ -334,25 +316,22 @@ try:
                     ZCREATEDAT, ZENTRYTYPE, ZORIGINAL, ZREPLACEMENT, ZID
                 ) values (?, ?, 1, ?, ?, 0, ?, 'term', ?, NULL, ?)
                 """,
-                (z_pk, z_ent, 1 if case_sensitive else 0, 1 if enabled else 0, now, original, uuid.uuid4().bytes),
+                (z_pk, z_ent, 1 if spec.case_sensitive else 0, 1 if spec.enabled else 0, now, spec.original, uuid.uuid4().bytes),
             )
             bump_primary_key(z_pk)
 
     for correction in corrections:
-        original = str(correction.get("original", "")).strip()
-        replacement = str(correction.get("replacement", ""))
-        case_sensitive = bool(correction.get("caseSensitive", False))
-        enabled = bool(correction.get("enabled", True))
-        if not original:
+        spec = normalize_correction(correction)
+        if spec is None:
             continue
         existing = con.execute(
             "select Z_PK from ZDICTIONARYENTRY where ZENTRYTYPE='correction' and lower(ZORIGINAL)=lower(?)",
-            (original,),
+            (spec.original,),
         ).fetchone()
         if existing:
             con.execute(
                 "update ZDICTIONARYENTRY set ZCASESENSITIVE=?, ZISENABLED=?, ZREPLACEMENT=? where Z_PK=?",
-                (1 if case_sensitive else 0, 1 if enabled else 0, replacement, existing[0]),
+                (1 if spec.case_sensitive else 0, 1 if spec.enabled else 0, spec.replacement, existing[0]),
             )
         else:
             z_pk = next_pk()
@@ -363,7 +342,7 @@ try:
                     ZCREATEDAT, ZENTRYTYPE, ZORIGINAL, ZREPLACEMENT, ZID
                 ) values (?, ?, 1, ?, ?, 0, ?, 'correction', ?, ?, ?)
                 """,
-                (z_pk, z_ent, 1 if case_sensitive else 0, 1 if enabled else 0, now, original, replacement, uuid.uuid4().bytes),
+                (z_pk, z_ent, 1 if spec.case_sensitive else 0, 1 if spec.enabled else 0, now, spec.original, spec.replacement, uuid.uuid4().bytes),
             )
             bump_primary_key(z_pk)
 

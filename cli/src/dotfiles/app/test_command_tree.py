@@ -132,6 +132,18 @@ def test_unknown_shim_command_uses_branded_visual_error() -> None:
     assert "\033[" not in result.stderr
 
 
+def test_removed_shell_profile_aliases_stay_removed() -> None:
+    for alias in (("shell", "profile"), ("shell_profile",)):
+        result = subprocess.run(
+            [str(_SHIM), *alias],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 2
+        assert "not a known command" in result.stderr
+
+
 def test_bash_native_help_is_safe_and_consistent() -> None:
     for command in sorted(_BASH_NATIVE):
         for flag in ("--help", "-h"):

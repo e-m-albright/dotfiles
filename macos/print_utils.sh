@@ -66,8 +66,6 @@ print_warn() {
     printf "  ${WARN} ${YELLOW}%s${NC}\n" "$1"
 }
 
-print_warning() { print_warn "$@"; }
-
 print_error() {
     printf "  ${CROSS} ${RED}%s${NC}\n" "$1"
 }

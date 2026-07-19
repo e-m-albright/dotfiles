@@ -1,11 +1,18 @@
 """Session-management policy: retention selection and age formatting."""
 
+import pytest
+
 from dotfiles.cmd.session.models import Session
 from dotfiles.cmd.session.service import (
     exited_sessions,
     humanize_age,
     sessions_to_prune,
 )
+
+
+def test_current_session_cannot_be_exited() -> None:
+    with pytest.raises(ValueError, match="must be running"):
+        Session(name="invalid", running=False, current=True)
 
 
 def test_exited_sessions_keeps_only_exited_newest_first() -> None:

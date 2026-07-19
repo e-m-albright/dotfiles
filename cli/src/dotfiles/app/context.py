@@ -13,12 +13,13 @@ import typer
 from dotfiles.adapters.launcher import FzfExecLauncher
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.adapters.process import SubprocessRunner
+from dotfiles.cmd.brew.service import FeatureFlag
 from dotfiles.cmd.email.icloud import build_icloud_provider
 from dotfiles.cmd.email.service import MaskProvider
 from dotfiles.cmd.session.service import SessionLauncher
 from dotfiles.settings import Settings
 
-# Repo root: cli/src/dotfiles/cli/context.py → parents[4] = repo root
+# Repo root: cli/src/dotfiles/app/context.py → parents[4] = repo root
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
@@ -36,7 +37,7 @@ class AppContext:
     dotfiles_dir: Path = _REPO_ROOT
     # Feature flags enabled via the environment (AI/PRODUCTIVITY/SOCIAL); read in
     # the composition root, never via os.environ inside a command.
-    feature_flags: frozenset[str] = frozenset({"ai", "productivity", "social"})
+    feature_flags: frozenset[FeatureFlag] = frozenset({"ai", "productivity", "social"})
 
 
 def app_context(ctx: typer.Context) -> AppContext:
@@ -50,9 +51,13 @@ def app_context(ctx: typer.Context) -> AppContext:
     return obj
 
 
-def _env_feature_flags() -> frozenset[str]:
+def _env_feature_flags() -> frozenset[FeatureFlag]:
     """Flags enabled via env vars (AI/PRODUCTIVITY/SOCIAL); on unless set to "0"."""
-    env_names = {"ai": "AI", "productivity": "PRODUCTIVITY", "social": "SOCIAL"}
+    env_names: dict[FeatureFlag, str] = {
+        "ai": "AI",
+        "productivity": "PRODUCTIVITY",
+        "social": "SOCIAL",
+    }
     return frozenset(flag for flag, env in env_names.items() if os.environ.get(env, "1") != "0")
 
 

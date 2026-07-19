@@ -44,7 +44,7 @@ else
     if "$LMS" get "$LMSTUDIO_MODEL" -y; then
         print_success "Downloaded $LMSTUDIO_MODEL"
     else
-        print_warning "Could not download $LMSTUDIO_MODEL — pull it from the LM Studio app, then re-run"
+        print_warn "Could not download $LMSTUDIO_MODEL — pull it from the LM Studio app, then re-run"
         return 0 2>/dev/null || exit 0
     fi
 fi
@@ -57,7 +57,7 @@ else
     if "$LMS" load "$LMSTUDIO_MODEL" -c "$LMSTUDIO_CONTEXT" -y >/dev/null 2>&1; then
         print_success "Loaded $LMSTUDIO_MODEL @ ${LMSTUDIO_CONTEXT}-token context"
     else
-        print_warning "Could not load model — start the LM Studio server, then re-run"
+        print_warn "Could not load model — start the LM Studio server, then re-run"
     fi
 fi
 

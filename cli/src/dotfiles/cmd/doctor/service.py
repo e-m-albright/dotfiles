@@ -8,19 +8,25 @@ from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.doctor.models import CheckResult
 from dotfiles.fsutil import symlink as _make_symlink
 
-# Declarative tool checks: (section, display name, command, install hint).
-_TOOL_CHECKS: tuple[tuple[str, str, str, str], ...] = (
-    ("Core Tools", "Homebrew", "brew", "Run install.sh"),
-    ("Core Tools", "Git", "git", "brew install git"),
-    ("Core Tools", "jq", "jq", "brew install jq"),
-    ("Core Tools", "yq", "yq", "brew install yq"),
-    ("Editors", "Zed", "zed", "brew install --cask zed"),
-    ("Dev Tools", "Just", "just", "brew install just"),
-    ("Dev Tools", "Delta", "delta", "brew install git-delta"),
-    ("Dev Tools", "golangci-lint", "golangci-lint", "brew install golangci-lint"),
-    ("Remote Shell", "Mosh", "mosh", "brew install mosh"),
-    ("Remote Shell", "Zellij", "zellij", "brew install zellij"),
-)
+# Declarative tool checks by rendered section: (display name, command, install hint).
+_TOOL_CHECKS: dict[str, tuple[tuple[str, str, str], ...]] = {
+    "Core Tools": (
+        ("Homebrew", "brew", "Run install.sh"),
+        ("Git", "git", "brew install git"),
+        ("jq", "jq", "brew install jq"),
+        ("yq", "yq", "brew install yq"),
+    ),
+    "Editors": (("Zed", "zed", "brew install --cask zed"),),
+    "Dev Tools": (
+        ("Just", "just", "brew install just"),
+        ("Delta", "delta", "brew install git-delta"),
+        ("golangci-lint", "golangci-lint", "brew install golangci-lint"),
+    ),
+    "Remote Shell": (
+        ("Mosh", "mosh", "brew install mosh"),
+        ("Zellij", "zellij", "brew install zellij"),
+    ),
+}
 
 
 class DoctorService:
@@ -88,7 +94,10 @@ class DoctorService:
     # ------------------------------------------------------------------ #
 
     def _check_core_tools(self) -> list[CheckResult]:
-        return [self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[:4]]
+        return self._tools("Core Tools")
+
+    def _tools(self, section: str) -> list[CheckResult]:
+        return [self._tool(section, name, cmd, hint) for name, cmd, hint in _TOOL_CHECKS[section]]
 
     def _check_essentials(self) -> list[CheckResult]:
         sec = "Essentials"
@@ -105,7 +114,7 @@ class DoctorService:
         ]
 
     def _check_editors(self) -> list[CheckResult]:
-        return [self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[4:5]]
+        return self._tools("Editors")
 
     def _check_runtimes(self) -> list[CheckResult]:
         sec = "Runtimes"
@@ -250,10 +259,10 @@ class DoctorService:
         ]
 
     def _check_dev_tools(self) -> list[CheckResult]:
-        return [self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[5:8]]
+        return self._tools("Dev Tools")
 
     def _check_remote_shell(self) -> list[CheckResult]:
-        return [self._tool(sec, name, cmd, hint) for sec, name, cmd, hint in _TOOL_CHECKS[8:]]
+        return self._tools("Remote Shell")
 
     def _check_configuration(self) -> list[CheckResult]:
         sec = "Configuration"

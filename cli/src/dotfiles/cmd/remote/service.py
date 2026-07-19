@@ -321,18 +321,29 @@ class RemoteService:
 
     def kill_sessions(self, *, dry_run: bool) -> list[StepResult]:
         """Kill existing Mosh/SSH sessions WITHOUT changing Remote Login state."""
-        return self._kill_sessions(dry_run=dry_run)
-
-    def _kill_sessions(self, *, dry_run: bool) -> list[StepResult]:
         user = self._user
         if dry_run:
             return [
                 StepResult(level="info", message=f"DRY RUN: pkill -u {user} mosh-server"),
                 StepResult(level="info", message=f"DRY RUN: pkill -u {user} sshd"),
             ]
-        self._runner.run(("pkill", "-u", user, "mosh-server"))
-        self._runner.run(("pkill", "-u", user, "sshd"))
-        return [StepResult(level="success", message="Existing Mosh/SSH sessions killed")]
+        steps: list[StepResult] = []
+        for process in ("mosh-server", "sshd"):
+            result = self._runner.run(("pkill", "-u", user, process))
+            if result.exit_code == 0:
+                steps.append(
+                    StepResult(level="success", message=f"Killed existing {process} sessions")
+                )
+            elif result.exit_code == 1:
+                steps.append(
+                    StepResult(level="info", message=f"No {process} sessions were running")
+                )
+            else:
+                detail = result.stderr.strip() or f"exit {result.exit_code}"
+                steps.append(
+                    StepResult(level="error", message=f"Could not kill {process}: {detail}")
+                )
+        return steps
 
     def disable_intro(self, *, dry_run: bool, kill_sessions: bool) -> list[StepResult]:
         """Side-effect steps for `off`: optionally kill live sessions.
@@ -341,7 +352,7 @@ class RemoteService:
         rendered by the CLI from a status snapshot — this returns only the
         action steps (session teardown) so the command stays declarative.
         """
-        return self._kill_sessions(dry_run=dry_run) if kill_sessions else []
+        return self.kill_sessions(dry_run=dry_run) if kill_sessions else []
 
     def web_status(self) -> StepResult:
         """Report whether the zellij web server is running (experimental)."""

@@ -1,5 +1,5 @@
 # Package manifest for Homebrew setup.
-# Source of truth for `dotfiles brew install` and `dotfiles stale`.
+# Source of truth for `dotfiles brew install` and `dotfiles brew stale`.
 #
 # Usage (env opt-in flags, default true):
 #   AI=0 PRODUCTIVITY=0 SOCIAL=0 dotfiles brew install
@@ -237,25 +237,56 @@ packages = [
 
 [special.rust]
 method = "rustup"
-url = "https://sh.rustup.rs"
-args = ["-y"]
-zprofile_snippet = '[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"'
 note = "Official installer; preferred over Homebrew for version management"
 
 [special.typewhisper]
 method = "github_dmg"
 flag = "productivity"
-repo = "TypeWhisper/typewhisper-mac"
-app_name = "TypeWhisper.app"
-exclude_asset_patterns = ["daily", "-rc", "plugin"]
 note = "On-device voice-to-text (Parakeet ASR + local Gemma cleanup). Replaced Wispr Flow 2026-05-29. No Homebrew cask."
 
 [special.claude_code]
 method = "curl_install"
 flag = "ai"
-url = "https://claude.ai/install.sh"
-post_install = "claude install latest"
 note = "Tracks `latest`, not the lagging `stable` cask. Migrated off npm global 2026-05-28."
+
+# =============================================================================
+# Go tools
+# =============================================================================
+
+[[go_package]]
+name = "gopls"
+module = "golang.org/x/tools/gopls"
+version = "v0.23.0"
+
+[[go_package]]
+name = "dlv"
+module = "github.com/go-delve/delve/cmd/dlv"
+version = "v1.27.0"
+
+[[go_package]]
+name = "air"
+module = "github.com/air-verse/air"
+version = "v1.66.0"
+
+[[go_package]]
+name = "sqlc"
+module = "github.com/sqlc-dev/sqlc/cmd/sqlc"
+version = "v1.31.1"
+
+[[go_package]]
+name = "goose"
+module = "github.com/pressly/goose/v3/cmd/goose"
+version = "v3.27.2"
+
+[[go_package]]
+name = "templ"
+module = "github.com/a-h/templ/cmd/templ"
+version = "v0.3.1020"
+
+[[go_package]]
+name = "staticcheck"
+module = "honnef.co/go/tools/cmd/staticcheck"
+version = "v0.7.0"
 
 # =============================================================================
 # npm globals (no brew formula available / brew formula is wrong package)
@@ -263,11 +294,13 @@ note = "Tracks `latest`, not the lagging `stable` cask. Migrated off npm global 
 
 [[npm_package]]
 name = "agent-browser"
+version = "0.32.2"
 flag = "ai"
 note = "Browser-automation CLI for AI agents (Tier 2 — shell out, no MCP overhead)"
 
 [[npm_package]]
 name = "ctx7"
+version = "0.5.5"
 flag = "ai"
 note = "Context7 docs-lookup CLI (replaces the context7 MCP — `ctx7 library <name>` / `ctx7 docs <id> <query>`, no MCP context tax, universal across agents)"
 
@@ -280,4 +313,5 @@ reason = "Disabled 2026-06-01: experiment; agent-browser is the active browser-a
 
 [[npm_package]]
 name = "wrangler"
+version = "4.112.0"
 note = "Cloudflare Workers CLI (brew formula `wrangler` is the unrelated Erlang refactor tool, disabled upstream 2025-07-01)"

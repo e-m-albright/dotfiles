@@ -14,7 +14,7 @@ if [[ -z "${EMAIL:-}" ]]; then
     printf "  Enter email for SSH key: "
     read EMAIL
     if [[ -z "$EMAIL" ]]; then
-        print_warning "Email required for SSH key generation"
+        print_warn "Email required for SSH key generation"
         exit 1
     fi
 fi

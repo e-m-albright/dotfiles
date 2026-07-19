@@ -1,6 +1,8 @@
 """Domain models for zellij sessions and live agent discovery."""
 
-from pydantic import BaseModel, ConfigDict
+from typing import Self
+
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from dotfiles.agent import Agent
 
@@ -16,6 +18,12 @@ class Session(BaseModel):
     # Age since creation, parsed from zellij's "[Created ... ago]" clause. None
     # when zellij omits it. Used as the staleness signal for pruning exited ones.
     created_age_seconds: int | None = None
+
+    @model_validator(mode="after")
+    def current_is_running(self) -> Self:
+        if self.current and not self.running:
+            raise ValueError("the current session must be running")
+        return self
 
 
 class AgentActivity(BaseModel):

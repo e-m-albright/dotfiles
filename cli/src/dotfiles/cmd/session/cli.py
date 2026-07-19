@@ -9,13 +9,14 @@ from rich.markup import escape
 from dotfiles.app.context import AppContext, app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.session import session_name
-from dotfiles.cmd.session.agent_sessions import agents_by_session, live_agents
 from dotfiles.cmd.session.models import AgentActivity, Session
 from dotfiles.cmd.session.service import (
     DEFAULT_MAX_AGE_DAYS,
     DEFAULT_MAX_COUNT,
     exited_sessions,
     humanize_age,
+    live_sessions,
+    read_session_inventory,
     sessions_to_prune,
 )
 from dotfiles.cmd.session.zellij import SessionError, Zellij
@@ -44,16 +45,20 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
     app_ctx = app_context(ctx)
     zellij = _zellij(app_ctx)
     try:
-        sessions = zellij.list_sessions()
+        inventory = read_session_inventory(zellij, app_ctx.runner)
     except SessionError as exc:
         print_status(console, "error", f"zellij error: {exc}")
         raise typer.Exit(code=1) from exc
-    if not sessions:
+    if not inventory.sessions:
         print_status(console, "info", "No active zellij sessions — `session new <name>` to create")
         return
     rows = [
-        _picker_row(s, programs, agents)
-        for s, programs, agents in _enriched_rows(app_ctx, sessions)
+        _picker_row(
+            session,
+            inventory.programs.get(session.name, ()),
+            inventory.matched_agents.get(session.name, ()),
+        )
+        for session in [*live_sessions(inventory.sessions), *exited_sessions(inventory.sessions)]
     ]
     choice = app_ctx.launcher.pick(rows)
     if choice:
@@ -121,41 +126,28 @@ def _picker_row(
     return f"{s.name}\t{_ansi(_ls_line(s, programs, agents).strip())}"
 
 
-def _enriched_rows(
-    app_ctx: AppContext, sessions: Sequence[Session]
-) -> list[tuple[Session, Sequence[str], Sequence[AgentActivity]]]:
-    """Sessions paired with their live enrichment, ordered as the deck shows them.
-
-    Running first (current, then by name), then exited. Each enrichment is
-    best-effort — what's running in the panes, and which agents are live in each
-    session — and degrades to empty when zellij's cache is unreadable.
-    """
-    zellij = _zellij(app_ctx)
-    running = sorted((s for s in sessions if s.running), key=lambda s: (not s.current, s.name))
-    programs = {s.name: zellij.program_titles(s.name) for s in running}
-    matched, _ = agents_by_session(live_agents(app_ctx.runner))
-    rows: list[tuple[Session, Sequence[str], Sequence[AgentActivity]]] = [
-        (s, programs.get(s.name, ()), matched.get(s.name, [])) for s in running
-    ]
-    rows.extend((s, (), ()) for s in exited_sessions(sessions))
-    return rows
-
-
 @session_app.command("ls")
 def cmd_list_sessions(ctx: typer.Context) -> None:
     """List zellij sessions with what's running and which agents are active."""
     app_ctx = app_context(ctx)
     try:
-        sessions = _zellij(app_ctx).list_sessions()
+        inventory = read_session_inventory(_zellij(app_ctx), app_ctx.runner)
     except SessionError as exc:
         print_status(console, "error", f"zellij error: {exc}")
         raise typer.Exit(code=1) from exc
     print_title(console, "session", "ls")
-    if not sessions:
+    if not inventory.sessions:
         print_status(console, "info", "No active zellij sessions")
         return
-    for s, programs, agents in _enriched_rows(app_ctx, sessions):
-        console.print(_ls_line(s, programs, agents))
+    ordered = [*live_sessions(inventory.sessions), *exited_sessions(inventory.sessions)]
+    for session in ordered:
+        console.print(
+            _ls_line(
+                session,
+                inventory.programs.get(session.name, ()),
+                inventory.matched_agents.get(session.name, ()),
+            )
+        )
 
 
 @session_app.command()
