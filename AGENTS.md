@@ -43,3 +43,13 @@ just audit
 
 Keep changes small. This repository intentionally has no custom health ratchet,
 scheduled AI audit, or multi-vendor agent framework.
+
+## Privacy (public repo)
+
+This repo is public. Before committing, `git grep -niI` for any private-project names or personal absolute paths and ensure tracked files return nothing.
+
+- Never reference a private project by name in tracked files — use generic phrasing ("a private project", "an internal manifesto").
+- No hardcoded `/Users/<name>/...` home paths — use `~` / `$HOME`.
+- `docs/specs/` and `docs/plans/` are gitignored (local working notes); in-flight specs stay on disk, durable rationale graduates into `docs/` ADRs/guides — don't re-track them.
+- Keep it neutral — no employment / status signals.
+- Caveat: prior git *history* may still contain previously-scrubbed content; true removal needs a history rewrite (filter-repo/BFG) + force push.
