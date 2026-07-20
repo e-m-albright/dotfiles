@@ -218,6 +218,9 @@ packages = [
   { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
   { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
   { name = "opencode",             note = "Vendor-neutral terminal coding agent", disabled = true, reason = "Disabled 2026-06-01: vendor-neutral CLIs rolled back (subscription economics); standardized on Claude Code + Codex" },
+  { name = "amp",                  note = "Sourcegraph Amp agent (ampcode.com); CLI via curl installer, npm @sourcegraph/amp, or sourcegraph/amp-cli tap", disabled = true, reason = "Watch 2026-07-20: heavily built-out frontier-pushing agent; tracking, not adopting — active agent support stays on Claude Code + Codex" },
+  { name = "droid",               note = "Factory.ai droid agent (factory.ai); CLI via curl app.factory.ai/cli, no Homebrew", disabled = true, reason = "Watch 2026-07-20: heavily built-out frontier-pushing agent; tracking, not adopting — active agent support stays on Claude Code + Codex" },
+  { name = "aider",               note = "Aider git-native terminal pair-programmer (aider.chat); install via pipx/uv, Apache-2.0", disabled = true, reason = "Watch 2026-07-20: OG minimal BYOK harness, closest cousin to Pi; catalogued in docs/agent-harness-landscape.md, not adopted — daily drivers stay Claude Code + Codex" },
   { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server" },
   { name = "huggingface-cli",      note = "Hugging Face CLI", disabled = true, reason = "Disabled 2026-07-15: no model-development workflow needs it; install per-project if local-model experimentation resumes" },
 ]
