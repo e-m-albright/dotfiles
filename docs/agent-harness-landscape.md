@@ -3,7 +3,7 @@
 **Status:** OPEN / ongoing survey. Not an active build — a tracked view of the
 coding-agent tooling landscape and where our own harness ambitions sit.
 
-**Last surveyed:** 2026-07-20 · **Next review cue:** when a tracked tool ships a
+**Last surveyed:** 2026-07-21 · **Next review cue:** when a tracked tool ships a
 step-change, or roughly quarterly.
 
 **Project this belongs to:** *own our coding surface.* The install-manifest side
@@ -24,20 +24,25 @@ wiring a minimal harness like Pi to a Kimi K2/K3-class open model we control.
 
 This is explicitly **not** a bet on agent velocity for its own sake.
 
-## Current stance (2026-07-20)
+## Current stance (2026-07-21)
 
-**Decision: stay on Codex + Claude Code directly, on their subscriptions.** Best
-bang-for-buck right now. Rationale:
+**Decision: use Pi as the primary interactive trial; retain Codex and Claude Code
+as specialist fallbacks.** Do not uninstall either yet. Rationale:
 
-- **Subscription economics win at personal scale.** Paying per-token API for a
-  self-run harness is economically worse for our usage than a flat Claude/ChatGPT
-  subscription that's already doing a good job. Pay the subscription, use the
-  tool, don't maintain the tool.
-- **Pi is attractive but not now.** Tuning Pi into a preferred surface is roughly
-  a weekend project; the real cost is the ongoing **maintenance tax** of keeping a
-  hand-built harness current. Deferred, not rejected.
-- **No armies/factories of agents.** Large fleets of concurrent agents are the
-  wrong bet for us — we won't make it. One-to-a-few observable agents, max.
+- **Subscription economics are no longer a blocker.** Pi can use ChatGPT-backed
+  `openai-codex` auth while retaining its transparent, provider-neutral surface.
+- **Pi is now pleasant enough to test as the daily driver.** The restored
+  Workbench extensions cover permission policy, safe-git, presets, model routing,
+  consult, a rich footer, and the branded startup surface. AGENTS.md and skills
+  already carry across harnesses.
+- **Codex still owns several hard capabilities:** OS sandboxing, cloud/async
+  agents, GitHub PR review, first-class MCP, and some provider-specific controls.
+  Keep it installed for those jobs while Pi earns the rest.
+- **Maintenance tax remains real.** The Jul 15 move left Pi config symlinks broken
+  for a week without an error. Full migration requires Workbench to deploy and
+  verify Pi declaratively, not another hand-maintained link farm.
+- **No armies/factories of agents.** Large fleets of concurrent agents remain the
+  wrong bet. One-to-a-few observable agents, max.
 
 ### Guiding principles
 
@@ -175,6 +180,28 @@ defaults:
 question. Pick Oh My Pi and most of it evaporates — but you take on a large
 opinionated fork instead of a small core you own.
 
+### Pi UI surface experiments
+
+- **[@firstpick/pi-package-webui](https://pi.dev/packages/@firstpick/pi-package-webui)**
+  — **interesting, but don't migrate now.** Third-party, MIT-licensed local
+  browser companion by Firstp1ck. It runs Pi through RPC and adds multi-tab
+  sessions, streaming output, model controls, uploads, workspace/Git views,
+  extension widgets, notifications, and PIN-gated network access. Its real wins
+  are multi-session management and remote access; the terminal footer now covers
+  the information-density advantages. Revisit only if those two needs become
+  real, and audit the package first because Pi packages execute with full user
+  privileges.
+- **[pi-gui](https://github.com/minghinmatthewlam/pi-gui)** — okay-ish looking,
+  but not compelling enough yet; the visual direction does not inspire an
+  immediate switch. It is **not an official Earendil/Pi app**: it is an
+  MIT-licensed open-source Electron client by independent developer Matthew Lam
+  (`minghinmatthewlam`). It wraps the official `@earendil-works/pi-coding-agent`
+  runtime and keeps Pi session files as its source of truth, but lives in the
+  developer's own repository and release channel.
+
+A listing in the pi.dev package gallery means a package is discoverable in Pi's
+community ecosystem, not that Earendil authors or endorses it.
+
 ### If we ever migrate Codex/Claude Code → base Pi: the rebuild list
 
 Ordered by pain. This is the deferred work, captured so future-us doesn't
@@ -182,7 +209,7 @@ re-derive it.
 
 | Severity | What we'd lose | Pi's answer | In Oh My Pi? |
 |---|---|---|---|
-| **Critical** | Sandbox + approval gating | none built-in; write a `tool_call` hook or run in Docker/Gondolin. **Do first.** | Partial (prompts + COW, no syscall sandbox) |
+| **Critical** | Sandbox + approval gating | **Partly built:** permission-policy + safe-git hooks; still no OS syscall sandbox. Accept explicitly or wrap Pi in Seatbelt/container before retiring Codex. | Partial (prompts + COW, no syscall sandbox) |
 | **High** | MCP servers | write/install an MCP extension | Yes (+inherits config) |
 | **High** | Subagents / orchestration | tmux fan-out or thin extension | Yes (task/swarm/hub) |
 | **High** | Cloud/async + PR-review bot | not locally replicable — keep Codex/CC for this | No |
@@ -195,13 +222,52 @@ re-derive it.
 
 ---
 
+## Inference providers — open-model hosting watch (2026-07-21)
+
+The supply side of the "Pi + open model" bet: who serves Kimi-class open weights,
+and who is reputable. Two distinct layers — **routers** (no GPUs of their own)
+and **inference hosts** (run the weights on their own accelerated infra).
+
+### Router layer
+
+| Provider | What it is | Reputation / take |
+|---|---|---|
+| **OpenRouter** | Aggregator/proxy, ~zero own inference. One OpenAI-compatible key; routes each request to an underlying host (or the model owner's API when weights aren't public) by price/latency/uptime. Takes ~5% on credits. | The pragmatic default for a personal agent. You trade an extra hop + a middleman seeing your traffic for provider portability with zero config churn. Prompts pass *through* them to the host; logging is off by default but it's still a party in the path. |
+
+### Inference hosts (own accelerated compute)
+
+| Provider | Tier | Reputation / take |
+|---|---|---|
+| **Together AI** | Serious infra | Broadest open-model catalog, reliable, good docs, well-funded. Solid default if going direct. Kimi K2.6 at ~$1.20/M in. |
+| **Fireworks AI** | Serious infra | Fast, engineering-strong (ex-Meta PyTorch team), competitive pricing. |
+| **Baseten** | Serious infra | Aggressive on Kimi-family latency/pricing (~$0.95/M in for K2.6). More "deploy your model" platform DNA; first-class open-weight serving. |
+| **Groq / Cerebras** | Raw speed | Custom silicon, spectacular tok/s on small-to-mid models. Trillion-param MoEs are a stretch for their memory architecture — don't expect K3-class there soon. |
+| **DeepInfra / Novita** | Budget | Cheapest (K2.6 from ~$0.75/M in). A step down in polish/SLA; fine for a personal agent, not for anything that matters. |
+| **Moonshot direct** (platform.kimi.ai) | Model owner | Cheapest first-party access to K3, and the *only* source until weights are public. Chinese company holding keys + traffic — fine for code experiments, mind the privacy line. |
+
+### Kimi K3 status snapshot (2026-07-21)
+
+- Released 2026-07-16, API-first; **open weights land 2026-07-27** (2.8T MoE, MXFP4).
+- Debuted #1 on Frontend Code Arena; early days — leaderboards are launch-week
+  and frontend-weighted. K2.6 remains the proven agentic workhorse at ~¼ the price.
+- Until weights drop, K3 = Moonshot's API only (direct or via OpenRouter,
+  ~$3/$15 per M, capacity-constrained). Expect Together/Baseten/Fireworks/DeepInfra
+  to serve it within days-to-weeks after 07-27, then prices fall and routing
+  through OpenRouter picks the winner automatically.
+- **Self-hosting K3 is off the table** for our hardware class (2.8T params);
+  the local path stays Qwen-scale — see [local-llm-stack.md](local-llm-stack.md).
+
 ## Open questions / to-do (tracked)
 
+- [ ] **Pi browser UI:** deferred. Re-open only if multi-session browser tabs or
+      phone/remote access become concrete needs; then audit
+      `@firstpick/pi-package-webui` before installing.
 - [ ] **Deep-profile the additions** to matrix parity: Aider, Gemini CLI, Cline,
       Cursor (agent surface), plus Conductor/cmux positioning detail.
 - [ ] **Local + open model path:** revisit wiring a minimal harness (Pi / Oh My Pi)
       to a self-hosted Kimi K2/K3-class model for privacy/control. Blocked on the
-      open-weights landscape maturing; ties into `local-llm-stack.md`.
+      open-weights landscape maturing; ties into `local-llm-stack.md`. Re-check
+      after 2026-07-27 (K3 weights drop) — see the provider watch above.
 - [ ] **Re-verify churny facts** before any decision: model IDs (Amp/Codex change
       weekly), Oh My Pi LOC/stars, "Amp subagent messaging", Pi subagent "parallel
       mode". All flagged as fast-moving.
