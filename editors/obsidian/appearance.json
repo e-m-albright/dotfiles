@@ -4,6 +4,7 @@
   "enabledCssSnippets": [
     "navigator-icons",
     "queue",
-    "workout"
+    "workout",
+    "batch"
   ]
 }
