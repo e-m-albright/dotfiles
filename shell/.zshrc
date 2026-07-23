@@ -334,14 +334,6 @@ if command -v fnm &>/dev/null; then
     eval "$(fnm env --use-on-cd --shell zsh)"
 fi
 
-# direnv — per-directory env + auto-activated venvs. Opt-in: a project needs a
-# `.envrc` (e.g. `layout uv`) that you've approved once with `direnv allow`.
-# It only acts in approved dirs, so it isn't scanning every `cd`. Reusable
-# `layout` helpers live in terminal/direnv/direnvrc.
-if command -v direnv &>/dev/null; then
-    eval "$(direnv hook zsh)"
-fi
-
 # fzf — fuzzy finder keybindings (Ctrl-T files, Ctrl-R history, Alt-C cd)
 # Sourced before zoxide so `zi` (interactive jump) can use fzf as its picker.
 if command -v fzf &>/dev/null; then

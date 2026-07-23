@@ -127,7 +127,7 @@ bin/                 thin `dotfiles` launcher
 cli/                 Typer CLI and Textual Mission Control TUI
 macos/               package manifest and system setup
 shell/               zsh configuration and completions
-terminal/            Ghostty, Zellij, direnv, and related config
+terminal/            Ghostty, Zellij, and related config
 editors/             Zed and Obsidian host configuration
 git/                 global Git configuration
 docs/                machine-specific operating notes

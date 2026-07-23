@@ -34,7 +34,6 @@ packages = [
   { name = "ripgrep",              note = "Fast content search (yazi: find-in-files / `F`)" },
   { name = "fzf",                  note = "Fuzzy finder (yazi: interactive fuzzy jump)" },
   { name = "zoxide",               note = "Smart `cd` with frecency (yazi: `z` jump)" },
-  { name = "direnv",               note = "Per-directory env + auto-activate venvs (`layout uv`); opt-in via .envrc + `direnv allow`" },
   { name = "yazi",                 note = "Blazing-fast terminal file manager (Rust)" },
   { name = "poppler",              note = "PDF preview (pdftoppm)" },
   { name = "resvg",                note = "SVG-to-PNG rasterizer" },
