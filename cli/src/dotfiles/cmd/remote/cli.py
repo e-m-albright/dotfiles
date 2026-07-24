@@ -1,4 +1,4 @@
-"""`dotfiles remote on|off|status` — the phone (Termius) remote-shell entrypoint."""
+"""`dotfiles remote` - phone access and project-agent entrypoints."""
 
 import typer
 from rich.console import Console
@@ -6,12 +6,14 @@ from rich.console import Console
 from dotfiles.app.context import app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.remote.models import ConnectionInfo, RemoteStatus
+from dotfiles.cmd.remote.pi import project_layout, resolve_project, session_name_for
 from dotfiles.cmd.remote.service import (
     SHARING_OPEN,
     SHARING_PATH,
     InvalidKeyError,
     RemoteService,
 )
+from dotfiles.cmd.session.zellij import SessionError, Zellij
 from dotfiles.console import (
     console,
     has_errors,
@@ -23,7 +25,7 @@ from dotfiles.console import (
 )
 
 remote_app = typer.Typer(
-    cls=FuzzyTyperGroup, help="Turn phone (Termius) remote-shell access on or off."
+    cls=FuzzyTyperGroup, help="Configure phone access or enter a project agent session."
 )
 
 _WAIT_TIMEOUT_MIN = 2
@@ -176,6 +178,37 @@ def off(
         _wait_for_login(service, target=False, interactive=app_ctx.interactive)
     if has_errors(steps):
         raise typer.Exit(code=1)
+
+
+@remote_app.command()
+def pi(ctx: typer.Context, project: str) -> None:
+    """Attach to a project Zellij session and continue its latest pi conversation."""
+    app_ctx = app_context(ctx)
+    try:
+        project_path = resolve_project(app_ctx.home, project)
+        session_name = session_name_for(project_path)
+    except ValueError as exc:
+        print_status(console, "error", str(exc))
+        raise typer.Exit(code=1) from exc
+
+    zellij = Zellij(app_ctx.runner, home=app_ctx.home)
+    try:
+        exists = any(session.name == session_name for session in zellij.list_sessions())
+    except SessionError as exc:
+        print_status(console, "error", f"zellij error: {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if exists:
+        command = ("zellij", "attach", session_name)
+    else:
+        command = (
+            "zellij",
+            "--session",
+            session_name,
+            "--layout-string",
+            project_layout(project_path, session_name),
+        )
+    app_ctx.launcher.attach(command)
 
 
 @remote_app.command()

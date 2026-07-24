@@ -72,6 +72,7 @@ beside their sessions.
 dotfiles remote status
 dotfiles remote on
 dotfiles remote off
+dotfiles remote pi PROJECT
 dotfiles session ls
 dotfiles session new NAME
 dotfiles session attach NAME
