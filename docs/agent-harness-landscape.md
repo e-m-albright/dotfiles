@@ -275,6 +275,12 @@ and **inference hosts** (run the weights on their own accelerated infra).
       drops (Oh My Pi stabilizes) or a genuine step-change lands. Not before.
 - [ ] **Trigger to re-open the decision:** subscription economics change, a
       privacy requirement appears, or Codex/Claude Code degrade.
+- [ ] **Voice as a harness surface:** conversational voice control of these
+      agents is a separate watch — evaluated and declined 2026-07-24 (VoiceMode,
+      claude-voice: right shape, below the polish bar). Reasoning and revisit
+      triggers live in the notes vault at
+      `wiki/llms-and-ai/voice-agent-interfaces.md`. The output half is already
+      built here as `dotfiles speak`.
 
 ## Sources (primary, 2026-07)
 
