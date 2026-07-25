@@ -112,6 +112,8 @@ def test_zellij_web_running_reads_status(tmp_path: Path) -> None:
 def test_paseo_install_agent_writes_plist_and_bootstraps(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("id", "-u"), stdout="501\n")
+    runner.script(("tailscale", "status"), exit_code=0)
+    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
     steps = _service(runner, tmp_path).paseo_install_agent(dry_run=False)
 
     plist = tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.paseo.plist"
@@ -126,12 +128,50 @@ def test_paseo_install_agent_writes_plist_and_bootstraps(tmp_path: Path) -> None
         "--using=default",
         "paseo",
         "start",
+        "--foreground",
         "--no-relay",
         "--listen",
-        "0.0.0.0:6767",
+        "100.64.0.1:6767",
     ]
+    assert (
+        "/opt/homebrew/bin/fnm",
+        "exec",
+        "--using=default",
+        "paseo",
+        "daemon",
+        "stop",
+    ) in runner.calls
     assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
     assert all(s.level != "error" for s in steps)
+
+
+def test_paseo_install_agent_requires_tailnet_ip(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("tailscale", "status"), exit_code=1)
+
+    steps = _service(runner, tmp_path).paseo_install_agent(dry_run=False)
+
+    assert [step.level for step in steps] == ["error"]
+    assert "tailnet IPv4" in steps[0].message
+    assert not (tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.paseo.plist").exists()
+    assert not any(call[0] == "launchctl" for call in runner.calls)
+
+
+def test_paseo_uninstall_stops_legacy_daemon(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-u"), stdout="501\n")
+
+    steps = _service(runner, tmp_path).paseo_uninstall_agent(dry_run=False)
+
+    assert (
+        "/opt/homebrew/bin/fnm",
+        "exec",
+        "--using=default",
+        "paseo",
+        "daemon",
+        "stop",
+    ) in runner.calls
+    assert all(step.level == "success" for step in steps)
 
 
 def test_paseo_running_reads_launchctl_list(tmp_path: Path) -> None:

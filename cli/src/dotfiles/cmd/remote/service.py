@@ -23,24 +23,32 @@ ZELLIJ_WEB_PORT = 8082
 _ZELLIJ_BIN = "/opt/homebrew/bin/zellij"
 _ZELLIJ_LABEL = "com.dotfiles.zellij-web"
 
-# Paseo — the primary phone driver (multi-agent daemon incl. Pi). It listens on
-# this port; the Paseo app connects DIRECTLY over the tailnet with the daemon
-# password (relay disabled, no `tailscale serve`, no token/URL). `paseo` is an
-# fnm-managed npm global, so launchd asks fnm to run it under the current default
-# Node version. The daemon password lives hashed in ~/.paseo — never in the plist.
+# Paseo — the primary phone driver (multi-agent daemon incl. Pi). It binds only
+# to this machine's Tailscale IPv4; the Paseo app connects DIRECTLY over the
+# tailnet with the daemon password (relay disabled, no `tailscale serve`, no
+# token/URL). `paseo` is an fnm-managed npm global, so launchd asks fnm to run it
+# under the current default Node version. The daemon password lives hashed in
+# ~/.paseo — never in the plist.
 PASEO_PORT = 6767
 _PASEO_LABEL = "com.dotfiles.paseo"
 _FNM_BIN = "/opt/homebrew/bin/fnm"
-_PASEO_ARGS = [
+_PASEO_BASE_ARGS = [
     _FNM_BIN,
     "exec",
     "--using=default",
     "paseo",
     "start",
+    "--foreground",
     "--no-relay",
-    "--listen",
-    f"0.0.0.0:{PASEO_PORT}",
 ]
+_PASEO_STOP_COMMAND = (
+    _FNM_BIN,
+    "exec",
+    "--using=default",
+    "paseo",
+    "daemon",
+    "stop",
+)
 
 # The persistent Zellij session the phone deep-links to (…/mobile), built from
 # terminal/zellij/layouts/mobile.kdl.
@@ -254,18 +262,44 @@ class RemoteService:
         version. No secret is written — the daemon password is stored hashed in
         ~/.paseo by `paseo daemon set-password`.
         """
+        if dry_run:
+            return self._load_agent(
+                _PASEO_LABEL,
+                _PASEO_BASE_ARGS,
+                "paseo.log",
+                "Paseo daemon",
+                dry_run=True,
+                keep_alive=False,
+            )
+
+        connected, tailnet_ip = self._tailscale
+        if not connected or not tailnet_ip:
+            return [
+                StepResult(
+                    level="error",
+                    message="Paseo not started: no tailnet IPv4 address is available",
+                )
+            ]
+
+        # Older launchd definitions started Paseo in detached mode, leaving a
+        # daemon outside launchd's lifecycle. Stop that process before loading
+        # the foreground-owned replacement; no daemon running is a harmless case.
+        self._runner.run(_PASEO_STOP_COMMAND)
         return self._load_agent(
             _PASEO_LABEL,
-            _PASEO_ARGS,
+            [*_PASEO_BASE_ARGS, "--listen", f"{tailnet_ip}:{PASEO_PORT}"],
             "paseo.log",
             "Paseo daemon",
-            dry_run=dry_run,
+            dry_run=False,
             keep_alive=False,
         )
 
     def paseo_uninstall_agent(self, *, dry_run: bool) -> list[StepResult]:
-        """Unload + remove the Paseo launchd agent."""
-        return self._remove_agent(_PASEO_LABEL, "Paseo daemon", dry_run=dry_run)
+        """Unload + remove the Paseo launchd agent and any legacy detached daemon."""
+        steps = self._remove_agent(_PASEO_LABEL, "Paseo daemon", dry_run=dry_run)
+        if not dry_run:
+            self._runner.run(_PASEO_STOP_COMMAND)
+        return steps
 
     def paseo_running(self) -> bool:
         return _PASEO_LABEL in self._line(("launchctl", "list"))

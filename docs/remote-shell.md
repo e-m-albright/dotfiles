@@ -35,9 +35,12 @@ Everything runs **on the laptop**; the phone is a thin client over the tailnet.
 2. **Set a daemon password** (stored hashed in `~/.paseo`, never in a plist):
    `paseo daemon set-password`.
 3. **Bring it up** via the CLI — `dfs remote on` installs a launchd agent
-   (`com.dotfiles.paseo`, `RunAtLoad` + `KeepAlive`) that runs
-   `paseo start --no-relay --listen 0.0.0.0:6767`. `--no-relay` keeps the
-   Cloudflare relay **out of the path** — traffic stays pure-tailnet.
+   (`com.dotfiles.paseo`, `RunAtLoad`) that runs Paseo in foreground mode with
+   the relay disabled, bound to the machine's current Tailscale IPv4 on port
+   6767. Paseo stays inside launchd's lifecycle, so `dfs remote off` actually
+   stops it. Setup fails closed when no tailnet address is available.
+   `--no-relay` keeps the Cloudflare relay
+   **out of the path** — traffic stays pure-tailnet.
 4. **On the phone:** install the **Paseo** app, then *add a daemon connection*
    directly: address = your `100.x` tailnet IP (`tailscale ip -4`) `:6767`,
    plus your daemon password. `dfs remote status` prints the address.
