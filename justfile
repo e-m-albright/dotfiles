@@ -45,7 +45,8 @@ complexity:
 lint-shell:
     #!/usr/bin/env bash
     set -euo pipefail
-    find "{{repo}}" -name '*.sh' -not -path '*/.git/*' -print0 | xargs -0 shellcheck -S warning
+    # Only tracked scripts — never vendored third-party .sh under .venv/node_modules.
+    cd "{{repo}}" && git ls-files -z '*.sh' | xargs -0 shellcheck -S warning
 
 # Full static-check + test gate. `just check --fast` (or `check fast`) skips tests — pre-commit.
 [group('quality')]
