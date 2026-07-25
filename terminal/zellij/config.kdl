@@ -7,6 +7,9 @@
 // Skip the welcome/startup-tips overlay on new sessions.
 show_startup_tips false
 
+// Theme — a high-contrast dark theme that also reads well in the phone web client.
+theme "catppuccin-mocha"
+
 // Persist sessions to disk so `zellij attach mobile` resurrects the deck after a
 // reboot or detach. Pinned explicitly rather than relying on the shifting default.
 session_serialization true

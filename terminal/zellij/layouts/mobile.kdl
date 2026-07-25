@@ -1,10 +1,10 @@
-// Mobile command deck — what the `mobile` session opens as on first creation.
-// Reached from the phone via the Zellij web client (open /mobile in a browser),
-// then persisted, so this layout only applies the very first time the session is
-// created (or after `zellij delete-session mobile`).
+// Mobile session layout — what the `mobile` Zellij session opens as on first
+// creation. Create it once with `zellij --session mobile --layout mobile`
+// (detach with Ctrl-o d); persisted after, so this only applies on first creation
+// or after `zellij delete-session mobile`. `dfs remote on` reminds you if missing.
 //
 // compact-bar (instead of the default status-bar) reclaims a row on a phone
-// screen; the "deck" tab boots straight into Mission Control.
+// screen. Tab 1 boots Mission Control (the session launcher); tab 2 is a shell.
 layout {
     default_tab_template {
         children

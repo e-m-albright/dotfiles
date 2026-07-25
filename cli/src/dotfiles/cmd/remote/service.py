@@ -29,6 +29,10 @@ PI_WEB_LABEL = "com.pi-web"
 PI_WEB_PORT = 31415
 _PI_WEB_INSTALL = "pi install npm:@ygncode/pi-web@0.0.1-beta.34"
 
+# The persistent Zellij session the phone deep-links to (…/mobile), built from
+# terminal/zellij/layouts/mobile.kdl.
+MOBILE_SESSION = "mobile"
+
 
 class RemoteService:
     """Brings phone web-access up/down over the ProcessRunner port."""
@@ -231,6 +235,30 @@ class RemoteService:
             if line.startswith("PI_WEB_TOKEN="):
                 return line.split("=", 1)[1].strip().strip('"') or None
         return None
+
+    def mobile_session_step(self, *, dry_run: bool) -> StepResult:
+        """Ensure the `mobile` Zellij session exists; guide creation if not.
+
+        Zellij only creates a session on attach (it needs a PTY), so we don't
+        spawn one non-interactively — we surface the one-time create command.
+        """
+        if dry_run:
+            return StepResult(level="info", message=f"DRY RUN: check '{MOBILE_SESSION}' session")
+        result = self._runner.run(("zellij", "list-sessions", "--no-formatting"))
+        names = (
+            [line.split()[0] for line in result.stdout.splitlines() if line.strip()]
+            if result.ok
+            else []
+        )
+        if MOBILE_SESSION in names:
+            return StepResult(level="success", message=f"'{MOBILE_SESSION}' session ready")
+        return StepResult(
+            level="warn",
+            message=(
+                f"No '{MOBILE_SESSION}' session yet — create it once: "
+                f"zellij --session {MOBILE_SESSION} --layout {MOBILE_SESSION} (detach: Ctrl-o d)"
+            ),
+        )
 
     # --- status / connection ----------------------------------------------
 

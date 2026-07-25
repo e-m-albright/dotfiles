@@ -211,3 +211,33 @@ def test_web_token_returns_token_text(tmp_path: Path) -> None:
     step = _service(runner, tmp_path).web_token()
     assert step.level == "success"
     assert "abc123" in step.message
+
+
+def test_pi_web_token_reads_env(tmp_path: Path) -> None:
+    env = tmp_path / ".config" / "pi-web" / "env"
+    env.parent.mkdir(parents=True)
+    env.write_text('PI_WEB_TOKEN="tok999"\nPATH=/x\n')
+    assert _service(FakeProcessRunner(), tmp_path).pi_web_token() == "tok999"
+
+
+def test_pi_web_token_none_when_absent(tmp_path: Path) -> None:
+    assert _service(FakeProcessRunner(), tmp_path).pi_web_token() is None
+
+
+def test_mobile_session_step_ready_when_present(tmp_path: Path) -> None:
+    r = FakeProcessRunner()
+    r.script(
+        ("zellij", "list-sessions", "--no-formatting"),
+        stdout="mobile [Created 2m ago]\nfoo [Created 1h ago]\n",
+    )
+    step = _service(r, tmp_path).mobile_session_step(dry_run=False)
+    assert step.level == "success"
+    assert "ready" in step.message
+
+
+def test_mobile_session_step_guides_when_absent(tmp_path: Path) -> None:
+    r = FakeProcessRunner()
+    r.script(("zellij", "list-sessions", "--no-formatting"), stdout="foo [Created 1h ago]\n")
+    step = _service(r, tmp_path).mobile_session_step(dry_run=False)
+    assert step.level == "warn"
+    assert "zellij --session mobile --layout mobile" in step.message

@@ -67,25 +67,25 @@ def on(
         False, "--dry-run", help="Print actions without changing anything."
     ),
     session: str | None = typer.Option(None, "--session", help="Zellij session name."),
-    tailscale: bool = typer.Option(
-        False, "--tailscale", help="Also bring Tailscale up (tailscale up)."
-    ),
+    no_tailscale: bool = typer.Option(False, "--no-tailscale", help="Skip bringing Tailscale up."),
 ) -> None:
     """Bring phone web-access up and print the connection info.
 
-    Ensures the Zellij web client (launchd agent) and ygncode's pi-web service are
-    running, then exposes the Zellij client over the tailnet with `tailscale serve`.
+    Brings Tailscale up (unless --no-tailscale), ensures the Zellij web client
+    (launchd agent) and ygncode's pi-web service are running, exposes the Zellij
+    client over the tailnet with `tailscale serve`, and checks the `mobile` session.
     """
     app_ctx = app_context(ctx)
     service = _service(ctx)
     chosen = session or app_ctx.settings.default_session
     print_title(console, "Remote", "on")
     steps: list[StepResult] = []
-    if tailscale:
+    if not no_tailscale:
         steps.append(service.tailscale_up(dry_run=dry_run))
     steps.extend(service.install_agent(dry_run=dry_run))
     steps.append(service.pi_web_kick(dry_run=dry_run))
     steps.append(service.serve_start(dry_run=dry_run))
+    steps.append(service.mobile_session_step(dry_run=dry_run))
     render_steps(console, steps)
     render_connection_info(console, service.connection_info(chosen))
     if has_errors(steps):
@@ -201,6 +201,31 @@ def token(ctx: typer.Context) -> None:
         print_field(console, "Phone URL", f"{info.pi_web_url}?token={tok}", soft_wrap=True)
     else:
         print_status(console, "warn", "Tailscale not connected — start it for the phone URL")
+
+
+@remote_app.command()
+def qr(ctx: typer.Context) -> None:
+    """Print a scannable QR of the pi-web phone URL + token (re-entry after rotation)."""
+    import segno
+
+    app_ctx = app_context(ctx)
+    service = _service(ctx)
+    tok = service.pi_web_token()
+    print_title(console, "Pi PWA", "qr")
+    if tok is None:
+        print_status(
+            console, "warn", "No pi-web token (~/.config/pi-web/env) — is ygncode installed?"
+        )
+        raise typer.Exit(code=1)
+    info = service.connection_info(app_ctx.settings.default_session)
+    if not info.magic_dns:
+        print_status(
+            console, "warn", "Tailscale not connected — the phone URL needs the tailnet up"
+        )
+        raise typer.Exit(code=1)
+    url = f"{info.pi_web_url}?token={tok}"
+    segno.make(url).terminal(compact=True)
+    print_field(console, "URL", url, soft_wrap=True)
 
 
 @remote_app.command()
