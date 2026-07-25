@@ -26,11 +26,21 @@ _ZELLIJ_LABEL = "com.dotfiles.zellij-web"
 # Paseo — the primary phone driver (multi-agent daemon incl. Pi). It listens on
 # this port; the Paseo app connects DIRECTLY over the tailnet with the daemon
 # password (relay disabled, no `tailscale serve`, no token/URL). `paseo` is an
-# fnm-managed npm global, so the launchd agent runs it through a login shell to
-# resolve PATH. The daemon password lives hashed in ~/.paseo — never in the plist.
+# fnm-managed npm global, so launchd asks fnm to run it under the current default
+# Node version. The daemon password lives hashed in ~/.paseo — never in the plist.
 PASEO_PORT = 6767
 _PASEO_LABEL = "com.dotfiles.paseo"
-_PASEO_CMD = f"exec paseo start --no-relay --listen 0.0.0.0:{PASEO_PORT}"
+_FNM_BIN = "/opt/homebrew/bin/fnm"
+_PASEO_ARGS = [
+    _FNM_BIN,
+    "exec",
+    "--using=default",
+    "paseo",
+    "start",
+    "--no-relay",
+    "--listen",
+    f"0.0.0.0:{PASEO_PORT}",
+]
 
 # The persistent Zellij session the phone deep-links to (…/mobile), built from
 # terminal/zellij/layouts/mobile.kdl.
@@ -138,7 +148,13 @@ class RemoteService:
         return self._home / "Library" / "LaunchAgents" / f"{label}.plist"
 
     def _render_plist(
-        self, label: str, program_args: list[str], log_name: str, *, interactive: bool = False
+        self,
+        label: str,
+        program_args: list[str],
+        log_name: str,
+        *,
+        interactive: bool = False,
+        keep_alive: bool = True,
     ) -> bytes:
         # Built at runtime from self._home, so no absolute home path is ever
         # committed to the repo (this file stays path-neutral).
@@ -147,7 +163,7 @@ class RemoteService:
             "Label": label,
             "ProgramArguments": program_args,
             "RunAtLoad": True,
-            "KeepAlive": True,
+            "KeepAlive": keep_alive,
             "StandardOutPath": str(log),
             "StandardErrorPath": str(log),
             "WorkingDirectory": str(self._home),
@@ -168,6 +184,7 @@ class RemoteService:
         *,
         dry_run: bool,
         interactive: bool = False,
+        keep_alive: bool = True,
     ) -> list[StepResult]:
         """Write a runtime-rendered launchd plist and bootstrap it. Idempotent."""
         if dry_run:
@@ -176,16 +193,21 @@ class RemoteService:
         (self._home / "Library" / "Logs").mkdir(parents=True, exist_ok=True)
         plist = self._agent_plist(label)
         plist.write_bytes(
-            self._render_plist(label, program_args, log_name, interactive=interactive)
+            self._render_plist(
+                label,
+                program_args,
+                log_name,
+                interactive=interactive,
+                keep_alive=keep_alive,
+            )
         )
         out = [StepResult(level="success", message=f"Wrote launchd agent {label}")]
         domain = f"gui/{self._uid}"
         self._runner.run(("launchctl", "bootout", f"{domain}/{label}"))  # ignore if absent
         result = self._runner.run(("launchctl", "bootstrap", domain, str(plist)))
         if result.ok:
-            out.append(
-                StepResult(level="success", message=f"{name} loaded (RunAtLoad + KeepAlive)")
-            )
+            lifecycle = "RunAtLoad + KeepAlive" if keep_alive else "RunAtLoad"
+            out.append(StepResult(level="success", message=f"{name} loaded ({lifecycle})"))
         else:
             out.append(
                 StepResult(
@@ -228,16 +250,17 @@ class RemoteService:
     def paseo_install_agent(self, *, dry_run: bool) -> list[StepResult]:
         """Install + load the launchd agent that keeps the Paseo daemon alive.
 
-        Runs `paseo start --no-relay …` through a login shell so fnm/PATH resolves
-        the npm-global `paseo`. No secret is written — the daemon password is
-        stored hashed in ~/.paseo by `paseo daemon set-password`.
+        Runs `paseo start --no-relay …` through fnm's current default Node
+        version. No secret is written — the daemon password is stored hashed in
+        ~/.paseo by `paseo daemon set-password`.
         """
         return self._load_agent(
             _PASEO_LABEL,
-            ["/bin/zsh", "-lc", _PASEO_CMD],
+            _PASEO_ARGS,
             "paseo.log",
             "Paseo daemon",
             dry_run=dry_run,
+            keep_alive=False,
         )
 
     def paseo_uninstall_agent(self, *, dry_run: bool) -> list[StepResult]:

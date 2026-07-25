@@ -1,3 +1,4 @@
+import plistlib
 from pathlib import Path
 
 from dotfiles.cmd.remote.service import RemoteService
@@ -115,9 +116,20 @@ def test_paseo_install_agent_writes_plist_and_bootstraps(tmp_path: Path) -> None
 
     plist = tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.paseo.plist"
     assert plist.exists()
-    content = plist.read_text()
-    assert "com.dotfiles.paseo" in content
-    assert "paseo start --no-relay" in content
+    content = plistlib.loads(plist.read_bytes())
+    assert content["Label"] == "com.dotfiles.paseo"
+    assert content["RunAtLoad"] is True
+    assert content["KeepAlive"] is False
+    assert content["ProgramArguments"] == [
+        "/opt/homebrew/bin/fnm",
+        "exec",
+        "--using=default",
+        "paseo",
+        "start",
+        "--no-relay",
+        "--listen",
+        "0.0.0.0:6767",
+    ]
     assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
     assert all(s.level != "error" for s in steps)
 

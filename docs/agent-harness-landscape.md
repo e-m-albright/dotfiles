@@ -198,6 +198,20 @@ opinionated fork instead of a small core you own.
   (`minghinmatthewlam`). It wraps the official `@earendil-works/pi-coding-agent`
   runtime and keeps Pi session files as its source of truth, but lives in the
   developer's own repository and release channel.
+- **[Open WebUI Computer](https://github.com/open-webui/computer) (`cptr`)** —
+  **evaluated on mobile (2026-07-25), iceboxed.** Source-available (Open Use
+  License) FastAPI/SvelteKit app that drives Pi/Claude Code/Codex alongside a
+  terminal, a computer-use browser, filesystem tools, and chat — self-hosted over
+  Tailscale. It is genuinely capable and the direction is appealing, but it
+  didn't address a pain point we actually have, and the mobile experience (chat
+  reliability and the low-contrast, hard-to-read interface) wasn't there for us;
+  making it feel good would take meaningful custom-CSS/theming work, since it
+  ships no high-contrast option. Paseo covers our daily phone-driving need far
+  more pleasantly, so cptr is parked, not adopted. Worth another look if its
+  mobile UI matures or we grow into its browser/computer-use capabilities. Fully
+  removed from `dfs remote`; if a nicer-looking alternative is wanted later,
+  [CloudCLI (siteboon/claudecodeui)](https://github.com/siteboon/claudecodeui)
+  is the candidate to trial.
 
 A listing in the pi.dev package gallery means a package is discoverable in Pi's
 community ecosystem, not that Earendil authors or endorses it.

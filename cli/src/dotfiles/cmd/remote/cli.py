@@ -73,6 +73,7 @@ def on(
     Brings Tailscale up (unless --no-tailscale), ensures the Paseo daemon and the
     Zellij web client (both launchd agents) are running, exposes the Zellij client
     over the tailnet with `tailscale serve`, and checks the `mobile` session.
+    Manage a single surface with `dfs remote paseo|web`.
     """
     app_ctx = app_context(ctx)
     service = _service(ctx)
@@ -149,6 +150,39 @@ def pi(ctx: typer.Context, project: str) -> None:
             project_layout(project_path, session_name),
         )
     app_ctx.launcher.attach(command)
+
+
+@remote_app.command()
+def paseo(
+    ctx: typer.Context,
+    start: bool = typer.Option(False, "--start", help="Install + load the Paseo daemon agent."),
+    stop: bool = typer.Option(False, "--stop", help="Unload the Paseo daemon agent."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print actions without changing anything."
+    ),
+) -> None:
+    """Turn the Paseo daemon on/off, or show its state.
+
+    The Paseo app connects DIRECTLY over the tailnet (no relay, no `serve`), so
+    this only manages the launchd agent. With no flag, reports state and address.
+    """
+    app_ctx = app_context(ctx)
+    service = _service(ctx)
+    info = service.connection_info(app_ctx.settings.default_session)
+    print_title(console, "Remote", "paseo")
+    if stop:
+        steps = service.paseo_uninstall_agent(dry_run=dry_run)
+    elif start:
+        steps = service.paseo_install_agent(dry_run=dry_run)
+    else:
+        print_field(console, "Paseo", "running" if service.paseo_running() else "stopped")
+        print_field(console, "Address", info.paseo_addr, soft_wrap=True)
+        return
+    render_steps(console, steps)
+    if start and not dry_run:
+        print_field(console, "Address", info.paseo_addr, soft_wrap=True)
+    if has_errors(steps):
+        raise typer.Exit(code=1)
 
 
 @remote_app.command()

@@ -127,6 +127,15 @@ def test_remote_on_installs_paseo_agent(tmp_path: Path) -> None:
     assert "com.dotfiles.paseo" in _flat(result.output)
 
 
+def test_remote_paseo_start_dry_run(tmp_path: Path) -> None:
+    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
+    result = runner.invoke(
+        app, ["remote", "paseo", "--start", "--dry-run"], obj=fake, env={"COLUMNS": "200"}
+    )
+    assert result.exit_code == 0
+    assert "com.dotfiles.paseo" in _flat(result.output)
+
+
 def test_remote_off_resets_serve() -> None:
     r = FakeProcessRunner()
     fake = make_fake_context(runner=r, interactive=False)
