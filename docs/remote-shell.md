@@ -96,10 +96,6 @@ terminal):
 | Open the highlighted session's actions | `Enter` |
 | New / kill / reload | `n` / `x` / `r` |
 
-**Open pi for a project:** `dfs remote pi PROJECT` resolves an unambiguous repo
-basename beneath `~/code/public` or `~/code/private`, then creates or attaches to a
-project-specific Zellij session and runs `pi --continue`.
-
 **Pick up on the laptop:** `dfs session attach mobile` (or `dfs session` to
 fuzzy-pick). Same session, same panes; you can stay attached on both.
 

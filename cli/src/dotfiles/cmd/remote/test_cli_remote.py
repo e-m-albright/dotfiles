@@ -23,47 +23,6 @@ def _flat(output: str) -> str:
     return " ".join(output.split())
 
 
-def test_remote_pi_creates_project_session(tmp_path: Path) -> None:
-    project = tmp_path / "code" / "private" / "garden"
-    project.mkdir(parents=True)
-    r = FakeProcessRunner()
-    r.script(("zellij", "list-sessions", "--no-formatting"), stdout="")
-    fake = make_fake_context(runner=r, home=tmp_path)
-
-    result = runner.invoke(app, ["remote", "pi", "garden"], obj=fake)
-
-    assert result.exit_code == 0
-    command = fake.launcher.attached[0]
-    assert command[:3] == ["zellij", "--session", "pi-garden"]
-    assert "pi --continue" in command[-1]
-    assert str(project) in command[-1]
-
-
-def test_remote_pi_attaches_existing_project_session(tmp_path: Path) -> None:
-    project = tmp_path / "code" / "public" / "garden"
-    project.mkdir(parents=True)
-    r = FakeProcessRunner()
-    r.script(
-        ("zellij", "list-sessions", "--no-formatting"),
-        stdout="pi-garden [Created 2m 3s ago]\n",
-    )
-    fake = make_fake_context(runner=r, home=tmp_path)
-
-    result = runner.invoke(app, ["remote", "pi", "garden"], obj=fake)
-
-    assert result.exit_code == 0
-    assert fake.launcher.attached == [["zellij", "attach", "pi-garden"]]
-
-
-def test_remote_pi_reports_missing_project(tmp_path: Path) -> None:
-    fake = make_fake_context(home=tmp_path)
-
-    result = runner.invoke(app, ["remote", "pi", "missing"], obj=fake)
-
-    assert result.exit_code == 1
-    assert "not found" in result.output
-
-
 def test_remote_web_status_prints_localhost_hint() -> None:
     r = FakeProcessRunner()
     r.script(("zellij", "web", "--status"), exit_code=1)
