@@ -105,37 +105,31 @@ def test_zellij_web_running_reads_status(tmp_path: Path) -> None:
     assert _service(down, tmp_path).zellij_web_running() is False
 
 
-# --- ygncode pi-web -------------------------------------------------------
+# --- Paseo daemon launchd agent -------------------------------------------
 
 
-def test_pi_web_kick_warns_when_not_installed(tmp_path: Path) -> None:
+def test_paseo_install_agent_writes_plist_and_bootstraps(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("id", "-u"), stdout="501\n")
-    step = _service(runner, tmp_path).pi_web_kick(dry_run=False)
-    assert step.level == "warn"
-    assert "Workbench" in step.message
-    assert not any(c[:2] == ("launchctl", "kickstart") for c in runner.calls)
+    steps = _service(runner, tmp_path).paseo_install_agent(dry_run=False)
+
+    plist = tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.paseo.plist"
+    assert plist.exists()
+    content = plist.read_text()
+    assert "com.dotfiles.paseo" in content
+    assert "paseo start --no-relay" in content
+    assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
+    assert all(s.level != "error" for s in steps)
 
 
-def test_pi_web_kick_starts_when_installed(tmp_path: Path) -> None:
-    binp = tmp_path / ".pi" / "agent" / "bin"
-    binp.mkdir(parents=True)
-    (binp / "pi-web").write_text("")
-    runner = FakeProcessRunner()
-    runner.script(("id", "-u"), stdout="501\n")
-    step = _service(runner, tmp_path).pi_web_kick(dry_run=False)
-    assert step.level == "success"
-    assert ("launchctl", "kickstart", "-k", "gui/501/com.pi-web") in runner.calls
+def test_paseo_running_reads_launchctl_list(tmp_path: Path) -> None:
+    up = FakeProcessRunner()
+    up.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
+    assert _service(up, tmp_path).paseo_running() is True
 
-
-def test_pi_web_running_reads_launchctl_list(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("launchctl", "list"), stdout="-\t1\tcom.pi-web\n123\t0\tcom.other\n")
-    assert _service(runner, tmp_path).pi_web_running() is True
-
-    empty = FakeProcessRunner()
-    empty.script(("launchctl", "list"), stdout="123\t0\tcom.other\n")
-    assert _service(empty, tmp_path).pi_web_running() is False
+    down = FakeProcessRunner()
+    down.script(("launchctl", "list"), stdout="123\t0\tcom.other\n")
+    assert _service(down, tmp_path).paseo_running() is False
 
 
 # --- status / connection --------------------------------------------------
@@ -148,13 +142,14 @@ def test_status_reports_web_state(tmp_path: Path) -> None:
     runner.script(("tailscale", "status"), exit_code=0)
     runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
     runner.script(("zellij", "web", "--status"), exit_code=0)
+    runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
 
     status = _service(runner, tmp_path).status()
 
     assert status.tailscale_connected is True
     assert status.tailnet_ip == "100.64.0.1"
     assert status.zellij_web_running is True
-    assert status.pi_web_installed is False
+    assert status.paseo_running is True
     assert status.host == "mac"
 
 
@@ -171,7 +166,8 @@ def test_connection_info_uses_magic_dns(tmp_path: Path) -> None:
     info = _service(runner, tmp_path).connection_info("mobile")
     assert info.magic_dns == "mac.tailnet.ts.net"
     assert info.phone_url == "https://mac.tailnet.ts.net/mobile"
-    assert info.pi_web_url == "https://mac.tailnet.ts.net:31415/"
+    # The Paseo app connects to the tailnet IP:port directly (no relay/TLS).
+    assert info.paseo_addr == "100.64.0.1:6767"
 
 
 def test_connection_info_off_tailnet_has_no_magic_dns(tmp_path: Path) -> None:
@@ -183,6 +179,7 @@ def test_connection_info_off_tailnet_has_no_magic_dns(tmp_path: Path) -> None:
     assert info.tailnet_ip is None
     assert info.magic_dns is None
     assert info.phone_url == "https://mac/mobile"
+    assert info.paseo_addr == "mac:6767"
 
 
 # --- Zellij web token helpers ---------------------------------------------
@@ -211,17 +208,6 @@ def test_web_token_returns_token_text(tmp_path: Path) -> None:
     step = _service(runner, tmp_path).web_token()
     assert step.level == "success"
     assert "abc123" in step.message
-
-
-def test_pi_web_token_reads_env(tmp_path: Path) -> None:
-    env = tmp_path / ".config" / "pi-web" / "env"
-    env.parent.mkdir(parents=True)
-    env.write_text('PI_WEB_TOKEN="tok999"\nPATH=/x\n')
-    assert _service(FakeProcessRunner(), tmp_path).pi_web_token() == "tok999"
-
-
-def test_pi_web_token_none_when_absent(tmp_path: Path) -> None:
-    assert _service(FakeProcessRunner(), tmp_path).pi_web_token() is None
 
 
 def test_mobile_session_step_ready_when_present(tmp_path: Path) -> None:

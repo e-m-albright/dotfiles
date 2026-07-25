@@ -36,7 +36,7 @@ async def test_remote_pane_shows_status():
 
 
 @pytest.mark.asyncio
-async def test_copy_connect_command_uses_pi_web_url():
+async def test_copy_connect_command_uses_paseo_addr():
     from dotfiles.tui.app import MissionControlApp
 
     app = MissionControlApp(ctx=_remote_ctx())
@@ -46,7 +46,5 @@ async def test_copy_connect_command_uses_pi_web_url():
 
         pane = app.query_one(RemotePane)
         cmd = pane.connect_command()
-        # The copy action yields the primary Pi PWA URL (host from LocalHostName).
-        assert cmd.startswith("https://")
-        assert "orac" in cmd
-        assert ":31415" in cmd
+        # The copy action yields the Paseo daemon address (tailnet IP:port).
+        assert cmd == "100.64.0.1:6767"

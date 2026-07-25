@@ -1,82 +1,80 @@
-# Remote Shell: phone ⇄ laptop
+# Remote access: phone ⇄ laptop
 
-How to drive the laptop from a phone (or any second device) over a private
-network, with sessions that survive disconnects and reboots. The stack is
-**Tailscale** (private network) + **Zellij** (persistent terminal sessions) +
-the **Zellij web client** (a browser, no app to install), fronted by the
-`dotfiles` CLI and the Mission Control TUI.
+How to drive the laptop's coding agents (and a terminal) from a phone over a
+private network. The stack is **Tailscale** (private network) + two surfaces:
+
+- **Paseo** — the **daily driver**: a self-hosted daemon that runs your coding
+  agents (Pi, Claude Code, Codex) on the laptop, driven from a polished native
+  phone app. The app connects **directly** to the daemon over the tailnet — no
+  relay, no vendor cloud.
+- **Zellij web client** — the **terminal fallback**: a browser terminal to the
+  laptop's Zellij sessions, for when you want a raw shell instead of the agent UI.
+
+Both are kept alive by launchd agents and fronted by the `dotfiles` CLI + the
+Mission Control TUI.
 
 ## The mental model (read this first)
 
-There is **one Zellij server, and it runs on the laptop.** The phone is a thin
-client: a **browser** reaches the laptop's Zellij web server over the tailnet and
-runs everything *there*.
+Everything runs **on the laptop**; the phone is a thin client over the tailnet.
 
-- Every session lives on the laptop. "Starting a session from the phone" creates
-  a real session on the laptop — walk over to it later and you're in the same one.
-- The phone and the laptop can attach to the **same** session at once (Zellij is
-  multiplayer — each gets its own cursor). The TUI shows `👤 N attached` when more
-  than one client is live.
-- A session that lives *on the phone itself* does not exist. The phone is always a
-  client of the laptop.
-- Nothing to install on the phone but the **Tailscale** app — the terminal is a
-  web page (installable as a PWA for an app-like icon).
+- **Paseo** runs a daemon on the laptop that spawns/keeps agent sessions alive.
+  The phone app is a window onto them — start an agent, walk away, pick it up
+  from the phone in the same session. Multiple agents run in parallel.
+- **Zellij** runs one server on the laptop. The Zellij web client is a browser
+  onto its sessions; phone and laptop can attach to the **same** session at once
+  (Zellij is multiplayer). A session that lives *on the phone itself* never
+  exists — the phone is always a client of the laptop.
+- Nothing to install on the phone but the **Tailscale** app and the **Paseo**
+  app. The Zellij fallback is just a web page (installable as a PWA).
 
 ## One-time setup
 
-### On the laptop
+### Paseo (daily driver)
 
-1. **Tailscale** is installed by `install.sh`. Make sure it's running and logged
-   in, and that **HTTPS certificates** are enabled for your tailnet (Tailscale
-   admin → DNS → HTTPS Certificates). `tailscale serve` needs them.
-2. **Start the Zellij web server** (localhost only):
+1. **Install** (npm global, pinned): `npm install -g @getpaseo/cli@<version>`.
+2. **Set a daemon password** (stored hashed in `~/.paseo`, never in a plist):
+   `paseo daemon set-password`.
+3. **Bring it up** via the CLI — `dfs remote on` installs a launchd agent
+   (`com.dotfiles.paseo`, `RunAtLoad` + `KeepAlive`) that runs
+   `paseo start --no-relay --listen 0.0.0.0:6767`. `--no-relay` keeps the
+   Cloudflare relay **out of the path** — traffic stays pure-tailnet.
+4. **On the phone:** install the **Paseo** app, then *add a daemon connection*
+   directly: address = your `100.x` tailnet IP (`tailscale ip -4`) `:6767`,
+   plus your daemon password. `dfs remote status` prints the address.
 
-   ```bash
-   dfs remote web --start      # daemonized zellij web server on 127.0.0.1:8082
-   ```
+Because the relay is disabled there is **no QR pairing** — you add the connection
+by address + password once, and it's saved. (The QR only works via the relay; we
+don't use it.)
 
-   A launchd agent (`com.dotfiles.zellij-web`, `RunAtLoad` + `KeepAlive`) keeps it
-   running across crashes and reboots, so it's there whenever you reach for it.
-3. **Expose it to the tailnet** (tailnet-only HTTPS; Tailscale terminates TLS):
+### Zellij web client (terminal fallback)
 
-   ```bash
-   tailscale serve --bg 8082
-   ```
+1. Ensure Tailscale is running and **HTTPS certificates** are enabled for the
+   tailnet (Tailscale admin → DNS → HTTPS Certificates) — `tailscale serve` needs
+   them.
+2. `dfs remote on` also ensures the Zellij web launchd agent
+   (`com.dotfiles.zellij-web`) is running and exposes it with
+   `tailscale serve --bg 8082` (tailnet-only HTTPS — **never** `funnel`).
+3. Mint a login token when you need one: `dfs remote web --new-token`.
+4. On the phone, open `https://<machine>.<tailnet>.ts.net/` (or deep-link to a
+   session, e.g. `…/mobile`) and enter the token. Add to Home Screen for a PWA
+   icon. `dfs remote qr` prints a scannable QR of that URL.
 
-   This publishes `https://<your-machine>.<tailnet>.ts.net/` to your tailnet —
-   **never the public internet** (that would be `tailscale funnel`, which we do
-   not use). Confirm with `tailscale serve status`.
-4. **Mint a login token** for the web client (shown once):
-
-   ```bash
-   dfs remote web --new-token
-   ```
-
-5. Sanity-check anytime with `dfs remote status` (Tailscale + host) and
-   `dfs remote web` (server status).
-
-### On the phone
-
-1. **Tailscale** app — install, log into the **same** tailnet, confirm the laptop
-   appears in the device list.
-2. **Open the web client** in the browser:
-   `https://<your-machine>.<tailnet>.ts.net/` (or deep-link straight to a session,
-   e.g. `…/mobile`, to skip the picker). Enter the login token from
-   `dfs remote web --new-token`.
-3. **Add to Home Screen** (Share → Add to Home Screen) for an app-like PWA icon.
-4. You land in the Zellij web client; open the **mobile deck** session (below).
+`dfs remote on` does all of the above in one shot (and brings Tailscale up unless
+`--no-tailscale`); `dfs remote off` tears down the Zellij `tailscale serve` route.
+`dfs remote status` shows Tailscale / Paseo / Zellij-web state + the addresses.
 
 ## Daily use
 
-**Deep-link straight into a session** — bookmark / point your PWA icon at
-`https://<your-machine>.<tailnet>.ts.net/<session>` and you skip the landing
-picker. The `mobile` deck is the natural target:
+**Paseo:** open the app, pick or start an agent (Pi, Claude Code, Codex). Sessions
+persist on the laptop; reconnect any time.
 
-- **Tab 1 "deck"** — already running Mission Control (`dotfiles tui`), your
-  session picker/launcher.
-- **Tab 2 "shell"** — a normal shell.
-- First open ever builds the deck from the layout; after that you re-attach to the
-  same running session, right where you left it.
+**Zellij web fallback — deep-link into a session:** point your PWA icon at
+`https://<machine>.<tailnet>.ts.net/<session>` to skip the landing picker. The
+`mobile` deck is the natural target (Mission Control + a shell). Create it once:
+
+```bash
+zellij --session mobile --layout mobile   # detach with Ctrl-o then d; it persists
+```
 
 **Keys** (Zellij defaults — the status bar shows them live):
 
@@ -89,44 +87,32 @@ picker. The `mobile` deck is the natural target:
 | Quit Zellij (**ends** the session) | `Ctrl q` — avoid unless you mean it |
 
 **Drive the Sessions pane by keyboard** (tapping is unreliable in a browser
-terminal, so the deck is built to need neither):
+terminal):
 
 | Do this | Keys |
 |---|---|
 | Jump straight to the n-th live session | `1`–`9` |
 | Move the highlight | `j` / `k` (vim) or arrows |
 | Open the highlighted session's actions | `Enter` |
-| New session | `n` |
-| Kill the highlighted session | `x` |
-| Reload the list | `r` |
+| New / kill / reload | `n` / `x` / `r` |
 
 **Open pi for a project:** `dfs remote pi PROJECT` resolves an unambiguous repo
 basename beneath `~/code/public` or `~/code/private`, then creates or attaches to a
-project-specific Zellij session and runs `pi --continue`. Pass an absolute path when
-the basename exists in both roots.
+project-specific Zellij session and runs `pi --continue`.
 
-**Pick up on the laptop:** `dfs session attach mobile` (or `dfs session` to fuzzy-pick).
-Same session, same panes, same running programs. You can stay attached on both.
+**Pick up on the laptop:** `dfs session attach mobile` (or `dfs session` to
+fuzzy-pick). Same session, same panes; you can stay attached on both.
 
 ## Session lifecycle
 
 Detaching or losing the connection **never** ends a session — it keeps running on
-the laptop. That's the everyday safety net: close the browser, lose signal, walk
-away, and `dfs session attach mobile` later picks up exactly where you left off.
+the laptop. The **Mission Control TUI** Sessions pane manages live sessions; every
+destructive action takes a deliberate confirm.
 
-The **Mission Control TUI** Sessions pane manages your live sessions: a pinned
-**+ New session** row (`n`), and selecting any session opens an action sheet to
-**Attach/switch** or **Kill** it. On the laptop you can tap; on the phone, drive it
-by keyboard (see the Sessions-pane key table above) — `1`–`9` jump straight to a
-session, `j`/`k` move the highlight, `Enter` opens the actions. Every destructive
-action still takes a deliberate confirm, so a misfire is harmless.
-
-One Zellij nuance worth knowing: `kill` destroys a session (it's gone, not
-recoverable). Zellij does serialize sessions to disk and can resurrect them after a
-**reboot** (`dfs session attach <name>` reopens a serialized one), but there's no
-on-demand "stop but keep it" — so treat `kill` as permanent.
-
-To remove a session:
+One Zellij nuance: `kill` destroys a session (gone, not recoverable). Zellij
+serializes sessions to disk and resurrects them after a **reboot**
+(`dfs session attach <name>`), but there's no "stop but keep it" — treat `kill` as
+permanent.
 
 ```bash
 dfs session kill <name>        # kill a running session (gone — not resurrectable)
@@ -137,16 +123,16 @@ zellij delete-session <name>   # purge an exited/serialized one from history
 
 | Symptom | Check |
 |---|---|
-| Can't connect at all | Tailscale up + logged in on **both**? `dfs remote status`. Web server up? `dfs remote web`. |
-| Browser shows a cert warning | Open the **MagicDNS name** (`<machine>.<tailnet>.ts.net`), not the raw tailnet IP — the `tailscale serve` cert is issued for the name. HTTPS certs enabled in the tailnet admin? |
+| Paseo app won't connect | Tailscale up on both? Daemon running (`dfs remote status`)? Address = `100.x:6767`? Right password? |
+| Paseo relay showing | It's off (`--no-relay`) — the status line just prints the configured endpoint; traffic is direct. |
+| Zellij: can't connect | Tailscale up + logged in on **both**? `dfs remote status`. Web server up? `dfs remote web`. |
+| Zellij: cert warning | Open the **MagicDNS name**, not the raw tailnet IP — the `tailscale serve` cert is issued for the name. HTTPS certs enabled in the tailnet admin? |
 | `tailscale serve` hangs on first run | HTTPS certificates aren't enabled for the tailnet — enable them in Tailscale admin → DNS, then retry. |
-| Page loads but won't accept the token | Mint a fresh one: `dfs remote web --new-token` (tokens are shown once and can't be retrieved later). |
-| Landed in a bare shell, not the deck | The `mobile` session was created without the layout (e.g. after `delete-session`). `dfs session kill mobile` then reopen to rebuild it. |
-| Want to stop all phone access | `tailscale serve --https=443 off` (stop exposing), and/or `dfs remote web --stop`. |
+| Zellij: page won't accept the token | Mint a fresh one: `dfs remote web --new-token`. |
+| Landed in a bare shell, not the deck | The `mobile` session was created without the layout. Kill it and recreate with `--layout mobile`. |
+| Stop all phone access | `tailscale serve --https=443 off` (Zellij), and/or bring Tailscale down (cuts off Paseo too). |
 
-## Web client details
-
-Zellij serves sessions to a browser — no app to install, just a bookmark:
+## Zellij web client details
 
 ```bash
 dfs remote web --start      # daemonized zellij web server (127.0.0.1:8082)
@@ -155,13 +141,10 @@ dfs remote web --stop       # stop the server
 ```
 
 It listens on `127.0.0.1:8082` only; `tailscale serve --bg 8082` publishes it to
-the tailnet over HTTPS (TLS terminated by Tailscale — no `web_server_cert`/`key`
-needed in `terminal/zellij/config.kdl`). Read-only tokens are available for
-view-only sharing.
+the tailnet over HTTPS (TLS terminated by Tailscale). Read-only tokens are
+available for view-only sharing.
 
-> **TODO (security housekeeping):** rotate the Zellij web login token periodically,
-> and revoke any token that has been shared or pasted outside the machine (e.g. into
-> a chat transcript). Tokens are tailnet-gated but long-lived until revoked:
-> `zellij web --revoke-token <name>` to kill one, `dfs remote web --new-token` to mint
-> a fresh one. (Pending item: rotate the token created during the initial web-client
-> bring-up.)
+> **Security housekeeping:** rotate login secrets periodically and revoke any that
+> have been shared or pasted outside the machine. Zellij: `zellij web
+> --revoke-token <name>` / `dfs remote web --new-token`. Paseo: `paseo daemon
+> set-password` sets a fresh hashed password.

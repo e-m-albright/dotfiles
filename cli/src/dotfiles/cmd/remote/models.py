@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class RemoteStatus(BaseModel):
-    """Snapshot of the Mac's phone-access state (web clients over Tailscale)."""
+    """Snapshot of the Mac's phone-access state."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -16,25 +16,23 @@ class RemoteStatus(BaseModel):
     magic_dns: str | None = None
     # The Zellij web client (fallback browser terminal) is serving.
     zellij_web_running: bool = False
-    # ygncode pi-web (primary Pi PWA) — present on disk / its service loaded.
-    pi_web_installed: bool = False
-    pi_web_running: bool = False
+    # The Paseo daemon (primary Pi/agent driver) launchd agent is loaded.
+    paseo_running: bool = False
 
 
 class ConnectionInfo(BaseModel):
-    """How to reach the phone web clients (over Tailscale)."""
+    """How to reach the phone surfaces (over Tailscale)."""
 
     model_config = ConfigDict(frozen=True)
 
     host: str
     session: str
     tailnet_ip: str | None
-    # Full MagicDNS name (e.g. host.tailnet.ts.net) when the machine is on a
-    # tailnet; None off-tailnet. `tailscale serve` issues its TLS cert for this
-    # name, so it's what the phone's browser must use.
+    # Full MagicDNS name (e.g. host.tailnet.ts.net) when on a tailnet; None
+    # off-tailnet. `tailscale serve` issues its TLS cert for this name.
     magic_dns: str | None = None
     web_port: int = 8082  # Zellij web client (fallback terminal)
-    pi_web_port: int = 31415  # ygncode pi-web (primary Pi PWA)
+    paseo_port: int = 6767  # Paseo daemon (primary Pi/agent driver)
 
     @property
     def local_url(self) -> str:
@@ -52,10 +50,11 @@ class ConnectionInfo(BaseModel):
         return f"https://{self.magic_dns or self.host}/{self.session}"
 
     @property
-    def pi_web_url(self) -> str:
-        """The ygncode Pi PWA on the phone — the primary daily surface.
+    def paseo_addr(self) -> str:
+        """The Paseo daemon address to add in the phone app (direct tailnet connection).
 
-        ygncode self-serves this port over the tailnet; it terminates TLS for
-        the MagicDNS name just like the Zellij client.
+        The Paseo app connects straight to ``<host>:<port>`` over the tailnet with
+        the daemon password — no relay, no TLS cert (WireGuard encrypts the hop).
+        Prefer the tailnet IP; fall back to the MagicDNS name or bare host.
         """
-        return f"https://{self.magic_dns or self.host}:{self.pi_web_port}/"
+        return f"{self.tailnet_ip or self.magic_dns or self.host}:{self.paseo_port}"

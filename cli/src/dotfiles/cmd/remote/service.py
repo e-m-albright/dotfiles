@@ -1,9 +1,10 @@
 """Remote phone-access logic. Pure decisions over the ProcessRunner port.
 
-The stack: Tailscale (private network) + two browser surfaces served over the
-tailnet — the **Zellij web client** (fallback terminal, kept alive by a launchd
-agent this module owns) and **ygncode pi-web** (the primary Pi PWA, which manages
-its own launchd service + `tailscale serve`). SSH/Mosh were retired.
+The stack: Tailscale (private network) + two phone surfaces — **Paseo** (primary;
+a daemon driving Pi/Claude Code/Codex, reached directly over the tailnet by the
+Paseo app) and the **Zellij web client** (fallback browser terminal, exposed with
+`tailscale serve`). Both are kept alive by launchd agents this module owns.
+SSH/Mosh and ygncode were retired.
 """
 
 import json
@@ -17,17 +18,19 @@ from dotfiles.cmd.remote.models import ConnectionInfo, RemoteStatus
 from dotfiles.result import StepResult
 
 # Zellij web client — the fallback browser terminal on localhost, exposed to the
-# tailnet with `tailscale serve`. A launchd agent (below) keeps it running.
+# tailnet with `tailscale serve`. A launchd agent keeps it running.
 ZELLIJ_WEB_PORT = 8082
 _ZELLIJ_BIN = "/opt/homebrew/bin/zellij"
-_AGENT_LABEL = "com.dotfiles.zellij-web"
+_ZELLIJ_LABEL = "com.dotfiles.zellij-web"
 
-# ygncode pi-web — the primary Pi PWA. It installs & manages its own launchd
-# service (com.pi-web) and its own `tailscale serve` route on this port. We only
-# ensure it's running and point at how to install it (Workbench owns the install).
-PI_WEB_LABEL = "com.pi-web"
-PI_WEB_PORT = 31415
-_PI_WEB_INSTALL = "pi install npm:@ygncode/pi-web@0.0.1-beta.34"
+# Paseo — the primary phone driver (multi-agent daemon incl. Pi). It listens on
+# this port; the Paseo app connects DIRECTLY over the tailnet with the daemon
+# password (relay disabled, no `tailscale serve`, no token/URL). `paseo` is an
+# fnm-managed npm global, so the launchd agent runs it through a login shell to
+# resolve PATH. The daemon password lives hashed in ~/.paseo — never in the plist.
+PASEO_PORT = 6767
+_PASEO_LABEL = "com.dotfiles.paseo"
+_PASEO_CMD = f"exec paseo start --no-relay --listen 0.0.0.0:{PASEO_PORT}"
 
 # The persistent Zellij session the phone deep-links to (…/mobile), built from
 # terminal/zellij/layouts/mobile.kdl.
@@ -35,7 +38,7 @@ MOBILE_SESSION = "mobile"
 
 
 class RemoteService:
-    """Brings phone web-access up/down over the ProcessRunner port."""
+    """Brings phone access up/down over the ProcessRunner port."""
 
     def __init__(self, *, runner: ProcessRunner, interactive: bool, home: Path) -> None:
         self._runner = runner
@@ -88,11 +91,7 @@ class RemoteService:
 
     @cached_property
     def _magic_dns(self) -> str | None:
-        """The machine's full MagicDNS name (host.tailnet.ts.net), if on a tailnet.
-
-        `tailscale serve` issues its TLS cert for this name, so it's what the
-        phone's browser must open. None off-tailnet or if the query fails.
-        """
+        """The machine's full MagicDNS name (host.tailnet.ts.net), if on a tailnet."""
         result = self._runner.run(("tailscale", "status", "--json"))
         if not result.ok:
             return None
@@ -125,58 +124,67 @@ class RemoteService:
         return StepResult(level="error", message=f"tailscale serve failed: {result.stderr.strip()}")
 
     def serve_reset(self, *, dry_run: bool) -> StepResult:
-        """Stop exposing the web clients over the tailnet (leaves the servers running)."""
+        """Stop exposing the Zellij web client over the tailnet (leaves it running)."""
         if dry_run:
             return StepResult(level="info", message="DRY RUN: tailscale serve reset")
         result = self._runner.run(("tailscale", "serve", "reset"))
         if result.ok:
-            return StepResult(level="success", message="Stopped exposing web clients (serve reset)")
+            return StepResult(level="success", message="Stopped exposing Zellij web (serve reset)")
         return StepResult(level="warn", message="Nothing was being served")
 
-    # --- Zellij web launchd agent ------------------------------------------
+    # --- launchd agents ----------------------------------------------------
 
-    @property
-    def _agent_plist(self) -> Path:
-        return self._home / "Library" / "LaunchAgents" / f"{_AGENT_LABEL}.plist"
+    def _agent_plist(self, label: str) -> Path:
+        return self._home / "Library" / "LaunchAgents" / f"{label}.plist"
 
-    def _render_agent_plist(self) -> bytes:
+    def _render_plist(
+        self, label: str, program_args: list[str], log_name: str, *, interactive: bool = False
+    ) -> bytes:
         # Built at runtime from self._home, so no absolute home path is ever
         # committed to the repo (this file stays path-neutral).
-        log = self._home / "Library" / "Logs" / "zellij-web.log"
+        log = self._home / "Library" / "Logs" / log_name
         plist: dict[str, object] = {
-            "Label": _AGENT_LABEL,
-            "ProgramArguments": [_ZELLIJ_BIN, "web", "--start"],
-            "EnvironmentVariables": {"PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"},
+            "Label": label,
+            "ProgramArguments": program_args,
             "RunAtLoad": True,
             "KeepAlive": True,
-            "ProcessType": "Interactive",
             "StandardOutPath": str(log),
             "StandardErrorPath": str(log),
             "WorkingDirectory": str(self._home),
         }
+        if interactive:
+            plist["EnvironmentVariables"] = {
+                "PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+            }
+            plist["ProcessType"] = "Interactive"
         return plistlib.dumps(plist)
 
-    def install_agent(self, *, dry_run: bool) -> list[StepResult]:
-        """Install + load the launchd agent that keeps the Zellij web server alive.
-
-        Idempotent: bootout any prior copy, then bootstrap the freshly written plist.
-        """
+    def _load_agent(
+        self,
+        label: str,
+        program_args: list[str],
+        log_name: str,
+        name: str,
+        *,
+        dry_run: bool,
+        interactive: bool = False,
+    ) -> list[StepResult]:
+        """Write a runtime-rendered launchd plist and bootstrap it. Idempotent."""
         if dry_run:
-            return [
-                StepResult(level="info", message=f"DRY RUN: install launchd agent {_AGENT_LABEL}")
-            ]
+            return [StepResult(level="info", message=f"DRY RUN: install launchd agent {label}")]
         (self._home / "Library" / "LaunchAgents").mkdir(parents=True, exist_ok=True)
         (self._home / "Library" / "Logs").mkdir(parents=True, exist_ok=True)
-        self._agent_plist.write_bytes(self._render_agent_plist())
-        out = [StepResult(level="success", message=f"Wrote launchd agent {_AGENT_LABEL}")]
+        plist = self._agent_plist(label)
+        plist.write_bytes(
+            self._render_plist(label, program_args, log_name, interactive=interactive)
+        )
+        out = [StepResult(level="success", message=f"Wrote launchd agent {label}")]
         domain = f"gui/{self._uid}"
-        self._runner.run(("launchctl", "bootout", f"{domain}/{_AGENT_LABEL}"))  # ignore if absent
-        result = self._runner.run(("launchctl", "bootstrap", domain, str(self._agent_plist)))
+        self._runner.run(("launchctl", "bootout", f"{domain}/{label}"))  # ignore if absent
+        result = self._runner.run(("launchctl", "bootstrap", domain, str(plist)))
         if result.ok:
             out.append(
-                StepResult(
-                    level="success", message="Zellij web agent loaded (RunAtLoad + KeepAlive)"
-                )
+                StepResult(level="success", message=f"{name} loaded (RunAtLoad + KeepAlive)")
             )
         else:
             out.append(
@@ -186,55 +194,58 @@ class RemoteService:
             )
         return out
 
+    def _remove_agent(self, label: str, name: str, *, dry_run: bool) -> list[StepResult]:
+        if dry_run:
+            return [StepResult(level="info", message=f"DRY RUN: remove launchd agent {label}")]
+        self._runner.run(("launchctl", "bootout", f"gui/{self._uid}/{label}"))
+        plist = self._agent_plist(label)
+        if plist.exists():
+            plist.unlink()
+        return [StepResult(level="success", message=f"Removed {name} launchd agent ({label})")]
+
+    # Zellij web (fallback terminal) --------------------------------------
+
+    def install_agent(self, *, dry_run: bool) -> list[StepResult]:
+        """Install + load the launchd agent that keeps the Zellij web server alive."""
+        return self._load_agent(
+            _ZELLIJ_LABEL,
+            [_ZELLIJ_BIN, "web", "--start"],
+            "zellij-web.log",
+            "Zellij web",
+            dry_run=dry_run,
+            interactive=True,
+        )
+
     def uninstall_agent(self, *, dry_run: bool) -> list[StepResult]:
         """Unload + remove the Zellij web launchd agent."""
-        if dry_run:
-            return [
-                StepResult(level="info", message=f"DRY RUN: remove launchd agent {_AGENT_LABEL}")
-            ]
-        self._runner.run(("launchctl", "bootout", f"gui/{self._uid}/{_AGENT_LABEL}"))
-        if self._agent_plist.exists():
-            self._agent_plist.unlink()
-        return [StepResult(level="success", message=f"Removed launchd agent {_AGENT_LABEL}")]
+        return self._remove_agent(_ZELLIJ_LABEL, "Zellij web", dry_run=dry_run)
 
     def zellij_web_running(self) -> bool:
         return self._runner.run(("zellij", "web", "--status")).ok
 
-    # --- ygncode pi-web (primary Pi PWA) -----------------------------------
+    # Paseo (primary agent daemon) ----------------------------------------
 
-    def pi_web_installed(self) -> bool:
-        return (self._home / ".pi" / "agent" / "bin" / "pi-web").exists()
+    def paseo_install_agent(self, *, dry_run: bool) -> list[StepResult]:
+        """Install + load the launchd agent that keeps the Paseo daemon alive.
 
-    def pi_web_running(self) -> bool:
-        return PI_WEB_LABEL in self._line(("launchctl", "list"))
-
-    def pi_web_kick(self, *, dry_run: bool) -> StepResult:
-        """(Re)start ygncode's pi-web service, or point at how to install it."""
-        if not self.pi_web_installed():
-            return StepResult(
-                level="warn",
-                message=f"ygncode pi-web not installed — install via Workbench ({_PI_WEB_INSTALL})",
-            )
-        if dry_run:
-            return StepResult(level="info", message=f"DRY RUN: launchctl kickstart {PI_WEB_LABEL}")
-        result = self._runner.run(
-            ("launchctl", "kickstart", "-k", f"gui/{self._uid}/{PI_WEB_LABEL}")
+        Runs `paseo start --no-relay …` through a login shell so fnm/PATH resolves
+        the npm-global `paseo`. No secret is written — the daemon password is
+        stored hashed in ~/.paseo by `paseo daemon set-password`.
+        """
+        return self._load_agent(
+            _PASEO_LABEL,
+            ["/bin/zsh", "-lc", _PASEO_CMD],
+            "paseo.log",
+            "Paseo daemon",
+            dry_run=dry_run,
         )
-        if result.ok:
-            return StepResult(
-                level="success", message=f"ygncode pi-web (re)started on :{PI_WEB_PORT}"
-            )
-        return StepResult(level="error", message=f"Could not start pi-web: {result.stderr.strip()}")
 
-    def pi_web_token(self) -> str | None:
-        """Read ygncode pi-web's login token from ~/.config/pi-web/env (or None)."""
-        env = self._home / ".config" / "pi-web" / "env"
-        if not env.exists():
-            return None
-        for line in env.read_text().splitlines():
-            if line.startswith("PI_WEB_TOKEN="):
-                return line.split("=", 1)[1].strip().strip('"') or None
-        return None
+    def paseo_uninstall_agent(self, *, dry_run: bool) -> list[StepResult]:
+        """Unload + remove the Paseo launchd agent."""
+        return self._remove_agent(_PASEO_LABEL, "Paseo daemon", dry_run=dry_run)
+
+    def paseo_running(self) -> bool:
+        return _PASEO_LABEL in self._line(("launchctl", "list"))
 
     def mobile_session_step(self, *, dry_run: bool) -> StepResult:
         """Ensure the `mobile` Zellij session exists; guide creation if not.
@@ -271,8 +282,7 @@ class RemoteService:
             user=self._user,
             magic_dns=self._magic_dns if connected else None,
             zellij_web_running=self.zellij_web_running(),
-            pi_web_installed=self.pi_web_installed(),
-            pi_web_running=self.pi_web_running(),
+            paseo_running=self.paseo_running(),
         )
 
     def connection_info(self, session: str) -> ConnectionInfo:

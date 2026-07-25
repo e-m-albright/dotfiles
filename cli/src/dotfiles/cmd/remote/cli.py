@@ -41,7 +41,7 @@ def _tailscale_value(status: RemoteStatus) -> str:
 
 
 def render_connection_info(console: Console, info: ConnectionInfo) -> None:
-    """Print how to reach the phone web clients (over Tailscale)."""
+    """Print how to reach the phone surfaces (over Tailscale)."""
     print_title(console, "Phone access", "phone")
     if not info.tailnet_ip:
         print_status(
@@ -49,14 +49,13 @@ def render_connection_info(console: Console, info: ConnectionInfo) -> None:
             "warn",
             "Tailscale not connected — start it before reaching the Mac off home Wi-Fi",
         )
-    # Primary daily surface: the ygncode Pi PWA.
-    print_field(console, "Pi PWA", info.pi_web_url, soft_wrap=True)
-    console.print("  [dim]token:[/] grep PI_WEB_TOKEN ~/.config/pi-web/env")
+    # Primary daily surface: the Paseo app (direct tailnet connection, no relay).
+    print_field(console, "Paseo", info.paseo_addr, soft_wrap=True)
+    console.print("  [dim]In the Paseo app, add this daemon address + your daemon password.[/]")
     console.print()
     # Fallback: the Zellij web client (browser terminal), deep-linked to the session.
     print_field(console, "Zellij web", info.phone_url, soft_wrap=True)
     print_field(console, "On this Mac", info.local_url, soft_wrap=True)
-    console.print("  [dim]Expose over the tailnet with[/] tailscale serve --bg 8082")
     console.print("  [dim]Zellij login token from[/] dfs remote web --new-token")
 
 
@@ -69,11 +68,11 @@ def on(
     session: str | None = typer.Option(None, "--session", help="Zellij session name."),
     no_tailscale: bool = typer.Option(False, "--no-tailscale", help="Skip bringing Tailscale up."),
 ) -> None:
-    """Bring phone web-access up and print the connection info.
+    """Bring phone access up and print the connection info.
 
-    Brings Tailscale up (unless --no-tailscale), ensures the Zellij web client
-    (launchd agent) and ygncode's pi-web service are running, exposes the Zellij
-    client over the tailnet with `tailscale serve`, and checks the `mobile` session.
+    Brings Tailscale up (unless --no-tailscale), ensures the Paseo daemon and the
+    Zellij web client (both launchd agents) are running, exposes the Zellij client
+    over the tailnet with `tailscale serve`, and checks the `mobile` session.
     """
     app_ctx = app_context(ctx)
     service = _service(ctx)
@@ -82,8 +81,8 @@ def on(
     steps: list[StepResult] = []
     if not no_tailscale:
         steps.append(service.tailscale_up(dry_run=dry_run))
+    steps.extend(service.paseo_install_agent(dry_run=dry_run))
     steps.extend(service.install_agent(dry_run=dry_run))
-    steps.append(service.pi_web_kick(dry_run=dry_run))
     steps.append(service.serve_start(dry_run=dry_run))
     steps.append(service.mobile_session_step(dry_run=dry_run))
     render_steps(console, steps)
@@ -102,10 +101,11 @@ def off(
         False, "--tailscale", help="Also bring Tailscale down (tailscale down)."
     ),
 ) -> None:
-    """Stop exposing the phone web clients over the tailnet.
+    """Stop exposing the Zellij web client over the tailnet.
 
-    The web servers keep running under launchd; this only tears down the
-    `tailscale serve` routes. `--tailscale` also brings the tailnet down.
+    The servers keep running under launchd (Paseo stays reachable on the tailnet);
+    this only tears down the `tailscale serve` route. `--tailscale` also brings the
+    tailnet down, which cuts off Paseo too.
     """
     service = _service(ctx)
     print_title(console, "Remote", "off")
@@ -114,7 +114,7 @@ def off(
         steps.append(service.tailscale_down(dry_run=dry_run))
     render_steps(console, steps)
     console.print(
-        "\n  [dim]Web servers keep running under launchd; this only stops tailnet exposure.[/]"
+        "\n  [dim]Servers keep running under launchd; this only stops the Zellij tailnet route.[/]"
     )
     if has_errors(steps):
         raise typer.Exit(code=1)
@@ -184,65 +184,35 @@ def web(
 
 
 @remote_app.command()
-def token(ctx: typer.Context) -> None:
-    """Show ygncode pi-web's login token and a tap-ready phone URL."""
-    app_ctx = app_context(ctx)
-    service = _service(ctx)
-    tok = service.pi_web_token()
-    print_title(console, "Pi PWA", "token")
-    if tok is None:
-        print_status(
-            console, "warn", "No pi-web token (~/.config/pi-web/env) — is ygncode installed?"
-        )
-        raise typer.Exit(code=1)
-    info = service.connection_info(app_ctx.settings.default_session)
-    print_field(console, "Token", tok)
-    if info.magic_dns:
-        print_field(console, "Phone URL", f"{info.pi_web_url}?token={tok}", soft_wrap=True)
-    else:
-        print_status(console, "warn", "Tailscale not connected — start it for the phone URL")
-
-
-@remote_app.command()
 def qr(ctx: typer.Context) -> None:
-    """Print a scannable QR of the pi-web phone URL + token (re-entry after rotation)."""
+    """Print a scannable QR of the Zellij web phone URL (open it on the phone)."""
     import segno
 
     app_ctx = app_context(ctx)
     service = _service(ctx)
-    tok = service.pi_web_token()
-    print_title(console, "Pi PWA", "qr")
-    if tok is None:
-        print_status(
-            console, "warn", "No pi-web token (~/.config/pi-web/env) — is ygncode installed?"
-        )
-        raise typer.Exit(code=1)
     info = service.connection_info(app_ctx.settings.default_session)
+    print_title(console, "Zellij web", "qr")
     if not info.magic_dns:
         print_status(
             console, "warn", "Tailscale not connected — the phone URL needs the tailnet up"
         )
         raise typer.Exit(code=1)
-    url = f"{info.pi_web_url}?token={tok}"
-    segno.make(url).terminal(compact=True)
-    print_field(console, "URL", url, soft_wrap=True)
+    segno.make(info.phone_url).terminal(compact=True)
+    print_field(console, "URL", info.phone_url, soft_wrap=True)
 
 
 @remote_app.command()
 def status(ctx: typer.Context) -> None:
-    """Show phone-access state: Tailscale, the web servers, and the phone URLs."""
+    """Show phone-access state: Tailscale, Paseo, the Zellij web fallback, and addresses."""
     app_ctx = app_context(ctx)
     service = _service(ctx)
     s = service.status()
     print_title(console, "Remote", "status")
     print_field(console, "Tailscale", _tailscale_value(s))
+    print_field(console, "Paseo", "running" if s.paseo_running else "stopped")
     print_field(console, "Zellij web", "running" if s.zellij_web_running else "stopped")
-    pi_state = (
-        "running" if s.pi_web_running else ("installed" if s.pi_web_installed else "not installed")
-    )
-    print_field(console, "Pi PWA (ygncode)", pi_state)
     print_field(console, "Host", f"{s.user}@{s.host}")
     if s.magic_dns:
         info = service.connection_info(app_ctx.settings.default_session)
-        print_child(console, "Pi PWA URL", info.pi_web_url)
+        print_child(console, "Paseo addr", info.paseo_addr)
         print_child(console, "Zellij URL", info.phone_url, last=True, soft_wrap=True)

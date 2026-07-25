@@ -25,15 +25,20 @@ def test_connection_info_phone_url_prefers_magic_dns() -> None:
     assert info.phone_url == "https://evans-mbp-m4.tailnet.ts.net/mobile"
 
 
-def test_connection_info_pi_web_url() -> None:
+def test_connection_info_paseo_addr_prefers_tailnet_ip() -> None:
     info = ConnectionInfo(
         host="mac",
         session="mobile",
         tailnet_ip="100.64.0.1",
         magic_dns="mac.tailnet.ts.net",
     )
-    # The primary Pi PWA (ygncode) rides its own port on the same MagicDNS name.
-    assert info.pi_web_url == "https://mac.tailnet.ts.net:31415/"
+    # The Paseo app connects to the tailnet IP:port directly (no relay/TLS).
+    assert info.paseo_addr == "100.64.0.1:6767"
+
+
+def test_connection_info_paseo_addr_falls_back_to_host() -> None:
+    info = ConnectionInfo(host="mac", session="mobile", tailnet_ip=None)
+    assert info.paseo_addr == "mac:6767"
 
 
 def test_remote_status_fields() -> None:
@@ -44,5 +49,5 @@ def test_remote_status_fields() -> None:
         user="evan",
     )
     assert status.tailscale_connected is False
-    assert status.pi_web_running is False
+    assert status.paseo_running is False
     assert status.zellij_web_running is False

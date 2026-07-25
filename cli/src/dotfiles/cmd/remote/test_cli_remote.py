@@ -79,11 +79,11 @@ def test_remote_web_start_invokes_daemon() -> None:
     assert ("zellij", "web", "-d") in r.calls
 
 
-def test_remote_on_dry_run_prints_web_url(tmp_path: Path) -> None:
+def test_remote_on_dry_run_prints_fallback_url(tmp_path: Path) -> None:
     fake = make_fake_context(runner=_runner_with_status(), interactive=True, home=tmp_path)
     result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
-    # Connection info points at the Zellij web client, deep-linked to the session.
+    # Connection info shows the Zellij web fallback, deep-linked to the session.
     assert "/mobile" in result.output
     assert "http://127.0.0.1:8082/mobile" in result.output
 
@@ -120,6 +120,13 @@ def test_remote_on_no_tailscale_skips_bringup(tmp_path: Path) -> None:
     assert "tailscale up" not in _flat(result.output).lower()
 
 
+def test_remote_on_installs_paseo_agent(tmp_path: Path) -> None:
+    fake = make_fake_context(runner=_runner_with_status(), interactive=True, home=tmp_path)
+    result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
+    assert result.exit_code == 0
+    assert "com.dotfiles.paseo" in _flat(result.output)
+
+
 def test_remote_off_resets_serve() -> None:
     r = FakeProcessRunner()
     fake = make_fake_context(runner=r, interactive=False)
@@ -136,7 +143,7 @@ def test_remote_off_tailscale_flag_brings_tailnet_down() -> None:
     assert ("tailscale", "down") in r.calls
 
 
-def test_remote_status_shows_web_fields(tmp_path: Path) -> None:
+def test_remote_status_shows_paseo_and_web_fields(tmp_path: Path) -> None:
     r = _runner_with_status(tailscale_up=True)
     r.script(
         ("tailscale", "status", "--json"),
@@ -146,39 +153,13 @@ def test_remote_status_shows_web_fields(tmp_path: Path) -> None:
     result = runner.invoke(app, ["remote", "status"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
     assert "Tailscale" in result.output
+    assert "Paseo" in result.output
     assert "Zellij web" in result.output
-    assert "Pi PWA" in result.output
-    # With a MagicDNS name, the phone URLs (incl. the pi-web port) are shown.
-    assert ":31415" in result.output
+    # The Paseo daemon address (tailnet IP:port) is shown.
+    assert ":6767" in result.output
 
 
-def test_remote_token_prints_token_and_url(tmp_path: Path) -> None:
-    env = tmp_path / ".config" / "pi-web" / "env"
-    env.parent.mkdir(parents=True)
-    env.write_text('PI_WEB_TOKEN="abc123"\nPATH=/x\n')
-    r = _runner_with_status(tailscale_up=True)
-    r.script(
-        ("tailscale", "status", "--json"),
-        stdout='{"Self": {"DNSName": "evans-mbp-m4.tailnet.ts.net."}}',
-    )
-    fake = make_fake_context(runner=r, home=tmp_path)
-    result = runner.invoke(app, ["remote", "token"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 0
-    assert "abc123" in result.output
-    assert "https://evans-mbp-m4.tailnet.ts.net:31415/?token=abc123" in _flat(result.output)
-
-
-def test_remote_token_warns_when_missing(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
-    result = runner.invoke(app, ["remote", "token"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 1
-    assert "No pi-web token" in _flat(result.output)
-
-
-def test_remote_qr_encodes_url_with_token(tmp_path: Path) -> None:
-    env = tmp_path / ".config" / "pi-web" / "env"
-    env.parent.mkdir(parents=True)
-    env.write_text('PI_WEB_TOKEN="abc123"\n')
+def test_remote_qr_encodes_zellij_url(tmp_path: Path) -> None:
     r = _runner_with_status(tailscale_up=True)
     r.script(
         ("tailscale", "status", "--json"),
@@ -187,11 +168,11 @@ def test_remote_qr_encodes_url_with_token(tmp_path: Path) -> None:
     fake = make_fake_context(runner=r, home=tmp_path)
     result = runner.invoke(app, ["remote", "qr"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
-    assert "abc123" in result.output
+    assert "evans-mbp-m4.tailnet.ts.net" in result.output
 
 
-def test_remote_qr_warns_when_no_token(tmp_path: Path) -> None:
+def test_remote_qr_warns_off_tailnet(tmp_path: Path) -> None:
     fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
     result = runner.invoke(app, ["remote", "qr"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 1
-    assert "No pi-web token" in _flat(result.output)
+    assert "Tailscale not connected" in result.output

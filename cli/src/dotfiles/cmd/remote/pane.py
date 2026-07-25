@@ -23,7 +23,7 @@ class RemotePane(Container):
 
     BORDER_TITLE = "Remote"
     BINDINGS: ClassVar[list[BindingType]] = [
-        Binding("c", "copy_connect", "Copy phone URL"),
+        Binding("c", "copy_connect", "Copy Paseo addr"),
     ]
 
     def __init__(self, ctx: AppContext) -> None:
@@ -60,12 +60,12 @@ class RemotePane(Container):
         s = self._status
         if s is None:
             return "collecting…"
-        pi = "running" if s.pi_web_running else ("installed" if s.pi_web_installed else "—")
+        paseo = "running" if s.paseo_running else "stopped"
         web = "running" if s.zellij_web_running else "stopped"
         tail = s.tailnet_ip or "—"
         tail_state = "connected" if s.tailscale_connected else "down"
         return (
-            f"Pi PWA: [b]{pi}[/]\nZellij web: {web}\n"
+            f"Paseo: [b]{paseo}[/]\nZellij web: {web}\n"
             f"Tailscale: {tail_state} ({tail})\n{s.user}@{s.host}"
         )
 
@@ -73,9 +73,9 @@ class RemotePane(Container):
         return self._service().connection_info(self._ctx.settings.default_session)
 
     def connect_command(self) -> str:
-        """The primary phone URL (the ygncode Pi PWA)."""
-        return self._connection().pi_web_url
+        """The primary phone address (the Paseo daemon)."""
+        return self._connection().paseo_addr
 
     def action_copy_connect(self) -> None:
         self._app.copy_to_clipboard(self.connect_command())
-        self.notify("Copied Pi PWA URL", title="Remote")
+        self.notify("Copied Paseo address", title="Remote")
