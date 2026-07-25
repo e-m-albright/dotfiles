@@ -99,7 +99,7 @@ packages = [
 name = "JavaScript / TypeScript"
 kind = "formula"
 packages = [
-  { name = "bun",  note = "JS runtime + package manager. Hard dependency of the evan personal site (~/code/private/evan: Astro build, tests, scripts). Re-added 2026-07-15 after an accidental uninstall broke that repo. Interested in moving the site off Bun eventually — just not today; keep installed until that migration happens." },
+  { name = "bun",  note = "JS runtime + package manager. Hard dependency of a private Astro project (build, tests, scripts). Re-added 2026-07-15 after an accidental uninstall broke that repo. Interested in moving that project off Bun eventually — just not today; keep installed until that migration happens." },
   { name = "deno", note = "Selected future JavaScript / TypeScript runtime; install with the first Deno project", disabled = true, reason = "Deferred 2026-07-15: no active Deno projects yet; Node via fnm remains the compatibility baseline" },
   { name = "fnm",  note = "Node version manager for compatibility with Node-only projects" },
 ]
@@ -206,6 +206,7 @@ packages = [
   { name = "claude",               note = "Claude Desktop (macOS app)" },
   { name = "conductor",            note = "Claude Code parallelisation", disabled = true, reason = "Disabled 2026-07-15: large agent fleets do not solve a current problem; native subagents and Ghostty tabs cover the desired maximum of roughly five concurrent agents" },
   { name = "codex",                note = "OpenAI Codex CLI (terminal agent) — or: npm i -g @openai/codex" },
+  { name = "open-interpreter",     note = "Rust Codex fork for low-cost/open models and provider-specific harness emulation (openinterpreter.com); Apache-2.0, installs via upstream script", disabled = true, reason = "Watch 2026-07-25: very popular, promising harness for cheap/open models and a strong tool to try later; no need to evaluate today because Pi + Codex cover the current workflow. Catalogued in docs/agent-harness-landscape.md" },
   { name = "chatgpt",              note = "OpenAI ChatGPT desktop app: Codex mode, plugins, and scheduled local tasks" },
   { name = "googleworkspace-cli",  note = "Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin)" },
   { name = "jules",                note = "Google cloud coding agent launcher", disabled = true, reason = "Disabled 2026-05-07: cloud-only service; the local CLI is only a launcher" },

@@ -3,7 +3,7 @@
 **Status:** OPEN / ongoing survey. Not an active build — a tracked view of the
 coding-agent tooling landscape and where our own harness ambitions sit.
 
-**Last surveyed:** 2026-07-21 · **Next review cue:** when a tracked tool ships a
+**Last surveyed:** 2026-07-25 · **Next review cue:** when a tracked tool ships a
 step-change, or roughly quarterly.
 
 **Project this belongs to:** *own our coding surface.* The install-manifest side
@@ -89,6 +89,7 @@ catalogued at the positioning level and flagged for later deep-profiling.
 | **Oh My Pi** (`omp`) | can1357 fork of Pi | MIT | Batteries-included Rust reimplementation. Already builds most of what base Pi omits (LSP, DAP, subagents, hash-anchored edits) and *inherits* existing `.claude`/`.codex` configs. The "already assembled" version of the Pi bet. |
 | **Claude Code** | Anthropic | proprietary | Current daily driver. Subscription (Claude Pro/Max). Mature, deep hooks/skills/subagents/sandbox. |
 | **Codex** | OpenAI | Apache-2.0 | Current daily driver. ChatGPT-subscription auth. Real OS sandboxing, V4A `apply_patch`, MCP client *and* server, cloud/async. |
+| **Open Interpreter** | Codex fork (Open Interpreter) | Apache-2.0 | Relaunched in July 2026 as a Rust coding agent for low-cost/open models; the original Python computer-use project moved to a community fork. Emulates provider-recommended harnesses (Kimi Code, Qwen Code, DeepSeek TUI, Claude Code, SWE-agent), retains Codex sandbox/MCP/approval foundations, and speaks Codex exec + ACP. Direct Pi competitor at the CLI layer, but differentiated around harness emulation rather than a tiny self-owned core. Very popular and a strong tool to try later; no need to evaluate it today. *Deep-profile pending.* |
 | **Amp** | Sourcegraph | proprietary | Frontier-pushing, heavily built-out. Mode-dial instead of model choice; Orbs remote agents; Oracle/Librarian sub-agents. Watch, not adopt. |
 | **Droid** | Factory.ai | proprietary | Frontier-pushing. Model-routing philosophy, Missions orchestration, broadest surface (CLI/IDE/Web/Slack/Linear/Jira). Top Terminal-Bench claims. Watch, not adopt. |
 | **OpenCode** | sst (Anomaly) | MIT | Vendor-neutral, 75+ providers, client/server + SDK, ACP everywhere, reads `CLAUDE.md`. The open-source neutral option. |
@@ -162,6 +163,41 @@ report; this table is the durable source of truth.
 | **Telemetry (OTel)** | ◐ install-ping | ◐ fork | ● | ● opt-in | ◐ | ◐ | ◐ local |
 | **Session branch / undo** | ● tree/fork | ● checkpoint/rewind | ● resume/rewind | ● resume/fork | ◐ | ◐ fork | ● undo/redo |
 | **Config format** | JSON `.pi/` | YAML `~/.omp/` | JSON settings | TOML config | JSON settings | JSON `.factory/` | JSON opencode |
+
+### Open Interpreter vs Pi — overlap, but a different bet
+
+The current Open Interpreter is a direct competitor to Pi in the broad sense:
+both are open-source terminal coding-agent harnesses that can run across model
+providers. It is not simply “another Pi,” though:
+
+- **Pi minimizes and exposes the harness.** Its value is a very small core, broad
+  provider/subscription support, and a deep extension surface we can understand
+  and own.
+- **Open Interpreter emulates model-specific harnesses.** It is a July 2026 Rust
+  fork of Codex that switches among Kimi Code, Qwen Code, DeepSeek TUI, Claude
+  Code, SWE-agent, and other prompt/tool conventions. Its value proposition is
+  getting cheap/open models closer to the environment they were trained for,
+  while retaining Codex-derived sandboxing, MCP, approvals, hooks, skills, ACP,
+  and Codex SDK compatibility.
+- **For our current setup, it is mostly redundant.** Pi is the transparent daily
+  trial, and Codex already supplies the mature sandboxed path. Open Interpreter
+  becomes useful if provider-specific harness emulation materially improves an
+  open/low-cost model, or if a drop-in self-hosted Codex-compatible agent is
+  needed.
+
+**Traction snapshot (2026-07-25):** the repository has about 67.3k GitHub stars
+and 5.8k forks, versus about 77.5k stars and 9.5k forks for `badlogic/pi-mono`.
+Open Interpreter is therefore a very popular, highly visible project, though not
+currently more starred than Pi. Its headline count is partly inherited from the
+2023–24 Python project, so it does not measure adoption of the new Rust agent by
+itself. The relaunch is active but young: ten Rust releases landed from July
+14–18, the latest release assets have roughly 7.2k downloads, and recent merged
+work is heavily maintainer-led. It looks like a strong tool to try later, after
+the current product has had time to mature.
+
+**Watch trigger:** no action today. Revisit after the Rust product has had a
+quarter to stabilize, or sooner if open-model testing shows a material
+harness-dependent quality gain.
 
 ### Pi vs Oh My Pi — the pair worth knowing
 
@@ -276,8 +312,9 @@ and **inference hosts** (run the weights on their own accelerated infra).
 - [ ] **Pi browser UI:** deferred. Re-open only if multi-session browser tabs or
       phone/remote access become concrete needs; then audit
       `@firstpick/pi-package-webui` before installing.
-- [ ] **Deep-profile the additions** to matrix parity: Aider, Gemini CLI, Cline,
-      Cursor (agent surface), plus Conductor/cmux positioning detail.
+- [ ] **Deep-profile the additions** to matrix parity: Open Interpreter, Aider,
+      Gemini CLI, Cline, Cursor (agent surface), plus Conductor/cmux positioning
+      detail.
 - [ ] **Local + open model path:** revisit wiring a minimal harness (Pi / Oh My Pi)
       to a self-hosted Kimi K2/K3-class model for privacy/control. Blocked on the
       open-weights landscape maturing; ties into `local-llm-stack.md`. Re-check
@@ -299,6 +336,8 @@ and **inference hosts** (run the weights on their own accelerated infra).
 - OpenCode — [sst/opencode](https://github.com/sst/opencode), opencode.ai/docs
 - Amp — [ampcode.com/manual](https://ampcode.com/manual)
 - Droid — docs.factory.ai
+- Open Interpreter — [OpenInterpreter/open-interpreter](https://github.com/OpenInterpreter/open-interpreter),
+  [terminal docs](https://www.openinterpreter.com/docs/terminal)
 - Aider — aider.chat · Cline — github.com/cline/cline · Gemini CLI —
   github.com/google-gemini/gemini-cli · Cursor — cursor.com · Antigravity — Google
 - Claude Code — first-hand feature knowledge.
