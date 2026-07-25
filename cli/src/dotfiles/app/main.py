@@ -31,6 +31,7 @@ from dotfiles.cmd.doctor.cli import doctor_command
 from dotfiles.cmd.email.cli import email_mask_app
 from dotfiles.cmd.remote.cli import remote_app
 from dotfiles.cmd.session.cli import session_app
+from dotfiles.cmd.speak.cli import speak_command
 from dotfiles.logging import configure_logging
 
 # Rich help-panel titles. The em-dash descriptor is part of the panel title, so
@@ -131,6 +132,7 @@ def tui() -> None:
 app.add_typer(remote_app, name="remote", rich_help_panel=PANEL_CONTROL)
 app.add_typer(session_app, name="session", rich_help_panel=PANEL_CONTROL)
 app.add_typer(email_mask_app, name="email-mask", rich_help_panel=PANEL_CONTROL)
+app.command("speak", rich_help_panel=PANEL_CONTROL)(speak_command)
 
 
 def _subcommand_rows(group: TyperGroup) -> list[tuple[Text, Text]]:

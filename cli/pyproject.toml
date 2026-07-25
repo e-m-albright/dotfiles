@@ -13,6 +13,11 @@ dependencies = [
     "pyicloud>=2.6",
 ]
 
+[project.optional-dependencies]
+# Local neural text-to-speech for `dotfiles speak`. Optional so a host that never
+# talks does not carry onnxruntime. See [special.supertonic] in macos/packages.toml.
+speech = ["supertonic>=1.3"]
+
 [project.scripts]
 dotfiles = "dotfiles.app.main:app"
 

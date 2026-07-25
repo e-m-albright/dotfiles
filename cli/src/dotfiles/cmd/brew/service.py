@@ -40,7 +40,10 @@ class BrewInventoryError(RuntimeError):
 
 FeatureFlag = Literal["ai", "productivity", "social"]
 PackageKind = Literal["formula", "cask", "auto"]
-SpecialMethod = Literal["rustup", "github_dmg", "curl_install"]
+# Declarative taxonomy only - nothing branches on the value; it records how a
+# non-Homebrew package reaches this host. `python_package` covers software that
+# arrives as a dependency of one of this repo's own Python projects.
+SpecialMethod = Literal["rustup", "github_dmg", "curl_install", "python_package"]
 
 
 class Package(BaseModel):

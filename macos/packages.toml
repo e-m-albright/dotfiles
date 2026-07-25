@@ -131,7 +131,7 @@ packages = [
   { name = "google-chrome",   note = "Web browser" },
   { name = "google-drive",    note = "Drive <-> Mac selective sync. Use STREAMING mode (default; nothing bulk-downloaded) + per-folder 'Available offline' for local copies; pick which Mac folders upload under Settings > My MacBook. Never enable 'Mirror files' (would pull all of Drive)" },
   { name = "tailscale-app",   note = "Mesh VPN for secure laptop access" },
-  { name = "termius",         note = "Phone client for remote access; the macOS app adds no value on the host", disabled = true, reason = "Host exclusion 2026-07-15: keep using Termius on the phone" },
+  { name = "termius",         note = "Former phone SSH/Mosh client for remote access; retired", disabled = true, reason = "Retired 2026-07-24: replaced by the Zellij web client over Tailscale (dfs remote web + tailscale serve); no phone SSH client needed" },
   { name = "iterm2",          note = "Terminal emulator", disabled = true, reason = "Disabled 2026-07-15: switched to Ghostty" },
 ]
 
@@ -158,7 +158,7 @@ packages = [
   { name = "flux-app",         note = "Screen color temperature" },
   { name = "granola",          note = "AI notepad for meetings" },
   { name = "perplexity",       note = "Disabled 2026-07-14: desktop app removed; use web only if needed", disabled = true, reason = "No Homebrew cask; app was installed manually" },
-  { name = "wispr-flow",       note = "Disabled 2026-05-29: switched to TypeWhisper (on-device Parakeet ASR + local Gemma / Apple Intelligence cleanup)", disabled = true, reason = "No Homebrew cask exists; installed via special.typewhisper block" },
+  { name = "wispr-flow",       note = "Disabled 2026-05-29: switched to TypeWhisper (on-device Apple SpeechAnalyzer dictation)", disabled = true, reason = "No Homebrew cask exists; installed via special.typewhisper block" },
   { name = "aqua-voice",       note = "Voice dictation alternative", disabled = true, reason = "Disabled 2026-07-15: local TypeWhisper is private, adequate, and subscription-free" },
   { name = "obsidian",         note = "Knowledge base & note-taking (Markdown)" },
   { name = "qlmarkdown",       note = "Quick Look: rendered .md previews (sbarex)" },
@@ -244,7 +244,12 @@ note = "Official installer; preferred over Homebrew for version management"
 [special.typewhisper]
 method = "github_dmg"
 flag = "productivity"
-note = "On-device voice-to-text (Parakeet ASR + local Gemma cleanup). Replaced Wispr Flow 2026-05-29. No Homebrew cask."
+note = "On-device voice-to-text via Apple SpeechAnalyzer. Replaced Wispr Flow 2026-05-29. No Homebrew cask. Corrected 2026-07-24: the live engine is `speechAnalyzer` - the Parakeet plugin is installed but its model was never downloaded (0 B), and no local-LLM cleanup plugin is present. GPLv3; ships a REST API on 127.0.0.1:8978 (off by default) and a `typewhisper` CLI."
+
+[special.supertonic]
+method = "python_package"
+flag = "ai"
+note = "Local neural text-to-speech (Supertonic 3, 99M params, ONNX, CPU-only) - the engine behind `dotfiles speak`. Code MIT, weights OpenRAIL-M. Weights self-download to ~/.cache/supertonic3 (385 MB) on first synthesis. Measured 2026-07-24 on this host: ~5-6x realtime, 0.23 s warm load. Declared as an optional extra of the dotfiles CLI, not a Homebrew package."
 
 [special.claude_code]
 method = "curl_install"
