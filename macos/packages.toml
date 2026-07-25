@@ -220,7 +220,7 @@ packages = [
   { name = "amp",                  note = "Sourcegraph Amp agent (ampcode.com); CLI via curl installer, npm @sourcegraph/amp, or sourcegraph/amp-cli tap", disabled = true, reason = "Watch 2026-07-20: heavily built-out frontier-pushing agent; tracking, not adopting — active agent support stays on Claude Code + Codex" },
   { name = "droid",               note = "Factory.ai droid agent (factory.ai); CLI via curl app.factory.ai/cli, no Homebrew", disabled = true, reason = "Watch 2026-07-20: heavily built-out frontier-pushing agent; tracking, not adopting — active agent support stays on Claude Code + Codex" },
   { name = "aider",               note = "Aider git-native terminal pair-programmer (aider.chat); install via pipx/uv, Apache-2.0", disabled = true, reason = "Watch 2026-07-20: OG minimal BYOK harness, closest cousin to Pi; catalogued in docs/agent-harness-landscape.md, not adopted — daily drivers stay Claude Code + Codex" },
-  { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server" },
+  { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server", disabled = true, reason = "Disabled 2026-07-25: the front-runner we trialled for local models, and still the one to beat — it worked well and nothing went wrong with it. Removed only because local models stayed materially slower and weaker at coding than hosted frontier models, so the 28GB of weights bought nothing. Reinstall gladly when revisiting local inference, unless a competitor has clearly advanced past it by then. Benchmarks and rationale preserved in docs/local-llm-stack.md" },
   { name = "huggingface-cli",      note = "Hugging Face CLI", disabled = true, reason = "Disabled 2026-07-15: no model-development workflow needs it; install per-project if local-model experimentation resumes" },
 ]
 
@@ -229,8 +229,8 @@ name = "Special Formulae"
 kind = "formula"
 packages = [
   { name = "docker-compose",  note = "Docker Compose (formula-only, not cask)" },
-  { name = "ollama",          note = "~30% slower than llama.cpp; redundant", disabled = true, reason = "Disabled 2026-05-28: LM Studio (MLX) is the daily driver" },
-  { name = "llama.cpp",       note = "Useful for raw `llama-bench` / `llama-server`; reinstall when needed", disabled = true, reason = "Disabled 2026-05-28: LM Studio (MLX) is the daily driver" },
+  { name = "ollama",          note = "~30% slower than llama.cpp; redundant", disabled = true, reason = "Disabled 2026-05-28: LM Studio (MLX) was the daily driver; local inference removed entirely 2026-07-25 — re-evaluate the whole field, not just this entry, if it returns" },
+  { name = "llama.cpp",       note = "Useful for raw `llama-bench` / `llama-server`; reinstall when needed", disabled = true, reason = "Disabled 2026-05-28: LM Studio (MLX) was the daily driver; local inference removed entirely 2026-07-25 — re-evaluate the whole field, not just this entry, if it returns" },
 ]
 
 # =============================================================================

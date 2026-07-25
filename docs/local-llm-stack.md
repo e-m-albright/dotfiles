@@ -1,11 +1,30 @@
 # Local LLM Stack — M4 Pro 48GB
 
-**Decision (2026-05-29):** LM Studio only, MLX-preferred. Ollama and llama.cpp
-evaluated and dropped. Two models kept: Qwen3.6-35B-A3B (coding/agents) and
-Gemma-4-E4B (vision/quick chat).
+> **Retired 2026-07-25 — kept as a reference, not a description of this machine.**
+>
+> Local inference is no longer installed here. LM Studio was the front-runner and
+> it did its job well; the stack was removed because local models stayed
+> materially slower and weaker at coding than hosted frontier models, so 28 GB of
+> weights earned nothing back. Nothing below was wrong — it stopped being worth
+> the disk.
+>
+> This document survives because the expensive part was the measurement, not the
+> install. The hardware envelope, the MLX-vs-GGUF numbers, the context-window and
+> guardrail traps, and the rejected-options table are all still valid for an M4
+> Pro and would have to be re-derived from scratch otherwise.
+>
+> **If you revisit local models:** re-run the speed check below before trusting
+> any of the tok/s figures, and re-survey the field first — LM Studio is the
+> incumbent to beat, not automatically the pick. Reinstall via `macos/packages.toml`
+> (the `lm-studio` entry is tombstoned, not deleted).
 
-The managed model and context settings live in `macos/lmstudio.sh`. Agent-specific
-model routing belongs to Workbench, not this host repository.
+**Original decision (2026-05-29):** LM Studio only, MLX-preferred. Ollama and
+llama.cpp evaluated and dropped. Two models kept: Qwen3.6-35B-A3B (coding/agents)
+and Gemma-4-E4B (vision/quick chat).
+
+Model and context settings were managed by `macos/lmstudio.sh` (removed with the
+stack). Agent-specific model routing belongs to Workbench, not this host
+repository.
 
 ## Hardware envelope
 

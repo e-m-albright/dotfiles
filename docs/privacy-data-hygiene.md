@@ -12,7 +12,7 @@ Companion doc: [local-llm-stack.md](./local-llm-stack.md) (the local tier).
 
 Three tiers, by how far your prompt travels:
 
-1. **On-device only** - LM Studio with a local model. Prompts never leave the machine. No training, no retention, no breach surface beyond your own disk. This is the tier for anything genuinely sensitive.
+1. **On-device only** - a local model. Prompts never leave the machine. No training, no retention, no breach surface beyond your own disk. This is the tier for anything genuinely sensitive. **Not currently available on this machine** - local inference was removed on 2026-07-25 (see below), so tier 3 is presently the floor.
 2. **Cloud consumer** (ChatGPT, Gemini, Claude Free/Pro/Max) - trained on by default unless you opt out, multi-year retention if you don't. The toggles below exist precisely because the default is "yes, use my data."
 3. **Cloud commercial / API** (Anthropic API, OpenAI API/Business/Enterprise, Workspace, GitHub Business/Enterprise) - not trained on by default, short retention (about 30 days), zero-data-retention (ZDR) available on request. Categorically better than consumer.
 
@@ -63,13 +63,15 @@ Three tiers, by how far your prompt travels:
 
 ---
 
-## The local tier - LM Studio
+## The local tier - currently unused
 
-**LM Studio** runs inference fully on-device. Prompts never leave the machine, so no training, no retention, no third party. This is the tier for genuinely sensitive content. See [local-llm-stack.md](./local-llm-stack.md) for model choices.
+**Status (2026-07-25):** no local runner is installed. LM Studio filled this role and was removed - it worked, but local models stayed too slow and too weak at coding to earn 28 GB of disk. Tier 3 (commercial/API terms) is the current floor for sensitive content, which is a real downgrade to be aware of: it is safe-by-default, not private-by-construction.
+
+The standard below is kept because it is the acceptance test for *any* local runner, not just LM Studio. Reinstate via the tombstoned `lm-studio` entry in `macos/packages.toml`, or whatever has surpassed it by then; see [local-llm-stack.md](./local-llm-stack.md) for the benchmarks and model choices.
 
 **Hygiene standard for "is this actually private?":**
-- Confirm LM Studio is running the local server / local model, not a remote/proxy provider. The whole guarantee is that nothing leaves the machine - verify that's true before trusting it with sensitive input.
-- LM Studio can run fully offline - a hard test is to pull the network and confirm inference still works. Disable any update/telemetry checks in its settings.
+- Confirm the runner is serving a local model, not a remote/proxy provider. The whole guarantee is that nothing leaves the machine - verify that's true before trusting it with sensitive input.
+- It must run fully offline - a hard test is to pull the network and confirm inference still works. Disable any update/telemetry checks in its settings.
 - Model downloads come from Hugging Face (weights coming in, not your data going out) - fine. Your prompts and the model's outputs stay local.
 - Local does not mean immortal-safe: the only remaining surface is your disk, so full-disk encryption plus not syncing the chat store to cloud backup is what closes the loop.
 

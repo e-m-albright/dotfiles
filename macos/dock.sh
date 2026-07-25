@@ -27,7 +27,7 @@ print_success "Auto-hide enabled (no delay, fast animation, no recents)"
 # pruned to exactly these apps (anything else in the apps section is removed).
 # Deliberately omitted: menu-bar apps stay out of the dock (Caffeine, Granola,
 # OrbStack, TypeWhisper, Google Drive, Flycut, Tailscale, Rectangle, Flux);
-# LM Studio is terminal-launched; Slack stays off until it's habitual again;
+# Slack stays off until it's habitual again;
 # zoom.us and WhatsApp are easy enough to reach without dock slots.
 apps=(
     "/Applications/Google Chrome.app"

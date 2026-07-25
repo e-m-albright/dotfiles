@@ -356,6 +356,3 @@ fi
 # =============================================================================
 # shellcheck source=/dev/null
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
-
-# LM Studio CLI (lms) on PATH
-export PATH="$HOME/.lmstudio/bin:$PATH"

@@ -100,11 +100,14 @@ Set `DOTFILES_APPLE_ID` or pass `--apple-id`. Authentication is handled by
 
 ## Local Models
 
-LM Studio remains part of the machine setup for local inference, but the old
-benchmark command was removed. Model fit and speed are easy to inspect directly
-in LM Studio or with upstream tools when an evaluation is actually needed.
+Not installed. LM Studio was trialled as the local-inference runner and removed
+on 2026-07-25 — it worked fine, but local models stayed slower and weaker at
+coding than hosted frontier models, so the weights weren't earning their disk.
 
-See [`docs/local-llm-stack.md`](docs/local-llm-stack.md).
+The `lm-studio` entry in `macos/packages.toml` is tombstoned rather than deleted,
+and the benchmarks that justified the choice are preserved in
+[`docs/local-llm-stack.md`](docs/local-llm-stack.md) for whenever it's worth
+another look.
 
 ## Package Manifest
 

@@ -139,10 +139,10 @@ fi
 "$DOTFILES_DIR/macos/dock.sh"
 # Set file-type defaults (Zed for .md/.txt, etc.) — requires duti from packages.toml
 "$DOTFILES_DIR/macos/file-associations.sh"
-# Configure local LLM: download model + pin context window — requires lm-studio from packages.toml
-"$DOTFILES_DIR/macos/lmstudio.sh"
 # Login items for apps that don't self-register (Flycut)
 "$DOTFILES_DIR/macos/login-items.sh"
+# Keep the OrbStack VM on-demand rather than resident at login
+"$DOTFILES_DIR/macos/orbstack.sh"
 ################################################################################
 
 # Languages & Runtimes
