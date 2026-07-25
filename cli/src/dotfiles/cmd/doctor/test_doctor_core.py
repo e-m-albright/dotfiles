@@ -50,10 +50,10 @@ def test_tool_present_and_absent() -> None:
 
 
 def test_app_bundle_check(tmp_path: Path) -> None:
-    app_path = tmp_path / "Termius.app"
+    app_path = tmp_path / "Ghostty.app"
     app_path.mkdir()
     svc = _svc()
-    present = svc._app("Remote Shell", "Termius", app_path, "brew install --cask termius")
+    present = svc._app("Terminal", "Ghostty", app_path, "brew install --cask ghostty")
     assert present.status == "ok"
     absent = svc._app("Editors", "Ghost", tmp_path / "Ghost.app", "hint")
     assert absent.status == "missing"

@@ -1,5 +1,5 @@
 // Mobile command deck — what the `mobile` session opens as on first creation.
-// Reached from the phone via `dotfiles session attach mobile` (Termius/Mosh),
+// Reached from the phone via the Zellij web client (open /mobile in a browser),
 // then persisted, so this layout only applies the very first time the session is
 // created (or after `zellij delete-session mobile`).
 //

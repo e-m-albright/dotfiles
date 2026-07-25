@@ -7,12 +7,7 @@ from dotfiles.app.context import app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.remote.models import ConnectionInfo, RemoteStatus
 from dotfiles.cmd.remote.pi import project_layout, resolve_project, session_name_for
-from dotfiles.cmd.remote.service import (
-    SHARING_OPEN,
-    SHARING_PATH,
-    InvalidKeyError,
-    RemoteService,
-)
+from dotfiles.cmd.remote.service import RemoteService
 from dotfiles.cmd.session.zellij import SessionError, Zellij
 from dotfiles.console import (
     console,
@@ -23,12 +18,11 @@ from dotfiles.console import (
     print_title,
     render_steps,
 )
+from dotfiles.result import StepResult
 
 remote_app = typer.Typer(
     cls=FuzzyTyperGroup, help="Configure phone access or enter a project agent session."
 )
-
-_WAIT_TIMEOUT_MIN = 2
 
 
 def _service(ctx: typer.Context) -> RemoteService:
@@ -46,60 +40,24 @@ def _tailscale_value(status: RemoteStatus) -> str:
     return "not connected"
 
 
-def _ssh_auth_value(status: RemoteStatus) -> str:
-    if status.ssh_password_auth is True:
-        return "password allowed (run `dfs remote on --harden-ssh`)"
-    if status.ssh_password_auth is False:
-        return "key-only"
-    return "unknown"
-
-
-def _wait_for_login(service: RemoteService, *, target: bool, interactive: bool) -> None:
-    """Hold open with a spinner until Remote Login flips to *target*, then confirm.
-
-    Only runs when ``AppContext.interactive`` is True (stdin is a TTY in production).
-    Under a pipe or in CLI tests with ``interactive=False``, there's no one to flip
-    the toggle — skip the wait and leave Settings open for the user.
-    """
-    if not interactive:
-        return
-    word = "on" if target else "off"
-    with console.status(f"Waiting for Remote Login to turn {word}…"):
-        flipped = service.wait_until_remote_login(target, timeout=_WAIT_TIMEOUT_MIN * 60)
-    if flipped:
-        print_status(console, "success", f"Remote Login is {word}")
-    else:
-        print_status(
-            console,
-            "warn",
-            f"Still {'off' if target else 'on'} after {_WAIT_TIMEOUT_MIN} min — left Settings open",
-        )
-        raise typer.Exit(code=1)
-
-
 def render_connection_info(console: Console, info: ConnectionInfo) -> None:
-    """Print the Termius/Mosh connection details in the shared field-column style."""
-    print_title(console, "Termius", "phone")
-    console.print("  [dim]Enter these in the Termius app (it's a GUI, not a command):[/]")
-    if info.tailnet_ip:
-        print_field(console, "Address", f"{info.tailnet_ip}   (or {info.host})")
-    else:
-        print_field(console, "Address", info.host)
+    """Print how to reach the phone web clients (over Tailscale)."""
+    print_title(console, "Phone access", "phone")
+    if not info.tailnet_ip:
         print_status(
             console,
             "warn",
-            "Tailscale not connected — start it before connecting off your home Wi-Fi",
+            "Tailscale not connected — start it before reaching the Mac off home Wi-Fi",
         )
-    print_field(console, "Username", info.user)
-    print_field(console, "Protocol", "Mosh")
-    print_field(console, "Mosh srv", info.mosh_server)
-    print_field(console, "Startup", info.startup_command)
+    # Primary daily surface: the ygncode Pi PWA.
+    print_field(console, "Pi PWA", info.pi_web_url, soft_wrap=True)
+    console.print("  [dim]token:[/] grep PI_WEB_TOKEN ~/.config/pi-web/env")
     console.print()
-    console.print("  [dim]Desktop-to-desktop mosh command (not pasted into Termius):[/]")
-    console.print(info.mosh_command, soft_wrap=True)
-    console.print("  [dim]Same, but into the live-session picker:[/]")
-    picker_cmd = info.mosh_command.replace(info.startup_command, "dotfiles session")
-    console.print(picker_cmd, soft_wrap=True)
+    # Fallback: the Zellij web client (browser terminal), deep-linked to the session.
+    print_field(console, "Zellij web", info.phone_url, soft_wrap=True)
+    print_field(console, "On this Mac", info.local_url, soft_wrap=True)
+    console.print("  [dim]Expose over the tailnet with[/] tailscale serve --bg 8082")
+    console.print("  [dim]Zellij login token from[/] dfs remote web --new-token")
 
 
 @remote_app.command()
@@ -108,29 +66,29 @@ def on(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Print actions without changing anything."
     ),
-    add_key: str | None = typer.Option(None, "--add-key", help="Termius public key to authorize."),
-    harden_ssh: bool = typer.Option(False, "--harden-ssh", help="Disable SSH password auth."),
     session: str | None = typer.Option(None, "--session", help="Zellij session name."),
     tailscale: bool = typer.Option(
         False, "--tailscale", help="Also bring Tailscale up (tailscale up)."
     ),
 ) -> None:
-    """Turn on SSH/Mosh/Zellij access for Termius."""
+    """Bring phone web-access up and print the connection info.
+
+    Ensures the Zellij web client (launchd agent) and ygncode's pi-web service are
+    running, then exposes the Zellij client over the tailnet with `tailscale serve`.
+    """
     app_ctx = app_context(ctx)
     service = _service(ctx)
     chosen = session or app_ctx.settings.default_session
     print_title(console, "Remote", "on")
-    pre_steps = [service.tailscale_up(dry_run=dry_run)] if tailscale else []
-    try:
-        steps = service.setup(dry_run=dry_run, add_key=add_key, harden=harden_ssh, session=chosen)
-    except InvalidKeyError:
-        console.print("[red]--add-key does not look like an SSH public key[/]")
-        raise typer.Exit(code=1) from None
-    render_steps(console, pre_steps + steps)
-    if not dry_run and not service.remote_login_on():
-        _wait_for_login(service, target=True, interactive=app_ctx.interactive)
+    steps: list[StepResult] = []
+    if tailscale:
+        steps.append(service.tailscale_up(dry_run=dry_run))
+    steps.extend(service.install_agent(dry_run=dry_run))
+    steps.append(service.pi_web_kick(dry_run=dry_run))
+    steps.append(service.serve_start(dry_run=dry_run))
+    render_steps(console, steps)
     render_connection_info(console, service.connection_info(chosen))
-    if has_errors(pre_steps + steps):
+    if has_errors(steps):
         raise typer.Exit(code=1)
 
 
@@ -140,42 +98,24 @@ def off(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Print actions without changing anything."
     ),
-    kill_sessions: bool = typer.Option(
-        False, "--kill-sessions", help="Also kill existing mosh-server/sshd sessions."
-    ),
     tailscale: bool = typer.Option(
         False, "--tailscale", help="Also bring Tailscale down (tailscale down)."
     ),
 ) -> None:
-    """Open the Remote Login toggle, hold until it flips off, then confirm.
+    """Stop exposing the phone web clients over the tailnet.
 
-    Remote Login is flipped by hand in System Settings — this CLI can't toggle it
-    (needs Full Disk Access) — so it opens the exact pane and waits for the flip.
-    `--kill-sessions` also drops open mosh/sshd logins.
+    The web servers keep running under launchd; this only tears down the
+    `tailscale serve` routes. `--tailscale` also brings the tailnet down.
     """
-    app_ctx = app_context(ctx)
     service = _service(ctx)
     print_title(console, "Remote", "off")
-
-    steps = [service.tailscale_down(dry_run=dry_run)] if tailscale else []
-    on_now = service.remote_login_on()
-    if on_now:
-        if not dry_run:
-            service.open_sharing_pane()
-        print_status(console, "warn", "Remote Login is ON", sub="Turn it off to stop new logins.")
-    else:
-        print_status(console, "success", "Remote Login already disabled")
-    steps.extend(service.disable_intro(dry_run=dry_run, kill_sessions=kill_sessions))
+    steps = [service.serve_reset(dry_run=dry_run)]
+    if tailscale:
+        steps.append(service.tailscale_down(dry_run=dry_run))
     render_steps(console, steps)
-
-    console.print()
-    if on_now:
-        print_field(console, "Settings", SHARING_PATH)
-        print_field(console, "Shortcut", SHARING_OPEN, soft_wrap=True)
-    print_field(console, "Tailscale", _tailscale_value(service.status()))
-
-    if on_now and not dry_run:
-        _wait_for_login(service, target=False, interactive=app_ctx.interactive)
+    console.print(
+        "\n  [dim]Web servers keep running under launchd; this only stops tailnet exposure.[/]"
+    )
     if has_errors(steps):
         raise typer.Exit(code=1)
 
@@ -218,10 +158,10 @@ def web(
     stop: bool = typer.Option(False, "--stop", help="Stop the web server."),
     new_token: bool = typer.Option(False, "--new-token", help="Mint a one-time login token."),
 ) -> None:
-    """Experimental: serve zellij sessions to a browser (Termius/Mosh stays primary).
+    """Serve zellij sessions to a browser; reach it from the phone over Tailscale.
 
-    With no flag, reports server status. Reachable from the phone only after you
-    set web_server_ip + TLS certs in the zellij config (terminal/zellij/config.kdl).
+    With no flag, reports server status. Keep the server on localhost and expose
+    it to the tailnet with `tailscale serve --bg 8082` (TLS terminated for you).
     """
     service = _service(ctx)
     if start:
@@ -236,24 +176,48 @@ def web(
     if step.level != "error" and not (stop or new_token):
         console.print(
             "\n[dim]Local:[/] http://127.0.0.1:8082/mobile"
-            "\n[dim]Phone access needs web_server_ip + TLS in[/] "
-            "terminal/zellij/config.kdl[dim]; until then use Termius/Mosh.[/]"
+            "\n[dim]Phone: expose over the tailnet with[/] tailscale serve --bg 8082"
+            "[dim], then open[/] https://<your-tailnet-host>/mobile[dim] in a browser.[/]"
         )
     if step.level == "error":
         raise typer.Exit(code=1)
 
 
 @remote_app.command()
+def token(ctx: typer.Context) -> None:
+    """Show ygncode pi-web's login token and a tap-ready phone URL."""
+    app_ctx = app_context(ctx)
+    service = _service(ctx)
+    tok = service.pi_web_token()
+    print_title(console, "Pi PWA", "token")
+    if tok is None:
+        print_status(
+            console, "warn", "No pi-web token (~/.config/pi-web/env) — is ygncode installed?"
+        )
+        raise typer.Exit(code=1)
+    info = service.connection_info(app_ctx.settings.default_session)
+    print_field(console, "Token", tok)
+    if info.magic_dns:
+        print_field(console, "Phone URL", f"{info.pi_web_url}?token={tok}", soft_wrap=True)
+    else:
+        print_status(console, "warn", "Tailscale not connected — start it for the phone URL")
+
+
+@remote_app.command()
 def status(ctx: typer.Context) -> None:
-    """Show the Mac's remote-shell entrypoint state."""
-    s = _service(ctx).status()
+    """Show phone-access state: Tailscale, the web servers, and the phone URLs."""
+    app_ctx = app_context(ctx)
+    service = _service(ctx)
+    s = service.status()
     print_title(console, "Remote", "status")
-    # Remote Login is the category header; how-to-change-it (SSH auth when on,
-    # the Settings pane, the open shortcut) nests beneath it as owned children.
-    print_field(console, "Remote Login", "on" if s.remote_login_on else "off")
-    if s.remote_login_on:
-        print_child(console, "SSH auth", _ssh_auth_value(s))
-    print_child(console, "Settings", SHARING_PATH)
-    print_child(console, "Shortcut", SHARING_OPEN, last=True, soft_wrap=True)
     print_field(console, "Tailscale", _tailscale_value(s))
+    print_field(console, "Zellij web", "running" if s.zellij_web_running else "stopped")
+    pi_state = (
+        "running" if s.pi_web_running else ("installed" if s.pi_web_installed else "not installed")
+    )
+    print_field(console, "Pi PWA (ygncode)", pi_state)
     print_field(console, "Host", f"{s.user}@{s.host}")
+    if s.magic_dns:
+        info = service.connection_info(app_ctx.settings.default_session)
+        print_child(console, "Pi PWA URL", info.pi_web_url)
+        print_child(console, "Zellij URL", info.phone_url, last=True, soft_wrap=True)

@@ -18,12 +18,9 @@ session_serialization true
 serialize_pane_viewport true
 scrollback_lines_to_serialize 10000
 
-// --- Web client (experiment; stays on localhost by default) ------------------
-// `dotfiles remote web --start` serves sessions to a browser. To reach it from
-// the phone over Tailscale you must both bind beyond localhost AND terminate TLS:
-//   web_server_ip   "0.0.0.0"               // or the tailnet IP
-//   web_server_port 8082
-//   web_server_cert "/path/to/cert.pem"     // e.g. `tailscale cert <host>`
-//   web_server_key  "/path/to/key.pem"
-// Until those are set it listens on 127.0.0.1 only, and Termius/Mosh stays the
-// primary remote path.
+// --- Web client --------------------------------------------------------------
+// `dotfiles remote web --start` serves sessions on 127.0.0.1:8082. To reach it
+// from the phone, keep it on localhost and put it behind Tailscale:
+//   tailscale serve --bg 8082   // tailnet-only HTTPS, terminates TLS for you
+// Then open https://<your-tailnet-host>/<session> on the phone (installable as a
+// PWA). No need to bind beyond localhost or set web_server_cert/key here.

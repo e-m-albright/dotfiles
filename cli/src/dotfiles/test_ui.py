@@ -55,21 +55,14 @@ def test_render_connection_info_warns_when_no_tailscale() -> None:
 
     buf = StringIO()
     console = Console(file=buf, force_terminal=False, width=200)
-    info = ConnectionInfo(
-        user="evan",
-        host="Evans-MBP-M4",
-        session="mobile",
-        mosh_server="/opt/homebrew/bin/mosh-server",
-        tailnet_ip=None,
-    )
+    info = ConnectionInfo(host="Evans-MBP-M4", session="mobile", tailnet_ip=None)
     render_connection_info(console, info)
     out = buf.getvalue()
     assert "Tailscale not connected" in out
-    assert "evan" in out
-    assert "mosh --server=" in out
+    assert "http://127.0.0.1:8082/mobile" in out
 
 
-def test_render_connection_info_offers_picker_command() -> None:
+def test_render_connection_info_shows_web_client_urls() -> None:
     from io import StringIO
 
     from dotfiles.cmd.remote.cli import render_connection_info
@@ -78,14 +71,15 @@ def test_render_connection_info_offers_picker_command() -> None:
     buf = StringIO()
     console = Console(file=buf, force_terminal=False, width=200)
     info = ConnectionInfo(
-        user="evan",
         host="mac",
         session="mobile",
-        mosh_server="/opt/homebrew/bin/mosh-server",
         tailnet_ip="100.64.0.1",
+        magic_dns="mac.tailnet.ts.net",
     )
     render_connection_info(console, info)
     out = buf.getvalue()
-    # direct-attach command AND a picker variant are both offered
-    assert "dotfiles session attach mobile" in out
-    assert "dotfiles session" in out
+    # Local URL, the tailnet phone URL, and the token/serve guidance are shown.
+    assert "http://127.0.0.1:8082/mobile" in out
+    assert "https://mac.tailnet.ts.net/mobile" in out
+    assert "tailscale serve" in out
+    assert "dfs remote web --new-token" in out
