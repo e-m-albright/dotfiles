@@ -9,7 +9,7 @@ The process contract other repositories depend on:
     dotfiles speak --voices                # audition all ten presets
 
 Exit codes: 0 spoke, 1 backend unavailable, 2 bad argument. Keep this surface
-stable - `notes` and the agent voice loop call it as a subprocess.
+stable - `notes exercise stretch` calls it as a subprocess.
 """
 
 from __future__ import annotations
