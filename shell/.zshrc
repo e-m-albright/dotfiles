@@ -334,6 +334,10 @@ if command -v fnm &>/dev/null; then
     eval "$(fnm env --use-on-cd --shell zsh)"
 fi
 
+# Shared npm global prefix (set via `npm config set prefix ~/.npm-global`) so
+# global CLIs survive fnm version switches. Must come after fnm init to win PATH.
+export PATH="$HOME/.npm-global/bin:$PATH"
+
 # fzf — fuzzy finder keybindings (Ctrl-T files, Ctrl-R history, Alt-C cd)
 # Sourced before zoxide so `zi` (interactive jump) can use fzf as its picker.
 if command -v fzf &>/dev/null; then
