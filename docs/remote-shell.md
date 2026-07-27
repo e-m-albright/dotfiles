@@ -37,9 +37,9 @@ Everything runs **on the laptop**; the phone is a thin client over the tailnet.
 3. **Bring it up** via the CLI — `dfs remote on` installs a launchd agent
    (`com.dotfiles.paseo`, `RunAtLoad`) that runs Paseo in foreground mode with
    the relay disabled, bound to the machine's current Tailscale IPv4 on port
-   6767. Paseo stays inside launchd's lifecycle, so `dfs remote off` actually
-   stops it. Setup fails closed when no tailnet address is available.
-   `--no-relay` keeps the Cloudflare relay
+   6767. Paseo stays inside launchd's lifecycle when remote connectivity is
+   disabled; `dfs remote off` brings Tailscale down without stopping agents.
+   Setup fails closed when no tailnet address is available. `--no-relay` keeps the Cloudflare relay
    **out of the path** — traffic stays pure-tailnet.
 4. **On the phone:** install the **Paseo** app, then *add a daemon connection*
    directly: address = your `100.x` tailnet IP (`tailscale ip -4`) `:6767`,
@@ -49,6 +49,34 @@ Because the relay is disabled there is **no QR pairing** — you add the connect
 by address + password once, and it's saved. (The QR only works via the relay; we
 don't use it.)
 
+#### Password rotation and recovery
+
+Rotate the daemon password through the dotfiles CLI when no Paseo agents are
+actively running:
+
+```bash
+dotfiles remote paseo --rotate-password
+```
+
+The command delegates the hidden prompt to Paseo, then reloads the
+launchd-managed daemon so the new hash takes effect. The plaintext password
+never passes through dotfiles or appears in its output. Rotation does not delete
+Paseo history, projects, or sessions, but reloading the daemon can interrupt an
+active run.
+
+The old password is not required, so use the same command if it is lost. Paseo
+stores only a bcrypt hash in `~/.paseo/config.json`; the original value cannot be
+recovered from that file. After rotation, update the saved direct connection in
+both desktop and mobile clients and store the new value in a password manager.
+Do not set `PASEO_PASSWORD` inline in a shell command: that writes the plaintext
+secret to shell history.
+
+Preview the workflow without prompting or restarting:
+
+```bash
+dotfiles remote paseo --rotate-password --dry-run
+```
+
 ### Zellij web client (terminal fallback)
 
 1. Ensure Tailscale is running and **HTTPS certificates** are enabled for the
@@ -57,14 +85,16 @@ don't use it.)
 2. `dfs remote on` also ensures the Zellij web launchd agent
    (`com.dotfiles.zellij-web`) is running and exposes it with
    `tailscale serve --bg 8082` (tailnet-only HTTPS — **never** `funnel`).
-3. Mint a login token when you need one: `dfs remote web --new-token`.
+3. Mint a login token when you need one: `dfs remote zellij --new-token`.
 4. On the phone, open `https://<machine>.<tailnet>.ts.net/` (or deep-link to a
    session, e.g. `…/mobile`) and enter the token. Add to Home Screen for a PWA
-   icon. `dfs remote qr` prints a scannable QR of that URL.
+   icon. `dfs remote zellij qr` prints a scannable QR of that URL.
 
-`dfs remote on` does all of the above in one shot (and brings Tailscale up unless
-`--no-tailscale`); `dfs remote off` tears down the Zellij `tailscale serve` route.
-`dfs remote status` shows Tailscale / Paseo / Zellij-web state + the addresses.
+`dfs remote on` ensures Tailscale, Paseo, and Zellij web are ready without
+reloading services that are already running. `dfs remote off` resets the Zellij
+route and brings Tailscale down, breaking remote connectivity while Paseo,
+Zellij, and active agents keep running locally. `dfs remote status` shows all
+three services and their addresses.
 
 ## Daily use
 
@@ -124,26 +154,33 @@ zellij delete-session <name>   # purge an exited/serialized one from history
 |---|---|
 | Paseo app won't connect | Tailscale up on both? Daemon running (`dfs remote status`)? Address = `100.x:6767`? Right password? |
 | Paseo relay showing | It's off (`--no-relay`) — the status line just prints the configured endpoint; traffic is direct. |
-| Zellij: can't connect | Tailscale up + logged in on **both**? `dfs remote status`. Web server up? `dfs remote web`. |
+| Zellij: can't connect | Tailscale up + logged in on **both**? `dfs remote status`. Web server up? `dfs remote zellij`. |
 | Zellij: cert warning | Open the **MagicDNS name**, not the raw tailnet IP — the `tailscale serve` cert is issued for the name. HTTPS certs enabled in the tailnet admin? |
 | `tailscale serve` hangs on first run | HTTPS certificates aren't enabled for the tailnet — enable them in Tailscale admin → DNS, then retry. |
-| Zellij: page won't accept the token | Mint a fresh one: `dfs remote web --new-token`. |
+| Zellij: page won't accept the token | Mint a fresh one: `dfs remote zellij --new-token`. |
 | Landed in a bare shell, not the deck | The `mobile` session was created without the layout. Kill it and recreate with `--layout mobile`. |
-| Stop all phone access | `tailscale serve --https=443 off` (Zellij), and/or bring Tailscale down (cuts off Paseo too). |
+| Stop all phone access without stopping agents | `dfs remote off` resets the Zellij route and brings Tailscale down. |
 
 ## Zellij web client details
 
 ```bash
-dfs remote web --start      # daemonized zellij web server (127.0.0.1:8082)
-dfs remote web --new-token  # one-time login token (shown once)
-dfs remote web --stop       # stop the server
+dfs remote zellij --start      # load via launchd and publish over Tailscale
+dfs remote zellij              # report Zellij web status
+dfs remote zellij --new-token  # one-time login token (shown once)
+dfs remote zellij qr           # QR for the tailnet-only mobile URL
+dfs remote zellij --stop       # remove exposure and unload Zellij web
+
+dfs remote tailscale           # report tailnet connectivity
+dfs remote tailscale --up      # connect this machine
+dfs remote tailscale --down    # disconnect this machine
 ```
 
-It listens on `127.0.0.1:8082` only; `tailscale serve --bg 8082` publishes it to
-the tailnet over HTTPS (TLS terminated by Tailscale). Read-only tokens are
+Zellij web listens on `127.0.0.1:8082`; `tailscale serve --bg 8082` publishes it
+to the tailnet over HTTPS (TLS terminated by Tailscale). Read-only tokens are
 available for view-only sharing.
 
 > **Security housekeeping:** rotate login secrets periodically and revoke any that
 > have been shared or pasted outside the machine. Zellij: `zellij web
-> --revoke-token <name>` / `dfs remote web --new-token`. Paseo: `paseo daemon
-> set-password` sets a fresh hashed password.
+> --revoke-token <name>` / `dfs remote zellij --new-token`. Paseo: `dfs remote
+> paseo --rotate-password` sets a fresh hashed password and reloads the managed
+> daemon.

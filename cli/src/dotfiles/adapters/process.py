@@ -18,10 +18,11 @@ class SubprocessRunner:
         env: Mapping[str, str] | None = None,
         stdin: str | None = None,
         cwd: Path | None = None,
+        capture_output: bool = True,
     ) -> CommandResult:
         completed = subprocess.run(
             list(command),
-            capture_output=True,
+            capture_output=capture_output,
             text=True,
             check=check,
             env=dict(env) if env is not None else None,
@@ -31,6 +32,6 @@ class SubprocessRunner:
         return CommandResult(
             command=tuple(command),
             exit_code=completed.returncode,
-            stdout=completed.stdout,
-            stderr=completed.stderr,
+            stdout=completed.stdout or "",
+            stderr=completed.stderr or "",
         )

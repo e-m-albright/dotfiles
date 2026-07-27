@@ -24,9 +24,16 @@ _ZELLIJ_BIN = "/opt/homebrew/bin/zellij"
 _ZELLIJ_LABEL = "com.dotfiles.zellij-web"
 
 # Paseo — the primary phone driver (multi-agent daemon incl. Pi). It binds only
-# to this machine's Tailscale IPv4; the Paseo app connects DIRECTLY over the
-# tailnet with the daemon password (relay disabled, no `tailscale serve`, no
-# token/URL). `paseo` is an fnm-managed npm global, so launchd asks fnm to run it
+# to this machine's Tailscale IPv4; all clients connect DIRECTLY over the
+# tailnet with the daemon password (no `tailscale serve`, no token/URL).
+#
+# WARNING — TAILSCALE-ONLY BY DESIGN. Never enable Paseo's relay (config
+# `relay.enabled` or dropping `--no-relay` below): it holds a persistent
+# outbound connection to relay.paseo.sh, moving access outside the tailnet.
+# We tried it once for QR phone pairing (2026-07) and reverted; the QR
+# convenience is not worth the exposure. Phones get the password manually.
+#
+# `paseo` is an fnm-managed npm global, so launchd asks fnm to run it
 # under the current default Node version. The daemon password lives hashed in
 # ~/.paseo — never in the plist.
 PASEO_PORT = 6767
@@ -48,6 +55,14 @@ _PASEO_STOP_COMMAND = (
     "paseo",
     "daemon",
     "stop",
+)
+_PASEO_SET_PASSWORD_COMMAND = (
+    _FNM_BIN,
+    "exec",
+    "--using=default",
+    "paseo",
+    "daemon",
+    "set-password",
 )
 
 # The persistent Zellij session the phone deep-links to (…/mobile), built from
@@ -107,6 +122,10 @@ class RemoteService:
             return True, (ip or None)
         return False, None
 
+    def tailscale_status(self) -> tuple[bool, str | None]:
+        """Return whether this machine is connected and its tailnet IPv4 address."""
+        return self._tailscale
+
     @cached_property
     def _magic_dns(self) -> str | None:
         """The machine's full MagicDNS name (host.tailnet.ts.net), if on a tailnet."""
@@ -155,12 +174,16 @@ class RemoteService:
     def _agent_plist(self, label: str) -> Path:
         return self._home / "Library" / "LaunchAgents" / f"{label}.plist"
 
+    def _agent_running(self, label: str) -> bool:
+        return label in self._line(("launchctl", "list"))
+
     def _render_plist(
         self,
         label: str,
         program_args: list[str],
         log_name: str,
         *,
+        environment: dict[str, str] | None = None,
         interactive: bool = False,
         keep_alive: bool = True,
     ) -> bytes:
@@ -176,6 +199,8 @@ class RemoteService:
             "StandardErrorPath": str(log),
             "WorkingDirectory": str(self._home),
         }
+        if environment:
+            plist["EnvironmentVariables"] = environment
         if interactive:
             plist["EnvironmentVariables"] = {
                 "PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -191,6 +216,7 @@ class RemoteService:
         name: str,
         *,
         dry_run: bool,
+        environment: dict[str, str] | None = None,
         interactive: bool = False,
         keep_alive: bool = True,
     ) -> list[StepResult]:
@@ -205,6 +231,7 @@ class RemoteService:
                 label,
                 program_args,
                 log_name,
+                environment=environment,
                 interactive=interactive,
                 keep_alive=keep_alive,
             )
@@ -245,6 +272,12 @@ class RemoteService:
             dry_run=dry_run,
             interactive=True,
         )
+
+    def ensure_zellij_agent(self, *, dry_run: bool) -> list[StepResult]:
+        """Load the managed Zellij web service only when it is not already running."""
+        if self._agent_running(_ZELLIJ_LABEL):
+            return [StepResult(level="info", message="Zellij web already running")]
+        return self.install_agent(dry_run=dry_run)
 
     def uninstall_agent(self, *, dry_run: bool) -> list[StepResult]:
         """Unload + remove the Zellij web launchd agent."""
@@ -291,8 +324,22 @@ class RemoteService:
             "paseo.log",
             "Paseo daemon",
             dry_run=False,
+            environment={
+                # ~/.npm-global/bin carries npm-prefix globals (pi, paseo);
+                # without it the daemon reports "Provider 'pi' is not available".
+                "PATH": (
+                    f"{self._home}/.local/bin:{self._home}/.npm-global/bin:"
+                    "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+                )
+            },
             keep_alive=False,
         )
+
+    def ensure_paseo_agent(self, *, dry_run: bool) -> list[StepResult]:
+        """Load the managed Paseo daemon only when it is not already running."""
+        if self.paseo_running():
+            return [StepResult(level="info", message="Paseo daemon already running")]
+        return self.paseo_install_agent(dry_run=dry_run)
 
     def paseo_uninstall_agent(self, *, dry_run: bool) -> list[StepResult]:
         """Unload + remove the Paseo launchd agent and any legacy detached daemon."""
@@ -301,8 +348,33 @@ class RemoteService:
             self._runner.run(_PASEO_STOP_COMMAND)
         return steps
 
+    def paseo_rotate_password(self, *, dry_run: bool) -> list[StepResult]:
+        """Prompt securely for a new daemon password, then reload the managed daemon."""
+        if dry_run:
+            return [
+                StepResult(level="info", message="DRY RUN: prompt for a new Paseo password"),
+                StepResult(level="info", message="DRY RUN: reload the Paseo launchd agent"),
+            ]
+
+        connected, tailnet_ip = self._tailscale
+        if not connected or not tailnet_ip:
+            return [
+                StepResult(
+                    level="error",
+                    message="Paseo password not changed: no tailnet IPv4 address is available",
+                )
+            ]
+
+        updated = self._runner.run(_PASEO_SET_PASSWORD_COMMAND, capture_output=False)
+        if not updated.ok:
+            return [StepResult(level="error", message="Paseo password update cancelled or failed")]
+
+        steps = [StepResult(level="success", message="Paseo password updated")]
+        steps.extend(self.paseo_install_agent(dry_run=False))
+        return steps
+
     def paseo_running(self) -> bool:
-        return _PASEO_LABEL in self._line(("launchctl", "list"))
+        return self._agent_running(_PASEO_LABEL)
 
     def mobile_session_step(self, *, dry_run: bool) -> StepResult:
         """Ensure the `mobile` Zellij session exists; guide creation if not.
@@ -360,20 +432,6 @@ class RemoteService:
         if result.ok:
             return StepResult(level="info", message=detail or "Web server running")
         return StepResult(level="info", message="Web server not running")
-
-    def web_start(self) -> StepResult:
-        """Start the zellij web server, daemonized (manual; the launchd agent is preferred)."""
-        result = self._runner.run(("zellij", "web", "-d"))
-        if result.ok:
-            return StepResult(level="success", message="Web server started (zellij web -d)")
-        return StepResult(level="error", message=f"zellij web -d failed: {result.stderr.strip()}")
-
-    def web_stop(self) -> StepResult:
-        """Stop the zellij web server."""
-        result = self._runner.run(("zellij", "web", "--stop"))
-        if result.ok:
-            return StepResult(level="success", message="Web server stopped")
-        return StepResult(level="warn", message="Web server was not running")
 
     def web_token(self) -> StepResult:
         """Mint a single-use web login token (shown once, cannot be retrieved)."""

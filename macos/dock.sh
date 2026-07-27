@@ -36,6 +36,7 @@ apps=(
     "/Applications/Zed.app"
     "/Applications/Claude.app"
     "/Applications/ChatGPT.app"
+    "/Applications/Paseo.app"
     "/Applications/Ghostty.app"
 )
 

@@ -166,7 +166,7 @@ sub_shell_profile() {
 # INVARIANT: every name here must also appear in sub_help and the zsh completion
 # file (shell/completions/_dotfiles) — enforced by app/test_command_tree.py so
 # the lists can't silently drift.
-PY_CLI_COMMANDS=" remote session doctor brew tui email-mask speak "
+PY_CLI_COMMANDS=" remote session doctor brew tui email-mask password speak "
 if [[ "${1:-}" == "email" ]]; then
     shift
     if [[ "${1:-}" == "mask" ]]; then

@@ -64,7 +64,7 @@ is no stored observation to become stale.
 
 ## Remote Control
 
-The remote stack is Tailscale + Mosh/SSH + Zellij. Mission Control exposes the
+The remote stack is Tailscale + Paseo + Zellij web. Mission Control exposes the
 same operations in a phone-friendly TUI and shows active Claude/Codex processes
 beside their sessions.
 
@@ -72,6 +72,10 @@ beside their sessions.
 dotfiles remote status
 dotfiles remote on
 dotfiles remote off
+dotfiles remote paseo
+dotfiles remote tailscale
+dotfiles remote zellij
+dotfiles remote zellij qr
 dotfiles session ls
 dotfiles session new NAME
 dotfiles session attach NAME
@@ -96,6 +100,13 @@ dotfiles email-mask delete ADDRESS_OR_ID [--yes]
 
 Set `DOTFILES_APPLE_ID` or pass `--apple-id`. Authentication is handled by
 `pyicloud`; credentials are stored in the macOS keychain, never this repo.
+
+`password` is its sibling convenience: a random alphanumeric password (20
+chars by default), printed and copied to the clipboard.
+
+```text
+dotfiles password [LENGTH] [--no-copy]
+```
 
 ## Local Models
 

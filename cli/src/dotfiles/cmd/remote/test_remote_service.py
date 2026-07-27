@@ -122,6 +122,10 @@ def test_paseo_install_agent_writes_plist_and_bootstraps(tmp_path: Path) -> None
     assert content["Label"] == "com.dotfiles.paseo"
     assert content["RunAtLoad"] is True
     assert content["KeepAlive"] is False
+    assert content["EnvironmentVariables"]["PATH"] == (
+        f"{tmp_path}/.local/bin:{tmp_path}/.npm-global/bin:"
+        "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    )
     assert content["ProgramArguments"] == [
         "/opt/homebrew/bin/fnm",
         "exec",
@@ -172,6 +176,52 @@ def test_paseo_uninstall_stops_legacy_daemon(tmp_path: Path) -> None:
         "stop",
     ) in runner.calls
     assert all(step.level == "success" for step in steps)
+
+
+def test_paseo_rotate_password_uses_terminal_and_reloads_agent(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-u"), stdout="501\n")
+    runner.script(("tailscale", "status"), exit_code=0)
+    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
+
+    steps = _service(runner, tmp_path).paseo_rotate_password(dry_run=False)
+
+    command = (
+        "/opt/homebrew/bin/fnm",
+        "exec",
+        "--using=default",
+        "paseo",
+        "daemon",
+        "set-password",
+    )
+    call_index = runner.calls.index(command)
+    assert runner.capture_output[call_index] is False
+    plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
+    assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
+    assert any("password updated" in step.message.lower() for step in steps)
+    assert all(step.level != "error" for step in steps)
+
+
+def test_paseo_rotate_password_does_not_restart_after_cancel(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("tailscale", "status"), exit_code=0)
+    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
+    runner.script(
+        (
+            "/opt/homebrew/bin/fnm",
+            "exec",
+            "--using=default",
+            "paseo",
+            "daemon",
+            "set-password",
+        ),
+        exit_code=1,
+    )
+
+    steps = _service(runner, tmp_path).paseo_rotate_password(dry_run=False)
+
+    assert [step.level for step in steps] == ["error"]
+    assert not any(call[0] == "launchctl" for call in runner.calls)
 
 
 def test_paseo_running_reads_launchctl_list(tmp_path: Path) -> None:
@@ -235,13 +285,6 @@ def test_connection_info_off_tailnet_has_no_magic_dns(tmp_path: Path) -> None:
 
 
 # --- Zellij web token helpers ---------------------------------------------
-
-
-def test_web_start_reports_success(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    step = _service(runner, tmp_path).web_start()
-    assert ("zellij", "web", "-d") in runner.calls
-    assert step.level == "success"
 
 
 def test_web_status_running_vs_stopped(tmp_path: Path) -> None:

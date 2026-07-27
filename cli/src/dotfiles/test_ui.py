@@ -82,4 +82,4 @@ def test_render_connection_info_shows_web_client_urls() -> None:
     assert "100.64.0.1:6767" in out
     assert "http://127.0.0.1:8082/mobile" in out
     assert "https://mac.tailnet.ts.net/mobile" in out
-    assert "dfs remote web --new-token" in out
+    assert "dfs remote zellij --new-token" in out

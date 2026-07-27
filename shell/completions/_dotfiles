@@ -15,6 +15,7 @@ commands=(
     'session:zellij sessions (ls, attach, new, kill, picker)'
     'tui:Launch the Mission Control TUI'
     'email-mask:Create and manage iCloud Hide My Email aliases'
+    'password:Generate a random password and copy it to the clipboard'
     'speak:Speak text aloud with local neural text-to-speech'
     'brew:Brew namespace (install, upgrade, stale)'
     'profile-shell:Profile shell startup time'

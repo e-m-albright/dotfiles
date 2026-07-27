@@ -40,9 +40,8 @@ class BrewInventoryError(RuntimeError):
 
 FeatureFlag = Literal["ai", "productivity", "social"]
 PackageKind = Literal["formula", "cask", "auto"]
-# Declarative taxonomy only - nothing branches on the value; it records how a
-# non-Homebrew package reaches this host. `python_package` covers software that
-# arrives as a dependency of one of this repo's own Python projects.
+# Records how a non-Homebrew package reaches this host. `python_package` is
+# declarative only: that software arrives through this repo's Python dependencies.
 SpecialMethod = Literal["rustup", "github_dmg", "curl_install", "python_package"]
 
 
@@ -676,6 +675,28 @@ def _install_one_npm(
     return StepResult(level="error", message=f"npm install -g {target} failed")
 
 
+def _install_special(
+    name: str,
+    installer: SpecialInstaller,
+    runner: ProcessRunner,
+    *,
+    flags_on: set[FeatureFlag],
+    dotfiles_dir: Path,
+    dry_run: bool,
+) -> list[StepResult]:
+    if not _flag_active(installer.flag, flags_on) or installer.method == "python_package":
+        return []
+    if dry_run:
+        return [StepResult(level="info", message=f"DRY RUN: install {name}")]
+    if installer.method == "rustup":
+        return install_rust(runner)
+    if installer.method == "github_dmg":
+        return install_typewhisper(runner, dotfiles_dir=dotfiles_dir)
+    if installer.method == "curl_install":
+        return install_claude_code(runner)
+    raise ValueError(f"Unsupported special installer method: {installer.method}")
+
+
 def install_specials(
     manifest: PackageManifest,
     runner: ProcessRunner,
@@ -687,16 +708,16 @@ def install_specials(
     """Run only the special installers declared and enabled by the manifest."""
     results: list[StepResult] = []
     for name, installer in manifest.specials.items():
-        if not _flag_active(installer.flag, flags_on):
-            continue
-        if dry_run:
-            results.append(StepResult(level="info", message=f"DRY RUN: install {name}"))
-        elif installer.method == "rustup":
-            results.extend(install_rust(runner))
-        elif installer.method == "curl_install":
-            results.extend(install_claude_code(runner))
-        else:
-            results.extend(install_typewhisper(runner, dotfiles_dir=dotfiles_dir))
+        results.extend(
+            _install_special(
+                name,
+                installer,
+                runner,
+                flags_on=flags_on,
+                dotfiles_dir=dotfiles_dir,
+                dry_run=dry_run,
+            )
+        )
     return results
 
 

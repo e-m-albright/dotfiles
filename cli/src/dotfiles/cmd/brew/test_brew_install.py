@@ -19,6 +19,7 @@ from dotfiles.cmd.brew.service import (
     install_npm_globals,
     install_packages,
     install_rust,
+    install_specials,
     install_typewhisper,
     upgrade,
 )
@@ -606,3 +607,41 @@ def test_upgrade_reports_cleanup_failure() -> None:
     runner.script(("brew", "cleanup", "--prune=30"), exit_code=1, stderr="busy")
     steps = upgrade(runner)
     assert any(step.level == "warn" and "cleanup" in step.message for step in steps)
+
+
+def test_python_package_special_does_not_run_typewhisper(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = load(
+        tmp_path,
+        """\
+[flags]
+ai = true
+productivity = true
+social = true
+
+[taps]
+list = []
+
+[special.typewhisper]
+method = "github_dmg"
+
+[special.supertonic]
+method = "python_package"
+""",
+    )
+    script = tmp_path / "macos" / "typewhisper.sh"
+    script.parent.mkdir()
+    script.touch()
+    monkeypatch.setattr(Path, "exists", lambda self: str(self) == "/Applications/TypeWhisper.app")
+    runner = FakeProcessRunner()
+
+    install_specials(
+        manifest,
+        runner,
+        flags_on={"ai", "productivity", "social"},
+        dotfiles_dir=tmp_path,
+        dry_run=False,
+    )
+
+    assert runner.calls.count((str(script), "apply")) == 1

@@ -38,4 +38,5 @@ class ProcessRunner(Protocol):
         env: Mapping[str, str] | None = None,
         stdin: str | None = None,
         cwd: Path | None = None,
+        capture_output: bool = True,
     ) -> CommandResult: ...
