@@ -14,6 +14,7 @@ neurally does not pay the onnxruntime import, and so `dotfiles speak
 
 from __future__ import annotations
 
+import importlib
 import tempfile
 import threading
 from dataclasses import dataclass, field
@@ -48,13 +49,13 @@ class SupertonicVoice(_ProcessVoice):
     def _engine(self):
         if self._tts is None:
             try:
-                from supertonic import TTS
+                module = importlib.import_module("supertonic")
             except ImportError as error:  # pragma: no cover - depends on install
                 raise VoiceUnavailableError(
                     "supertonic is not installed. Run "
                     "`uv sync --project cli --extra speech`, or use --engine say."
                 ) from error
-            self._tts = TTS(auto_download=True)
+            self._tts = module.TTS(auto_download=True)
             self._style = self._tts.get_voice_style(voice_name=self.voice)
             self._tmp = tempfile.TemporaryDirectory(prefix="dotfiles-speak-")
         return self._tts
