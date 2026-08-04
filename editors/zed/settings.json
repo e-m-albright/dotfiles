@@ -8,6 +8,23 @@
 // The "agent.default_model" / "inline_assistant_model" below are the SEPARATE
 // built-in providers — those DO use API keys (billed per token).
 {
+  "autosave": "on_focus_change",
+  // Language-server inlay hints (types, parameter names) — not AI.
+  "inlay_hints": {
+    "enabled": true
+  },
+  // Tab-complete edit predictions: Zed's Zeta model, free with a Zed
+  // account sign-in — NOT billed to the Anthropic key or Claude sub.
+  // "none" kills it entirely; "copilot"/"supermaven" are alternatives.
+  "features": {
+    "edit_prediction_provider": "zed"
+  },
+  // "eager" = predictions appear as you type; flip to "subtle" for
+  // interview mode (only shown while holding alt). The sparkle icon in
+  // the status bar toggles predictions on/off entirely.
+  "edit_predictions": {
+    "mode": "subtle"
+  },
   "agent_servers": {
     "claude-acp": {
       "type": "registry"
@@ -62,12 +79,23 @@
     "play_sound_when_agent_done": "always",
     "default_model": {
       "provider": "anthropic",
-      "model": "claude-sonnet-4-6-latest"
+      "model": "claude-sonnet-5"
     },
     "inline_assistant_model": {
       "provider": "anthropic",
-      "model": "claude-sonnet-4-6-latest"
+      "model": "claude-sonnet-5"
     }
+  },
+  // Show who last touched the current line, inline at end of line.
+  "git": {
+    "inline_blame": {
+      "enabled": true,
+      "delay_ms": 800
+    }
+  },
+  // Mac-terminal muscle memory: select-to-copy in Zed's terminal panel.
+  "terminal": {
+    "copy_on_select": true
   },
   "icon_theme": "Material Icon Theme",
   "ui_font_size": 16,
