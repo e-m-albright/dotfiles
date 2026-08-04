@@ -115,6 +115,7 @@ agent loop and lean into the concurrency-as-progress framing we're skeptical of.
 | **cmux** | Terminal workspace/multiplexer for agent sessions | Didn't beat Ghostty + Zellij session control. Tombstoned. |
 | **Cursor agents** | Cursor's cloud/background agent surface | Heavy; hides execution. Not our direction. |
 | **Antigravity agent inbox** | Manage/triage a queue of autonomous agents | Hides far too much right now. Firmly not going this way. |
+| **[Isomux](https://isomux.com/)** | Visual agent office for coordinating sessions, state, and handoffs | Useful inspiration for one operator doorway, glanceable working/ready/blocked state, and concise evidence handoffs. Patterns mined; do not adopt another permanent orchestration layer unless measured friction creates a concrete need. |
 
 ---
 

@@ -318,7 +318,7 @@ name = "pinchtab"
 flag = "ai"
 note = "Browser automation CLI for AI agents"
 disabled = true
-reason = "Disabled 2026-06-01: experiment; agent-browser is the active browser-automation CLI"
+reason = "Removed 2026-07-30: the experiment produced no unique use case; Playwright plus agent-browser cover the active workflows"
 
 [[npm_package]]
 name = "wrangler"
