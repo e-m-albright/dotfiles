@@ -148,6 +148,46 @@ dfs session kill <name>        # kill a running session (gone — not resurrecta
 zellij delete-session <name>   # purge an exited/serialized one from history
 ```
 
+## Watchlist: BitBang
+
+[BitBang CLI](https://github.com/richlegrand/bitbang-cli) is an interesting
+**ad-hoc access** option, not part of the installed stack. As of 2026-08-04, its
+single Go binary can expose a shell, a bounded file tree, or an HTTP proxy through
+a capability URL. A browser is enough on the connecting side; WebRTC usually
+provides a direct path through NAT, with encrypted TURN relay fallback. It needs
+no account, inbound port, VPN, or preinstalled client. A six-digit, verbally
+verified pairing flow can save credentials for later CLI connections.
+
+The security design is thoughtful: the URL fragment holds the access secret and
+is not sent to the signaling server; endpoint identity and DTLS fingerprints are
+verified independently; and the server or TURN relay should see metadata and
+ciphertext, not payloads. The important limits are:
+
+- The URL is a bearer capability. The default `bitbang serve` grants shell,
+  files, and proxy access, so a leaked URL has a large blast radius; use a
+  capability-specific subcommand, optional PIN, and ephemeral identity instead.
+- Browser clients still trust JavaScript delivered by the signaling server. The
+  installed CLI avoids that code-delivery boundary, or the server can be
+  self-hosted.
+- This is a young, pre-1.0 project. The latest release was `0.4.7`, published
+  2026-07-31; only the latest release is supported, the macOS binaries are not
+  notarized, and the security policy says the project has a very small team.
+- It does not yet replace the current workflow. BitBang's terminal is a new
+  shell; sharing and resuming an already-running terminal session is still on
+  its roadmap. Tailscale + Paseo + Zellij remains the better trusted-device,
+  persistent-session stack.
+
+**Disposition:** keep BitBang on the radar as a low-setup break-glass or temporary
+sharing tool. Re-evaluate for daily phone access after terminal-session sharing
+ships and the project has had more time to stabilize. If trialed before then,
+use a non-sensitive test account, pin a release, inspect the installer, and serve
+only the narrow capability required.
+
+Primary sources: [CLI documentation](https://github.com/richlegrand/bitbang-cli),
+[trustless-signaling design](https://github.com/richlegrand/bitbang/blob/main/trustless-signaling.md),
+[security policy](https://github.com/richlegrand/bitbang-cli/blob/main/SECURITY.md),
+and [v0.4.7 release](https://github.com/richlegrand/bitbang-cli/releases/tag/0.4.7).
+
 ## Troubleshooting
 
 | Symptom | Check |
