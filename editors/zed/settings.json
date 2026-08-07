@@ -16,13 +16,11 @@
   // Tab-complete edit predictions: Zed's Zeta model, free with a Zed
   // account sign-in — NOT billed to the Anthropic key or Claude sub.
   // "none" kills it entirely; "copilot"/"supermaven" are alternatives.
-  "features": {
-    "edit_prediction_provider": "zed"
-  },
   // "eager" = predictions appear as you type; flip to "subtle" for
   // interview mode (only shown while holding alt). The sparkle icon in
   // the status bar toggles predictions on/off entirely.
   "edit_predictions": {
+    "provider": "zed",
     "mode": "subtle"
   },
   "agent_servers": {
