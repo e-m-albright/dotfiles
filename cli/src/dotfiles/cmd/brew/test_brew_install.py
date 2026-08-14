@@ -37,6 +37,8 @@ social = true
 
 [taps]
 list = ["ariga/tap", "infisical/get-cli"]
+trusted_formulae = ["ariga/tap/atlas", "infisical/get-cli/infisical"]
+trusted_casks = ["axiomhq/tap/axiom"]
 
 [[section]]
 name = "Core CLI"
@@ -101,19 +103,26 @@ def test_add_taps_success(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("brew", "tap", "ariga/tap"), exit_code=0)
     runner.script(("brew", "tap", "infisical/get-cli"), exit_code=0)
+    runner.script(("brew", "trust", "--formula", "ariga/tap/atlas"), exit_code=0)
+    runner.script(("brew", "trust", "--formula", "infisical/get-cli/infisical"), exit_code=0)
+    runner.script(("brew", "trust", "--cask", "axiomhq/tap/axiom"), exit_code=0)
 
     results = add_taps(manifest, runner)
-    assert len(results) == 2
+    assert len(results) == 5
     assert all(r.level == "success" for r in results)
     assert ("brew", "tap", "ariga/tap") in runner.calls
     assert ("brew", "tap", "infisical/get-cli") in runner.calls
+    assert ("brew", "trust", "--formula", "ariga/tap/atlas") in runner.calls
+    assert ("brew", "trust", "--cask", "axiomhq/tap/axiom") in runner.calls
 
 
 def test_add_taps_dry_run_reports_without_mutating(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     results = add_taps(load(tmp_path), runner, dry_run=True)
     assert runner.calls == []
-    assert all("DRY RUN: brew tap" in step.message for step in results)
+    assert any("DRY RUN: brew tap" in step.message for step in results)
+    assert any("DRY RUN: brew trust --formula" in step.message for step in results)
+    assert any("DRY RUN: brew trust --cask" in step.message for step in results)
 
 
 def test_add_taps_error(tmp_path: Path) -> None:
@@ -131,7 +140,12 @@ def test_add_taps_error(tmp_path: Path) -> None:
 
 
 def test_add_taps_empty(tmp_path: Path) -> None:
-    toml = INSTALL_TOML.replace('list = ["ariga/tap", "infisical/get-cli"]', "list = []")
+    toml = INSTALL_TOML.replace(
+        """list = ["ariga/tap", "infisical/get-cli"]
+trusted_formulae = ["ariga/tap/atlas", "infisical/get-cli/infisical"]
+trusted_casks = ["axiomhq/tap/axiom"]""",
+        "list = []",
+    )
     manifest = load(tmp_path, toml)
     runner = FakeProcessRunner()
     results = add_taps(manifest, runner)

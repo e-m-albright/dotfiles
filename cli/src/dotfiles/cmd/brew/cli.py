@@ -15,6 +15,7 @@ from dotfiles.cmd.brew.service import (
     install_software,
     missing_packages,
     stale_packages,
+    stale_taps,
 )
 from dotfiles.cmd.brew.service import upgrade as upgrade_packages
 from dotfiles.console import (
@@ -107,6 +108,15 @@ def upgrade(ctx: typer.Context) -> None:
         raise typer.Exit(code=1)
 
 
+def _render_stale_items(title: str, subtitle: str, items: list[str], command: str) -> None:
+    print_section(console, title, subtitle)
+    if not items:
+        print_status(console, "success", "none")
+        return
+    for name in items:
+        console.print(f"  [yellow]⚠[/] {name}  [dim]{command} {name}[/]")
+
+
 @brew_app.command()
 def stale(ctx: typer.Context) -> None:
     """Report installed packages not declared in packages.toml (stale) and missing ones."""
@@ -116,6 +126,7 @@ def stale(ctx: typer.Context) -> None:
 
     try:
         stale_list = stale_packages(manifest, runner)
+        stale_tap_list = stale_taps(manifest, runner)
         missing_list = missing_packages(
             manifest, runner, flags_on=manifest.flags.enabled() & set(app_ctx.feature_flags)
         )
@@ -124,12 +135,10 @@ def stale(ctx: typer.Context) -> None:
         raise typer.Exit(code=1) from exc
 
     print_title(console, "brew", "stale")
-    print_section(console, "Stale packages", "installed but not declared")
-    if stale_list:
-        for name in stale_list:
-            console.print(f"  [yellow]⚠[/] {name}  [dim]brew uninstall {name}[/]")
-    else:
-        print_status(console, "success", "none")
+    _render_stale_items(
+        "Stale packages", "installed but not declared", stale_list, "brew uninstall"
+    )
+    _render_stale_items("Stale taps", "installed but not declared", stale_tap_list, "brew untap")
 
     print_section(console, "Missing packages", "declared but not installed")
     if missing_list:

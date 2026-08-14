@@ -10,7 +10,8 @@ productivity = true
 social = true
 
 [taps]
-list = ["ariga/tap", "infisical/get-cli", "axiomhq/tap"]
+list = ["axiomhq/tap"]
+trusted_casks = ["axiomhq/tap/axiom"]
 
 # =============================================================================
 # CLI Tools (formulae)
@@ -68,14 +69,13 @@ packages = [
   { name = "shellcheck",     note = "Static analysis for shell scripts" },
   { name = "hyperfine",      note = "Command-line benchmarking tool" },
   { name = "graphite",       note = "Stacked PRs", disabled = true, reason = "removed, not useful enough (requires withgraphite/tap)" },
-  { name = "atlas",          note = "Database schema migration tool (requires ariga/tap)" },
+  { name = "atlas",          note = "Database schema migration tool" },
   { name = "duckdb",         note = "Fast analytical database (SQL for analytics)" },
   { name = "railway",        note = "Railway.app CLI", disabled = true, reason = "Removed 2026-07-15: no active Railway projects; keep the host free of unused deployment clients" },
   { name = "opentofu",       note = "Open-source Terraform alternative" },
   { name = "flyctl",         note = "Fly.io CLI (deploy, manage apps)" },
-  { name = "ngrok",          note = "Secure tunnels to localhost (webhook testing, demos)" },
   { name = "neonctl",        note = "Neon Postgres CLI (projects, DBs, roles)" },
-  { name = "infisical",      note = "Secrets management CLI (requires infisical/get-cli tap)" },
+  { name = "infisical",      note = "Secrets management CLI" },
   { name = "git-filter-repo", note = "Git history rewriting (secrets scrub)", disabled = true, reason = "Disabled 2026-07-15: rarely needed; install temporarily when a repository history rewrite is required" },
   { name = "libpq",          note = "PostgreSQL client library (psql, pg_dump)" },
   { name = "sccache",        note = "Shared compilation cache (Rust/C/C++ build speedup)" },
@@ -171,7 +171,8 @@ kind = "cask"
 packages = [
   { name = "docker-desktop",   note = "Container desktop runtime", disabled = true, reason = "Disabled 2026-07-15: switched to OrbStack as the active macOS container runtime" },
   { name = "orbstack",         note = "Docker Desktop alternative (faster, better macOS integration)" },
-  { name = "axiom",            note = "Axiom observability CLI (requires axiomhq/tap)" },
+  { name = "ngrok",            note = "Secure tunnels to localhost (official Homebrew cask; installs the CLI binary)" },
+  { name = "axiom",            note = "Axiom observability CLI (axiomhq/tap cask; narrowly trusted above)" },
   { name = "gcloud-cli",       note = "Google Cloud SDK (cask renamed from google-cloud-sdk). Re-enabled 2026-07-06: hard dependency of `gws auth setup` (OAuth client provisioning)" },
 ]
 

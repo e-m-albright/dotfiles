@@ -132,11 +132,13 @@ class Flags(BaseModel):
 
 
 class Taps(BaseModel):
-    """Homebrew taps to add before installing packages."""
+    """Homebrew taps and narrowly scoped items to trust before installation."""
 
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     items: list[str] = Field(default=[], alias="list")
+    trusted_formulae: list[str] = []
+    trusted_casks: list[str] = []
 
 
 class PackageManifest(BaseModel):
@@ -285,6 +287,14 @@ def stale_packages(
     return InstallPlan.compute(manifest, runner, flags_on=set()).stale
 
 
+def stale_taps(manifest: PackageManifest, runner: ProcessRunner) -> list[str]:
+    """Return installed third-party taps that are not declared in the manifest."""
+    result = runner.run(("brew", "tap"))
+    _require_inventory(result.exit_code, result.stderr)
+    installed = {line for line in result.stdout.splitlines() if line.strip()}
+    return sorted(installed - set(manifest.taps.items))
+
+
 def missing_packages(
     manifest: PackageManifest,
     runner: ProcessRunner,
@@ -333,25 +343,44 @@ class InstallPlan:
 # ---------------------------------------------------------------------------
 
 
+def _add_tap(tap: str, runner: ProcessRunner, *, dry_run: bool) -> StepResult:
+    command = ("brew", "tap", tap)
+    if dry_run:
+        return StepResult(level="info", message=f"DRY RUN: {' '.join(command)}")
+    res = runner.run(command)
+    if res.exit_code == 0:
+        return StepResult(level="success", message=f"tap {tap}")
+    # A transient tap failure should not hide independent core package installs;
+    # any package from this tap will fail clearly later.
+    return StepResult(level="warn", message=f"brew tap {tap} failed: {res.stderr.strip()}")
+
+
+def _trust_tap_item(
+    kind: str,
+    item: str,
+    runner: ProcessRunner,
+    *,
+    dry_run: bool,
+) -> StepResult:
+    command = ("brew", "trust", f"--{kind}", item)
+    if dry_run:
+        return StepResult(level="info", message=f"DRY RUN: {' '.join(command)}")
+    res = runner.run(command)
+    if res.exit_code == 0:
+        return StepResult(level="success", message=f"trust {kind} {item}")
+    return StepResult(level="error", message=f"{' '.join(command)} failed: {res.stderr.strip()}")
+
+
 def add_taps(
     manifest: PackageManifest, runner: ProcessRunner, *, dry_run: bool = False
 ) -> list[StepResult]:
-    """Run `brew tap` for each enabled tap. Idempotent — brew tap is a no-op if present."""
-    results: list[StepResult] = []
-    for tap in manifest.taps.items:
-        if dry_run:
-            results.append(StepResult(level="info", message=f"DRY RUN: brew tap {tap}"))
-            continue
-        res = runner.run(("brew", "tap", tap))
-        if res.exit_code == 0:
-            results.append(StepResult(level="success", message=f"tap {tap}"))
-        else:
-            # Tolerant like the original brew.sh (`brew tap ... || true`): a
-            # transient tap failure (e.g. network) is a warning, not a hard
-            # error that aborts the whole `brew install`.
-            results.append(
-                StepResult(level="warn", message=f"brew tap {tap} failed: {res.stderr.strip()}")
-            )
+    """Add declared taps and trust only their explicitly declared items."""
+    results = [_add_tap(tap, runner, dry_run=dry_run) for tap in manifest.taps.items]
+    for kind, items in (
+        ("formula", manifest.taps.trusted_formulae),
+        ("cask", manifest.taps.trusted_casks),
+    ):
+        results.extend(_trust_tap_item(kind, item, runner, dry_run=dry_run) for item in items)
     return results
 
 

@@ -14,6 +14,7 @@ from dotfiles.cmd.brew.service import (
     missing_packages,
     requested_formulae,
     stale_packages,
+    stale_taps,
 )
 from dotfiles.testing.fakes import FakeProcessRunner
 
@@ -29,6 +30,8 @@ social = true
 
 [taps]
 list = ["some/tap"]
+trusted_formulae = ["some/tap/tool"]
+trusted_casks = ["some/tap/app"]
 
 [[section]]
 name = "Core CLI"
@@ -99,6 +102,8 @@ def test_load_flags(tmp_path: Path) -> None:
 def test_load_taps(tmp_path: Path) -> None:
     manifest = PackageManifest.load(make_toml(tmp_path))
     assert manifest.taps.items == ["some/tap"]
+    assert manifest.taps.trusted_formulae == ["some/tap/tool"]
+    assert manifest.taps.trusted_casks == ["some/tap/app"]
 
 
 def test_load_sections_count(tmp_path: Path) -> None:
@@ -385,6 +390,21 @@ def test_stale_empty_when_nothing_extra(tmp_path: Path) -> None:
     runner.script(("brew", "list", "--cask", "-1"), stdout="obsidian\n")
     stale = stale_packages(manifest, runner)
     assert stale == []
+
+
+def test_stale_taps_reports_installed_taps_not_declared(tmp_path: Path) -> None:
+    manifest = PackageManifest.load(make_toml(tmp_path))
+    runner = FakeProcessRunner()
+    runner.script(("brew", "tap"), stdout="some/tap\nold/tap\n")
+    assert stale_taps(manifest, runner) == ["old/tap"]
+
+
+def test_stale_taps_fails_when_inventory_is_unavailable(tmp_path: Path) -> None:
+    manifest = PackageManifest.load(make_toml(tmp_path))
+    runner = FakeProcessRunner()
+    runner.script(("brew", "tap"), exit_code=1, stderr="Homebrew unavailable")
+    with pytest.raises(BrewInventoryError, match="Homebrew unavailable"):
+        stale_taps(manifest, runner)
 
 
 # ---------------------------------------------------------------------------

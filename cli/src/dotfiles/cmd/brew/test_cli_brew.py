@@ -101,6 +101,7 @@ def test_brew_stale_shows_sections(tmp_path: Path) -> None:
     ctx = _make_ctx(tmp_path)
     result = runner.invoke(app, ["brew", "stale"], obj=ctx)
     assert "Stale packages" in result.output
+    assert "Stale taps" in result.output
     assert "Missing packages" in result.output
 
 
@@ -109,6 +110,14 @@ def test_brew_stale_reports_missing(tmp_path: Path) -> None:
     ctx = _make_ctx(tmp_path)
     result = runner.invoke(app, ["brew", "stale"], obj=ctx)
     assert "git" in result.output
+
+
+def test_brew_stale_reports_stale_tap(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "tap"), stdout="old/tap\n")
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+    assert "old/tap" in result.output
+    assert "brew untap old/tap" in result.output
 
 
 def test_brew_stale_reports_stale(tmp_path: Path) -> None:
