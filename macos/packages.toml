@@ -31,6 +31,7 @@ packages = [
   { name = "openssl",              note = "TLS/crypto toolkit" },
   { name = "bash-completion@2",    note = "Bash completion" },
   { name = "helix",                note = "Postmodern modal terminal editor (Rust, batteries-included LSP/Treesitter — binary is `hx`)" },
+  { name = "bat",                  note = "Syntax-highlighting `cat` replacement and pager" },
   { name = "fd",                   note = "Fast file finder (yazi: find-by-name / `f`)" },
   { name = "ripgrep",              note = "Fast content search (yazi: find-in-files / `F`)" },
   { name = "fzf",                  note = "Fuzzy finder (yazi: interactive fuzzy jump)" },

@@ -16,6 +16,7 @@
 | **[fd](https://github.com/sharkdp/fd)** | `find` | Sane defaults, 5-10x speed. |
 | **[fzf](https://github.com/junegunn/fzf)** | - | Fuzzy finder. The thing everything else plugs into (history, files, branches, processes). |
 | **[zoxide](https://github.com/ajeetdsouza/zoxide)** | `cd` | "Smart cd" - resolves directories in <1ms by learning where you actually go. |
+| **[bat](https://github.com/sharkdp/bat)** | `cat` | Syntax highlighting, Git markers, and pager support. |
 
 ## Evaluation Candidates (Not Yet Installed)
 
@@ -28,7 +29,6 @@ The short list (watch-only tools live in the workbench repo's
 - **Lazydocker** - same idea for containers.
 - **Btop** - prettier, faster htop.
 - **eza** - `ls` with git status, icons, tree mode.
-- **bat** - `cat` with syntax highlighting + git markers; doubles as a pager.
 - **delta** - git's diff viewer rewritten: side-by-side, syntax highlighting, word-level highlights.
 - **difftastic** - **structural (AST-based) diffs** that ignore reformatting noise. Devastating once you try it on a refactor PR.
 - **Starship** or **oh-my-posh** - fast cross-shell prompts surfacing git, k8s context, exec time, language versions.
