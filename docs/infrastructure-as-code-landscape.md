@@ -17,7 +17,31 @@ and when* infrastructure complexity justifies it — declarative Git as the
 single source of truth, Kubernetes as the reconciliation engine for
 everything (apps and cloud resources alike), not just containers. This doc
 exists so that decision is informed when it's actually made, without
-overbuilding now. See "When would this actually make sense" at the bottom.
+overbuilding now. See "When would this actually make sense" and "The real
+cost of going all-in" below.
+
+### Current stance (2026-08-18)
+
+**Named temptation, not a plan.** This stack keeps resurfacing as
+appealing — the tech is genuinely cool and it's a fun problem — but every
+pass through the actual tradeoffs lands on the same answer: **it's more
+build than any reasonable early-stage startup warrants, and it's not where
+the energy should go right now.** The pull isn't a signal of unmet need;
+it's the interesting-technology trap. Recognize it as that the next time it
+resurfaces, rather than re-deriving the analysis from scratch.
+
+- **Decision:** stay on plain OpenTofu (+ maybe one lightweight k3s cluster
+  once something is actually containerized) until a concrete trigger below
+  fires. Do not start building the ArgoCD+Crossplane control plane
+  speculatively.
+- **Re-open trigger:** a real multi-tenant/multi-environment need exists
+  *today* (not hypothetically), or the team is large enough that a
+  self-service platform API would measurably save people's time, per
+  "When would this actually make sense" below. Wanting to use the tech is
+  explicitly not a trigger.
+- **If the itch needs somewhere to go:** satisfy it as a bounded weekend
+  toy-project experiment on a throwaway `kind` cluster, not as production
+  infrastructure for anything that matters yet.
 
 ---
 
@@ -198,6 +222,76 @@ containerized, is the right-sized answer — and matches the standing "no
 armies, own only what you need" posture from
 [agent-harness-landscape.md](agent-harness-landscape.md) applied to
 infrastructure instead of coding agents.
+
+## 9. The full stack, if going all-in
+
+Every layer of the "roll your own Kubernetes" approach, for reference — what
+each piece owns and how a request flows through the whole system.
+
+| Layer | Owns | Typical choice |
+|---|---|---|
+| Cluster | The control plane itself — the one piece that predates GitOps managing itself | Talos Linux (immutable, API-managed, no SSH) or k3s (more forgiving solo); managed EKS/GKE/AKS is a valid substitute for *this layer only* — GitOps+Crossplane can still run on top of a managed control plane |
+| Cloud resources | Turns RDS/S3/VPC/IAM into Kubernetes CRs; Compositions + XRDs expose an internal platform API (e.g. a `Database` CR that fans out into the right primitives per environment) | Crossplane + provider-aws/gcp/etc |
+| GitOps sync | Continuously diffs live cluster state against Git, auto-syncs or flags drift; ApplicationSets templates many `Application` objects from one generator (one XRD instance per env/tenant becomes a for-loop, not hand-maintained YAML); app-of-apps bootstraps the whole platform from one commit | ArgoCD |
+| Packaging | Parameterized installs (own apps, third-party charts) and environment-specific patches | Helm (+ Kustomize overlays) |
+| Secrets | Keeps real values out of Git while the GitOps loop still references them declaratively | External Secrets Operator or Sealed Secrets — Crossplane can provision the backing store itself, same reconciliation loop |
+| Networking | Traffic in, TLS | ingress-nginx or Gateway API (Cilium/Envoy Gateway) + cert-manager |
+| Observability | Seeing what all these controllers are actually doing — not optional at this scale | kube-prometheus-stack (Prometheus + Grafana), installed the same Helm+ArgoCD way as everything else |
+
+**Concrete request flow** — a developer wants a new Postgres database:
+
+1. Add a `Database` CR (a few lines of YAML) to Git, in the environment's directory.
+2. ArgoCD notices the diff, applies the CR to the cluster.
+3. Crossplane's Composition controller expands it into the actual RDS instance
+   (or a StatefulSet+PVC, depending on what the Composition targets for that
+   environment) plus the IAM role, security group, and connection secret.
+4. External Secrets syncs the resulting credentials into a K8s Secret.
+5. The app's own Deployment (also an ArgoCD-synced `Application`) picks it up.
+
+One Git commit, no ticket to a platform team, no `terraform apply` from a
+laptop, no manual console click. That's the actual appeal — and it's real,
+just not needed yet.
+
+## 10. The real cost of going all-in
+
+This is the part that matters more than the architecture diagram. Going all
+in doesn't just add tooling — it adds a permanent second job: **operating a
+distributed system whose entire purpose is operating your other distributed
+systems.** Concretely:
+
+- **A new, harder failure mode.** "Reconciliation won't converge" is a
+  different and harder debugging problem than "`terraform apply` failed with
+  a stack trace." State lives in etcd across many controllers, not in one
+  plan file you can read top to bottom.
+- **Perpetual upgrade surface.** Cluster upgrades, controller upgrades, CRD
+  schema migrations — Crossplane v1→v2 alone changed the claims model
+  underneath anything already built on it. Every layer in the table above is
+  its own project with its own release cadence and breaking changes.
+- **A second skill tree.** Someone has to actually understand Kubernetes
+  RBAC, cluster networking, and each Crossplane provider's resource surface —
+  not just "write YAML." This is genuine expertise, acquired on the clock,
+  that has nothing to do with the product.
+- **The platform API becomes a product you maintain.** Compositions/XRDs are
+  only worth building once there are real internal consumers asking for
+  self-service. With one team building one product, you *are* the only
+  consumer — the platform layer is pure overhead, not leverage.
+- **Opportunity cost, not just headcount cost.** Every hour in Crossplane
+  Composition debugging or ArgoCD RBAC is an hour not spent on the product a
+  startup actually needs to prove out. This is the cost that matters most
+  pre-product-market-fit — it's not that the stack doesn't work, it's that
+  the energy is fungible and this isn't the highest-leverage place to spend
+  it.
+- **It's reversible-but-expensive, not free to abandon.** Once state and
+  workflows live in Crossplane CRs and ArgoCD Applications, unwinding back to
+  plain Terraform/OpenTofu is itself a migration project — so starting early
+  isn't "cheap optionality," it's committing before the need is proven.
+
+Weighed against what plain OpenTofu (+ optionally one k3s cluster once
+something needs containers) actually costs: a CLI, a state backend, and HCL
+you can read start to finish. The all-in stack buys you a self-service
+internal platform API and one unified reconciliation model across apps and
+infra — genuinely valuable capabilities, but ones with no buyer yet at
+early-stage scale.
 
 ---
 
