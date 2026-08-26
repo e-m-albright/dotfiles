@@ -118,16 +118,43 @@ def test_ensure_paseo_reinstalls_stale_tailnet_binding(tmp_path: Path) -> None:
     assert "stale tailnet IP" in steps[0].message
 
 
+def test_caffeine_status_reports_effective_sleep_prevention(tmp_path: Path) -> None:
+    active = FakeProcessRunner()
+    active.script(
+        ("pmset", "-g", "assertions"),
+        stdout=(
+            'pid 1038(Caffeine): UserIsActive named: "Caffeine is Active"\n'
+            "  Timeout will fire in 597 secs Action=TimeoutActionRelease\n"
+        ),
+    )
+    assert _service(active, tmp_path).caffeine_status().summary == "active · preventing sleep"
+
+
+def test_caffeine_status_reports_inactive_or_unavailable(tmp_path: Path) -> None:
+    unavailable = FakeProcessRunner()
+    unavailable.script(("pmset", "-g", "assertions"), exit_code=1)
+    assert _service(unavailable, tmp_path).caffeine_status().summary == "unavailable"
+
+    inactive = FakeProcessRunner()
+    inactive.script(("pmset", "-g", "assertions"), stdout="PreventSystemSleep 0\n")
+    assert _service(inactive, tmp_path).caffeine_status().summary == "inactive"
+
+
 def test_status_and_connection_report_only_paseo_path(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("id", "-un"), stdout="dev\n")
     runner.script(("scutil", "--get", "LocalHostName"), stdout="mac\n")
     runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
     _tailnet(runner)
+    runner.script(
+        ("pmset", "-g", "assertions"),
+        stdout='pid 1038(Caffeine): PreventUserIdleSystemSleep named: "Caffeine is Active"\n',
+    )
     service = _service(runner, tmp_path)
 
     status = service.status()
     assert status.paseo_running is True
+    assert status.caffeine.summary == "active · preventing sleep"
     assert status.tailnet_ip == "100.64.0.1"
     assert service.connection_info().paseo_addr == "100.64.0.1:6767"
 

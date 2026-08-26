@@ -3,16 +3,16 @@
     "dictationRecoveryLanguage": "auto",
     "fileTranscriptionLanguage": "auto",
     "hybridHotkey": {
-      "isFn": false,
-      "keyCode": 50,
+      "isFn": true,
+      "keyCode": 0,
       "modifierFlags": 0,
       "modifierKeyCodes": [],
       "isDoubleTap": false
     },
     "hybridHotkeys": [
       {
-        "isFn": false,
-        "keyCode": 50,
+        "isFn": true,
+        "keyCode": 0,
         "modifierFlags": 0,
         "modifierKeyCodes": [],
         "isDoubleTap": false

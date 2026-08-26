@@ -27,6 +27,10 @@ def test_remote_on_ensures_tailscale_and_paseo(tmp_path: Path) -> None:
     process.script(("id", "-u"), stdout="501\n")
     process.script(("scutil", "--get", "LocalHostName"), stdout="mac\n")
     _tailnet(process)
+    process.script(
+        ("pmset", "-g", "assertions"),
+        stdout='pid 1038(Caffeine): PreventUserIdleSystemSleep named: "Caffeine is Active"\n',
+    )
 
     result = runner.invoke(
         app,
@@ -39,6 +43,8 @@ def test_remote_on_ensures_tailscale_and_paseo(tmp_path: Path) -> None:
     assert ("tailscale", "up") in process.calls
     assert "com.dotfiles.paseo" in result.output
     assert "100.64.0.1:6767" in result.output
+    assert "Caffeine" in result.output
+    assert "active · preventing sleep" in result.output
     assert not any(call[:2] == ("tailscale", "serve") for call in process.calls)
 
 
@@ -71,6 +77,10 @@ def test_remote_status_reports_direct_paseo_address() -> None:
     process.script(("scutil", "--get", "LocalHostName"), stdout="mac\n")
     process.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
     _tailnet(process)
+    process.script(
+        ("pmset", "-g", "assertions"),
+        stdout='pid 1038(Caffeine): PreventUserIdleSystemSleep named: "Caffeine is Active"\n',
+    )
 
     result = runner.invoke(
         app,
@@ -82,6 +92,7 @@ def test_remote_status_reports_direct_paseo_address() -> None:
     assert result.exit_code == 0
     assert "Paseo" in result.output
     assert "100.64.0.1:6767" in result.output
+    assert "active · preventing sleep" in result.output
     assert "Zellij" not in result.output
 
 

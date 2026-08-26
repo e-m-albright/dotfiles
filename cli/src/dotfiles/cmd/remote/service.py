@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import cast
 
 from dotfiles.adapters.ports import ProcessRunner
-from dotfiles.cmd.remote.models import PASEO_PORT, ConnectionInfo, RemoteStatus
+from dotfiles.cmd.remote.models import PASEO_PORT, CaffeineStatus, ConnectionInfo, RemoteStatus
 from dotfiles.result import StepResult
 
 _PASEO_LABEL = "com.dotfiles.paseo"
@@ -231,6 +231,13 @@ class RemoteService:
     def paseo_running(self) -> bool:
         return self._agent_running()
 
+    def caffeine_status(self) -> CaffeineStatus:
+        result = self._runner.run(("pmset", "-g", "assertions"))
+        if not result.ok:
+            return CaffeineStatus(available=False)
+        active = "Caffeine is Active" in result.stdout
+        return CaffeineStatus(available=True, active=active)
+
     def status(self) -> RemoteStatus:
         connected, ip = self._tailscale
         return RemoteStatus(
@@ -239,6 +246,7 @@ class RemoteService:
             host=self._host,
             user=self._user,
             paseo_running=self.paseo_running(),
+            caffeine=self.caffeine_status(),
         )
 
     def connection_info(self) -> ConnectionInfo:

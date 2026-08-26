@@ -42,7 +42,7 @@ def render_connection_info(console: Console, info: ConnectionInfo) -> None:
             "Tailscale not connected — start it before reaching the Mac off home Wi-Fi",
         )
     print_field(console, "Paseo", info.paseo_addr, soft_wrap=True)
-    console.print("  [dim]Save this daemon address and its password in the Paseo app.[/]")
+    console.print("  [dim]Save this daemon address in Paseo; Tailscale controls access.[/]")
 
 
 @remote_app.command()
@@ -62,6 +62,7 @@ def on(
     steps.extend(service.ensure_paseo_agent(dry_run=dry_run))
     render_steps(console, steps)
     render_connection_info(console, service.connection_info())
+    print_field(console, "Caffeine", service.caffeine_status().summary)
     if has_errors(steps):
         raise typer.Exit(code=1)
 
@@ -195,6 +196,7 @@ def status(ctx: typer.Context) -> None:
     print_title(console, "Remote", "status")
     print_field(console, "Tailscale", _tailscale_value(state))
     print_field(console, "Paseo", "running" if state.paseo_running else "stopped")
+    print_field(console, "Caffeine", state.caffeine.summary)
     print_field(console, "Host", f"{state.user}@{state.host}")
     if state.tailnet_ip:
         print_child(console, "Paseo addr", service.connection_info().paseo_addr, last=True)

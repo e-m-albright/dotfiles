@@ -5,6 +5,23 @@ from pydantic import BaseModel, ConfigDict
 PASEO_PORT = 6767
 
 
+class CaffeineStatus(BaseModel):
+    """Effective Caffeine sleep-prevention assertion."""
+
+    model_config = ConfigDict(frozen=True)
+
+    available: bool
+    active: bool = False
+
+    @property
+    def summary(self) -> str:
+        if not self.available:
+            return "unavailable"
+        if not self.active:
+            return "inactive"
+        return "active · preventing sleep"
+
+
 class RemoteStatus(BaseModel):
     """Snapshot of the Mac's phone-access state."""
 
@@ -15,6 +32,7 @@ class RemoteStatus(BaseModel):
     host: str
     user: str
     paseo_running: bool = False
+    caffeine: CaffeineStatus = CaffeineStatus(available=False)
 
 
 class ConnectionInfo(BaseModel):

@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from typewhisper_config import normalize_correction, normalize_term, normalize_workflow
 
 
@@ -8,6 +11,20 @@ def test_normalize_workflow_defaults_and_drops_none() -> None:
     assert spec.behavior == {}
     assert spec.trigger["kind"] == "global"
     assert spec.sort_order == 3
+
+
+def test_managed_hotkey_is_the_fn_key() -> None:
+    settings_path = Path(__file__).with_name("typewhisper") / "settings.json"
+    preferences = json.loads(settings_path.read_text())["preferences"]
+    expected = {
+        "isFn": True,
+        "keyCode": 0,
+        "modifierFlags": 0,
+        "modifierKeyCodes": [],
+        "isDoubleTap": False,
+    }
+    assert preferences["hybridHotkey"] == expected
+    assert preferences["hybridHotkeys"] == [expected]
 
 
 def test_normalize_dictionary_entries() -> None:
