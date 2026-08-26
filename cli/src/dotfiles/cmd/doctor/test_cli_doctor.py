@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from dotfiles.app.main import app
@@ -26,11 +27,23 @@ def test_doctor_help_has_fix_flag() -> None:
     assert "--fix" in result.output
 
 
-def test_doctor_fix_prints_workbench_sync_hint(tmp_path: Path) -> None:
-    """--fix output points to the separate agent-config reconciler."""
+def test_doctor_fix_workbench_hint_only_when_not_ok(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """--fix points to the agent-config reconciler only when the Workbench row needs it."""
     home = tmp_path / "home"
     home.mkdir()
     ctx = make_fake_context(home=home, dotfiles_dir=tmp_path / "dotfiles")
+    # No workbench binary anywhere -> the Workbench row is "missing" -> hint shows.
+    # (DoctorService binds shutil.which at class definition, so inject via wrapper.)
+    from dotfiles.cmd.doctor import cli as doctor_cli
+
+    real_service = doctor_cli.DoctorService
+    monkeypatch.setattr(
+        doctor_cli,
+        "DoctorService",
+        lambda **kwargs: real_service(**{**kwargs, "which": lambda _name: None}),
+    )
     result = runner.invoke(app, ["doctor", "--fix"], obj=ctx)
     assert "workbench sync" in result.output
 

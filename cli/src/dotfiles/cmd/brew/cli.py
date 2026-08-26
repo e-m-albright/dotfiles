@@ -14,7 +14,9 @@ from dotfiles.cmd.brew.service import (
     FeatureFlag,
     InstallPlan,
     PackageManifest,
+    go_drift,
     install_software,
+    npm_drift,
     stale_taps,
 )
 from dotfiles.cmd.brew.service import upgrade as upgrade_packages
@@ -121,6 +123,8 @@ def stale(ctx: typer.Context) -> None:
         stale_list = plan.stale
         stale_tap_list = stale_taps(manifest, runner)
         missing_list = plan.missing
+        npm_drift_list = npm_drift(manifest, runner)
+        go_drift_list = go_drift(manifest, runner)
     except BrewInventoryError as exc:
         print_status(console, "error", str(exc))
         raise typer.Exit(code=1) from exc
@@ -135,6 +139,15 @@ def stale(ctx: typer.Context) -> None:
     if missing_list:
         for name, kind in missing_list:
             console.print(f"  [red]✗[/] {name}  [dim]({kind})[/]")
+    else:
+        print_status(console, "success", "none")
+
+    print_section(console, "npm / go drift", "declared but missing or version-drifted")
+    drift = npm_drift_list + go_drift_list
+    if drift:
+        for item in drift:
+            console.print(f"  [red]✗[/] {item}")
+        console.print("  [dim]Heal with: dotfiles brew install[/]")
     else:
         print_status(console, "success", "none")
 

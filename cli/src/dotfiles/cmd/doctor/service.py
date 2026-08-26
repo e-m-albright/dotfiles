@@ -7,17 +7,25 @@ from pathlib import Path
 
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.doctor.models import CheckResult
+from dotfiles.cmd.remote.service import RemoteService
 
 
 def _make_symlink(src: Path, dest: Path) -> None:
-    """Create dest -> src symlink, replacing any existing link or file at dest.
+    """Create dest -> src symlink, replacing any existing link at dest.
 
-    Call only with fixed, well-known dotfile paths — this force-replaces
-    whatever is at dest.
+    A regular file at dest (someone's hand-rolled config) is renamed to a
+    .backup sibling instead of being deleted — --fix must not destroy data.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.is_symlink() or dest.exists():
+    if dest.is_symlink():
         dest.unlink()
+    elif dest.exists():
+        backup = dest.with_name(dest.name + ".backup")
+        counter = 1
+        while backup.exists():
+            backup = dest.with_name(f"{dest.name}.backup.{counter}")
+            counter += 1
+        dest.rename(backup)
     dest.symlink_to(src)
 
 
@@ -266,25 +274,85 @@ class DoctorService:
         return self._tools("Dev Tools")
 
     def _check_remote_shell(self) -> list[CheckResult]:
-        return self._tools("Remote Shell")
+        results = self._tools("Remote Shell")
+        results.extend(self._check_remote_agents("Remote Shell"))
+        return results
+
+    def _check_remote_agents(self, sec: str) -> list[CheckResult]:
+        """The parts of the remote stack that actually break: are the daemons alive?
+
+        Warn (not fail) — remote access may be intentionally off. Skipped when
+        Tailscale is absent, since the stack cannot be up without it.
+        """
+        if self._which("tailscale") is None and not (self._apps_dir / "Tailscale.app").exists():
+            return []
+        service = RemoteService(runner=self._runner, home=self._home)
+        results: list[CheckResult] = []
+        if service.paseo_running():
+            detail = "stale listen IP — run: dfs remote on" if service.paseo_listen_stale() else ""
+            status = "warn" if detail else "ok"
+            results.append(
+                CheckResult(
+                    section=sec, name="Paseo daemon", status=status, detail=detail or "running"
+                )
+            )
+        else:
+            results.append(
+                CheckResult(
+                    section=sec, name="Paseo daemon", status="warn", hint="Run: dfs remote on"
+                )
+            )
+        if self._which("zellij") is not None:
+            running = service.zellij_web_running()
+            results.append(
+                CheckResult(
+                    section=sec,
+                    name="Zellij web",
+                    status="ok" if running else "warn",
+                    detail="running" if running else "",
+                    hint="" if running else "Run: dfs remote on",
+                )
+            )
+        return results
 
     def _check_configuration(self) -> list[CheckResult]:
         sec = "Configuration"
         results: list[CheckResult] = []
 
-        results.append(
-            self._symlink(sec, ".zshrc", self._dotfiles / "shell" / ".zshrc", self._home / ".zshrc")
+        # Mirrors install.sh's _link/ln -sf list so `doctor --fix` can repair
+        # everything the installer manages, not just a subset.
+        links: tuple[tuple[str, Path, Path], ...] = (
+            (".zshrc", self._dotfiles / "shell" / ".zshrc", self._home / ".zshrc"),
+            (".zshenv", self._dotfiles / "shell" / ".zshenv", self._home / ".zshenv"),
+            (".zprofile", self._dotfiles / "shell" / ".zprofile", self._home / ".zprofile"),
+            (".gitconfig", self._dotfiles / "git" / ".gitconfig", self._home / ".gitconfig"),
+            (
+                ".gitignore_global",
+                self._dotfiles / "git" / ".gitignore_global",
+                self._home / ".gitignore_global",
+            ),
+            (
+                "amuse theme",
+                self._dotfiles / "shell" / "amuse.zsh-theme",
+                self._home / ".oh-my-zsh" / "custom" / "themes" / "amuse.zsh-theme",
+            ),
+            (
+                "yazi config",
+                self._dotfiles / "terminal" / "yazi" / "yazi.toml",
+                self._home / ".config" / "yazi" / "yazi.toml",
+            ),
+            (
+                "Zed settings",
+                self._dotfiles / "editors" / "zed" / "settings.json",
+                self._home / ".config" / "zed" / "settings.json",
+            ),
+            (
+                "Zed keymap",
+                self._dotfiles / "editors" / "zed" / "keymap.json",
+                self._home / ".config" / "zed" / "keymap.json",
+            ),
         )
-        results.append(
-            self._symlink(
-                sec, ".gitconfig", self._dotfiles / "git" / ".gitconfig", self._home / ".gitconfig"
-            )
-        )
-        results.append(
-            self._symlink(
-                sec, ".zprofile", self._dotfiles / "shell" / ".zprofile", self._home / ".zprofile"
-            )
-        )
+        results.extend(self._symlink(sec, name, src, dest) for name, src, dest in links)
 
         # Git identity (~/.gitconfig.local) — warn if absent
         gitconfig_local = self._home / ".gitconfig.local"
@@ -326,7 +394,13 @@ class DoctorService:
                 "Zellij config",
                 self._dotfiles / "terminal" / "zellij" / "config.kdl",
                 self._home / ".config" / "zellij" / "config.kdl",
-            )
+            ),
+            self._symlink(
+                sec,
+                "Zellij mobile layout",
+                self._dotfiles / "terminal" / "zellij" / "layouts" / "mobile.kdl",
+                self._home / ".config" / "zellij" / "layouts" / "mobile.kdl",
+            ),
         ]
 
     def _check_ghostty(self, sec: str) -> list[CheckResult]:

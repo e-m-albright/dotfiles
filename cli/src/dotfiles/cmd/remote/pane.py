@@ -24,7 +24,12 @@ class RemotePane(Container):
     BORDER_TITLE = "Remote"
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("c", "copy_connect", "Copy Paseo addr"),
+        Binding("r", "refresh", "Refresh"),
     ]
+
+    # Tailscale/Paseo state changes out from under a parked phone view; poll
+    # gently (each refresh builds a fresh service, so no cached_property reuse).
+    _REFRESH_SECONDS = 15.0
 
     def __init__(self, ctx: AppContext) -> None:
         super().__init__()
@@ -35,6 +40,10 @@ class RemotePane(Container):
         yield Static(id="remote-body")
 
     def on_mount(self) -> None:
+        self.refresh_status()
+        self.set_interval(self._REFRESH_SECONDS, self.refresh_status)
+
+    def action_refresh(self) -> None:
         self.refresh_status()
 
     @property

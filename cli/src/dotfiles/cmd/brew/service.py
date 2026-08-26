@@ -14,13 +14,14 @@ provides:
 
 from __future__ import annotations
 
+import json
 import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -623,6 +624,60 @@ def install_npm_globals(
         for pkg in manifest.npm_packages
     )
     return [s for s in steps if s is not None]
+
+
+def _npm_installed_versions(runner: ProcessRunner) -> dict[str, str]:
+    """Globally installed npm packages as {name: version}, from one `npm ls` pass."""
+    result = runner.run(("npm", "ls", "-g", "--depth=0", "--json"))
+    try:
+        raw: object = json.loads(result.stdout or "{}")
+    except ValueError:
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    deps = cast("dict[str, object]", raw).get("dependencies")
+    if not isinstance(deps, dict):
+        return {}
+    versions: dict[str, str] = {}
+    for name, entry in cast("dict[str, object]", deps).items():
+        if isinstance(entry, dict):
+            versions[name] = str(cast("dict[str, object]", entry).get("version", ""))
+    return versions
+
+
+def npm_drift(manifest: PackageManifest, runner: ProcessRunner) -> list[str]:
+    """Enabled npm globals that are missing or at the wrong version.
+
+    packages.toml is the source of truth, so a deleted global or an unapplied
+    version bump is reported, not just healed silently on the next full install.
+    """
+    wanted = [p for p in manifest.npm_packages if not p.disabled]
+    if not wanted:
+        return []
+    installed = _npm_installed_versions(runner)
+    drifted: list[str] = []
+    for pkg in wanted:
+        if pkg.name not in installed:
+            drifted.append(f"{pkg.name} (missing)")
+        elif pkg.version and installed[pkg.name] != pkg.version:
+            drifted.append(
+                f"{pkg.name} (installed {installed[pkg.name] or '?'}, want {pkg.version})"
+            )
+    return drifted
+
+
+def go_drift(manifest: PackageManifest, runner: ProcessRunner) -> list[str]:
+    """Declared Go tools that are missing or not at their pinned version."""
+    drifted: list[str] = []
+    for pkg in manifest.go_packages:
+        located = runner.run(("which", pkg.name))
+        if not located.ok:
+            drifted.append(f"{pkg.name} (missing)")
+            continue
+        version = runner.run(("go", "version", "-m", located.stdout.strip()))
+        if pkg.version not in version.stdout:
+            drifted.append(f"{pkg.name} (want {pkg.version})")
+    return drifted
 
 
 def install_go_tools(

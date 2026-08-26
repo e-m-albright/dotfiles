@@ -327,3 +327,47 @@ def test_mobile_session_step_guides_when_absent(tmp_path: Path) -> None:
     step = _service(r, tmp_path).mobile_session_step("mobile", dry_run=False)
     assert step.level == "warn"
     assert "zellij --session mobile --layout mobile" in step.message
+
+
+def test_ensure_paseo_reinstalls_when_listen_ip_went_stale(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-u"), stdout="501\n")
+    runner.script(("tailscale", "status"), exit_code=0)
+    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.2\n")
+    runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
+    service = _service(runner, tmp_path)
+    # Plist frozen at install time with the OLD tailnet IP.
+    plist_dir = tmp_path / "Library" / "LaunchAgents"
+    plist_dir.mkdir(parents=True)
+    (plist_dir / "com.dotfiles.paseo.plist").write_bytes(
+        plistlib.dumps(
+            {"Label": "com.dotfiles.paseo", "ProgramArguments": ["--listen", "100.64.0.1:6767"]}
+        )
+    )
+
+    steps = service.ensure_paseo_agent(dry_run=False)
+
+    assert steps[0].level == "warn"
+    assert "stale tailnet IP" in steps[0].message
+    assert ("launchctl", "bootstrap", "gui/501", str(plist_dir / "com.dotfiles.paseo.plist")) in (
+        runner.calls
+    )
+
+
+def test_ensure_paseo_leaves_matching_listen_ip_alone(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("tailscale", "status"), exit_code=0)
+    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
+    runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
+    service = _service(runner, tmp_path)
+    plist_dir = tmp_path / "Library" / "LaunchAgents"
+    plist_dir.mkdir(parents=True)
+    (plist_dir / "com.dotfiles.paseo.plist").write_bytes(
+        plistlib.dumps(
+            {"Label": "com.dotfiles.paseo", "ProgramArguments": ["--listen", "100.64.0.1:6767"]}
+        )
+    )
+
+    steps = service.ensure_paseo_agent(dry_run=False)
+
+    assert [step.level for step in steps] == ["info"]

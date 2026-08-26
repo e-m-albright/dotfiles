@@ -64,7 +64,7 @@ def doctor_command(
 
     failures = [r for r in results if r.is_failure]
     warnings = [r for r in results if r.status == "warn"]
-    if fix:
+    if fix and any(r.name == "Workbench" and r.status != "ok" for r in results):
         console.print("  [dim]Run 'workbench sync' to reconcile agent configs.[/]")
 
     if failures:

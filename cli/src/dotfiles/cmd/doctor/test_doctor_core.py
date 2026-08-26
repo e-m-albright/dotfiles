@@ -148,19 +148,44 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
     shell_dir.mkdir(parents=True)
     git_dir.mkdir(parents=True)
     (shell_dir / ".zshrc").write_text("# zshrc")
+    (shell_dir / ".zshenv").write_text("# zshenv")
     (shell_dir / ".zprofile").write_text("# zprofile")
+    (shell_dir / "amuse.zsh-theme").write_text("# theme")
     (git_dir / ".gitconfig").write_text("[core]\n")
+    (git_dir / ".gitignore_global").write_text(".DS_Store\n")
 
     zellij_src = dotfiles / "terminal" / "zellij"
-    zellij_src.mkdir(parents=True)
+    (zellij_src / "layouts").mkdir(parents=True)
     (zellij_src / "config.kdl").write_text("// zellij\n")
+    (zellij_src / "layouts" / "mobile.kdl").write_text("// layout\n")
+    yazi_src = dotfiles / "terminal" / "yazi"
+    yazi_src.mkdir(parents=True)
+    (yazi_src / "yazi.toml").write_text("# yazi\n")
+    zed_src = dotfiles / "editors" / "zed"
+    zed_src.mkdir(parents=True)
+    (zed_src / "settings.json").write_text("{}\n")
+    (zed_src / "keymap.json").write_text("[]\n")
 
     home.mkdir(parents=True)
     (home / ".zshrc").symlink_to(shell_dir / ".zshrc")
+    (home / ".zshenv").symlink_to(shell_dir / ".zshenv")
     (home / ".gitconfig").symlink_to(git_dir / ".gitconfig")
+    (home / ".gitignore_global").symlink_to(git_dir / ".gitignore_global")
     (home / ".zprofile").symlink_to(shell_dir / ".zprofile")
-    (home / ".config" / "zellij").mkdir(parents=True)
+    (home / ".oh-my-zsh" / "custom" / "themes").mkdir(parents=True)
+    (home / ".oh-my-zsh" / "custom" / "themes" / "amuse.zsh-theme").symlink_to(
+        shell_dir / "amuse.zsh-theme"
+    )
+    (home / ".config" / "zellij" / "layouts").mkdir(parents=True)
     (home / ".config" / "zellij" / "config.kdl").symlink_to(zellij_src / "config.kdl")
+    (home / ".config" / "zellij" / "layouts" / "mobile.kdl").symlink_to(
+        zellij_src / "layouts" / "mobile.kdl"
+    )
+    (home / ".config" / "yazi").mkdir(parents=True)
+    (home / ".config" / "yazi" / "yazi.toml").symlink_to(yazi_src / "yazi.toml")
+    (home / ".config" / "zed").mkdir(parents=True)
+    (home / ".config" / "zed" / "settings.json").symlink_to(zed_src / "settings.json")
+    (home / ".config" / "zed" / "keymap.json").symlink_to(zed_src / "keymap.json")
 
     # System-path checks resolved under tmp_path (injected), so no host dependence.
     apps_dir = tmp_path / "Applications"
@@ -261,3 +286,20 @@ def test_tool_checks_stay_in_sync_with_packages_toml(name: str, hint: str) -> No
             f"doctor hint {hint!r} says --cask but {pkg!r} is not in a "
             "cask/auto section of macos/packages.toml"
         )
+
+
+def test_fix_backs_up_a_regular_file_instead_of_deleting_it(tmp_path: Path) -> None:
+    """--fix on a hand-rolled (non-symlink) config must preserve its content."""
+    src = tmp_path / "dotfiles-zshrc"
+    src.write_text("# managed")
+    dest = tmp_path / ".zshrc"
+    dest.write_text("# hand-rolled customizations")
+
+    svc = _svc(fix=True)
+    result = svc._symlink("Configuration", ".zshrc", src, dest)
+
+    assert result.status == "fixed"
+    assert dest.is_symlink()
+    assert dest.resolve() == src.resolve()
+    backup = tmp_path / ".zshrc.backup"
+    assert backup.read_text() == "# hand-rolled customizations"

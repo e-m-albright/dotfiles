@@ -338,9 +338,49 @@ class RemoteService:
             keep_alive=False,
         )
 
+    def _paseo_listen_address(self) -> str | None:
+        """The --listen address baked into the installed Paseo plist, if any."""
+        plist = self._agent_plist(_PASEO_LABEL)
+        if not plist.exists():
+            return None
+        try:
+            data = plistlib.loads(plist.read_bytes())
+        except (plistlib.InvalidFileException, ValueError):
+            return None
+        raw_args = data.get("ProgramArguments")
+        if not isinstance(raw_args, list):
+            return None
+        args = [str(item) for item in cast("list[object]", raw_args)]
+        if "--listen" not in args:
+            return None
+        index = args.index("--listen") + 1
+        return args[index] if index < len(args) else None
+
+    def paseo_listen_stale(self) -> bool:
+        """True when the plist binds an address that is no longer this machine's tailnet IP.
+
+        The install-time IP is frozen into the plist; if the tailscale address
+        changes, the daemon binds a dead address forever unless reinstalled.
+        """
+        address = self._paseo_listen_address()
+        if address is None:
+            return False
+        connected, ip = self._tailscale
+        if not connected or not ip:
+            return False
+        return not address.startswith(f"{ip}:")
+
     def ensure_paseo_agent(self, *, dry_run: bool) -> list[StepResult]:
-        """Load the managed Paseo daemon only when it is not already running."""
+        """Load the managed Paseo daemon, reinstalling if its bound IP went stale."""
         if self.paseo_running():
+            if self.paseo_listen_stale():
+                return [
+                    StepResult(
+                        level="warn",
+                        message="Paseo bound to a stale tailnet IP — reinstalling agent",
+                    ),
+                    *self.paseo_install_agent(dry_run=dry_run),
+                ]
             return [StepResult(level="info", message="Paseo daemon already running")]
         return self.paseo_install_agent(dry_run=dry_run)
 

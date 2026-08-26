@@ -484,3 +484,54 @@ def test_stale_ignores_versioned_keg_of_declared_alias(tmp_path: Path) -> None:
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
     stale = InstallPlan.compute(manifest, runner, flags_on=set()).stale
     assert "openssl@3" not in stale
+
+
+# ---------------------------------------------------------------------------
+# npm / go drift
+# ---------------------------------------------------------------------------
+
+from dotfiles.cmd.brew.service import go_drift, npm_drift  # noqa: E402
+
+
+def test_npm_drift_reports_missing_and_version_mismatch(tmp_path: Path) -> None:
+    manifest = PackageManifest.load(make_toml(tmp_path))
+    runner = FakeProcessRunner()
+    runner.script(
+        ("npm", "ls", "-g", "--depth=0", "--json"),
+        stdout='{"dependencies": {"wrangler": {"version": "1.0.0"}}}',
+    )
+    toml_with_pin = MINIMAL_TOML.replace(
+        'name = "wrangler"', 'name = "wrangler"\nversion = "2.0.0"'
+    )
+    pinned = PackageManifest.load(make_toml(tmp_path, toml_with_pin))
+    drift = npm_drift(pinned, runner)
+    assert "wrangler (installed 1.0.0, want 2.0.0)" in drift
+    assert "agent-browser (missing)" in drift
+    assert npm_drift(manifest, runner) == ["agent-browser (missing)"]
+
+
+def test_npm_drift_clean_when_all_present(tmp_path: Path) -> None:
+    manifest = PackageManifest.load(make_toml(tmp_path))
+    runner = FakeProcessRunner()
+    runner.script(
+        ("npm", "ls", "-g", "--depth=0", "--json"),
+        stdout=(
+            '{"dependencies": {"wrangler": {"version": "1.0.0"},'
+            ' "agent-browser": {"version": "0.1.0"}}}'
+        ),
+    )
+    assert npm_drift(manifest, runner) == []
+
+
+def test_go_drift_reports_missing_and_wrong_version(tmp_path: Path) -> None:
+    toml = (
+        MINIMAL_TOML
+        + '\n[[go_package]]\nname = "atlas"\nmodule = "example.com/a/atlas"\nversion = "v1.2.3"\n'
+        + '\n[[go_package]]\nname = "gone"\nmodule = "example.com/gone"\nversion = "v9.9.9"\n'
+    )
+    manifest = PackageManifest.load(make_toml(tmp_path, toml))
+    runner = FakeProcessRunner()
+    runner.script(("which", "atlas"), stdout="/home/dev/go/bin/atlas\n")
+    runner.script(("go", "version", "-m", "/home/dev/go/bin/atlas"), stdout="mod ... v1.2.3\n")
+    runner.script(("which", "gone"), exit_code=1)
+    assert go_drift(manifest, runner) == ["gone (missing)"]
