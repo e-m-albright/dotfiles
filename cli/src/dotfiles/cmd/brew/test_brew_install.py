@@ -79,7 +79,7 @@ name = "pinchtab"
 flag = "ai"
 note = "Browser automation (retired)"
 disabled = true
-reason = "experiment"
+reason = "Disabled 2026-01-01: experiment"
 """
 
 

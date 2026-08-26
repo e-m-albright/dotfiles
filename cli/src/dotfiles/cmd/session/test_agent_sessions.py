@@ -20,11 +20,11 @@ def test_live_agents_reads_session_from_process_env() -> None:
     runner.script(("pgrep", "-x", "claude"), stdout="14486\n21697\n")
     runner.script(
         ("ps", "eww", "-p", "14486", "-o", "command="),
-        stdout=_env(session="people", pwd="/Users/dev/code/private/notes"),
+        stdout=_env(session="people", pwd="/home/dev/code/private/notes"),
     )
     runner.script(
         ("ps", "eww", "-p", "21697", "-o", "command="),
-        stdout=_env(session="skills", pwd="/Users/dev/dotfiles"),
+        stdout=_env(session="skills", pwd="/home/dev/dotfiles"),
     )
 
     agents = live_agents(runner)
@@ -41,11 +41,11 @@ def test_live_agents_same_cwd_two_sessions_each_keep_their_own() -> None:
     runner.script(("pgrep", "-x", "claude"), stdout="1\n2\n")
     runner.script(
         ("ps", "eww", "-p", "1", "-o", "command="),
-        stdout=_env(session="dotfiles", pwd="/Users/dev/dotfiles"),
+        stdout=_env(session="dotfiles", pwd="/home/dev/dotfiles"),
     )
     runner.script(
         ("ps", "eww", "-p", "2", "-o", "command="),
-        stdout=_env(session="skills", pwd="/Users/dev/dotfiles"),
+        stdout=_env(session="skills", pwd="/home/dev/dotfiles"),
     )
 
     matched, unmatched = agents_by_session(live_agents(runner))
@@ -59,13 +59,13 @@ def test_live_agents_no_session_env_is_unmatched() -> None:
     runner.script(("pgrep", "-x", "claude"), stdout="7\n")
     runner.script(
         ("ps", "eww", "-p", "7", "-o", "command="),
-        stdout=_env(session=None, pwd="/Users/dev/code/public"),
+        stdout=_env(session=None, pwd="/home/dev/code/public"),
     )
 
     matched, unmatched = agents_by_session(live_agents(runner))
 
     assert matched == {}
-    assert [(a.agent, a.cwd) for a in unmatched] == [("claude", "/Users/dev/code/public")]
+    assert [(a.agent, a.cwd) for a in unmatched] == [("claude", "/home/dev/code/public")]
 
 
 def test_live_agents_empty_when_no_processes() -> None:

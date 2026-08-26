@@ -24,13 +24,9 @@ pre-commit:
         for f in {staged_files}; do
           yq eval '.' "$f" >/dev/null || { echo "Invalid YAML: $f"; exit 1; }
         done
-    json-lint:
-      glob: "*.json"
-      exclude: "editors/**"
-      run: |
-        for f in {staged_files}; do
-          jq '.' "$f" >/dev/null || { echo "Invalid JSON: $f"; exit 1; }
-        done
+    privacy-sweep:
+      # Public repo: the AGENTS.md privacy rule, enforced instead of remembered.
+      run: just privacy-sweep
     gitleaks:
       # Public repo: scan staged changes for secrets BEFORE they land, not just
       # weekly over history. Skips cleanly if gitleaks isn't installed (the
@@ -40,14 +36,8 @@ pre-commit:
           gitleaks protect --staged --no-banner
         fi
     cli-check:
-      glob: "cli/**/*.py"
+      # toml/lock included so a bare dependency bump still runs the gate locally.
+      glob: "cli/**/*.{py,toml,lock}"
       run: just check --fast
-pre-push:
-  commands:
-    cli-full-check:
-      glob: "cli/**/*.py"
-      run: just check
-    shell-check:
-      # A pure-shell change otherwise reaches main having passed no local gate.
-      glob: "*.sh"
-      run: just lint-shell
+# No pre-push hooks: pre-commit --fast plus CI's full `just check`/ShellCheck
+# already cover every push; the pre-push reruns only added latency.

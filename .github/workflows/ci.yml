@@ -33,12 +33,9 @@ jobs:
           done
           echo "All JSON files are valid"
 
-      - name: Check for secrets patterns
-        run: |
-          PATTERNS="password=|api_key=|secret_key=|AWS_SECRET|PRIVATE_KEY"
-          if grep -rn --include='*.sh' --include='*.json' --include='*.yaml' -E "$PATTERNS" . --exclude-dir=.git; then
-            echo "::warning::Possible secrets found in committed files"
-          fi
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+      - name: Privacy sweep (no absolute home paths in tracked files)
+        run: just privacy-sweep
 
       - name: ShellCheck
         uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
@@ -89,4 +86,6 @@ jobs:
             echo "::endgroup::"
           }
           check "doctor" doctor
+          check "remote status" remote status
+          check "brew stale" brew stale
           exit "$fail"

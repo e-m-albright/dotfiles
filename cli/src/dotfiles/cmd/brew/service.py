@@ -14,6 +14,7 @@ provides:
 
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -44,6 +45,18 @@ PackageKind = Literal["formula", "cask", "auto"]
 # declarative only: that software arrives through this repo's Python dependencies.
 SpecialMethod = Literal["rustup", "github_dmg", "curl_install", "python_package"]
 
+# Tombstone invariant (AGENTS.md): disabled entries retain a *dated* reason.
+_TOMBSTONE_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def _require_dated_reason(kind: str, name: str, *, disabled: bool, reason: str) -> None:
+    if not disabled:
+        return
+    if not reason.strip():
+        raise ValueError(f"disabled {kind} {name!r} requires a reason")
+    if not _TOMBSTONE_DATE.search(reason):
+        raise ValueError(f"disabled {kind} {name!r} requires a dated reason (YYYY-MM-DD)")
+
 
 class Package(BaseModel):
     """One installable package entry within a section."""
@@ -58,8 +71,7 @@ class Package(BaseModel):
 
     @model_validator(mode="after")
     def disabled_requires_reason(self) -> Package:
-        if self.disabled and not self.reason.strip():
-            raise ValueError(f"disabled package {self.name!r} requires a reason")
+        _require_dated_reason("package", self.name, disabled=self.disabled, reason=self.reason)
         return self
 
 
@@ -98,8 +110,7 @@ class NpmPackage(BaseModel):
 
     @model_validator(mode="after")
     def disabled_requires_reason(self) -> NpmPackage:
-        if self.disabled and not self.reason.strip():
-            raise ValueError(f"disabled npm package {self.name!r} requires a reason")
+        _require_dated_reason("npm package", self.name, disabled=self.disabled, reason=self.reason)
         return self
 
 

@@ -11,7 +11,7 @@ runner = CliRunner()
 def _runner_with_status(*, tailscale_up: bool = False) -> FakeProcessRunner:
     r = FakeProcessRunner()
     r.script(("id", "-un"), stdout="evan\n")
-    r.script(("scutil", "--get", "LocalHostName"), stdout="Evans-MBP-M4\n")
+    r.script(("scutil", "--get", "LocalHostName"), stdout="test-mac-m4\n")
     r.script(("tailscale", "status"), exit_code=0 if tailscale_up else 1)
     if tailscale_up:
         r.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")

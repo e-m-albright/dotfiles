@@ -70,6 +70,40 @@ check mode='all':
         just test
     fi
 
+# Public-repo privacy sweep: no absolute home paths or private-project names in
+# tracked files. Names come from a machine-local denylist so they never enter
+# the repo; test fixtures use /home/dev so the path grep can stay strict.
+[group('quality')]
+privacy-sweep:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{repo}}"
+    status=0
+    if git grep -nI -E '/Users/[A-Za-z]' -- ':(exclude)justfile'; then
+        echo "privacy-sweep: absolute home path in tracked files (use ~ or \$HOME)" >&2
+        status=1
+    fi
+    terms="$HOME/.config/dotfiles/private-terms.txt"
+    if [[ -f "$terms" ]]; then
+        while IFS= read -r term; do
+            [[ -z "$term" || "$term" == \#* ]] && continue
+            if git grep -niI -F "$term" >/dev/null; then
+                echo "privacy-sweep: private term found (see denylist): matches for a listed term" >&2
+                git grep -niI -F "$term" | head -5
+                status=1
+            fi
+        done < "$terms"
+    fi
+    exit "$status"
+
+# Everything AGENTS.md lists as the verification set, in one command.
+[group('quality')]
+verify:
+    just check
+    just lint-shell
+    just audit
+    just privacy-sweep
+
 # ── Testing ───────────────────────────────────────────────────────────────────
 
 # Pytest with coverage floor.
@@ -107,6 +141,7 @@ scrub mode='all':
     fi
     if $do_caches; then
         rm -rf "{{repo}}/cli/.complexipy_cache" "{{repo}}/.crush" "{{repo}}/cli/.ruff_cache" "{{repo}}/cli/.pytest_cache"
+        rm -rf "{{repo}}/.complexipy_cache" "{{repo}}/.ruff_cache" "{{repo}}/.pytest_cache" "{{repo}}/cli/snapshot_report.html"
     fi
 
 # ── Help (default) ────────────────────────────────────────────────────────────

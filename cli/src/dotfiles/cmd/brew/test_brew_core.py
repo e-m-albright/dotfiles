@@ -39,7 +39,7 @@ kind = "formula"
 packages = [
   { name = "git", note = "Version control" },
   { name = "curl", note = "HTTP client" },
-  { name = "ffmpeg", note = "Video", disabled = true, reason = "too big" },
+  { name = "ffmpeg", note = "Video", disabled = true, reason = "Disabled 2026-01-01: too big" },
 ]
 
 [[section]]
@@ -48,7 +48,7 @@ kind = "cask"
 flag = "productivity"
 packages = [
   { name = "obsidian", note = "Notes" },
-  { name = "warp", note = "AI terminal", disabled = true, reason = "not needed" },
+  { name = "warp", disabled = true, reason = "Disabled 2026-01-01: not needed" },
 ]
 
 [[section]]
@@ -126,12 +126,18 @@ def test_load_disabled_package(tmp_path: Path) -> None:
     ffmpeg = manifest.sections[0].packages[2]
     assert ffmpeg.name == "ffmpeg"
     assert ffmpeg.disabled is True
-    assert ffmpeg.reason == "too big"
+    assert ffmpeg.reason == "Disabled 2026-01-01: too big"
 
 
 def test_load_rejects_disabled_package_without_reason(tmp_path: Path) -> None:
-    content = MINIMAL_TOML.replace(', reason = "too big"', "")
+    content = MINIMAL_TOML.replace(', reason = "Disabled 2026-01-01: too big"', "")
     with pytest.raises(ValidationError, match="disabled package 'ffmpeg' requires a reason"):
+        PackageManifest.load(make_toml(tmp_path, content))
+
+
+def test_load_rejects_disabled_package_with_undated_reason(tmp_path: Path) -> None:
+    content = MINIMAL_TOML.replace("Disabled 2026-01-01: too big", "too big")
+    with pytest.raises(ValidationError, match="requires a dated reason"):
         PackageManifest.load(make_toml(tmp_path, content))
 
 
