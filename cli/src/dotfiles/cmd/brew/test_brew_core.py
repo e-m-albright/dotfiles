@@ -7,13 +7,12 @@ from pydantic import ValidationError
 
 from dotfiles.cmd.brew.service import (
     BrewInventoryError,
+    InstallPlan,
     PackageManifest,
     enabled_packages,
     installed_casks,
     installed_formulae,
-    missing_packages,
     requested_formulae,
-    stale_packages,
     stale_taps,
 )
 from dotfiles.testing.fakes import FakeProcessRunner
@@ -23,11 +22,6 @@ from dotfiles.testing.fakes import FakeProcessRunner
 # ---------------------------------------------------------------------------
 
 MINIMAL_TOML = """\
-[flags]
-ai = true
-productivity = true
-social = true
-
 [taps]
 list = ["some/tap"]
 trusted_formulae = ["some/tap/tool"]
@@ -90,13 +84,6 @@ def make_toml(tmp_path: Path, content: str = MINIMAL_TOML) -> Path:
 # ---------------------------------------------------------------------------
 # PackageManifest.load — structural tests
 # ---------------------------------------------------------------------------
-
-
-def test_load_flags(tmp_path: Path) -> None:
-    manifest = PackageManifest.load(make_toml(tmp_path))
-    assert manifest.flags.ai is True
-    assert manifest.flags.productivity is True
-    assert manifest.flags.social is True
 
 
 def test_load_taps(tmp_path: Path) -> None:
@@ -238,9 +225,6 @@ def test_enabled_preserves_kind(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 PACKAGE_FLAG_TOML = """\
-[flags]
-ai = true
-
 [taps]
 list = []
 
@@ -357,7 +341,7 @@ def test_stale_packages_installed_not_declared(tmp_path: Path) -> None:
         stdout="git\ncurl\nsome-random-tool\n",
     )
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    stale = stale_packages(manifest, runner)
+    stale = InstallPlan.compute(manifest, runner, flags_on=set()).stale
     assert "some-random-tool" in stale
     assert "git" not in stale
     assert "curl" not in stale
@@ -373,7 +357,7 @@ def test_stale_disabled_not_stale(tmp_path: Path) -> None:
         stdout="ffmpeg\n",
     )
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    stale = stale_packages(manifest, runner)
+    stale = InstallPlan.compute(manifest, runner, flags_on=set()).stale
     assert "ffmpeg" not in stale
 
 
@@ -385,7 +369,7 @@ def test_stale_returns_sorted(tmp_path: Path) -> None:
         stdout="zzz-tool\naaa-tool\n",
     )
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    stale = stale_packages(manifest, runner)
+    stale = InstallPlan.compute(manifest, runner, flags_on=set()).stale
     assert stale == sorted(stale)
 
 
@@ -394,7 +378,7 @@ def test_stale_empty_when_nothing_extra(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("brew", "leaves", "--installed-on-request"), stdout="git\ncurl\n")
     runner.script(("brew", "list", "--cask", "-1"), stdout="obsidian\n")
-    stale = stale_packages(manifest, runner)
+    stale = InstallPlan.compute(manifest, runner, flags_on=set()).stale
     assert stale == []
 
 
@@ -423,7 +407,9 @@ def test_missing_packages_basic(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("brew", "list", "--formula", "-1"), stdout="git\n")
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    missing = missing_packages(manifest, runner, flags_on={"ai", "productivity", "social"})
+    missing = InstallPlan.compute(
+        manifest, runner, flags_on={"ai", "productivity", "social"}
+    ).missing
     names = [n for n, _ in missing]
     # curl is enabled and not installed
     assert "curl" in names
@@ -439,7 +425,7 @@ def test_missing_respects_flag_gating(tmp_path: Path) -> None:
     runner.script(("brew", "list", "--formula", "-1"), stdout="")
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
     # ai OFF → claude/codex must not appear
-    missing = missing_packages(manifest, runner, flags_on={"productivity", "social"})
+    missing = InstallPlan.compute(manifest, runner, flags_on={"productivity", "social"}).missing
     names = [n for n, _ in missing]
     assert "claude" not in names
     assert "codex" not in names
@@ -454,7 +440,9 @@ def test_missing_empty_when_all_installed(tmp_path: Path) -> None:
     installed_str = "\n".join(n for n, _ in enabled)
     runner.script(("brew", "list", "--formula", "-1"), stdout=installed_str)
     runner.script(("brew", "list", "--cask", "-1"), stdout=installed_str)
-    missing = missing_packages(manifest, runner, flags_on={"ai", "productivity", "social"})
+    missing = InstallPlan.compute(
+        manifest, runner, flags_on={"ai", "productivity", "social"}
+    ).missing
     assert missing == []
 
 
@@ -482,7 +470,7 @@ def test_missing_ignores_versioned_keg_of_declared_alias(tmp_path: Path) -> None
     runner = FakeProcessRunner()
     runner.script(("brew", "list", "--formula", "-1"), stdout="openssl@3\ngit\n")
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    missing = missing_packages(manifest, runner, flags_on=set())
+    missing = InstallPlan.compute(manifest, runner, flags_on=set()).missing
     names = [n for n, _ in missing]
     # openssl@3 satisfies the declared `openssl` — must not be re-installed.
     assert "openssl" not in names
@@ -494,5 +482,5 @@ def test_stale_ignores_versioned_keg_of_declared_alias(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("brew", "list", "--formula", "-1"), stdout="openssl@3\ngit\n")
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
-    stale = stale_packages(manifest, runner)
+    stale = InstallPlan.compute(manifest, runner, flags_on=set()).stale
     assert "openssl@3" not in stale

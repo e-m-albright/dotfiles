@@ -53,24 +53,19 @@ def test_dashboard_snapshot(snap_compare, monkeypatch):
     assert snap_compare(app)
 
 
-def test_app_real_context_respects_stdin_interactivity(monkeypatch):
-    """When no ctx is injected, MissionControlApp must pass isatty() to build_real_context."""
+def test_app_builds_real_context_when_none_injected(monkeypatch):
+    """When no ctx is injected, MissionControlApp builds the real composition root."""
     import contextlib
-    import io
-    import sys
 
-    captured: list[bool] = []
+    calls: list[bool] = []
 
-    def fake_build(*, interactive: bool) -> None:  # type: ignore[return]
-        captured.append(interactive)
+    def fake_build() -> None:  # type: ignore[return]
+        calls.append(True)
         raise SystemExit(0)  # abort before the app tries to contact real system
 
     monkeypatch.setattr("dotfiles.tui.app.build_real_context", fake_build)
 
-    # Simulate non-interactive stdin (pipe / mosh)
-    monkeypatch.setattr(sys, "stdin", io.StringIO(""))
-
     with contextlib.suppress(SystemExit):
         MissionControlApp()
 
-    assert captured == [False], "app should pass isatty()=False when stdin is not a tty"
+    assert calls == [True]

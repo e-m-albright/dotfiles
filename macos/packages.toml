@@ -1,13 +1,7 @@
 # Package manifest for Homebrew setup.
 # Source of truth for `dotfiles brew install` and `dotfiles brew stale`.
 #
-# Usage (env opt-in flags, default true):
-#   AI=0 PRODUCTIVITY=0 SOCIAL=0 dotfiles brew install
-
-[flags]
-ai = true
-productivity = true
-social = true
+# Skip flagged groups per run: dotfiles brew install --no-ai --no-productivity --no-social
 
 [taps]
 list = ["axiomhq/tap"]
@@ -44,7 +38,7 @@ packages = [
   { name = "sevenzip",             note = "Peek inside archives (.zip, .7z, .rar)" },
   { name = "ffmpeg",               note = "Video/audio thumbnails", disabled = true, reason = "Disabled 2026-08-25 (dated retroactively): ~300MB+ with deps, rarely needed" },
   { name = "tmux",                 note = "Terminal multiplexer" },
-  { name = "mosh",                 note = "Roaming SSH-compatible shell for phone connections" },
+  { name = "mosh",                 note = "Roaming SSH shell; superseded by the Paseo + Zellij-web remote stack", disabled = true, reason = "Retired 2026-08-25: remote access is Tailscale + Paseo + Zellij web; uninstall when convenient" },
   { name = "zellij",               note = "Modern terminal workspace and multiplexer" },
   { name = "pandoc",               note = "Universal markup converter (md ↔ docx ↔ pdf ↔ html ↔ …)" },
 ]
@@ -132,8 +126,7 @@ packages = [
   { name = "google-chrome",   note = "Web browser" },
   { name = "google-drive",    note = "Drive <-> Mac selective sync. Use STREAMING mode (default; nothing bulk-downloaded) + per-folder 'Available offline' for local copies; pick which Mac folders upload under Settings > My MacBook. Never enable 'Mirror files' (would pull all of Drive)" },
   { name = "tailscale-app",   note = "Mesh VPN for secure laptop access" },
-  { name = "termius",         note = "Former phone SSH/Mosh client for remote access; retired", disabled = true, reason = "Retired 2026-07-24: replaced by the Zellij web client over Tailscale (dfs remote web + tailscale serve); no phone SSH client needed" },
-  { name = "iterm2",          note = "Terminal emulator", disabled = true, reason = "Disabled 2026-07-15: switched to Ghostty" },
+  { name = "termius",         note = "Former phone SSH/Mosh client for remote access; retired", disabled = true, reason = "Retired 2026-07-24: replaced by the Zellij web client over Tailscale (dfs remote zellij + tailscale serve); no phone SSH client needed" },
 ]
 
 [[section]]
@@ -142,7 +135,6 @@ kind = "cask"
 packages = [
   { name = "cursor",              note = "AI-native editor", disabled = true, reason = "Disabled 2026-07-15: extra editor/agent control plane did not earn its overlap with Zed + Claude/Codex" },
   { name = "zed",                 note = "Primary GPU-native editor with ACP agent panel" },
-  { name = "visual-studio-code",  note = "General-purpose editor", disabled = true, reason = "Disabled 2026-07-15: Zed is the opinionated primary editor after moving through VS Code and Cursor" },
 ]
 
 [[section]]
@@ -152,8 +144,6 @@ flag = "productivity"
 packages = [
   { name = "rectangle",        note = "Window management" },
   { name = "flycut",           note = "Clipboard manager" },
-  { name = "raycast",          note = "Launcher + actions; can replace Rectangle/Flycut", disabled = true, reason = "Disabled 2026-07-15: grab-bag productivity suite did not solve a recurring problem worth learning" },
-  { name = "warp",             note = "AI terminal", disabled = true, reason = "Disabled 2026-07-15: Ghostty plus Claude Code and Codex provide the preferred terminal and AI interfaces" },
   { name = "ghostty",          note = "GPU-accelerated terminal" },
   { name = "caffeine",         note = "Intel-only, requires Rosetta" },
   { name = "flux-app",         note = "Screen color temperature" },
@@ -170,7 +160,6 @@ packages = [
 name = "Development Apps"
 kind = "cask"
 packages = [
-  { name = "docker-desktop",   note = "Container desktop runtime", disabled = true, reason = "Disabled 2026-07-15: switched to OrbStack as the active macOS container runtime" },
   { name = "orbstack",         note = "Docker Desktop alternative (faster, better macOS integration)" },
   { name = "ngrok",            note = "Secure tunnels to localhost (official Homebrew cask; installs the CLI binary)" },
   { name = "axiom",            note = "Axiom observability CLI (axiomhq/tap cask; narrowly trusted above)" },
@@ -186,10 +175,7 @@ packages = [
   { name = "slack",               note = "" },
   { name = "slack-cli",           note = "Slack platform dev CLI (app development, not chat)", disabled = true, reason = "Disabled 2026-07-15: Slack is infrequently used and does not need local automation" },
   { name = "zoom",                note = "" },
-  { name = "discord",             note = "Chat client", disabled = true, reason = "Disabled 2026-07-15: not actively used" },
   { name = "whatsapp",            note = "" },
-  { name = "super-productivity",  note = "Task and time management", disabled = true, reason = "Disabled 2026-07-15: the workflow did not click and was not worth further investment" },
-  { name = "signal",              note = "Encrypted messaging", disabled = true, reason = "Disabled 2026-07-15: no current need for a dedicated encrypted-messaging client" },
 ]
 
 [[section]]
@@ -212,12 +198,9 @@ packages = [
   { name = "chatgpt",              note = "OpenAI ChatGPT desktop app: Codex mode, plugins, and scheduled local tasks" },
   { name = "paseo",                note = "Desktop client for monitoring and controlling local coding agents from desktop and mobile" },
   { name = "googleworkspace-cli",  note = "Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin)" },
-  { name = "jules",                note = "Google cloud coding agent launcher", disabled = true, reason = "Disabled 2026-05-07: cloud-only service; the local CLI is only a launcher" },
   { name = "gemini-cli",           note = "Google terminal coding agent", disabled = true, reason = "Disabled 2026-06-09: replaced during the Antigravity evaluation; active agent support is now focused on Claude and Codex" },
   { name = "antigravity-cli",      note = "Google Antigravity CLI", disabled = true, reason = "Disabled 2026-07-15: focus active agent support on Claude and Codex" },
   { name = "antigravity",          note = "Google Antigravity AI-native IDE", disabled = true, reason = "Disabled 2026-07-15: overlaps Cursor and other agentic editors without offering a needed current capability; open to reevaluation" },
-  { name = "copilot",              note = "GitHub Copilot CLI terminal agent", disabled = true, reason = "Disabled 2026-07-15: did not remain competitive for AI development; standardized on Claude Code and Codex" },
-  { name = "cmux",                 note = "Terminal workspace", disabled = true, reason = "Disabled 2026-07-15: did not add enough beyond Ghostty and Zellij session control" },
   { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
   { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
   { name = "opencode",             note = "Vendor-neutral terminal coding agent", disabled = true, reason = "Disabled 2026-06-01: vendor-neutral CLIs rolled back (subscription economics); standardized on Claude Code + Codex" },

@@ -6,7 +6,6 @@
 local -a commands
 commands=(
     'install:Run full dotfiles setup'
-    'help:Show help message'
     'doctor:Check tools and config (--fix to repair)'
     'update:Update OS, Homebrew, runtimes, and dev tools'
     'clean:Clean caches'

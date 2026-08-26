@@ -13,11 +13,6 @@ runner = CliRunner()
 
 # Minimal packages.toml for CLI tests
 _PACKAGES_TOML = """\
-[flags]
-ai = true
-productivity = true
-social = true
-
 [taps]
 list = []
 
@@ -178,10 +173,8 @@ def test_brew_install_only_runs_specials_declared_by_manifest(tmp_path: Path) ->
     assert not any("rustup.rs" in part for call in ctx.runner.calls for part in call)
 
 
-def test_manifest_flag_default_can_disable_a_section(tmp_path: Path) -> None:
-    manifest = _PACKAGES_TOML.replace("ai = true", "ai = false").replace(
-        'name = "Core"', 'name = "Core"\nflag = "ai"'
-    )
+def test_no_ai_flag_disables_a_flagged_section(tmp_path: Path) -> None:
+    manifest = _PACKAGES_TOML.replace('name = "Core"', 'name = "Core"\nflag = "ai"')
     macos_dir = tmp_path / "macos"
     macos_dir.mkdir(parents=True)
     (macos_dir / "packages.toml").write_text(manifest)
@@ -190,7 +183,7 @@ def test_manifest_flag_default_can_disable_a_section(tmp_path: Path) -> None:
     fake.script(("brew", "list", "--cask", "-1"), stdout="")
     ctx = make_fake_context(runner=fake, dotfiles_dir=tmp_path)
 
-    result = runner.invoke(app, ["brew", "install", "--dry-run"], obj=ctx)
+    result = runner.invoke(app, ["brew", "install", "--dry-run", "--no-ai"], obj=ctx)
 
     assert result.exit_code == 0, result.output
     assert "brew install git" not in result.output

@@ -49,16 +49,6 @@ def test_tool_present_and_absent() -> None:
     assert missing.hint == "install nope"
 
 
-def test_app_bundle_check(tmp_path: Path) -> None:
-    app_path = tmp_path / "Ghostty.app"
-    app_path.mkdir()
-    svc = _svc()
-    present = svc._app("Terminal", "Ghostty", app_path, "brew install --cask ghostty")
-    assert present.status == "ok"
-    absent = svc._app("Editors", "Ghost", tmp_path / "Ghost.app", "hint")
-    assert absent.status == "missing"
-
-
 def test_symlink_check_and_fix(tmp_path: Path) -> None:
     src = tmp_path / "dotfiles" / "shell" / ".zshrc"
     dest = tmp_path / "home" / ".zshrc"

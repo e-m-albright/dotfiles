@@ -24,8 +24,8 @@ from typing import Any
 from dotfiles.cmd.speak.service import (
     DEFAULT_SUPERTONIC_VOICE,
     VoiceUnavailableError,
-    _play,
     _ProcessVoice,
+    play_file,
     split_sentences,
 )
 
@@ -34,7 +34,7 @@ from dotfiles.cmd.speak.service import (
 class SupertonicVoice(_ProcessVoice):
     """Local neural TTS. Model and voice style load once on first use.
 
-    Inherits process plumbing and `chime` from `_ProcessVoice`; only synthesis
+    Inherits process plumbing from `_ProcessVoice`; only synthesis
     and the chunk pipeline are its own.
     """
 
@@ -79,7 +79,7 @@ class SupertonicVoice(_ProcessVoice):
         for index, _ in enumerate(chunks):
             if pending is None or self._cancel.is_set():
                 return
-            proc = _play(pending)
+            proc = play_file(pending)
             self._proc = proc
             pending = self._render(chunks[index + 1]) if index + 1 < len(chunks) else None
             proc.wait()

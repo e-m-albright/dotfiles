@@ -1,14 +1,18 @@
 # =============================================================================
 # Dotfiles Repository Ignore
+# (OS/editor strays live in git/.gitignore_global, installed as core.excludesfile)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # Tool Caches
 # -----------------------------------------------------------------------------
 .claude/
-.cursor/hooks/state/
 .crush/
-cli/.complexipy_cache/
+.pi/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.complexipy_cache/
 
 # -----------------------------------------------------------------------------
 # Agent-generated markdown (scrub with `just scrub --artifacts`)
@@ -29,28 +33,6 @@ docs/superpowers/
 community-plugins.json
 
 # -----------------------------------------------------------------------------
-# OS Generated
-# -----------------------------------------------------------------------------
-.DS_Store
-.pi/
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-Thumbs.db
-ehthumbs.db
-
-# -----------------------------------------------------------------------------
-# Editor & IDE
-# -----------------------------------------------------------------------------
-*.swp
-*.swo
-*~
-.idea/
-.vscode/
-*.sublime-workspace
-
-# -----------------------------------------------------------------------------
 # Local Configuration (user-specific, not shared)
 # -----------------------------------------------------------------------------
 *.local
@@ -59,18 +41,8 @@ ehthumbs.db
 !.env.example
 
 # -----------------------------------------------------------------------------
-# Temporary Files
-# -----------------------------------------------------------------------------
-*.tmp
-*.temp
-*.log
-
-# -----------------------------------------------------------------------------
 # Python CLI (cli/) build + tool caches
 cli/.venv/
-cli/.ruff_cache/
-cli/.pytest_cache/
 cli/.coverage
 cli/htmlcov/
-cli/**/__pycache__/
 cli/snapshot_report.html

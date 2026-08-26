@@ -11,7 +11,6 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Literal, NamedTuple, cast
 
-from rich.markup import escape
 from textual import work
 from textual.app import ComposeResult
 from textual.binding import Binding, BindingType
@@ -22,6 +21,7 @@ from textual.widgets import Button, Input, Label, ListItem, ListView, Static
 from dotfiles.app.context import AppContext
 from dotfiles.cmd.session import session_name
 from dotfiles.cmd.session.models import AgentActivity, Session
+from dotfiles.cmd.session.render import agent_badge, programs_preview
 from dotfiles.cmd.session.service import (
     exited_sessions,
     humanize_age,
@@ -31,6 +31,7 @@ from dotfiles.cmd.session.service import (
 from dotfiles.cmd.session.zellij import (
     SessionError,
     Zellij,
+    attach_command,
     handoff_command,
     in_zellij,
 )
@@ -64,23 +65,6 @@ def _elsewhere_line(unmatched: list[AgentActivity], clients: int | None = None) 
     return prefix + "[dim]elsewhere:[/]  " + "  ·  ".join(parts)
 
 
-def _agent_badge(agents: Sequence[AgentActivity]) -> str:
-    """Green badge of agent names active in a session, e.g. ``claude`` or ``claude · codex``."""
-    return " · ".join(f"[green]{a.agent}[/]" for a in agents)
-
-
-def _programs_line(programs: Sequence[str], limit: int = 3) -> str:
-    """A dim, brand-gold summary of what's running, e.g. ``Claude Code · nvim``.
-
-    Caps the count (with a ``+N`` overflow) and escapes titles so a stray ``[`` in
-    a pane title can't be read as console markup.
-    """
-    shown = [escape(p) for p in programs[:limit]]
-    if len(programs) > limit:
-        shown.append(f"+{len(programs) - limit}")
-    return "   [#cdbf80]" + " · ".join(shown) + "[/]"
-
-
 def _exited_item(s: Session) -> ListItem:
     """A dimmer, tappable row for a resurrectable (exited) session."""
     age = humanize_age(s.created_age_seconds)
@@ -105,8 +89,8 @@ def _session_item(
         state_cls, desc = "is-running", "running · tap to attach"
     lines = [f"[bold]●  {s.name}[/]"]
     if programs:
-        lines.append(_programs_line(programs))
-    badge = _agent_badge(agents)
+        lines.append("   " + programs_preview(programs))
+    badge = agent_badge(agents)
     lines.append(f"   {badge} [dim]· {desc}[/]" if badge else f"   [dim]{desc}[/]")
     return ListItem(
         Label("\n".join(lines)), id=f"sess-{s.name}", classes=f"session-row {state_cls}"
@@ -371,7 +355,7 @@ class SessionsPane(Container):
         if not name:
             return
         layout = self._zellij.layout_for(name)
-        command = self._zellij.attach_command(name, exists=False, layout=layout)
+        command = attach_command(name, exists=False, layout=layout)
         self._app.request_handoff(command)
 
     def _handoff(self, name: str) -> None:

@@ -18,7 +18,6 @@ class FakeProcessRunner:
         self.calls: list[tuple[str, ...]] = []
         self.calls_with_input: list[tuple[tuple[str, ...], str | None]] = []
         self.inputs: list[str | None] = []
-        self.cwds: list[Path | None] = []
         self.capture_output: list[bool] = []
         self._scripted: dict[tuple[str, ...], CommandResult] = {}
 
@@ -48,7 +47,6 @@ class FakeProcessRunner:
         key = tuple(command)
         self.calls.append(key)
         self.inputs.append(stdin)
-        self.cwds.append(cwd)
         self.capture_output.append(capture_output)
         self.calls_with_input.append((key, stdin))
         result = self._scripted.get(
@@ -131,7 +129,6 @@ def write_tree(base: Path, spec: dict[str, str | None]) -> None:
 def make_fake_context(
     *,
     runner: FakeProcessRunner | None = None,
-    interactive: bool = False,
     home: Path | None = None,
     launcher: FakeSessionLauncher | None = None,
     dotfiles_dir: Path | None = None,
@@ -144,7 +141,6 @@ def make_fake_context(
     return AppContext(
         runner=runner or FakeProcessRunner(),
         settings=settings or Settings(),
-        interactive=interactive,
         home=home_path,
         launcher=launcher or FakeSessionLauncher(),
         mask_provider_factory=lambda _account: provider,

@@ -14,12 +14,16 @@ from pathlib import Path
 from typing import cast
 
 from dotfiles.adapters.ports import ProcessRunner
-from dotfiles.cmd.remote.models import ConnectionInfo, RemoteStatus
+from dotfiles.cmd.remote.models import (
+    PASEO_PORT,
+    ZELLIJ_WEB_PORT,
+    ConnectionInfo,
+    RemoteStatus,
+)
 from dotfiles.result import StepResult
 
 # Zellij web client — the fallback browser terminal on localhost, exposed to the
 # tailnet with `tailscale serve`. A launchd agent keeps it running.
-ZELLIJ_WEB_PORT = 8082
 _ZELLIJ_BIN = "/opt/homebrew/bin/zellij"
 _ZELLIJ_LABEL = "com.dotfiles.zellij-web"
 
@@ -36,7 +40,6 @@ _ZELLIJ_LABEL = "com.dotfiles.zellij-web"
 # `paseo` is an fnm-managed npm global, so launchd asks fnm to run it
 # under the current default Node version. The daemon password lives hashed in
 # ~/.paseo — never in the plist.
-PASEO_PORT = 6767
 _PASEO_LABEL = "com.dotfiles.paseo"
 _FNM_BIN = "/opt/homebrew/bin/fnm"
 _PASEO_BASE_ARGS = [
@@ -65,17 +68,12 @@ _PASEO_SET_PASSWORD_COMMAND = (
     "set-password",
 )
 
-# The persistent Zellij session the phone deep-links to (…/mobile), built from
-# terminal/zellij/layouts/mobile.kdl.
-MOBILE_SESSION = "mobile"
-
 
 class RemoteService:
     """Brings phone access up/down over the ProcessRunner port."""
 
-    def __init__(self, *, runner: ProcessRunner, interactive: bool, home: Path) -> None:
+    def __init__(self, *, runner: ProcessRunner, home: Path) -> None:
         self._runner = runner
-        self._interactive = interactive
         self._home = home
 
     def _line(self, command: tuple[str, ...]) -> str:
@@ -266,7 +264,7 @@ class RemoteService:
 
     # Zellij web (fallback terminal) --------------------------------------
 
-    def install_agent(self, *, dry_run: bool) -> list[StepResult]:
+    def zellij_install_agent(self, *, dry_run: bool) -> list[StepResult]:
         """Install + load the launchd agent that keeps the Zellij web server alive."""
         return self._load_agent(
             _ZELLIJ_LABEL,
@@ -282,9 +280,9 @@ class RemoteService:
         """Load the managed Zellij web service only when it is not already running."""
         if self._agent_running(_ZELLIJ_LABEL):
             return [StepResult(level="info", message="Zellij web already running")]
-        return self.install_agent(dry_run=dry_run)
+        return self.zellij_install_agent(dry_run=dry_run)
 
-    def uninstall_agent(self, *, dry_run: bool) -> list[StepResult]:
+    def zellij_uninstall_agent(self, *, dry_run: bool) -> list[StepResult]:
         """Unload + remove the Zellij web launchd agent."""
         return self._remove_agent(_ZELLIJ_LABEL, "Zellij web", dry_run=dry_run)
 
@@ -381,27 +379,27 @@ class RemoteService:
     def paseo_running(self) -> bool:
         return self._agent_running(_PASEO_LABEL)
 
-    def mobile_session_step(self, *, dry_run: bool) -> StepResult:
-        """Ensure the `mobile` Zellij session exists; guide creation if not.
+    def mobile_session_step(self, session: str, *, dry_run: bool) -> StepResult:
+        """Ensure the phone-facing Zellij session exists; guide creation if not.
 
         Zellij only creates a session on attach (it needs a PTY), so we don't
         spawn one non-interactively — we surface the one-time create command.
         """
         if dry_run:
-            return StepResult(level="info", message=f"DRY RUN: check '{MOBILE_SESSION}' session")
+            return StepResult(level="info", message=f"DRY RUN: check '{session}' session")
         result = self._runner.run(("zellij", "list-sessions", "--no-formatting"))
         names = (
             [line.split()[0] for line in result.stdout.splitlines() if line.strip()]
             if result.ok
             else []
         )
-        if MOBILE_SESSION in names:
-            return StepResult(level="success", message=f"'{MOBILE_SESSION}' session ready")
+        if session in names:
+            return StepResult(level="success", message=f"'{session}' session ready")
         return StepResult(
             level="warn",
             message=(
-                f"No '{MOBILE_SESSION}' session yet — create it once: "
-                f"zellij --session {MOBILE_SESSION} --layout {MOBILE_SESSION} (detach: Ctrl-o d)"
+                f"No '{session}' session yet — create it once: "
+                f"zellij --session {session} --layout {session} (detach: Ctrl-o d)"
             ),
         )
 

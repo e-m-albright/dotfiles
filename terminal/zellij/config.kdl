@@ -22,7 +22,7 @@ serialize_pane_viewport true
 scrollback_lines_to_serialize 10000
 
 // --- Web client --------------------------------------------------------------
-// `dotfiles remote web --start` serves sessions on 127.0.0.1:8082. To reach it
+// `dfs remote zellij --start` serves sessions on 127.0.0.1:8082. To reach it
 // from the phone, keep it on localhost and put it behind Tailscale:
 //   tailscale serve --bg 8082   // tailnet-only HTTPS, terminates TLS for you
 // Then open https://<your-tailnet-host>/<session> on the phone (installable as a

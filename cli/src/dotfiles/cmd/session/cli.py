@@ -4,12 +4,12 @@ from collections.abc import Sequence
 
 import typer
 from rich.console import Console
-from rich.markup import escape
 
 from dotfiles.app.context import AppContext, app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.session import session_name
 from dotfiles.cmd.session.models import AgentActivity, Session
+from dotfiles.cmd.session.render import agent_badge, programs_preview
 from dotfiles.cmd.session.service import (
     DEFAULT_MAX_AGE_DAYS,
     DEFAULT_MAX_COUNT,
@@ -19,11 +19,8 @@ from dotfiles.cmd.session.service import (
     read_session_inventory,
     sessions_to_prune,
 )
-from dotfiles.cmd.session.zellij import SessionError, Zellij
+from dotfiles.cmd.session.zellij import SessionError, Zellij, attach_command
 from dotfiles.console import console, print_status, print_title, render_and_exit
-
-# Brand-gold, matching the TUI's "what's running" preview line.
-_PROGRAM_STYLE = "#cdbf80"
 
 
 def _zellij(app_ctx: AppContext) -> Zellij:
@@ -64,23 +61,7 @@ def _default(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
     if choice:
         # Picked from the live list, so it already exists.
         layout = zellij.layout_for(choice)
-        app_ctx.launcher.attach(zellij.attach_command(choice, exists=True, layout=layout))
-
-
-def _agent_badge(agents: Sequence[AgentActivity]) -> str:
-    """Green badge of agent names active in a session, e.g. ``claude · codex``."""
-    return " · ".join(f"[green]{a.agent}[/]" for a in agents)
-
-
-def _programs_preview(programs: Sequence[str], limit: int = 3) -> str:
-    """Brand-gold summary of running pane titles, capped with a ``+N`` overflow.
-
-    Titles are escaped so a stray ``[`` in a pane title can't be read as markup.
-    """
-    shown = [escape(p) for p in programs[:limit]]
-    if len(programs) > limit:
-        shown.append(f"+{len(programs) - limit}")
-    return f"[{_PROGRAM_STYLE}]" + " · ".join(shown) + "[/]"
+        app_ctx.launcher.attach(attach_command(choice, exists=True, layout=layout))
 
 
 def _ls_line(s: Session, programs: Sequence[str] = (), agents: Sequence[AgentActivity] = ()) -> str:
@@ -94,7 +75,7 @@ def _ls_line(s: Session, programs: Sequence[str] = (), agents: Sequence[AgentAct
     tag = "current" if s.current else "running"
     extras = [
         part
-        for part in (_agent_badge(agents), _programs_preview(programs) if programs else "")
+        for part in (agent_badge(agents), programs_preview(programs) if programs else "")
         if part
     ]
     # Space (not " · ") between the agent badge and the preview: the preview's
@@ -162,7 +143,7 @@ def attach(ctx: typer.Context, name: str) -> None:
             exists = any(s.name == name for s in zellij.list_sessions())
         except SessionError:
             exists = False
-    app_ctx.launcher.attach(zellij.attach_command(name, exists=exists, layout=layout))
+    app_ctx.launcher.attach(attach_command(name, exists=exists, layout=layout))
 
 
 @session_app.command()
@@ -176,7 +157,7 @@ def new(ctx: typer.Context, name: str) -> None:
     # --layout` create the session if absent.
     zellij = _zellij(app_ctx)
     layout = zellij.layout_for(name)
-    app_ctx.launcher.attach(zellij.attach_command(name, exists=False, layout=layout))
+    app_ctx.launcher.attach(attach_command(name, exists=False, layout=layout))
 
 
 @session_app.command()

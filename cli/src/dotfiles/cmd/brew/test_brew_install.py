@@ -30,11 +30,6 @@ from dotfiles.testing.fakes import FakeProcessRunner
 # ---------------------------------------------------------------------------
 
 INSTALL_TOML = """\
-[flags]
-ai = true
-productivity = true
-social = true
-
 [taps]
 list = ["ariga/tap", "infisical/get-cli"]
 trusted_formulae = ["ariga/tap/atlas", "infisical/get-cli/infisical"]
@@ -635,11 +630,6 @@ def test_python_package_special_does_not_run_typewhisper(
     manifest = load(
         tmp_path,
         """\
-[flags]
-ai = true
-productivity = true
-social = true
-
 [taps]
 list = []
 

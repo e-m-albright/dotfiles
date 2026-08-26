@@ -6,7 +6,7 @@ provides:
   - PackageManifest.load(path) to parse the TOML file
   - enabled_packages() to list what should be installed given active flags
   - installed_formulae() / installed_casks() to query the current machine
-  - stale_packages() / missing_packages() for install-plan computation
+  - InstallPlan.compute() for install-plan computation (missing + stale)
   - add_taps() / install_packages() for install execution
   - install_rust() / install_claude_code() / install_typewhisper() / install_npm_globals()
     for bespoke special installers
@@ -25,10 +25,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from dotfiles.adapters.ports import ProcessRunner
-from dotfiles.logging import get_logger
 from dotfiles.result import StepResult
-
-_log = get_logger(__name__)
 
 
 class BrewInventoryError(RuntimeError):
@@ -124,22 +121,7 @@ class GoPackage(BaseModel):
     version: str
 
 
-class Flags(BaseModel):
-    """Feature flag defaults (all true by default; override via env)."""
-
-    model_config = ConfigDict(frozen=True)
-
-    ai: bool = True
-    productivity: bool = True
-    social: bool = True
-
-    def enabled(self) -> set[FeatureFlag]:
-        values: dict[FeatureFlag, bool] = {
-            "ai": self.ai,
-            "productivity": self.productivity,
-            "social": self.social,
-        }
-        return {name for name, enabled in values.items() if enabled}
+ALL_FLAGS: set[FeatureFlag] = {"ai", "productivity", "social"}
 
 
 class Taps(BaseModel):
@@ -157,7 +139,6 @@ class PackageManifest(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    flags: Flags
     taps: Taps
     sections: list[Section] = []
     specials: dict[str, SpecialInstaller] = {}
@@ -170,7 +151,6 @@ class PackageManifest(BaseModel):
         with path.open("rb") as fh:
             raw = tomllib.load(fh)
 
-        flags = Flags.model_validate(raw.get("flags", {}))
         taps = Taps.model_validate(raw.get("taps", {}))
 
         sections = [Section.model_validate(s) for s in raw.get("section", [])]
@@ -183,7 +163,6 @@ class PackageManifest(BaseModel):
         go_packages = [GoPackage.model_validate(n) for n in raw.get("go_package", [])]
 
         return cls(
-            flags=flags,
             taps=taps,
             sections=sections,
             specials=specials,
@@ -290,30 +269,12 @@ def _require_inventory(exit_code: int, stderr: str) -> None:
         raise BrewInventoryError(stderr.strip() or f"Homebrew inventory failed ({exit_code})")
 
 
-def stale_packages(
-    manifest: PackageManifest,
-    runner: ProcessRunner,
-) -> list[str]:
-    """Return installed packages that are not declared anywhere in the manifest."""
-    return InstallPlan.compute(manifest, runner, flags_on=set()).stale
-
-
 def stale_taps(manifest: PackageManifest, runner: ProcessRunner) -> list[str]:
     """Return installed third-party taps that are not declared in the manifest."""
     result = runner.run(("brew", "tap"))
     _require_inventory(result.exit_code, result.stderr)
     installed = {line for line in result.stdout.splitlines() if line.strip()}
     return sorted(installed - set(manifest.taps.items))
-
-
-def missing_packages(
-    manifest: PackageManifest,
-    runner: ProcessRunner,
-    *,
-    flags_on: set[FeatureFlag],
-) -> list[tuple[str, PackageKind]]:
-    """Return (name, kind) pairs for enabled packages not currently installed."""
-    return InstallPlan.compute(manifest, runner, flags_on=flags_on).missing
 
 
 @dataclass(frozen=True)
@@ -441,7 +402,7 @@ def install_packages(
     try formula first, then cask.  dry_run=True reports what would be done
     without running any mutating command.
     """
-    to_install = missing_packages(manifest, runner, flags_on=flags_on)
+    to_install = InstallPlan.compute(manifest, runner, flags_on=flags_on).missing
     if not to_install:
         return [StepResult(level="info", message="All packages already installed")]
 
@@ -451,13 +412,9 @@ def install_packages(
             for name, kind in to_install
         ]
 
-    _log.info("brew_install_start", count=len(to_install))
     results: list[StepResult] = []
     for name, kind in to_install:
-        result = _install_one(name, kind, runner)
-        if result.level == "error":
-            _log.warning("brew_install_failed", package=name, kind=kind)
-        results.append(result)
+        results.append(_install_one(name, kind, runner))
     return results
 
 

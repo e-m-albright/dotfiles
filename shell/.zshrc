@@ -144,8 +144,6 @@ alias pip='pip3'
 alias py='python3'
 alias j='just'
 
-# Editors
-alias cu='cursor'
 # co: Codex with reasoning profiles and judgment-based approvals
 # Usage: co [-q|--quick|-d|--deep] [codex args...]
 # Default: configured model at medium effort; on-request approval; workspace-write sandbox

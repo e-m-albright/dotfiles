@@ -5,8 +5,8 @@ from dotfiles.cmd.remote.service import RemoteService
 from dotfiles.testing.fakes import FakeProcessRunner
 
 
-def _service(runner: FakeProcessRunner, home: Path, *, interactive: bool = False) -> RemoteService:
-    return RemoteService(runner=runner, interactive=interactive, home=home)
+def _service(runner: FakeProcessRunner, home: Path) -> RemoteService:
+    return RemoteService(runner=runner, home=home)
 
 
 # --- Tailscale ------------------------------------------------------------
@@ -64,7 +64,7 @@ def test_serve_dry_run_makes_no_calls(tmp_path: Path) -> None:
 def test_install_agent_writes_runtime_plist_and_bootstraps(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("id", "-u"), stdout="501\n")
-    steps = _service(runner, tmp_path).install_agent(dry_run=False)
+    steps = _service(runner, tmp_path).zellij_install_agent(dry_run=False)
 
     plist = tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.zellij-web.plist"
     assert plist.exists()
@@ -79,7 +79,7 @@ def test_install_agent_writes_runtime_plist_and_bootstraps(tmp_path: Path) -> No
 
 def test_install_agent_dry_run_writes_nothing(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    steps = _service(runner, tmp_path).install_agent(dry_run=True)
+    steps = _service(runner, tmp_path).zellij_install_agent(dry_run=True)
     assert not (tmp_path / "Library" / "LaunchAgents").exists()
     assert all("DRY RUN" in s.message for s in steps)
     assert not any(c[0] == "launchctl" for c in runner.calls)
@@ -89,8 +89,8 @@ def test_uninstall_agent_boots_out_and_removes_plist(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("id", "-u"), stdout="501\n")
     service = _service(runner, tmp_path)
-    service.install_agent(dry_run=False)
-    steps = service.uninstall_agent(dry_run=False)
+    service.zellij_install_agent(dry_run=False)
+    steps = service.zellij_uninstall_agent(dry_run=False)
     assert not (tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.zellij-web.plist").exists()
     assert ("launchctl", "bootout", "gui/501/com.dotfiles.zellij-web") in runner.calls
     assert all(s.level == "success" for s in steps)
@@ -316,7 +316,7 @@ def test_mobile_session_step_ready_when_present(tmp_path: Path) -> None:
         ("zellij", "list-sessions", "--no-formatting"),
         stdout="mobile [Created 2m ago]\nfoo [Created 1h ago]\n",
     )
-    step = _service(r, tmp_path).mobile_session_step(dry_run=False)
+    step = _service(r, tmp_path).mobile_session_step("mobile", dry_run=False)
     assert step.level == "success"
     assert "ready" in step.message
 
@@ -324,6 +324,6 @@ def test_mobile_session_step_ready_when_present(tmp_path: Path) -> None:
 def test_mobile_session_step_guides_when_absent(tmp_path: Path) -> None:
     r = FakeProcessRunner()
     r.script(("zellij", "list-sessions", "--no-formatting"), stdout="foo [Created 1h ago]\n")
-    step = _service(r, tmp_path).mobile_session_step(dry_run=False)
+    step = _service(r, tmp_path).mobile_session_step("mobile", dry_run=False)
     assert step.level == "warn"
     assert "zellij --session mobile --layout mobile" in step.message

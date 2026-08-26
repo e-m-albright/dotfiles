@@ -4,9 +4,8 @@
 #
 # Sourced by install.sh after brew install (which installs duti).
 #
-# Why this exists: macOS double-clicking a text, markdown, or source/config
-# file used to open Cursor, which is slow to cold-start. Routing to Zed (Rust,
-# GPU-rendered) gives a noticeably faster read-and-close experience. QLMarkdown
+# Why this exists: route double-clicked text, markdown, and source/config
+# files to Zed (fast, GPU-rendered read-and-close experience). QLMarkdown
 # handles the spacebar-Quick-Look case for .md previews without opening anything.
 
 set -eo pipefail
@@ -57,7 +56,7 @@ set_default() {
 }
 
 # --- Zed for text, markdown, and source/config files ---
-# Anything a person edits in a code editor routes to Zed, not Cursor. Browser
+# Anything a person edits in a code editor routes to Zed. Browser
 # (.html/.js/.svg), Quick-Look-only, and document types (.csv/.log) are left
 # to their own defaults — only editor-owned types are claimed here.
 ZED_UTIS=(
@@ -67,8 +66,7 @@ ZED_UTIS=(
     org.yaml
     com.apple.yaml
     public.json
-    org.vuejs.vue  # .vue has a real exported UTI; Cursor claims the bare
-                   # extension as Owner, so set the UTI to win the handoff.
+    org.vuejs.vue  # .vue has a real exported UTI; claim it so Zed wins the handoff.
 )
 ZED_EXTENSIONS=(
     md txt

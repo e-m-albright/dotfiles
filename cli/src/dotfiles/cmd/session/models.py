@@ -1,10 +1,11 @@
 """Domain models for zellij sessions and live agent discovery."""
 
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from dotfiles.agent import Agent
+# Agent process names shown by session and Mission Control views.
+Agent = Literal["claude", "codex"]
 
 
 class Session(BaseModel):

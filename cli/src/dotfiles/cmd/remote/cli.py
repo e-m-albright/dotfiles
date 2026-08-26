@@ -5,7 +5,7 @@ from rich.console import Console
 
 from dotfiles.app.context import app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
-from dotfiles.cmd.remote.models import ConnectionInfo, RemoteStatus
+from dotfiles.cmd.remote.models import ZELLIJ_WEB_PORT, ConnectionInfo, RemoteStatus
 from dotfiles.cmd.remote.service import RemoteService
 from dotfiles.console import (
     console,
@@ -30,11 +30,7 @@ remote_app.add_typer(zellij_app, name="zellij")
 
 def _service(ctx: typer.Context) -> RemoteService:
     app_ctx = app_context(ctx)
-    return RemoteService(
-        runner=app_ctx.runner,
-        interactive=app_ctx.interactive,
-        home=app_ctx.home,
-    )
+    return RemoteService(runner=app_ctx.runner, home=app_ctx.home)
 
 
 def _tailscale_value(status: RemoteStatus) -> str:
@@ -88,7 +84,7 @@ def on(
     steps.extend(service.ensure_paseo_agent(dry_run=dry_run))
     steps.extend(service.ensure_zellij_agent(dry_run=dry_run))
     steps.append(service.serve_start(dry_run=dry_run))
-    steps.append(service.mobile_session_step(dry_run=dry_run))
+    steps.append(service.mobile_session_step(chosen, dry_run=dry_run))
     render_steps(console, steps)
     render_connection_info(console, service.connection_info(chosen))
     if has_errors(steps):
@@ -223,7 +219,10 @@ def _zellij_action_steps(
             service.serve_start(dry_run=dry_run),
         ]
     if stop:
-        return [service.serve_reset(dry_run=dry_run), *service.uninstall_agent(dry_run=dry_run)]
+        return [
+            service.serve_reset(dry_run=dry_run),
+            *service.zellij_uninstall_agent(dry_run=dry_run),
+        ]
     if new_token:
         if dry_run:
             return [StepResult(level="info", message="DRY RUN: mint a Zellij web token")]
@@ -256,7 +255,7 @@ def zellij(
     )
     render_steps(console, steps)
     if not has_errors(steps) and not (stop or new_token):
-        console.print("\n[dim]Local:[/] http://127.0.0.1:8082/mobile")
+        console.print(f"\n[dim]Local:[/] http://127.0.0.1:{ZELLIJ_WEB_PORT}/mobile")
     if has_errors(steps):
         raise typer.Exit(code=1)
 

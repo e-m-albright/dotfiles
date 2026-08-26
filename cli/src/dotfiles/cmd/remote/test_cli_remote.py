@@ -73,7 +73,7 @@ def test_remote_zellij_stop_removes_exposure_and_launchd_agent(tmp_path: Path) -
 
 
 def test_remote_on_dry_run_prints_fallback_url(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), interactive=True, home=tmp_path)
+    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
     result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
     # Connection info shows the Zellij web fallback, deep-linked to the session.
@@ -82,7 +82,7 @@ def test_remote_on_dry_run_prints_fallback_url(tmp_path: Path) -> None:
 
 
 def test_remote_on_session_flag_changes_web_url(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), interactive=True, home=tmp_path)
+    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
     result = runner.invoke(
         app, ["remote", "on", "--dry-run", "--session", "work"], obj=fake, env={"COLUMNS": "200"}
     )
@@ -91,21 +91,21 @@ def test_remote_on_session_flag_changes_web_url(tmp_path: Path) -> None:
 
 
 def test_remote_on_warns_when_tailscale_disconnected(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), interactive=True, home=tmp_path)
+    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
     result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
     assert "Tailscale not connected" in result.output
 
 
 def test_remote_on_brings_tailnet_up_by_default(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), interactive=True, home=tmp_path)
+    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
     result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
     assert "DRY RUN: tailscale up" in _flat(result.output)
 
 
 def test_remote_on_no_tailscale_skips_bringup(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), interactive=True, home=tmp_path)
+    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
     result = runner.invoke(
         app, ["remote", "on", "--dry-run", "--no-tailscale"], obj=fake, env={"COLUMNS": "200"}
     )
@@ -114,7 +114,7 @@ def test_remote_on_no_tailscale_skips_bringup(tmp_path: Path) -> None:
 
 
 def test_remote_on_installs_paseo_agent(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), interactive=True, home=tmp_path)
+    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
     result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
     assert "com.dotfiles.paseo" in _flat(result.output)
@@ -127,7 +127,7 @@ def test_remote_on_does_not_reload_running_services(tmp_path: Path) -> None:
         stdout=("123\t0\tcom.dotfiles.paseo\n124\t0\tcom.dotfiles.zellij-web\n"),
     )
     r.script(("zellij", "web", "--status"), exit_code=0)
-    fake = make_fake_context(runner=r, interactive=True, home=tmp_path)
+    fake = make_fake_context(runner=r, home=tmp_path)
 
     result = runner.invoke(app, ["remote", "on"], obj=fake, env={"COLUMNS": "200"})
 
@@ -151,7 +151,7 @@ def test_remote_paseo_rotate_password_warns_restarts_and_prints_next_steps(
 ) -> None:
     r = _runner_with_status(tailscale_up=True)
     r.script(("id", "-u"), stdout="501\n")
-    fake = make_fake_context(runner=r, interactive=True, home=tmp_path)
+    fake = make_fake_context(runner=r, home=tmp_path)
 
     result = runner.invoke(
         app,
@@ -179,7 +179,7 @@ def test_remote_paseo_rotate_password_warns_restarts_and_prints_next_steps(
 
 def test_remote_off_breaks_connectivity_but_keeps_agents_running() -> None:
     r = FakeProcessRunner()
-    fake = make_fake_context(runner=r, interactive=False)
+    fake = make_fake_context(runner=r)
 
     result = runner.invoke(app, ["remote", "off"], obj=fake, env={"COLUMNS": "200"})
 
@@ -193,7 +193,7 @@ def test_remote_off_breaks_connectivity_but_keeps_agents_running() -> None:
 
 def test_remote_tailscale_manages_network_state() -> None:
     r = _runner_with_status(tailscale_up=True)
-    fake = make_fake_context(runner=r, interactive=False)
+    fake = make_fake_context(runner=r)
 
     status = runner.invoke(app, ["remote", "tailscale"], obj=fake)
     down = runner.invoke(app, ["remote", "tailscale", "--down"], obj=fake)
@@ -211,7 +211,7 @@ def test_remote_status_shows_paseo_and_web_fields(tmp_path: Path) -> None:
         ("tailscale", "status", "--json"),
         stdout='{"Self": {"DNSName": "evans-mbp-m4.tailnet.ts.net."}}',
     )
-    fake = make_fake_context(runner=r, interactive=True, home=tmp_path)
+    fake = make_fake_context(runner=r, home=tmp_path)
     result = runner.invoke(app, ["remote", "status"], obj=fake, env={"COLUMNS": "200"})
     assert result.exit_code == 0
     assert "Tailscale" in result.output

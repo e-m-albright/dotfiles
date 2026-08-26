@@ -42,9 +42,7 @@ class RemotePane(Container):
         return cast("MissionControlApp", self.app)  # type: ignore[assignment]
 
     def _service(self) -> RemoteService:
-        return RemoteService(
-            runner=self._ctx.runner, interactive=self._ctx.interactive, home=self._ctx.home
-        )
+        return RemoteService(runner=self._ctx.runner, home=self._ctx.home)
 
     @work(thread=True, exclusive=True)
     def refresh_status(self) -> None:

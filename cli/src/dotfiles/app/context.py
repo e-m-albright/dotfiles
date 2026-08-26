@@ -13,7 +13,6 @@ import typer
 from dotfiles.adapters.launcher import FzfExecLauncher
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.adapters.process import SubprocessRunner
-from dotfiles.cmd.brew.service import FeatureFlag
 from dotfiles.cmd.email.icloud import build_icloud_provider
 from dotfiles.cmd.email.service import MaskProvider
 from dotfiles.cmd.session.service import SessionLauncher
@@ -29,15 +28,11 @@ class AppContext:
 
     runner: ProcessRunner
     settings: Settings
-    interactive: bool
     home: Path
     launcher: SessionLauncher
     # Builds a Hide My Email provider for an account, on demand (no login at wiring time).
     mask_provider_factory: Callable[[str], MaskProvider] = build_icloud_provider
     dotfiles_dir: Path = _REPO_ROOT
-    # Feature flags enabled via the environment (AI/PRODUCTIVITY/SOCIAL); read in
-    # the composition root, never via os.environ inside a command.
-    feature_flags: frozenset[FeatureFlag] = frozenset({"ai", "productivity", "social"})
 
 
 def app_context(ctx: typer.Context) -> AppContext:
@@ -51,25 +46,12 @@ def app_context(ctx: typer.Context) -> AppContext:
     return obj
 
 
-def _env_feature_flags() -> frozenset[FeatureFlag]:
-    """Flags enabled via env vars (AI/PRODUCTIVITY/SOCIAL); on unless set to "0"."""
-    env_names: dict[FeatureFlag, str] = {
-        "ai": "AI",
-        "productivity": "PRODUCTIVITY",
-        "social": "SOCIAL",
-    }
-    return frozenset(flag for flag, env in env_names.items() if os.environ.get(env, "1") != "0")
-
-
-def build_real_context(*, interactive: bool) -> AppContext:
+def build_real_context() -> AppContext:
     dotfiles_dir = Path(os.environ["DOTFILES_DIR"]) if "DOTFILES_DIR" in os.environ else _REPO_ROOT
-    home = Path.home()
     return AppContext(
         runner=SubprocessRunner(),
         settings=Settings(),
-        interactive=interactive,
-        home=home,
+        home=Path.home(),
         launcher=FzfExecLauncher(),
         dotfiles_dir=dotfiles_dir,
-        feature_flags=_env_feature_flags(),
     )

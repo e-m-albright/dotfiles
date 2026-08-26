@@ -23,14 +23,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-# Stock macOS alert sounds, offered as named cues so callers need not know paths.
-SOUNDS = {
-    "start": "/System/Library/Sounds/Tink.aiff",
-    "switch": "/System/Library/Sounds/Pop.aiff",
-    "warn": "/System/Library/Sounds/Morse.aiff",
-    "done": "/System/Library/Sounds/Glass.aiff",
-}
-
 DEFAULT_SAY_VOICE = "Samantha"
 DEFAULT_SAY_RATE = 175
 
@@ -50,10 +42,9 @@ ENGINES = ("supertonic", "say", "silent")
 
 
 class Voice(Protocol):
-    """The three things a caller needs from an audio backend."""
+    """The two things a caller needs from an audio backend."""
 
     def speak(self, text: str, *, wait: bool = True) -> None: ...
-    def chime(self, name: str) -> None: ...
     def stop(self) -> None: ...
 
 
@@ -88,7 +79,7 @@ def split_sentences(text: str, *, min_chars: int = CHUNK_MIN_CHARS) -> list[str]
     return [c for c in chunks if c]
 
 
-def _play(path: str | Path) -> subprocess.Popen[bytes]:
+def play_file(path: str | Path) -> subprocess.Popen[bytes]:
     """Fire-and-forget playback. Returns the process so it can be cut short."""
     return subprocess.Popen(
         ["afplay", str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
@@ -100,11 +91,6 @@ class _ProcessVoice:
     """Shared plumbing for backends that speak by running a subprocess."""
 
     _proc: subprocess.Popen[bytes] | None = field(default=None, init=False, repr=False)
-
-    def chime(self, name: str) -> None:
-        path = SOUNDS.get(name)
-        if path and Path(path).exists():
-            _play(path)
 
     def stop(self) -> None:
         if self._proc and self._proc.poll() is None:
@@ -146,14 +132,10 @@ class SilentVoice:
     """Records what would have been said. Dry runs and tests."""
 
     said: list[str] = field(default_factory=list[str])
-    chimed: list[str] = field(default_factory=list[str])
 
     def speak(self, text: str, *, wait: bool = True) -> None:
         if text:
             self.said.append(text)
-
-    def chime(self, name: str) -> None:
-        self.chimed.append(name)
 
     def stop(self) -> None:
         return

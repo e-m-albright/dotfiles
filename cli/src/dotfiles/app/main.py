@@ -11,7 +11,6 @@ custom tree so each group's subcommands are visible on the front door.
 from __future__ import annotations
 
 import os
-import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -25,7 +24,7 @@ if TYPE_CHECKING:
     from rich.text import Text
     from typer.core import TyperGroup
 
-from dotfiles.app.context import AppContext, build_real_context
+from dotfiles.app.context import build_real_context
 from dotfiles.cmd.brew.cli import brew_app
 from dotfiles.cmd.doctor.cli import doctor_command
 from dotfiles.cmd.email.cli import email_mask_app
@@ -33,7 +32,6 @@ from dotfiles.cmd.password.cli import password_command
 from dotfiles.cmd.remote.cli import remote_app
 from dotfiles.cmd.session.cli import session_app
 from dotfiles.cmd.speak.cli import speak_command
-from dotfiles.logging import configure_logging
 
 # Rich help-panel titles. The em-dash descriptor is part of the panel title, so
 # the grouped boxes read the same as the legacy `sub_help` section headers.
@@ -83,9 +81,7 @@ def _delegate_to_shim(name: str, args: list[str]) -> None:
 def _main(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
     """Build the composition context once if a test hasn't injected one."""
     if ctx.obj is None:
-        ctx.obj = build_real_context(interactive=sys.stdin.isatty())
-    if isinstance(ctx.obj, AppContext):
-        configure_logging(ctx.obj.settings.log_level)
+        ctx.obj = build_real_context()
 
 
 # --- Machine -----------------------------------------------------------------

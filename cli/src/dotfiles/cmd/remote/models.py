@@ -2,6 +2,10 @@
 
 from pydantic import BaseModel, ConfigDict
 
+# Single home for the two service ports (referenced by service, CLI, and models).
+ZELLIJ_WEB_PORT = 8082  # Zellij web client (fallback terminal)
+PASEO_PORT = 6767  # Paseo daemon (primary Pi/agent driver)
+
 
 class RemoteStatus(BaseModel):
     """Snapshot of the Mac's phone-access state."""
@@ -31,8 +35,8 @@ class ConnectionInfo(BaseModel):
     # Full MagicDNS name (e.g. host.tailnet.ts.net) when on a tailnet; None
     # off-tailnet. `tailscale serve` issues its TLS cert for this name.
     magic_dns: str | None = None
-    web_port: int = 8082  # Zellij web client (fallback terminal)
-    paseo_port: int = 6767  # Paseo daemon (primary Pi/agent driver)
+    web_port: int = ZELLIJ_WEB_PORT
+    paseo_port: int = PASEO_PORT
 
     @property
     def local_url(self) -> str:

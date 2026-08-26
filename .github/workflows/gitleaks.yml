@@ -4,7 +4,6 @@ name: Secret Scan
 # nothing is ever rewritten): on every PR/push gitleaks scans the new commits so
 # a secret is caught before it lands, and the weekly scheduled run (fetch-depth 0)
 # re-scans the ENTIRE history in case something slipped in earlier.
-# Ledger: docs/health/cli/findings.md (shell/product-coverage gaps).
 
 on:
   push:

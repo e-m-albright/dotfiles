@@ -143,13 +143,8 @@ sub_shell_profile() {
     total=$( { time zsh -i -c exit 2>&1; } 2>&1 | grep real | awk '{print $2}')
     printf "  Total startup time: ${BOLD}%s${NC}\n\n" "$total"
 
-    # Detailed breakdown using zsh XTRACE
-    printf "  ${BLUE}Top 10 slowest operations:${NC}\n"
-    ZSHRC_PROFILE=1 zsh -i -c exit 2>&1 | \
-        awk '{ gsub(/^[0-9]+\.[0-9]+/, "", $0); print }' 2>/dev/null || true
-
-    # Simpler approach: time individual sourced files
-    printf "\n  ${BLUE}File-by-file timing:${NC}\n"
+    # Time individual sourced files
+    printf "  ${BLUE}File-by-file timing:${NC}\n"
     for f in ~/.zshenv ~/.zprofile ~/.zshrc; do
         if [[ -f "$f" ]]; then
             local t

@@ -9,12 +9,12 @@ import typer
 from dotfiles.app.context import app_context
 from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.brew.service import (
+    ALL_FLAGS,
     BrewInventoryError,
     FeatureFlag,
+    InstallPlan,
     PackageManifest,
     install_software,
-    missing_packages,
-    stale_packages,
     stale_taps,
 )
 from dotfiles.cmd.brew.service import upgrade as upgrade_packages
@@ -36,17 +36,14 @@ def _manifest(ctx: typer.Context) -> PackageManifest:
     return PackageManifest.load(toml_path)
 
 
-def _flags_on(
-    defaults: set[FeatureFlag],
-    env_flags: frozenset[FeatureFlag],
-    *,
-    no_ai: bool,
-    no_productivity: bool,
-    no_social: bool,
-) -> set[FeatureFlag]:
-    """Apply environment and per-run overrides to manifest defaults."""
-    disabled = {"ai": no_ai, "productivity": no_productivity, "social": no_social}
-    return {flag for flag in defaults & env_flags if not disabled[flag]}
+def _flags_on(*, no_ai: bool, no_productivity: bool, no_social: bool) -> set[FeatureFlag]:
+    """All feature flags minus the per-run --no-* overrides."""
+    disabled: dict[FeatureFlag, bool] = {
+        "ai": no_ai,
+        "productivity": no_productivity,
+        "social": no_social,
+    }
+    return {flag for flag in ALL_FLAGS if not disabled[flag]}
 
 
 @brew_app.command()
@@ -66,13 +63,7 @@ def install(
     """Install all packages declared in packages.toml (idempotent)."""
     app_ctx = app_context(ctx)
     manifest = _manifest(ctx)
-    flags = _flags_on(
-        manifest.flags.enabled(),
-        app_ctx.feature_flags,
-        no_ai=no_ai,
-        no_productivity=no_productivity,
-        no_social=no_social,
-    )
+    flags = _flags_on(no_ai=no_ai, no_productivity=no_productivity, no_social=no_social)
     runner = app_ctx.runner
 
     print_title(console, "brew", "install")
@@ -125,11 +116,11 @@ def stale(ctx: typer.Context) -> None:
     runner = app_ctx.runner
 
     try:
-        stale_list = stale_packages(manifest, runner)
+        # One inventory pass covers both lists (stale is flag-independent).
+        plan = InstallPlan.compute(manifest, runner, flags_on=ALL_FLAGS)
+        stale_list = plan.stale
         stale_tap_list = stale_taps(manifest, runner)
-        missing_list = missing_packages(
-            manifest, runner, flags_on=manifest.flags.enabled() & set(app_ctx.feature_flags)
-        )
+        missing_list = plan.missing
     except BrewInventoryError as exc:
         print_status(console, "error", str(exc))
         raise typer.Exit(code=1) from exc

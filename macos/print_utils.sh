@@ -8,8 +8,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-# shellcheck disable=SC2034 # available for use
-MAGENTA='\033[0;35m'
 DIM='\033[2m'
 BOLD='\033[1m'
 NC='\033[0m'
@@ -21,10 +19,6 @@ BULLET="${CYAN}•${NC}"
 WARN="${YELLOW}⚠${NC}"
 ARROW="${BLUE}→${NC}"
 SKIP="${YELLOW}○${NC}"
-UPDATE="${YELLOW}↻${NC}"
-
-# Package name color
-PKG_COLOR='\033[0;36m'
 
 # --- Headers & Sections ---
 
@@ -82,26 +76,4 @@ print_step() {
 
 print_skip() {
     printf "  ${SKIP} %s ${DIM}(already exists)${NC}\n" "$1"
-}
-
-print_update() {
-    printf "  ${UPDATE} %s ${DIM}(updated)${NC}\n" "$1"
-}
-
-# --- Package install messages ---
-
-print_pkg_installed() {
-    printf "  ${BULLET} ${PKG_COLOR}%s${NC} ${DIM}already installed${NC}\n" "$1"
-}
-
-print_pkg_installing() {
-    printf "  ${ARROW} ${BOLD}Installing ${PKG_COLOR}%s${NC}${BOLD}...${NC}\n" "$1"
-}
-
-print_pkg_done() {
-    printf "  ${CHECK} ${PKG_COLOR}%s${NC} ${GREEN}installed${NC}\n" "$1"
-}
-
-print_pkg_fail() {
-    printf "  ${WARN} ${YELLOW}Failed to install %s${NC}\n" "$1"
 }

@@ -7,7 +7,19 @@ from pathlib import Path
 
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.doctor.models import CheckResult
-from dotfiles.fsutil import symlink as _make_symlink
+
+
+def _make_symlink(src: Path, dest: Path) -> None:
+    """Create dest -> src symlink, replacing any existing link or file at dest.
+
+    Call only with fixed, well-known dotfile paths — this force-replaces
+    whatever is at dest.
+    """
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.is_symlink() or dest.exists():
+        dest.unlink()
+    dest.symlink_to(src)
+
 
 # Declarative tool checks by rendered section: (display name, command, install hint).
 _TOOL_CHECKS: dict[str, tuple[tuple[str, str, str], ...]] = {
@@ -23,10 +35,7 @@ _TOOL_CHECKS: dict[str, tuple[tuple[str, str, str], ...]] = {
         ("Delta", "delta", "brew install git-delta"),
         ("golangci-lint", "golangci-lint", "brew install golangci-lint"),
     ),
-    "Remote Shell": (
-        ("Mosh", "mosh", "brew install mosh"),
-        ("Zellij", "zellij", "brew install zellij"),
-    ),
+    "Remote Shell": (("Zellij", "zellij", "brew install zellij"),),
 }
 
 
@@ -60,12 +69,6 @@ class DoctorService:
             result = self._runner.run((cmd, "--version"))
             detail = result.stdout.splitlines()[0].strip() if result.stdout.strip() else "installed"
             return CheckResult(section=section, name=name, status="ok", detail=detail)
-        return CheckResult(section=section, name=name, status="missing", hint=hint)
-
-    def _app(self, section: str, name: str, app_path: Path, hint: str) -> CheckResult:
-        """Check a macOS .app bundle."""
-        if app_path.exists():
-            return CheckResult(section=section, name=name, status="ok", detail="installed")
         return CheckResult(section=section, name=name, status="missing", hint=hint)
 
     def _symlink(self, section: str, name: str, src: Path, dest: Path) -> CheckResult:

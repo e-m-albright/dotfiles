@@ -15,8 +15,7 @@ from __future__ import annotations
 import re
 
 from dotfiles.adapters.ports import ProcessRunner
-from dotfiles.agent import Agent
-from dotfiles.cmd.session.models import AgentActivity
+from dotfiles.cmd.session.models import Agent, AgentActivity
 
 # Coding agents we look for, keyed by their exact process ``comm`` (== Agent value).
 _AGENT_COMMS: tuple[Agent, ...] = ("claude", "codex")

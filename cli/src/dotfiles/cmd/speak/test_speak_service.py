@@ -58,13 +58,11 @@ def test_the_preset_roster_is_five_male_and_five_female() -> None:
     assert DEFAULT_SUPERTONIC_VOICE in SUPERTONIC_VOICES
 
 
-def test_silent_backend_records_speech_and_chimes() -> None:
+def test_silent_backend_records_speech() -> None:
     voice = SilentVoice()
     voice.speak("hello")
     voice.speak("")  # empty text is not speech
-    voice.chime("start")
     assert voice.said == ["hello"]
-    assert voice.chimed == ["start"]
 
 
 # --- chunking -------------------------------------------------------------
@@ -130,8 +128,8 @@ def test_chunks_render_and_play_in_order(monkeypatch: pytest.MonkeyPatch) -> Non
 
     import tempfile
 
-    # neural.py binds `_play` at import, so patch it there, not on service.
-    monkeypatch.setattr(neural, "_play", lambda path: (played.append(str(path)), _Proc())[1])
+    # neural.py binds `play_file` at import, so patch it there, not on service.
+    monkeypatch.setattr(neural, "play_file", lambda path: (played.append(str(path)), _Proc())[1])
     fake = _FakeTTS()
     backend = SupertonicVoice(voice="M3")
     backend._tts = fake

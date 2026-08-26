@@ -11,10 +11,9 @@ TYPEWHISPER_PREFS="$HOME/Library/Preferences/com.typewhisper.mac.plist"
 TYPEWHISPER_APP="/Applications/TypeWhisper.app"
 
 usage() {
-    printf "Usage: macos/typewhisper.sh <status|apply> [--quit] [--reopen]\n"
+    printf "Usage: macos/typewhisper.sh apply [--quit] [--reopen]\n"
     printf "\n"
     printf "Commands:\n"
-    printf "  status          Show installed app, running state, configured workflow summary\n"
     printf "  apply           Apply tracked preferences and workflow configuration\n"
     printf "\n"
     printf "Options for apply:\n"
@@ -45,83 +44,6 @@ quit_typewhisper() {
     return 1
 }
 
-status_typewhisper() {
-    print_header "TypeWhisper configuration"
-
-    print_section "App"
-    if [[ -d "$TYPEWHISPER_APP" ]]; then
-        print_success "Installed at $TYPEWHISPER_APP"
-    else
-        print_error "TypeWhisper.app not installed"
-    fi
-
-    if is_typewhisper_running; then
-        print_info "TypeWhisper is running"
-    else
-        print_info "TypeWhisper is not running"
-    fi
-
-    print_section "Tracked config"
-    for file in settings.json workflows.json dictionary.json; do
-        if [[ -f "$TYPEWHISPER_CONFIG_DIR/$file" ]]; then
-            print_success "$TYPEWHISPER_CONFIG_DIR/$file"
-        else
-            print_error "Missing $TYPEWHISPER_CONFIG_DIR/$file"
-        fi
-    done
-
-    print_section "Live state"
-    python3 - "$TYPEWHISPER_PREFS" "$TYPEWHISPER_SUPPORT_DIR" <<'PY'
-import json
-import pathlib
-import plistlib
-import sqlite3
-import sys
-
-prefs_path = pathlib.Path(sys.argv[1])
-support_dir = pathlib.Path(sys.argv[2])
-
-if prefs_path.exists():
-    with prefs_path.open("rb") as handle:
-        prefs = plistlib.load(handle)
-    print(f"  selectedEngine: {prefs.get('selectedEngine', '<unset>')}")
-    print(f"  selectedModel: {prefs.get('plugin.com.typewhisper.parakeet.selectedModel', '<unset>')}")
-    print(f"  fillerWordsEnabled: {prefs.get('plugin.com.typewhisper.filler-words.enabled', '<unset>')}")
-else:
-    print("  preferences: missing")
-
-workflow_store = support_dir / "workflows.store"
-if workflow_store.exists():
-    con = sqlite3.connect(workflow_store)
-    rows = con.execute(
-        "select ZNAME, ZISENABLED, ZTEMPLATERAW, ZTRIGGERKINDRAW, ZBEHAVIORDATA "
-        "from ZWORKFLOW order by ZSORTORDER, ZNAME"
-    ).fetchall()
-    con.close()
-    if not rows:
-        print("  workflows: none")
-    for name, enabled, template, trigger, behavior_blob in rows:
-        fine_tuning = ""
-        if behavior_blob:
-            try:
-                fine_tuning = json.loads(behavior_blob.decode("utf-8")).get("fineTuning", "")
-            except Exception:
-                fine_tuning = "<unreadable>"
-        print(f"  workflow: {name} enabled={bool(enabled)} template={template} trigger={trigger} fineTuningChars={len(fine_tuning)}")
-else:
-    print("  workflows.store: missing")
-
-dictionary_store = support_dir / "dictionary.store"
-if dictionary_store.exists():
-    con = sqlite3.connect(dictionary_store)
-    term_count = con.execute("select count(*) from ZDICTIONARYENTRY where ZENTRYTYPE='term'").fetchone()[0]
-    correction_count = con.execute("select count(*) from ZDICTIONARYENTRY where ZENTRYTYPE='correction'").fetchone()[0]
-    con.close()
-    print(f"  dictionary: terms={term_count} corrections={correction_count}")
-else:
-    print("  dictionary.store: missing")
-PY
-}
 
 apply_typewhisper() {
     local quit_first=false
@@ -370,10 +292,9 @@ PY
     print_completion "TypeWhisper configuration applied"
 }
 
-command="${1:-status}"
+command="${1:-help}"
 shift || true
 case "$command" in
-    status) status_typewhisper "$@" ;;
     apply) apply_typewhisper "$@" ;;
     -h|--help|help) usage ;;
     *) print_error "Unknown TypeWhisper command: $command"; usage; exit 1 ;;

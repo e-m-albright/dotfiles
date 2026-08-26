@@ -235,12 +235,6 @@ class Zellij:
 
     # --- attach / layout (pure builders, bound to this host) ---
 
-    def attach_command(
-        self, name: str, *, exists: bool = False, layout: str | None = None
-    ) -> tuple[str, ...]:
-        """The zellij command to reach `name` (see module `attach_command`)."""
-        return attach_command(name, exists=exists, layout=layout)
-
     def layout_for(self, name: str) -> str | None:
         """The curated layout deployed for `name`, or None."""
         return layout_name_for(self._home, name)
