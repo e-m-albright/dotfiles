@@ -25,13 +25,12 @@ if TYPE_CHECKING:
     from typer.core import TyperGroup
 
 from dotfiles.app.context import build_real_context
-from dotfiles.cmd.brew.cli import brew_app
+from dotfiles.cmd.brew.cli import brew_app, clean_command
 from dotfiles.cmd.doctor.cli import doctor_command
 from dotfiles.cmd.email.cli import email_mask_app
 from dotfiles.cmd.password.cli import password_command
 from dotfiles.cmd.remote.cli import remote_app
 from dotfiles.cmd.session.cli import session_app
-from dotfiles.cmd.speak.cli import speak_command
 
 # Rich help-panel titles. The em-dash descriptor is part of the panel title, so
 # the grouped boxes read the same as the legacy `sub_help` section headers.
@@ -101,10 +100,7 @@ app.command("doctor", rich_help_panel=PANEL_MACHINE)(doctor_command)
 app.add_typer(brew_app, name="brew", rich_help_panel=PANEL_MACHINE)
 
 
-@app.command(rich_help_panel=PANEL_MACHINE, context_settings=_PASSTHROUGH)
-def clean(ctx: typer.Context) -> None:
-    """Clean up Homebrew caches."""
-    _delegate_to_shim("clean", ctx.args)
+app.command("clean", rich_help_panel=PANEL_MACHINE)(clean_command)
 
 
 @app.command(rich_help_panel=PANEL_MACHINE, context_settings=_PASSTHROUGH)
@@ -130,7 +126,6 @@ app.add_typer(remote_app, name="remote", rich_help_panel=PANEL_CONTROL)
 app.add_typer(session_app, name="session", rich_help_panel=PANEL_CONTROL)
 app.add_typer(email_mask_app, name="email-mask", rich_help_panel=PANEL_CONTROL)
 app.command("password", rich_help_panel=PANEL_CONTROL)(password_command)
-app.command("speak", rich_help_panel=PANEL_CONTROL)(speak_command)
 
 
 def _subcommand_rows(group: TyperGroup) -> list[tuple[Text, Text]]:

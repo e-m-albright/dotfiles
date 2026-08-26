@@ -92,6 +92,15 @@ class SpecialInstaller(BaseModel):
     method: SpecialMethod
     flag: FeatureFlag | None = None
     note: str = ""
+    disabled: bool = False
+    reason: str = ""
+
+    @model_validator(mode="after")
+    def disabled_requires_reason(self) -> SpecialInstaller:
+        _require_dated_reason(
+            "special installer", self.method, disabled=self.disabled, reason=self.reason
+        )
+        return self
 
 
 class NpmPackage(BaseModel):
@@ -736,7 +745,11 @@ def _install_special(
     dotfiles_dir: Path,
     dry_run: bool,
 ) -> list[StepResult]:
-    if not _flag_active(installer.flag, flags_on) or installer.method == "python_package":
+    if (
+        installer.disabled
+        or not _flag_active(installer.flag, flags_on)
+        or installer.method == "python_package"
+    ):
         return []
     if dry_run:
         return [StepResult(level="info", message=f"DRY RUN: install {name}")]
@@ -798,6 +811,14 @@ def install_software(
     return results
 
 
+def cleanup(runner: ProcessRunner) -> list[StepResult]:
+    """Prune Homebrew caches older than 30 days."""
+    result = runner.run(("brew", "cleanup", "--prune=30"))
+    if result.ok:
+        return [StepResult(level="success", message="Pruned caches older than 30 days")]
+    return [StepResult(level="error", message="brew cleanup failed", details=result.stderr.strip())]
+
+
 def upgrade(runner: ProcessRunner) -> list[StepResult]:
     """Update Homebrew and upgrade all installed formulae + casks, then prune caches.
 
@@ -820,11 +841,11 @@ def upgrade(runner: ProcessRunner) -> list[StepResult]:
         results.append(
             StepResult(level="error", message="brew upgrade failed", details=res.stderr.strip())
         )
-    cleanup = runner.run(("brew", "cleanup", "--prune=30"))
-    if cleanup.ok:
-        results.append(StepResult(level="info", message="Pruned caches older than 30 days"))
-    else:
-        results.append(
-            StepResult(level="warn", message="brew cleanup failed", details=cleanup.stderr.strip())
-        )
+    cleanup_steps = cleanup(runner)
+    results.extend(
+        StepResult(level="warn", message=step.message, details=step.details)
+        if step.level == "error"
+        else step
+        for step in cleanup_steps
+    )
     return results

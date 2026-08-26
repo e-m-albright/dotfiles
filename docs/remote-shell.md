@@ -31,7 +31,7 @@ Everything runs **on the laptop**; the phone is a thin client over the tailnet.
 
 ### Paseo (daily driver)
 
-1. **Install** (npm global, pinned): `npm install -g @getpaseo/cli@<version>`.
+1. **Install:** `dotfiles brew install` reconciles the pinned `@getpaseo/cli` npm global from `macos/packages.toml`.
 2. **Set a daemon password** (stored hashed in `~/.paseo`, never in a plist):
    `paseo daemon set-password`.
 3. **Bring it up** via the CLI — `dfs remote on` installs a launchd agent

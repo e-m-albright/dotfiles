@@ -57,7 +57,6 @@ dotfiles clean                  clean package caches
 dotfiles dock                   reset the Dock layout
 dotfiles profile-shell          profile shell startup
 dotfiles tui                    Mission Control TUI (phone-drivable dashboard)
-dotfiles speak '...'            local neural text-to-speech
 ```
 
 There are no machine-state snapshots. `doctor`, `brew stale`, and

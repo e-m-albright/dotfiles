@@ -66,15 +66,10 @@ sub_update () {
     fi
 
     # --- Homebrew ---
-    print_section "Homebrew (formulae + casks)"
-    brew update
-    if brew upgrade 2>&1; then
-        print_success "Homebrew packages up to date"
+    if ! "$DOTFILES_DIR/bin/dotfiles" brew upgrade; then
+        print_error "Homebrew update failed"
+        return 1
     fi
-    # Quiet cleanup: drop the "Skipping/Removing" wall, keep the freed summary.
-    local freed
-    freed="$(brew cleanup --prune=30 2>/dev/null | grep -o 'freed approximately.*' || true)"
-    print_dim "Cleaned caches older than 30 days${freed:+ — $freed}"
 
     # --- Node.js (fnm) ---
     if command -v fnm >/dev/null 2>&1; then
@@ -110,23 +105,6 @@ sub_update () {
     print_completion "All updates finished"
 }
 
-sub_clean () {
-    # shellcheck source=../macos/print_utils.sh
-    source "$DOTFILES_DIR/macos/print_utils.sh"
-
-    print_header "Cleaning up"
-
-    print_section "Homebrew"
-    # brew cleanup is noisy: per-file "Removing:" lines plus "Warning: Skipping X:
-    # most recent version not installed" (expected — an older bottle whose newest
-    # isn't installed). Drop stderr, surface only the freed-space summary.
-    local freed
-    freed="$(brew cleanup --prune=30 2>/dev/null | grep -o 'freed approximately.*' || true)"
-    print_success "Cleared caches older than 30 days${freed:+ — $freed}"
-
-    print_completion "Cleanup finished"
-}
-
 sub_dock () {
     . "$DOTFILES_DIR/macos/dock.sh"
     print_success "macOS Dock configured"
@@ -156,12 +134,9 @@ sub_shell_profile() {
     printf "  ${YELLOW}Tip:${NC} If startup is slow, check for heavy evals (fnm env, brew shellenv).\n"
 }
 
-# Python CLI (P1a + P1b). Migrated commands are delegated to uv run.
-# As later phases land, add their names to this list.
-# INVARIANT: every name here must also appear in sub_help and the zsh completion
-# file (shell/completions/_dotfiles) — enforced by app/test_command_tree.py so
-# the lists can't silently drift.
-PY_CLI_COMMANDS=" remote session doctor brew tui email-mask password speak "
+# Every Python command must also appear in the Typer registry and zsh completion;
+# app/test_command_tree.py enforces the routing contract.
+PY_CLI_COMMANDS=" remote session doctor brew tui email-mask password clean "
 if [[ "${1:-}" == "email" ]]; then
     shift
     if [[ "${1:-}" == "mask" ]]; then
@@ -178,7 +153,7 @@ fi
 # Bash-native commands accept no arguments. Route their help through Typer so
 # `dfs install --help` can never enter the installer, and reject every other
 # argument before dispatch for the same reason.
-BASH_NATIVE_COMMANDS=" install update clean dock profile-shell "
+BASH_NATIVE_COMMANDS=" install update dock profile-shell "
 if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && "${2:-}" == "--help" ]]; then
     cli_dotfiles "$@"
 fi
@@ -197,7 +172,6 @@ case $COMMAND_NAME in
     # Top-level
     install)     sub_install ;;
     update)      sub_update ;;
-    clean)       sub_clean ;;
     dock)        sub_dock ;;
 
     # profile-shell is a canonical flat command (Machine group in sub_help)

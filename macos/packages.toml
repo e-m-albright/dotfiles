@@ -236,7 +236,9 @@ note = "On-device voice-to-text via Apple SpeechAnalyzer. Replaced Wispr Flow 20
 [special.supertonic]
 method = "python_package"
 flag = "ai"
-note = "Local neural text-to-speech (Supertonic 3, 99M params, ONNX, CPU-only) - the engine behind `dotfiles speak`. Code MIT, weights OpenRAIL-M. Weights self-download to ~/.cache/supertonic3 (385 MB) on first synthesis. Measured 2026-07-24 on this host: ~5-6x realtime, 0.23 s warm load. Declared as an optional extra of the dotfiles CLI, not a Homebrew package."
+disabled = true
+reason = "Retired 2026-08-26: local neural speech did not provide enough value to justify its model, dependency, and cross-repository integration surface; revisit only when a concrete recurring workflow makes speech materially useful"
+note = "Tombstone for the retired Supertonic local neural text-to-speech experiment."
 
 [special.claude_code]
 method = "curl_install"
@@ -285,6 +287,12 @@ version = "v0.7.0"
 # =============================================================================
 # npm globals (no brew formula available / brew formula is wrong package)
 # =============================================================================
+
+[[npm_package]]
+name = "@getpaseo/cli"
+version = "0.5.2"
+flag = "ai"
+note = "Paseo daemon CLI used by the managed launchd agent; binary is `paseo`"
 
 [[npm_package]]
 name = "agent-browser"

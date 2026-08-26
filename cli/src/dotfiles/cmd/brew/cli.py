@@ -14,6 +14,7 @@ from dotfiles.cmd.brew.service import (
     FeatureFlag,
     InstallPlan,
     PackageManifest,
+    cleanup,
     go_drift,
     install_software,
     npm_drift,
@@ -85,6 +86,18 @@ def install(
 
     console.print()
     if has_errors(all_steps):
+        raise typer.Exit(code=1)
+
+
+def clean_command(ctx: typer.Context) -> None:
+    """Clean Homebrew caches."""
+    app_ctx = app_context(ctx)
+    print_title(console, "clean")
+    print_section(console, "Homebrew")
+    steps = cleanup(app_ctx.runner)
+    render_steps(console, steps)
+    console.print()
+    if has_errors(steps):
         raise typer.Exit(code=1)
 
 

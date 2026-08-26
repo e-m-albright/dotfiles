@@ -14,6 +14,7 @@ from dotfiles.cmd.brew.service import (
     _TW_FETCH_URL,
     PackageManifest,
     add_taps,
+    cleanup,
     install_claude_code,
     install_go_tools,
     install_npm_globals,
@@ -624,7 +625,17 @@ def test_upgrade_reports_cleanup_failure() -> None:
     assert any(step.level == "warn" and "cleanup" in step.message for step in steps)
 
 
-def test_python_package_special_does_not_run_typewhisper(
+def test_cleanup_reports_failure_as_an_error() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("brew", "cleanup", "--prune=30"), exit_code=1, stderr="busy")
+
+    steps = cleanup(runner)
+
+    assert steps[0].level == "error"
+    assert steps[0].details == "busy"
+
+
+def test_disabled_python_package_special_does_not_run(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     manifest = load(
@@ -638,6 +649,8 @@ method = "github_dmg"
 
 [special.supertonic]
 method = "python_package"
+disabled = true
+reason = "Retired 2026-08-26: not useful enough"
 """,
     )
     script = tmp_path / "macos" / "typewhisper.sh"

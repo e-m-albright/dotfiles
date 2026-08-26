@@ -31,7 +31,7 @@ _PANELS = {PANEL_MACHINE, PANEL_CONTROL}
 # Bash `case` arms, so they are registered in the Typer app for help/rendering
 # but intentionally absent from PY_CLI_COMMANDS. Every other registered command MUST
 # be routed to the Python CLI — see test_every_registered_command_is_reachable.
-_BASH_NATIVE = {"install", "update", "clean", "dock", "profile-shell"}
+_BASH_NATIVE = {"install", "update", "dock", "profile-shell"}
 
 
 def _routed_commands() -> set[str]:
@@ -130,6 +130,18 @@ def test_unknown_shim_command_uses_branded_visual_error() -> None:
     assert "not-a-command" in result.stderr
     assert "Machine" in result.stderr
     assert "\033[" not in result.stderr
+
+
+def test_retired_speak_command_stays_removed() -> None:
+    result = subprocess.run(
+        [str(_SHIM), "speak", "hello"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 2
+    assert "not a known command" in result.stderr
 
 
 def test_removed_shell_profile_aliases_stay_removed() -> None:
