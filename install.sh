@@ -283,6 +283,7 @@ fi
 mkdir -p "$HOME/.local/bin"
 ln -sf "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/workbench"
 ln -sf "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/wb"
+ln -sf "$WORKBENCH_DIR/bin/wf" "$HOME/.local/bin/wf"
 # The workbench tool prints its own verbose banners and boxes (and has no quiet
 # flag). Capture its output so this section stays in the installer's own visual
 # language, replaying the raw output only when something actually fails.

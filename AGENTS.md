@@ -17,7 +17,7 @@ This repo owns the host layer:
 - `docs/` - machine-specific operating notes
 
 It does not own agent rules, skills, MCP definitions, prompts, engineering
-doctrine, project health kits, or automations. Those belong in
+doctrine, or project health kits. Those belong in
 `~/code/public/workbench`. Exception, documented here deliberately: a few
 agent-launcher conveniences live in `shell/.zshrc` and `editors/zed/settings.json`
 because they are vendor-native host config; the `cc` wrappers depend on
