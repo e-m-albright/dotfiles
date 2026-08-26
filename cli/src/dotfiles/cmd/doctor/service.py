@@ -3,6 +3,7 @@
 import re
 import shutil
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from dotfiles.adapters.ports import ProcessRunner
@@ -89,17 +90,29 @@ class DoctorService:
         return CheckResult(section=section, name=name, status="missing", hint="not symlinked")
 
     def run(self) -> list[CheckResult]:
-        """Run all checks in order, grouped by section."""
-        results: list[CheckResult] = []
-        results.extend(self._check_core_tools())
-        results.extend(self._check_essentials())
-        results.extend(self._check_editors())
-        results.extend(self._check_runtimes())
-        results.extend(self._check_ai_tools())
-        results.extend(self._check_dev_tools())
-        results.extend(self._check_remote_shell())
-        results.extend(self._check_configuration())
-        return results
+        """Run all checks, grouped by section.
+
+        Sections run concurrently (each is dominated by independent
+        `<tool> --version` subprocesses) and are reassembled in order, so the
+        rendered report is byte-identical to a sequential run.
+        """
+        sections: tuple[Callable[[], list[CheckResult]], ...] = (
+            self._check_core_tools,
+            self._check_essentials,
+            self._check_editors,
+            self._check_runtimes,
+            self._check_ai_tools,
+            self._check_dev_tools,
+            self._check_remote_shell,
+            self._check_configuration,
+        )
+
+        def _run_section(check: Callable[[], list[CheckResult]]) -> list[CheckResult]:
+            return check()
+
+        with ThreadPoolExecutor(max_workers=len(sections)) as pool:
+            grouped = list(pool.map(_run_section, sections))
+        return [result for group in grouped for result in group]
 
     # ------------------------------------------------------------------ #
     # Section helpers
@@ -379,10 +392,16 @@ class DoctorService:
         if not source.exists():
             return []
         bin_dir = self._home / ".local" / "bin"
-        return [
+        results = [
             self._symlink(sec, "notes CLI", source, bin_dir / "notes"),
             self._symlink(sec, "nts alias", source, bin_dir / "nts"),
         ]
+        # Apple bridge CLIs are owned by the notes layer; link them when present.
+        for bridge in ("apple-notes", "apple-contacts"):
+            bridge_source = source.parent / bridge
+            if bridge_source.exists():
+                results.append(self._symlink(sec, bridge, bridge_source, bin_dir / bridge))
+        return results
 
     def _check_zellij(self, sec: str) -> list[CheckResult]:
         """Zellij config symlink — only when zellij is installed."""

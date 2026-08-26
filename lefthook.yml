@@ -39,5 +39,21 @@ pre-commit:
       # toml/lock included so a bare dependency bump still runs the gate locally.
       glob: "cli/**/*.{py,toml,lock}"
       run: just check --fast
+commit-msg:
+  commands:
+    subject-quality:
+      # Reject drive-by subjects ("Tweaks", "bump", "wip") — history is the
+      # only durable record of why a change happened.
+      run: |
+        subject="$(head -1 {1})"
+        if printf '%s' "$subject" | grep -qiE '^(tweaks?|bump|fixy?|wip|stuff|misc)\.?$'; then
+          echo "commit-msg: '$subject' says nothing — describe the change." >&2
+          exit 1
+        fi
+        if [ "${#subject}" -lt 8 ]; then
+          echo "commit-msg: subject too short ('$subject') — describe the change." >&2
+          exit 1
+        fi
+
 # No pre-push hooks: pre-commit --fast plus CI's full `just check`/ShellCheck
 # already cover every push; the pre-push reruns only added latency.

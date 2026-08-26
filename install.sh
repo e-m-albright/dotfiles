@@ -268,6 +268,12 @@ if [[ -x "$OBSIDIAN_VAULT/bin/notes" ]]; then
     ln -sf "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/notes"
     ln -sf "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/nts"
     print_success "Notes CLI linked as notes and nts"
+    # Apple bridge CLIs live in the notes layer (they encode its conventions).
+    for bridge in apple-notes apple-contacts; do
+        if [[ -x "$OBSIDIAN_VAULT/bin/$bridge" ]]; then
+            ln -sf "$OBSIDIAN_VAULT/bin/$bridge" "$HOME/.local/bin/$bridge"
+        fi
+    done
 fi
 
 # Workbench (Claude/Codex instructions, skills, MCP, hooks, and prompts)

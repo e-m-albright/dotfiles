@@ -1,6 +1,7 @@
 """In-memory fakes implementing application ports. Tests only."""
 
 import subprocess
+import threading
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 
@@ -15,6 +16,9 @@ class FakeProcessRunner:
     """Records calls; returns scripted results, defaulting to empty success."""
 
     def __init__(self) -> None:
+        # Doctor fans sections out across threads; guard the recorded state so
+        # concurrent callers can't interleave a single call's appends.
+        self._lock = threading.Lock()
         self.calls: list[tuple[str, ...]] = []
         self.calls_with_input: list[tuple[tuple[str, ...], str | None]] = []
         self.inputs: list[str | None] = []
@@ -45,10 +49,11 @@ class FakeProcessRunner:
         capture_output: bool = True,
     ) -> CommandResult:
         key = tuple(command)
-        self.calls.append(key)
-        self.inputs.append(stdin)
-        self.capture_output.append(capture_output)
-        self.calls_with_input.append((key, stdin))
+        with self._lock:
+            self.calls.append(key)
+            self.inputs.append(stdin)
+            self.capture_output.append(capture_output)
+            self.calls_with_input.append((key, stdin))
         result = self._scripted.get(
             key, CommandResult(command=key, exit_code=0, stdout="", stderr="")
         )
