@@ -224,33 +224,24 @@ if command -v zed >/dev/null 2>&1; then
     print_success "Zed configured (settings + keymap symlinked)"
 fi
 
-# Obsidian
-OBSIDIAN_VAULT="$HOME/code/private/notes"
-if [[ -d "$OBSIDIAN_VAULT/.obsidian" ]]; then
-    print_section "Obsidian"
-    OBSIDIAN_CONFIGS=(app appearance core-plugins daily-notes graph templates hotkeys)
-    for cfg in "${OBSIDIAN_CONFIGS[@]}"; do
-        local_file="$DOTFILES_DIR/editors/obsidian/${cfg}.json"
-        vault_file="$OBSIDIAN_VAULT/.obsidian/${cfg}.json"
-        safe_link "$local_file" "$vault_file"
+# Discover one optional private automation layer without publishing its name.
+PRIVATE_AUTOMATION_ROOT="${PRIVATE_AUTOMATION_ROOT:-}"
+if [[ -z "$PRIVATE_AUTOMATION_ROOT" ]]; then
+    for candidate in "$HOME"/code/private/*/bin/notes; do
+        if [[ -x "$candidate" ]]; then
+            PRIVATE_AUTOMATION_ROOT="${candidate%/bin/notes}"
+            break
+        fi
     done
-    # Community plugins
-    chmod +x "$DOTFILES_DIR/editors/obsidian/plugins.sh"
-    . "$DOTFILES_DIR/editors/obsidian/plugins.sh" "$OBSIDIAN_VAULT"
-    print_success "Obsidian configured"
-else
-    print_info "Obsidian vault not found at $OBSIDIAN_VAULT — skipping config"
 fi
-
-if [[ -x "$OBSIDIAN_VAULT/bin/notes" ]]; then
+if [[ -x "$PRIVATE_AUTOMATION_ROOT/bin/notes" ]]; then
     mkdir -p "$HOME/.local/bin"
-    safe_link "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/notes"
-    safe_link "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/nts"
-    print_success "Notes CLI linked as notes and nts"
-    # Apple bridge CLIs live in the notes layer (they encode its conventions).
+    safe_link "$PRIVATE_AUTOMATION_ROOT/bin/notes" "$HOME/.local/bin/notes"
+    safe_link "$PRIVATE_AUTOMATION_ROOT/bin/notes" "$HOME/.local/bin/nts"
+    print_success "Private knowledge CLI linked as notes and nts"
     for bridge in apple-notes apple-contacts; do
-        if [[ -x "$OBSIDIAN_VAULT/bin/$bridge" ]]; then
-            safe_link "$OBSIDIAN_VAULT/bin/$bridge" "$HOME/.local/bin/$bridge"
+        if [[ -x "$PRIVATE_AUTOMATION_ROOT/bin/$bridge" ]]; then
+            safe_link "$PRIVATE_AUTOMATION_ROOT/bin/$bridge" "$HOME/.local/bin/$bridge"
         fi
     done
 fi

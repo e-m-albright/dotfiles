@@ -31,7 +31,6 @@ print_success "Auto-hide enabled (no delay, fast animation, no recents)"
 # zoom.us and WhatsApp are easy enough to reach without dock slots.
 apps=(
     "/Applications/Google Chrome.app"
-    "/Applications/Obsidian.app"
     "/Applications/Spotify.app"
     "/Applications/Zed.app"
     "/Applications/Claude.app"

@@ -17,7 +17,7 @@ def test_app_context_is_constructible_with_fakes() -> None:
 
     ctx = AppContext(
         runner=FakeProcessRunner(),
-        home=Path("/home/evan"),
-        dotfiles_dir=Path("/home/evan/dotfiles"),
+        home=Path("/home/tester"),
+        dotfiles_dir=Path("/home/tester/dotfiles"),
     )
-    assert ctx.home == Path("/home/evan")
+    assert ctx.home == Path("/home/tester")

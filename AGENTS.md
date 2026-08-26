@@ -2,6 +2,8 @@
 
 Personal macOS bootstrap and host configuration. Shared agent behavior and
 engineering guidance are maintained in the sibling `workbench` repository.
+`CATALOGUE.md` is the maintained feature map; update it when a capability is
+added, removed, materially expanded, split, or consolidated.
 
 ## Project Context
 
@@ -10,7 +12,7 @@ This repo owns the host layer:
 - `install.sh` - idempotent bootstrap entrypoint
 - `macos/` - package manifest, system preferences, and bootstrap scripts
 - `shell/`, `terminal/`, `git/` - command-line environment
-- `editors/` - host editor and Obsidian configuration
+- `editors/` - host editor configuration
 - `bin/` - the `dotfiles`/`dfs` shim that routes to bash-native commands or the
   Python CLI (load-bearing: half the daily commands pass through it)
 - `cli/` - the `dotfiles` Typer CLI

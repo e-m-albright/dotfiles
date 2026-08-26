@@ -79,9 +79,9 @@ def make_fake_context(
     dotfiles_dir: Path | None = None,
 ) -> AppContext:
     """Build an AppContext backed by fakes for CLI tests."""
-    home_path = home or Path("/home/evan")
+    home_path = home or Path("/home/tester")
     return AppContext(
         runner=runner or FakeProcessRunner(),
         home=home_path,
-        dotfiles_dir=dotfiles_dir or Path("/home/evan/dotfiles"),
+        dotfiles_dir=dotfiles_dir or Path("/home/tester/dotfiles"),
     )

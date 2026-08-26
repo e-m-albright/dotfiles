@@ -384,7 +384,7 @@ class DoctorService:
             self._symlink(sec, "notes CLI", source, bin_dir / "notes"),
             self._symlink(sec, "nts alias", source, bin_dir / "nts"),
         ]
-        # Apple bridge CLIs are owned by the notes layer; link them when present.
+        # Apple bridge CLIs are owned by an optional private layer.
         for bridge in ("apple-notes", "apple-contacts"):
             bridge_source = source.parent / bridge
             if bridge_source.exists():

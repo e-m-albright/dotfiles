@@ -152,7 +152,7 @@ packages = [
   { name = "perplexity",       note = "No Homebrew cask; app was installed manually", disabled = true, reason = "Disabled 2026-07-14: desktop app removed; use web only if needed" },
   { name = "wispr-flow",       note = "No Homebrew cask exists; installed via special.typewhisper block", disabled = true, reason = "Disabled 2026-05-29: switched to TypeWhisper (on-device Apple SpeechAnalyzer dictation)" },
   { name = "aqua-voice",       note = "Voice dictation alternative", disabled = true, reason = "Disabled 2026-07-15: local TypeWhisper is private, adequate, and subscription-free" },
-  { name = "obsidian",         note = "Knowledge base & note-taking (Markdown)" },
+  { name = "obsidian",         note = "Former Markdown editor; Notes website is the primary knowledge interface", disabled = true, reason = "Retired 2026-08-26: the Notes website now provides the useful reading, editing, finance, and world-model surfaces without the plugin and sync burden" },
   { name = "qlmarkdown",       note = "Quick Look: rendered .md previews (sbarex)" },
   { name = "syntax-highlight", note = "Quick Look: syntax highlighting for code, yaml, toml, json, cfg, etc. (sbarex)" },
 ]

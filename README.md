@@ -37,7 +37,7 @@ The installer is macOS-only and safe to rerun. It:
 1. Links the tracked shell and Git configuration.
 2. Configures SSH and installs Homebrew when needed.
 3. Reconciles packages from `macos/packages.toml`.
-4. Applies macOS, Dock, terminal, editor, and Obsidian configuration.
+4. Applies macOS, Dock, terminal, and editor configuration.
 5. Clones `~/code/public/workbench`, runs `workbench sync all`, and fails the
    install if `workbench drift all` detects managed drift.
 
@@ -121,7 +121,7 @@ cli/                 Typer CLI
 macos/               package manifest and system setup
 shell/               zsh configuration and completions
 terminal/            Ghostty and Yazi configuration
-editors/             Zed and Obsidian host configuration
+editors/             Zed host configuration
 git/                 global Git configuration
 docs/                machine-specific operating notes
 ```
