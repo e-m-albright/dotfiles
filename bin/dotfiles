@@ -34,21 +34,16 @@ cli_dotfiles () {
 }
 
 sub_help () {
-    # Banner + the full command tree are rendered by the Python CLI (Typer/Rich),
-    # so this top-level help matches every `dfs <command> --help` exactly. The
-    # catalog and its Machine/Control/AI grouping live in dotfiles.app.main; this
-    # shim no longer hand-maintains a parallel list. Fall back to a one-liner if
-    # the Python env can't be reached (e.g. uv missing), so help never hard-fails.
+    # Use Typer's native help instead of maintaining a custom renderer.
     local error="${1:-}"
     if [[ -n "$error" ]]; then
-        DOTFILES_HELP_ERROR="$error" cli_python -c \
-            'import os; from dotfiles.app.main import print_help; print_help(error=os.environ["DOTFILES_HELP_ERROR"])' \
-            || printf "%s Error: %s\n%s Usage: %s <command>\n" "$ARROW" "$error" "$ARROW" "$BIN_NAME" >&2
+        printf "Error: %s\n\n" "$error" >&2
+        cli_python -m dotfiles.app.main --help >&2 \
+            || printf "Usage: %s <command>\n" "$BIN_NAME" >&2
         return
     fi
-    cli_python -c \
-        "from dotfiles.app.main import print_help; print_help()" 2>/dev/null \
-        || printf "%s Usage: ${YELLOW}%s <command>${NC} (run \`dfs doctor\` — Python CLI unreachable)\n" "$ARROW" "$BIN_NAME"
+    cli_python -m dotfiles.app.main --help 2>/dev/null \
+        || printf "Usage: %s <command> (run \`dfs doctor\` — Python CLI unreachable)\n" "$BIN_NAME"
 }
 
 sub_update () {
@@ -136,16 +131,7 @@ sub_shell_profile() {
 
 # Every Python command must also appear in the Typer registry and zsh completion;
 # app/test_command_tree.py enforces the routing contract.
-PY_CLI_COMMANDS=" remote session doctor brew tui email-mask password clean "
-if [[ "${1:-}" == "email" ]]; then
-    shift
-    if [[ "${1:-}" == "mask" ]]; then
-        shift
-        set -- email-mask create "$@"
-    else
-        set -- email-mask "$@"
-    fi
-fi
+PY_CLI_COMMANDS=" remote doctor brew password clean "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     cli_dotfiles "$@"
 fi

@@ -1,16 +1,12 @@
 [project]
 name = "dotfiles-cli"
 version = "0.1.0"
-description = "Hexagonal Typer CLI + TUI for the dotfiles dev environment"
+description = "Hexagonal Typer CLI for the dotfiles dev environment"
 requires-python = ">=3.13"
 dependencies = [
     "typer>=0.15",
     "rich>=13.9",
     "pydantic>=2.10",
-    "pydantic-settings>=2.7",
-    "textual>=8.2.7",
-    "pyicloud>=2.6",
-    "segno>=1.6.6",
 ]
 
 [project.scripts]
@@ -26,8 +22,6 @@ dev = [
     "vulture>=2.14",
     "complexipy>=2.0",
     "pip-audit>=2.7",
-    "pytest-textual-snapshot>=1.0.0",
-    "pytest-asyncio>=1.4.0",
 ]
 
 [build-system]

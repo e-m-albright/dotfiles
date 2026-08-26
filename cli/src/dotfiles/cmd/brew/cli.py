@@ -7,7 +7,6 @@ from typing import Annotated
 import typer
 
 from dotfiles.app.context import app_context
-from dotfiles.app.fuzzy import FuzzyTyperGroup
 from dotfiles.cmd.brew.service import (
     ALL_FLAGS,
     BrewInventoryError,
@@ -18,7 +17,9 @@ from dotfiles.cmd.brew.service import (
     go_drift,
     install_software,
     npm_drift,
+    prune_candidates,
     stale_taps,
+    uninstall_prune_candidates,
 )
 from dotfiles.cmd.brew.service import upgrade as upgrade_packages
 from dotfiles.console import (
@@ -30,7 +31,7 @@ from dotfiles.console import (
     render_steps,
 )
 
-brew_app = typer.Typer(cls=FuzzyTyperGroup, help="Manage Homebrew packages from packages.toml.")
+brew_app = typer.Typer(help="Manage Homebrew packages from packages.toml.")
 
 
 def _manifest(ctx: typer.Context) -> PackageManifest:
@@ -108,6 +109,46 @@ def upgrade(ctx: typer.Context) -> None:
     print_title(console, "brew", "upgrade")
     print_section(console, "Upgrading Homebrew packages")
     steps = upgrade_packages(app_ctx.runner)
+    render_steps(console, steps)
+    console.print()
+    if has_errors(steps):
+        raise typer.Exit(code=1)
+
+
+@brew_app.command()
+def prune(
+    ctx: typer.Context,
+    yes: Annotated[bool, typer.Option("--yes", help="Uninstall the previewed packages.")] = False,
+) -> None:
+    """Preview or uninstall packages retained as disabled tombstones."""
+    app_ctx = app_context(ctx)
+    print_title(console, "brew", "prune")
+    try:
+        candidates = prune_candidates(_manifest(ctx), app_ctx.runner)
+    except BrewInventoryError as exc:
+        print_status(console, "error", str(exc))
+        raise typer.Exit(code=1) from exc
+
+    print_section(console, "Disabled packages", "installed but intentionally undesired")
+    if not candidates:
+        print_status(console, "success", "none")
+        console.print()
+        return
+
+    for candidate in candidates:
+        command = (
+            f"brew uninstall {candidate.name}"
+            if candidate.kind == "formula"
+            else f"brew uninstall --cask {candidate.name}"
+        )
+        console.print(f"  [yellow]⚠[/] {candidate.name}  [dim]{command}[/]")
+
+    if not yes:
+        print_status(console, "info", "Preview only — re-run with --yes to uninstall")
+        console.print()
+        return
+
+    steps = uninstall_prune_candidates(candidates, app_ctx.runner)
     render_steps(console, steps)
     console.print()
     if has_errors(steps):

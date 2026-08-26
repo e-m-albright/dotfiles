@@ -104,8 +104,6 @@ _ALL_TOOLS = {
     "just",
     "delta",
     "golangci-lint",
-    "mosh",
-    "zellij",
     "codex",
     "tailscale",
     "workbench",
@@ -132,7 +130,6 @@ def test_run_groups_sections_and_overall_failure() -> None:
     results = svc.run()
     sections = [r.section for r in results]
     assert "Core Tools" in sections
-    assert "Remote Shell" in sections
     assert any(r.is_failure for r in results)  # bare machine fails
 
 
@@ -154,10 +151,6 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
     (git_dir / ".gitconfig").write_text("[core]\n")
     (git_dir / ".gitignore_global").write_text(".DS_Store\n")
 
-    zellij_src = dotfiles / "terminal" / "zellij"
-    (zellij_src / "layouts").mkdir(parents=True)
-    (zellij_src / "config.kdl").write_text("// zellij\n")
-    (zellij_src / "layouts" / "mobile.kdl").write_text("// layout\n")
     yazi_src = dotfiles / "terminal" / "yazi"
     yazi_src.mkdir(parents=True)
     (yazi_src / "yazi.toml").write_text("# yazi\n")
@@ -175,11 +168,6 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
     (home / ".oh-my-zsh" / "custom" / "themes").mkdir(parents=True)
     (home / ".oh-my-zsh" / "custom" / "themes" / "amuse.zsh-theme").symlink_to(
         shell_dir / "amuse.zsh-theme"
-    )
-    (home / ".config" / "zellij" / "layouts").mkdir(parents=True)
-    (home / ".config" / "zellij" / "config.kdl").symlink_to(zellij_src / "config.kdl")
-    (home / ".config" / "zellij" / "layouts" / "mobile.kdl").symlink_to(
-        zellij_src / "layouts" / "mobile.kdl"
     )
     (home / ".config" / "yazi").mkdir(parents=True)
     (home / ".config" / "yazi" / "yazi.toml").symlink_to(yazi_src / "yazi.toml")

@@ -2,7 +2,7 @@
 
 Personal macOS bootstrap and operating configuration. This repo turns a fresh
 MacBook into the host environment I want: packages, shell, terminal, editors,
-privacy utilities, and remote session control.
+privacy utilities, and Tailscale-direct agent access.
 
 Dotfiles is the base layer of a three-repository capability stack, described
 canonically in workbench's
@@ -51,12 +51,13 @@ dotfiles doctor                 live host and workbench drift check
 dotfiles doctor --fix           repair supported symlinks and local config
 dotfiles brew install           install missing declared packages
 dotfiles brew stale             show undeclared installed packages
+dotfiles brew prune             preview installed disabled tombstones
+dotfiles brew prune --yes       uninstall disabled packages; keep tombstones
 dotfiles brew upgrade           upgrade installed packages
 dotfiles update                 update macOS, packages, and runtimes
 dotfiles clean                  clean package caches
 dotfiles dock                   reset the Dock layout
 dotfiles profile-shell          profile shell startup
-dotfiles tui                    Mission Control TUI (phone-drivable dashboard)
 ```
 
 There are no machine-state snapshots. `doctor`, `brew stale`, and
@@ -65,9 +66,7 @@ is no stored observation to become stale.
 
 ## Remote Control
 
-The remote stack is Tailscale + Paseo + Zellij web. Mission Control exposes the
-same operations in a phone-friendly TUI and shows active Claude/Codex processes
-beside their sessions.
+The remote stack is intentionally only Tailscale plus Paseo. Paseo owns agent process continuity and the native mobile interface for Pi, Claude Code, and Codex. There is no phone shell, terminal multiplexer, browser terminal, or Mission Control session manager.
 
 ```text
 dotfiles remote status
@@ -75,35 +74,14 @@ dotfiles remote on
 dotfiles remote off
 dotfiles remote paseo
 dotfiles remote tailscale
-dotfiles remote zellij
-dotfiles remote zellij qr
-dotfiles session ls
-dotfiles session new NAME
-dotfiles session attach NAME
-dotfiles session kill NAME
-dotfiles tui
 ```
 
 See [`docs/remote-shell.md`](docs/remote-shell.md) for setup and recovery details.
 
-## Email Masking
+## Password Utility
 
-`email-mask` is a small privacy convenience around iCloud Hide My Email. The
-default command creates an alias and copies it to the clipboard.
-
-```text
-dotfiles email-mask
-dotfiles email-mask create [LABEL]
-dotfiles email-mask list
-dotfiles email-mask deactivate ADDRESS_OR_ID
-dotfiles email-mask delete ADDRESS_OR_ID [--yes]
-```
-
-Set `DOTFILES_APPLE_ID` or pass `--apple-id`. Authentication is handled by
-`pyicloud`; credentials are stored in the macOS keychain, never this repo.
-
-`password` is its sibling convenience: a random alphanumeric password (20
-chars by default), printed and copied to the clipboard.
+`password` creates a random alphanumeric password (20 characters by default),
+prints it, and copies it to the clipboard.
 
 ```text
 dotfiles password [LENGTH] [--no-copy]
@@ -139,10 +117,10 @@ dotfiles brew install --no-social
 
 ```text
 bin/                 thin `dotfiles` launcher
-cli/                 Typer CLI and Textual Mission Control TUI
+cli/                 Typer CLI
 macos/               package manifest and system setup
 shell/               zsh configuration and completions
-terminal/            Ghostty, Zellij, and related config
+terminal/            Ghostty and Yazi configuration
 editors/             Zed and Obsidian host configuration
 git/                 global Git configuration
 docs/                machine-specific operating notes
@@ -151,7 +129,7 @@ docs/                machine-specific operating notes
 
 ## Development
 
-The CLI uses Python 3.13+, Typer, Textual, Pydantic, and uv. Tests are colocated
+The CLI uses Python 3.13+, Typer, Pydantic, and uv. Tests are colocated
 with the modules they cover.
 
 ```bash

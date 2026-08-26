@@ -21,6 +21,7 @@ name = "Core"
 kind = "formula"
 packages = [
   { name = "git" },
+  { name = "old-tool", disabled = true, reason = "Disabled 2026-08-26: no longer needed" },
 ]
 """
 
@@ -53,6 +54,7 @@ def test_brew_help_lists_subcommands() -> None:
     result = runner.invoke(app, ["brew", "--help"])
     assert result.exit_code == 0
     assert "install" in result.output
+    assert "prune" in result.output
     assert "stale" in result.output
     assert "upgrade" in result.output
 
@@ -129,6 +131,44 @@ def test_brew_stale_reports_stale(tmp_path: Path) -> None:
     ctx = make_fake_context(runner=runner_fake, home=tmp_path / "home", dotfiles_dir=tmp_path)
     result = runner.invoke(app, ["brew", "stale"], obj=ctx)
     assert "extra-tool" in result.output
+
+
+# ---------------------------------------------------------------------------
+# brew prune
+# ---------------------------------------------------------------------------
+
+
+def test_brew_prune_previews_without_uninstalling(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "list", "--formula", "-1"), stdout="old-tool\n")
+
+    result = runner.invoke(app, ["brew", "prune"], obj=ctx)
+
+    assert result.exit_code == 0
+    assert "old-tool" in result.output
+    assert "brew uninstall old-tool" in result.output
+    assert ("brew", "uninstall", "old-tool") not in ctx.runner.calls
+    assert "--yes" in result.output
+
+
+def test_brew_prune_yes_uninstalls_but_keeps_manifest_tombstone(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "list", "--formula", "-1"), stdout="old-tool\n")
+
+    result = runner.invoke(app, ["brew", "prune", "--yes"], obj=ctx)
+
+    assert result.exit_code == 0
+    assert ("brew", "uninstall", "old-tool") in ctx.runner.calls
+    manifest = (tmp_path / "macos" / "packages.toml").read_text()
+    assert 'name = "old-tool"' in manifest
+    assert "disabled = true" in manifest
+
+
+def test_brew_prune_reports_nothing_to_remove(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["brew", "prune"], obj=_make_ctx(tmp_path))
+
+    assert result.exit_code == 0
+    assert "none" in result.output
 
 
 # ---------------------------------------------------------------------------

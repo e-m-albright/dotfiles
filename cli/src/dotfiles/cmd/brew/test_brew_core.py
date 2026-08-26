@@ -13,6 +13,7 @@ from dotfiles.cmd.brew.service import (
     enabled_packages,
     installed_casks,
     installed_formulae,
+    prune_candidates,
     requested_formulae,
     stale_taps,
 )
@@ -360,6 +361,27 @@ def test_stale_disabled_not_stale(tmp_path: Path) -> None:
     runner.script(("brew", "list", "--cask", "-1"), stdout="")
     stale = InstallPlan.compute(manifest, runner, flags_on=set()).stale
     assert "ffmpeg" not in stale
+
+
+def test_prune_candidates_are_installed_disabled_tombstones(tmp_path: Path) -> None:
+    manifest = PackageManifest.load(make_toml(tmp_path))
+    runner = FakeProcessRunner()
+    runner.script(("brew", "list", "--formula", "-1"), stdout="git\nffmpeg\n")
+    runner.script(("brew", "list", "--cask", "-1"), stdout="warp\nobsidian\n")
+
+    assert [(item.name, item.kind) for item in prune_candidates(manifest, runner)] == [
+        ("ffmpeg", "formula"),
+        ("warp", "cask"),
+    ]
+
+
+def test_prune_candidates_ignore_absent_tombstones(tmp_path: Path) -> None:
+    manifest = PackageManifest.load(make_toml(tmp_path))
+    runner = FakeProcessRunner()
+    runner.script(("brew", "list", "--formula", "-1"), stdout="git\n")
+    runner.script(("brew", "list", "--cask", "-1"), stdout="obsidian\n")
+
+    assert prune_candidates(manifest, runner) == []
 
 
 def test_stale_returns_sorted(tmp_path: Path) -> None:

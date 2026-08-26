@@ -15,24 +15,16 @@ runner = CliRunner()
 def test_help_lists_top_level_command_tree() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    for command in ("remote", "session", "doctor", "brew", "tui", "email-mask"):
+    for command in ("remote", "doctor", "brew", "password"):
         assert command in result.output
-
-
-def test_session_alias_sesh_is_removed() -> None:
-    # `sesh` was retired in favour of the full `session` spelling.
-    result = runner.invoke(app, ["sesh", "--help"])
-    assert result.exit_code != 0
+    assert "session" not in result.output
+    assert "email-mask" not in result.output
+    assert "tui" not in result.output
 
 
 def test_root_callback_builds_context_when_none_injected() -> None:
     # a command works without an injected obj (callback builds the real context)
-    result = runner.invoke(app, ["session", "ls", "--help"])
-    assert result.exit_code == 0
-
-
-def test_session_command_exposes_real_subcommands() -> None:
-    result = runner.invoke(app, ["session", "ls", "--help"])
+    result = runner.invoke(app, ["remote", "status", "--help"])
     assert result.exit_code == 0
 
 
@@ -62,33 +54,3 @@ def test_delegate_execs_the_repository_shim(monkeypatch: pytest.MonkeyPatch) -> 
 
     shim = str(main._SHIM)
     assert calls == [(shim, [shim, "dock", "--example"])]
-
-
-def test_launch_tui_returns_without_handoff(monkeypatch: pytest.MonkeyPatch) -> None:
-    fake = type("FakeTui", (), {"handoff_command": None, "run": lambda self: None})()
-    monkeypatch.setattr("dotfiles.tui.app.MissionControlApp", lambda: fake)
-    monkeypatch.setattr(os, "execvp", lambda *_args: pytest.fail("unexpected handoff"))
-
-    main._launch_tui()
-
-
-def test_launch_tui_execs_requested_handoff(monkeypatch: pytest.MonkeyPatch) -> None:
-    fake = type(
-        "FakeTui",
-        (),
-        {"handoff_command": ("zellij", "attach", "work"), "run": lambda self: None},
-    )()
-    calls: list[tuple[str, list[str]]] = []
-    monkeypatch.setattr("dotfiles.tui.app.MissionControlApp", lambda: fake)
-    monkeypatch.setattr(os, "execvp", lambda executable, argv: calls.append((executable, argv)))
-
-    main._launch_tui()
-
-    assert calls == [("zellij", ["zellij", "attach", "work"])]
-
-
-def test_print_help_renders_branded_error(capsys: pytest.CaptureFixture[str]) -> None:
-    main.print_help(error="bad command")
-    captured = capsys.readouterr()
-    assert "bad command" in captured.err
-    assert "Machine" in captured.err

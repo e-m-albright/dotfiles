@@ -212,17 +212,6 @@ else
     print_info "Yazi not installed — skipping config"
 fi
 
-# Zellij
-print_section "Zellij"
-if command -v zellij >/dev/null 2>&1; then
-    mkdir -p ~/.config/zellij/layouts
-    safe_link "$DOTFILES_DIR/terminal/zellij/config.kdl" ~/.config/zellij/config.kdl
-    safe_link "$DOTFILES_DIR/terminal/zellij/layouts/mobile.kdl" ~/.config/zellij/layouts/mobile.kdl
-    print_success "Zellij configured (minimal config + mobile deck layout)"
-else
-    print_info "Zellij not installed — skipping config"
-fi
-
 # Editor configurations
 print_header "📝 Editor Configuration"
 

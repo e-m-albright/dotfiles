@@ -55,14 +55,14 @@ def test_render_connection_info_warns_when_no_tailscale() -> None:
 
     buf = StringIO()
     console = Console(file=buf, force_terminal=False, width=200)
-    info = ConnectionInfo(host="test-mac-m4", session="mobile", tailnet_ip=None)
+    info = ConnectionInfo(host="test-mac-m4", tailnet_ip=None)
     render_connection_info(console, info)
     out = buf.getvalue()
     assert "Tailscale not connected" in out
-    assert "http://127.0.0.1:8082/mobile" in out
+    assert "test-mac-m4:6767" in out
 
 
-def test_render_connection_info_shows_web_client_urls() -> None:
+def test_render_connection_info_shows_only_paseo_address() -> None:
     from io import StringIO
 
     from dotfiles.cmd.remote.cli import render_connection_info
@@ -70,16 +70,7 @@ def test_render_connection_info_shows_web_client_urls() -> None:
 
     buf = StringIO()
     console = Console(file=buf, force_terminal=False, width=200)
-    info = ConnectionInfo(
-        host="mac",
-        session="mobile",
-        tailnet_ip="100.64.0.1",
-        magic_dns="mac.tailnet.ts.net",
-    )
-    render_connection_info(console, info)
+    render_connection_info(console, ConnectionInfo(host="mac", tailnet_ip="100.64.0.1"))
     out = buf.getvalue()
-    # Primary: the Paseo daemon address. Fallback: the Zellij web URLs + token hint.
     assert "100.64.0.1:6767" in out
-    assert "http://127.0.0.1:8082/mobile" in out
-    assert "https://mac.tailnet.ts.net/mobile" in out
-    assert "dfs remote zellij --new-token" in out
+    assert "Zellij" not in out

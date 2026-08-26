@@ -13,6 +13,7 @@ from dotfiles.cmd.brew.service import (
     _RUSTUP_URL,
     _TW_FETCH_URL,
     PackageManifest,
+    PruneCandidate,
     add_taps,
     cleanup,
     install_claude_code,
@@ -22,6 +23,7 @@ from dotfiles.cmd.brew.service import (
     install_rust,
     install_specials,
     install_typewhisper,
+    uninstall_prune_candidates,
     upgrade,
 )
 from dotfiles.testing.fakes import FakeProcessRunner
@@ -293,7 +295,10 @@ def test_install_rust_runs_installer_when_absent(
     runner.script(("sh", "-c", "command -v rustup || command -v cargo"), stdout="")
     install_dir = tmp_path / "rustup"
     install_dir.mkdir()
-    monkeypatch.setattr("dotfiles.cmd.brew.service.mkdtemp", lambda *, prefix: str(install_dir))
+    monkeypatch.setattr(
+        "dotfiles.cmd.brew.service.mkdtemp",
+        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
+    )
     installer = install_dir / "rustup-init"
     runner.script(("curl", "-fsSL", "-o", str(installer), _RUSTUP_URL))
     runner.script((str(installer), "-y"))
@@ -315,7 +320,10 @@ def test_install_rust_error_on_install_failure(
     runner.script(("sh", "-c", "command -v rustup || command -v cargo"), stdout="")
     install_dir = tmp_path / "rustup"
     install_dir.mkdir()
-    monkeypatch.setattr("dotfiles.cmd.brew.service.mkdtemp", lambda *, prefix: str(install_dir))
+    monkeypatch.setattr(
+        "dotfiles.cmd.brew.service.mkdtemp",
+        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
+    )
     installer = install_dir / "rustup-init"
     runner.script(("curl", "-fsSL", "-o", str(installer), _RUSTUP_URL), exit_code=1)
     results = install_rust(runner)
@@ -343,7 +351,10 @@ def test_install_claude_code_runs_installer(
     runner.script(("sh", "-c", "command -v claude"), stdout="")
     install_dir = tmp_path / "claude"
     install_dir.mkdir()
-    monkeypatch.setattr("dotfiles.cmd.brew.service.mkdtemp", lambda *, prefix: str(install_dir))
+    monkeypatch.setattr(
+        "dotfiles.cmd.brew.service.mkdtemp",
+        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
+    )
     installer = install_dir / "install.sh"
     runner.script(("curl", "-fsSL", "-o", str(installer), _CLAUDE_CODE_URL))
     results = install_claude_code(runner)
@@ -359,7 +370,10 @@ def test_install_claude_code_error_on_failure(
     runner.script(("sh", "-c", "command -v claude"), stdout="")
     install_dir = tmp_path / "claude"
     install_dir.mkdir()
-    monkeypatch.setattr("dotfiles.cmd.brew.service.mkdtemp", lambda *, prefix: str(install_dir))
+    monkeypatch.setattr(
+        "dotfiles.cmd.brew.service.mkdtemp",
+        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
+    )
     installer = install_dir / "install.sh"
     runner.script(("curl", "-fsSL", "-o", str(installer), _CLAUDE_CODE_URL), exit_code=1)
     results = install_claude_code(runner)
@@ -416,7 +430,10 @@ def test_install_typewhisper_reports_install_stage_failures(
     monkeypatch.setattr(Path, "exists", lambda self: False)
     install_dir = tmp_path / failure
     install_dir.mkdir()
-    monkeypatch.setattr("dotfiles.cmd.brew.service.mkdtemp", lambda *, prefix: str(install_dir))
+    monkeypatch.setattr(
+        "dotfiles.cmd.brew.service.mkdtemp",
+        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
+    )
     runner = FakeProcessRunner()
     url = "https://example.test/TypeWhisper.dmg"
     runner.script(_TW_FETCH_CMD, stdout=url + "\n")
@@ -452,7 +469,7 @@ def test_install_typewhisper_full_happy_path(
     install_dir.mkdir(mode=0o700)
     monkeypatch.setattr(
         "dotfiles.cmd.brew.service.mkdtemp",
-        lambda *, prefix: str(install_dir),
+        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
     )
     runner = FakeProcessRunner()
     tw_url = "https://github.com/TypeWhisper/typewhisper-mac/releases/download/v1.0/TypeWhisper.dmg"
@@ -493,7 +510,10 @@ def test_install_typewhisper_rejects_wrong_signing_identity(
     monkeypatch.setattr(Path, "exists", lambda self: False)
     install_dir = tmp_path / "private-install"
     install_dir.mkdir(mode=0o700)
-    monkeypatch.setattr("dotfiles.cmd.brew.service.mkdtemp", lambda *, prefix: str(install_dir))
+    monkeypatch.setattr(
+        "dotfiles.cmd.brew.service.mkdtemp",
+        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
+    )
     runner = FakeProcessRunner()
     url = "https://example.test/TypeWhisper.dmg"
     runner.script(_TW_FETCH_CMD, stdout=url)
@@ -539,6 +559,30 @@ def test_install_typewhisper_config_apply_failure_is_warn_not_error(
     results = install_typewhisper(runner, dotfiles_dir=tmp_path)
     assert any(r.level == "warn" for r in results)
     assert not any(r.level == "error" for r in results)
+
+
+# ---------------------------------------------------------------------------
+# prune disabled packages
+# ---------------------------------------------------------------------------
+
+
+def test_uninstall_prune_candidates_handles_formula_cask_and_failure() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("brew", "uninstall", "broken"), exit_code=1, stderr="busy")
+
+    steps = uninstall_prune_candidates(
+        [
+            PruneCandidate(name="old-formula", kind="formula"),
+            PruneCandidate(name="old-cask", kind="cask"),
+            PruneCandidate(name="broken", kind="formula"),
+        ],
+        runner,
+    )
+
+    assert ("brew", "uninstall", "old-formula") in runner.calls
+    assert ("brew", "uninstall", "--cask", "old-cask") in runner.calls
+    assert [step.level for step in steps] == ["success", "success", "error"]
+    assert "busy" in steps[-1].message
 
 
 # ---------------------------------------------------------------------------

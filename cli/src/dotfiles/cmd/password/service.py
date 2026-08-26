@@ -3,12 +3,28 @@
 from __future__ import annotations
 
 import secrets
+import shutil
 import string
+from collections.abc import Callable
+
+from dotfiles.adapters.ports import ProcessRunner
 
 DEFAULT_LENGTH = 20
 
 _ALPHABET = string.ascii_letters + string.digits
 _CLASSES = (string.ascii_lowercase, string.ascii_uppercase, string.digits)
+
+
+def copy_to_clipboard(
+    runner: ProcessRunner,
+    text: str,
+    *,
+    which: Callable[[str], str | None] = shutil.which,
+) -> bool:
+    """Copy text through macOS pbcopy, returning false when it is unavailable."""
+    if which("pbcopy") is None:
+        return False
+    return runner.run(("pbcopy",), stdin=text).ok
 
 
 def generate_password(length: int = DEFAULT_LENGTH) -> str:

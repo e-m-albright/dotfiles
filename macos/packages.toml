@@ -37,9 +37,9 @@ packages = [
   { name = "chafa",                note = "Terminal image renderer (yazi inline image previews)" },
   { name = "sevenzip",             note = "Peek inside archives (.zip, .7z, .rar)" },
   { name = "ffmpeg",               note = "Video/audio thumbnails", disabled = true, reason = "Disabled 2026-08-25 (dated retroactively): ~300MB+ with deps, rarely needed" },
-  { name = "tmux",                 note = "Terminal multiplexer" },
-  { name = "mosh",                 note = "Roaming SSH shell; superseded by the Paseo + Zellij-web remote stack", disabled = true, reason = "Retired 2026-08-25: remote access is Tailscale + Paseo + Zellij web; uninstall when convenient" },
-  { name = "zellij",               note = "Modern terminal workspace and multiplexer" },
+  { name = "tmux",                 note = "Terminal multiplexer", disabled = true, reason = "Retired 2026-08-26: no local or phone terminal-continuity workflow; Paseo owns agent continuity" },
+  { name = "mosh",                 note = "Roaming SSH shell", disabled = true, reason = "Retired 2026-08-26: phone access is Paseo over Tailscale; no phone shell is required" },
+  { name = "zellij",               note = "Former terminal workspace, session manager, and browser shell", disabled = true, reason = "Retired 2026-08-26: web, layouts, and resurrection were unused; Paseo over Tailscale is the sole mobile agent surface" },
   { name = "pandoc",               note = "Universal markup converter (md ↔ docx ↔ pdf ↔ html ↔ …)" },
 ]
 
@@ -48,8 +48,9 @@ name = "System CLI"
 kind = "formula"
 packages = [
   { name = "htop",               note = "System monitoring" },
-  { name = "iftop",              note = "Network traffic monitoring" },
-  { name = "nmap",               note = "Network mapping" },
+  { name = "iftop",              note = "Network traffic monitoring", disabled = true, reason = "Disabled 2026-08-26: no tracked use across the private repositories; install temporarily for network diagnosis" },
+  { name = "nmap",               note = "Network discovery and port scanning", disabled = true, reason = "Disabled 2026-08-26: no tracked use across the private repositories; install temporarily for network diagnosis" },
+  { name = "flux",               note = "InfluxDB Flux query language", disabled = true, reason = "Disabled 2026-08-26: undeclared host residue with no tracked database-query workflow; unrelated to the desired flux-app cask" },
   { name = "dockutil",           note = "Dock management" },
   { name = "terminal-notifier",  note = "Native Claude and Codex notifications replaced the custom hook", disabled = true, reason = "Disabled 2026-07-15: native Claude and Codex notifications replaced the custom hook" },
   { name = "duti",               note = "Set default app for file types (used by file-associations.sh)" },
@@ -62,18 +63,18 @@ packages = [
   { name = "just",           note = "Command runner (like make, but simpler)" },
   { name = "lefthook",       note = "Git hooks (language-agnostic, parallel execution)" },
   { name = "shellcheck",     note = "Static analysis for shell scripts" },
-  { name = "hyperfine",      note = "Command-line benchmarking tool" },
+  { name = "hyperfine",      note = "Command-line benchmarking tool", disabled = true, reason = "Disabled 2026-08-26: no tracked benchmark workflow across the private repositories; install per investigation" },
   { name = "graphite",       note = "Stacked PRs", disabled = true, reason = "Disabled 2026-08-25 (dated retroactively): not useful enough (requires withgraphite/tap)" },
   { name = "atlas",          note = "Database schema migration tool" },
-  { name = "duckdb",         note = "Fast analytical database (SQL for analytics)" },
+  { name = "duckdb",         note = "Desired general-purpose analytical SQL database; retain even without a tracked repository reference" },
   { name = "railway",        note = "Railway.app CLI", disabled = true, reason = "Removed 2026-07-15: no active Railway projects; keep the host free of unused deployment clients" },
-  { name = "opentofu",       note = "Open-source Terraform alternative" },
-  { name = "flyctl",         note = "Fly.io CLI (deploy, manage apps)" },
-  { name = "neonctl",        note = "Neon Postgres CLI (projects, DBs, roles)" },
+  { name = "opentofu",       note = "Desired open-source Terraform-compatible infrastructure CLI; retain even without a tracked repository reference" },
+  { name = "flyctl",         note = "Desired Fly.io deployment CLI; retain even without a tracked repository reference" },
+  { name = "neonctl",        note = "Desired Neon Postgres administration CLI; retain even without a tracked repository reference" },
   { name = "infisical",      note = "Secrets management CLI" },
   { name = "git-filter-repo", note = "Git history rewriting (secrets scrub)", disabled = true, reason = "Disabled 2026-07-15: rarely needed; install temporarily when a repository history rewrite is required" },
   { name = "libpq",          note = "PostgreSQL client library (psql, pg_dump)" },
-  { name = "sccache",        note = "Shared compilation cache (Rust/C/C++ build speedup)" },
+  { name = "sccache",        note = "Shared compilation cache for Rust and C/C++", disabled = true, reason = "Disabled 2026-08-26: no tracked compiler-cache configuration or use across the private repositories" },
   { name = "temporal",       note = "Temporal workflow CLI", disabled = true, reason = "Disabled 2026-06-01: experiment; reinstall if revisiting durable workflows" },
   { name = "pulumi",         note = "IaC in real languages", disabled = true, reason = "Disabled 2026-06-01: experiment; opentofu is the active IaC tool" },
   { name = "sentry-cli",     note = "Sentry error tracking (releases, source maps, deploys)", disabled = true, reason = "Disabled 2026-07-15: no active personal Sentry usage; originally installed only for agent-driven service administration" },
@@ -85,9 +86,9 @@ name = "Security"
 kind = "formula"
 packages = [
   { name = "gitleaks",     note = "Secret scanner: hardcoded creds in git history/working tree" },
-  { name = "osv-scanner",  note = "Dependency CVE scanner (Google OSV database)" },
+  { name = "osv-scanner",  note = "Dependency vulnerability scanner using the OSV database", disabled = true, reason = "Disabled 2026-08-26: no tracked use across the private repositories; project-native audits cover current dependency checks" },
   { name = "semgrep",      note = "Static analysis / SAST: pattern-based code vulnerability rules" },
-  { name = "trivy",        note = "Vulnerability + misconfig scanner (containers, IaC, filesystems)" },
+  { name = "trivy",        note = "Container, filesystem, dependency, and IaC vulnerability scanner", disabled = true, reason = "Disabled 2026-08-26: no tracked container or IaC scanning workflow across the private repositories" },
 ]
 
 [[section]]
@@ -112,7 +113,7 @@ name = "Python"
 kind = "formula"
 packages = [
   { name = "uv",     note = "Python package/installer & the dotfiles CLI runtime. Bootstrap prerequisite (installed before this manifest runs); declared here for documentation + stale-suppression." },
-  { name = "py-spy", note = "Sampling profiler for Python programs" },
+  { name = "py-spy", note = "Sampling profiler for live Python processes", disabled = true, reason = "Disabled 2026-08-26: no tracked profiling workflow across the private repositories; install per investigation" },
 ]
 
 # =============================================================================
@@ -126,7 +127,7 @@ packages = [
   { name = "google-chrome",   note = "Web browser" },
   { name = "google-drive",    note = "Drive <-> Mac selective sync. Use STREAMING mode (default; nothing bulk-downloaded) + per-folder 'Available offline' for local copies; pick which Mac folders upload under Settings > My MacBook. Never enable 'Mirror files' (would pull all of Drive)" },
   { name = "tailscale-app",   note = "Mesh VPN for secure laptop access" },
-  { name = "termius",         note = "Former phone SSH/Mosh client for remote access; retired", disabled = true, reason = "Retired 2026-07-24: replaced by the Zellij web client over Tailscale (dfs remote zellij + tailscale serve); no phone SSH client needed" },
+  { name = "termius",         note = "Former phone SSH/Mosh client for remote access; retired", disabled = true, reason = "Retired 2026-08-26: phone access is Paseo over Tailscale; no phone SSH client is needed" },
 ]
 
 [[section]]
@@ -292,7 +293,9 @@ version = "v0.7.0"
 name = "@getpaseo/cli"
 version = "0.5.2"
 flag = "ai"
-note = "Paseo daemon CLI used by the managed launchd agent; binary is `paseo`"
+disabled = true
+reason = "Retired 2026-08-26: the managed daemon uses the CLI bundled with Paseo.app so daemon and desktop protocol versions stay aligned"
+note = "Former standalone Paseo daemon CLI; binary is `paseo`"
 
 [[npm_package]]
 name = "agent-browser"
@@ -302,7 +305,7 @@ note = "Browser-automation CLI for AI agents (Tier 2 — shell out, no MCP overh
 
 [[npm_package]]
 name = "ctx7"
-version = "0.5.5"
+version = "0.5.6"
 flag = "ai"
 note = "Context7 docs-lookup CLI (replaces the context7 MCP — `ctx7 library <name>` / `ctx7 docs <id> <query>`, no MCP context tax, universal across agents)"
 
@@ -315,5 +318,5 @@ reason = "Removed 2026-07-30: the experiment produced no unique use case; Playwr
 
 [[npm_package]]
 name = "wrangler"
-version = "4.112.0"
+version = "4.114.0"
 note = "Cloudflare Workers CLI (brew formula `wrangler` is the unrelated Erlang refactor tool, disabled upstream 2025-07-01)"

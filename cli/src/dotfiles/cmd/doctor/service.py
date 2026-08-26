@@ -44,7 +44,7 @@ _TOOL_CHECKS: dict[str, tuple[tuple[str, str, str], ...]] = {
         ("Delta", "delta", "brew install git-delta"),
         ("golangci-lint", "golangci-lint", "brew install golangci-lint"),
     ),
-    "Remote Shell": (("Zellij", "zellij", "brew install zellij"),),
+    "Remote Shell": (),
 }
 
 
@@ -315,17 +315,6 @@ class DoctorService:
                     section=sec, name="Paseo daemon", status="warn", hint="Run: dfs remote on"
                 )
             )
-        if self._which("zellij") is not None:
-            running = service.zellij_web_running()
-            results.append(
-                CheckResult(
-                    section=sec,
-                    name="Zellij web",
-                    status="ok" if running else "warn",
-                    detail="running" if running else "",
-                    hint="" if running else "Run: dfs remote on",
-                )
-            )
         return results
 
     def _check_configuration(self) -> list[CheckResult]:
@@ -381,7 +370,6 @@ class DoctorService:
             )
 
         results.extend(self._check_ghostty(sec))
-        results.extend(self._check_zellij(sec))
         results.extend(self._check_notes_launchers(sec))
 
         return results
@@ -402,25 +390,6 @@ class DoctorService:
             if bridge_source.exists():
                 results.append(self._symlink(sec, bridge, bridge_source, bin_dir / bridge))
         return results
-
-    def _check_zellij(self, sec: str) -> list[CheckResult]:
-        """Zellij config symlink — only when zellij is installed."""
-        if self._which("zellij") is None:
-            return []
-        return [
-            self._symlink(
-                sec,
-                "Zellij config",
-                self._dotfiles / "terminal" / "zellij" / "config.kdl",
-                self._home / ".config" / "zellij" / "config.kdl",
-            ),
-            self._symlink(
-                sec,
-                "Zellij mobile layout",
-                self._dotfiles / "terminal" / "zellij" / "layouts" / "mobile.kdl",
-                self._home / ".config" / "zellij" / "layouts" / "mobile.kdl",
-            ),
-        ]
 
     def _check_ghostty(self, sec: str) -> list[CheckResult]:
         """Ghostty config or app presence."""

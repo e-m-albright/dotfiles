@@ -7,8 +7,7 @@ from typing import Annotated
 import typer
 
 from dotfiles.app.context import app_context
-from dotfiles.cmd.email.service import copy_to_clipboard
-from dotfiles.cmd.password.service import DEFAULT_LENGTH, generate_password
+from dotfiles.cmd.password.service import DEFAULT_LENGTH, copy_to_clipboard, generate_password
 from dotfiles.console import console, print_field, print_status, print_title
 
 

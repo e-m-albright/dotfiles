@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from dotfiles.app.main import app
@@ -8,315 +9,164 @@ from dotfiles.testing.fakes import FakeProcessRunner, make_fake_context
 runner = CliRunner()
 
 
-def _runner_with_status(*, tailscale_up: bool = False) -> FakeProcessRunner:
-    r = FakeProcessRunner()
-    r.script(("id", "-un"), stdout="evan\n")
-    r.script(("scutil", "--get", "LocalHostName"), stdout="test-mac-m4\n")
-    r.script(("tailscale", "status"), exit_code=0 if tailscale_up else 1)
-    if tailscale_up:
-        r.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
-    return r
+def _tailnet(process: FakeProcessRunner, ip: str = "100.64.0.1") -> None:
+    process.script(("tailscale", "status"), exit_code=0)
+    process.script(("tailscale", "ip", "-4"), stdout=f"{ip}\n")
 
 
-def _flat(output: str) -> str:
-    """Collapse Rich's line-wrapping so multi-line assertions work (DRY-RUN step messages only)."""
-    return " ".join(output.split())
-
-
-def test_remote_help_uses_service_names_and_removes_old_web_commands() -> None:
-    help_result = runner.invoke(app, ["remote", "--help"])
-    zellij_help = runner.invoke(app, ["remote", "zellij", "--help"])
-
-    assert help_result.exit_code == zellij_help.exit_code == 0
-    assert "tailscale" in help_result.output
-    assert "zellij" in help_result.output
-    assert "│ web " not in help_result.output
-    assert "│ qr " not in help_result.output
-    assert "qr" in zellij_help.output
-    for removed in ("web", "qr"):
-        result = runner.invoke(app, ["remote", removed])
-        assert result.exit_code == 2
-
-
-def test_remote_zellij_status_prints_localhost_hint() -> None:
-    r = FakeProcessRunner()
-    r.script(("zellij", "web", "--status"), exit_code=1)
-    result = runner.invoke(app, ["remote", "zellij"], obj=make_fake_context(runner=r))
+def test_remote_help_exposes_only_paseo_tailscale_and_status() -> None:
+    result = runner.invoke(app, ["remote", "--help"])
     assert result.exit_code == 0
-    assert "127.0.0.1:8082" in _flat(result.output)
+    for command in ("on", "off", "paseo", "tailscale", "status"):
+        assert command in result.output
+    assert "zellij" not in result.output.lower()
 
 
-def test_remote_zellij_start_uses_launchd_and_exposes_tailnet(tmp_path: Path) -> None:
-    r = _runner_with_status(tailscale_up=True)
-    r.script(("id", "-u"), stdout="501\n")
-    fake = make_fake_context(runner=r, home=tmp_path)
-
-    result = runner.invoke(app, ["remote", "zellij", "--start"], obj=fake)
-
-    assert result.exit_code == 0
-    plist = tmp_path / "Library/LaunchAgents/com.dotfiles.zellij-web.plist"
-    assert ("launchctl", "bootstrap", "gui/501", str(plist)) in r.calls
-    assert ("tailscale", "serve", "--bg", "8082") in r.calls
-    assert ("zellij", "web", "-d") not in r.calls
-
-
-def test_remote_zellij_stop_removes_exposure_and_launchd_agent(tmp_path: Path) -> None:
-    r = FakeProcessRunner()
-    r.script(("id", "-u"), stdout="501\n")
-    fake = make_fake_context(runner=r, home=tmp_path)
-
-    result = runner.invoke(app, ["remote", "zellij", "--stop"], obj=fake)
-
-    assert result.exit_code == 0
-    assert ("tailscale", "serve", "reset") in r.calls
-    assert ("launchctl", "bootout", "gui/501/com.dotfiles.zellij-web") in r.calls
-
-
-def test_remote_on_dry_run_prints_fallback_url(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
-    result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 0
-    # Connection info shows the Zellij web fallback, deep-linked to the session.
-    assert "/mobile" in result.output
-    assert "http://127.0.0.1:8082/mobile" in result.output
-
-
-def test_remote_on_session_flag_changes_web_url(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
-    result = runner.invoke(
-        app, ["remote", "on", "--dry-run", "--session", "work"], obj=fake, env={"COLUMNS": "200"}
-    )
-    assert result.exit_code == 0
-    assert "http://127.0.0.1:8082/work" in result.output
-
-
-def test_remote_on_warns_when_tailscale_disconnected(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
-    result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 0
-    assert "Tailscale not connected" in result.output
-
-
-def test_remote_on_brings_tailnet_up_by_default(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
-    result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 0
-    assert "DRY RUN: tailscale up" in _flat(result.output)
-
-
-def test_remote_on_no_tailscale_skips_bringup(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
-    result = runner.invoke(
-        app, ["remote", "on", "--dry-run", "--no-tailscale"], obj=fake, env={"COLUMNS": "200"}
-    )
-    assert result.exit_code == 0
-    assert "tailscale up" not in _flat(result.output).lower()
-
-
-def test_remote_on_installs_paseo_agent(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
-    result = runner.invoke(app, ["remote", "on", "--dry-run"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 0
-    assert "com.dotfiles.paseo" in _flat(result.output)
-
-
-def test_remote_on_does_not_reload_running_services(tmp_path: Path) -> None:
-    r = _runner_with_status(tailscale_up=True)
-    r.script(
-        ("launchctl", "list"),
-        stdout=("123\t0\tcom.dotfiles.paseo\n124\t0\tcom.dotfiles.zellij-web\n"),
-    )
-    r.script(("zellij", "web", "--status"), exit_code=0)
-    fake = make_fake_context(runner=r, home=tmp_path)
-
-    result = runner.invoke(app, ["remote", "on"], obj=fake, env={"COLUMNS": "200"})
-
-    assert result.exit_code == 0
-    assert not any(call[:2] == ("launchctl", "bootstrap") for call in r.calls)
-    assert not any(call[-2:] == ("daemon", "stop") for call in r.calls)
-    assert "already running" in _flat(result.output)
-
-
-def test_remote_paseo_start_dry_run(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
-    result = runner.invoke(
-        app, ["remote", "paseo", "--start", "--dry-run"], obj=fake, env={"COLUMNS": "200"}
-    )
-    assert result.exit_code == 0
-    assert "com.dotfiles.paseo" in _flat(result.output)
-
-
-def test_remote_paseo_rotate_password_warns_restarts_and_prints_next_steps(
-    tmp_path: Path,
-) -> None:
-    r = _runner_with_status(tailscale_up=True)
-    r.script(("id", "-u"), stdout="501\n")
-    fake = make_fake_context(runner=r, home=tmp_path)
+def test_remote_on_ensures_tailscale_and_paseo(tmp_path: Path) -> None:
+    process = FakeProcessRunner()
+    process.script(("id", "-u"), stdout="501\n")
+    process.script(("scutil", "--get", "LocalHostName"), stdout="mac\n")
+    _tailnet(process)
 
     result = runner.invoke(
         app,
-        ["remote", "paseo", "--rotate-password"],
-        obj=fake,
+        ["remote", "on"],
+        obj=make_fake_context(runner=process, home=tmp_path),
         env={"COLUMNS": "200"},
     )
 
     assert result.exit_code == 0
-    assert "interrupt active Paseo runs" in _flat(result.output)
+    assert ("tailscale", "up") in process.calls
+    assert "com.dotfiles.paseo" in result.output
     assert "100.64.0.1:6767" in result.output
-    assert "desktop and mobile" in _flat(result.output)
-    assert "password manager" in _flat(result.output)
-    command = (
-        "/opt/homebrew/bin/fnm",
-        "exec",
-        "--using=default",
-        "paseo",
-        "daemon",
-        "set-password",
-    )
-    call_index = r.calls.index(command)
-    assert r.capture_output[call_index] is False
+    assert not any(call[:2] == ("tailscale", "serve") for call in process.calls)
 
 
-def test_remote_off_breaks_connectivity_but_keeps_agents_running() -> None:
-    r = FakeProcessRunner()
-    fake = make_fake_context(runner=r)
-
-    result = runner.invoke(app, ["remote", "off"], obj=fake, env={"COLUMNS": "200"})
-
-    assert result.exit_code == 0
-    assert ("tailscale", "serve", "reset") in r.calls
-    assert ("tailscale", "down") in r.calls
-    assert not any(call[:2] == ("zellij", "web") for call in r.calls)
-    assert not any("paseo" in call for call in r.calls)
-    assert "keep running" in _flat(result.output)
-
-
-def test_remote_tailscale_manages_network_state() -> None:
-    r = _runner_with_status(tailscale_up=True)
-    fake = make_fake_context(runner=r)
-
-    status = runner.invoke(app, ["remote", "tailscale"], obj=fake)
-    down = runner.invoke(app, ["remote", "tailscale", "--down"], obj=fake)
-    up = runner.invoke(app, ["remote", "tailscale", "--up"], obj=fake)
-
-    assert status.exit_code == down.exit_code == up.exit_code == 0
-    assert "connected" in status.output
-    assert ("tailscale", "down") in r.calls
-    assert ("tailscale", "up") in r.calls
-
-
-def test_remote_status_shows_paseo_and_web_fields(tmp_path: Path) -> None:
-    r = _runner_with_status(tailscale_up=True)
-    r.script(
-        ("tailscale", "status", "--json"),
-        stdout='{"Self": {"DNSName": "evans-mbp-m4.tailnet.ts.net."}}',
-    )
-    fake = make_fake_context(runner=r, home=tmp_path)
-    result = runner.invoke(app, ["remote", "status"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 0
-    assert "Tailscale" in result.output
-    assert "Paseo" in result.output
-    assert "Zellij web" in result.output
-    # The Paseo daemon address (tailnet IP:port) is shown.
-    assert ":6767" in result.output
-
-
-def test_remote_zellij_qr_encodes_zellij_url(tmp_path: Path) -> None:
-    r = _runner_with_status(tailscale_up=True)
-    r.script(
-        ("tailscale", "status", "--json"),
-        stdout='{"Self": {"DNSName": "evans-mbp-m4.tailnet.ts.net."}}',
-    )
-    fake = make_fake_context(runner=r, home=tmp_path)
-    result = runner.invoke(app, ["remote", "zellij", "qr"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 0
-    assert "evans-mbp-m4.tailnet.ts.net" in result.output
-
-
-def test_remote_zellij_qr_warns_off_tailnet(tmp_path: Path) -> None:
-    fake = make_fake_context(runner=_runner_with_status(), home=tmp_path)
-    result = runner.invoke(app, ["remote", "zellij", "qr"], obj=fake, env={"COLUMNS": "200"})
-    assert result.exit_code == 1
-    assert "Tailscale not connected" in result.output
-
-
-def test_remote_commands_reject_conflicting_actions() -> None:
-    fake = make_fake_context(runner=FakeProcessRunner())
-    invocations = [
-        ["remote", "paseo", "--start", "--stop"],
-        ["remote", "zellij", "--start", "--new-token"],
-        ["remote", "tailscale", "--up", "--down"],
-    ]
-    for arguments in invocations:
-        result = runner.invoke(app, arguments, obj=fake)
-        assert result.exit_code == 2
-        assert "Choose only one" in result.output
-
-
-def test_remote_network_failures_exit_nonzero() -> None:
-    r = FakeProcessRunner()
-    r.script(("tailscale", "up"), exit_code=1, stderr="offline")
-    r.script(("tailscale", "down"), exit_code=1, stderr="offline")
-    fake = make_fake_context(runner=r)
-
-    up = runner.invoke(app, ["remote", "tailscale", "--up"], obj=fake)
-    off = runner.invoke(app, ["remote", "off"], obj=fake)
-
-    assert up.exit_code == 1
-    assert off.exit_code == 1
-    assert "offline" in up.output
-
-
-def test_remote_on_propagates_setup_failure(tmp_path: Path) -> None:
-    r = _runner_with_status()
-    r.script(("tailscale", "up"), exit_code=1, stderr="offline")
-    result = runner.invoke(app, ["remote", "on"], obj=make_fake_context(runner=r, home=tmp_path))
-    assert result.exit_code == 1
-    assert "tailscale up failed" in _flat(result.output)
-
-
-def test_remote_paseo_status_and_stop_paths(tmp_path: Path) -> None:
-    r = _runner_with_status(tailscale_up=True)
-    r.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
-    fake = make_fake_context(runner=r, home=tmp_path)
-
-    status = runner.invoke(app, ["remote", "paseo"], obj=fake)
-    stopped = runner.invoke(app, ["remote", "paseo", "--stop", "--dry-run"], obj=fake)
-
-    assert status.exit_code == stopped.exit_code == 0
-    assert "running" in status.output
-    assert "DRY RUN" in stopped.output
-
-
-def test_remote_zellij_token_paths() -> None:
-    r = FakeProcessRunner()
-    r.script(("zellij", "web", "--create-token"), stdout="token-123\n")
-    fake = make_fake_context(runner=r)
-
-    dry = runner.invoke(app, ["remote", "zellij", "--new-token", "--dry-run"], obj=fake)
-    actual = runner.invoke(app, ["remote", "zellij", "--new-token"], obj=fake)
-
-    assert dry.exit_code == actual.exit_code == 0
-    assert "mint a Zellij web token" in _flat(dry.output)
-    assert "token-123" in actual.output
-
-
-def test_remote_zellij_token_failure_exits_nonzero() -> None:
-    r = FakeProcessRunner()
-    r.script(("zellij", "web", "--create-token"), exit_code=1, stderr="not running")
+def test_remote_on_dry_run_has_no_effects(tmp_path: Path) -> None:
+    process = FakeProcessRunner()
     result = runner.invoke(
-        app, ["remote", "zellij", "--new-token"], obj=make_fake_context(runner=r)
+        app,
+        ["remote", "on", "--dry-run"],
+        obj=make_fake_context(runner=process, home=tmp_path),
     )
-    assert result.exit_code == 1
-    assert "not running" in result.output
+    assert result.exit_code == 0
+    assert "DRY RUN" in result.output
+    assert ("tailscale", "up") not in process.calls
+    assert not any(
+        call[:2] in {("launchctl", "bootstrap"), ("launchctl", "bootout")} for call in process.calls
+    )
 
 
-def test_remote_status_without_magic_dns_omits_child_addresses(tmp_path: Path) -> None:
+def test_remote_off_only_disconnects_tailscale() -> None:
+    process = FakeProcessRunner()
+    result = runner.invoke(app, ["remote", "off"], obj=make_fake_context(runner=process))
+    assert result.exit_code == 0
+    assert process.calls == [("tailscale", "down")]
+    assert "active agents keep running" in result.output
+
+
+def test_remote_status_reports_direct_paseo_address() -> None:
+    process = FakeProcessRunner()
+    process.script(("id", "-un"), stdout="dev\n")
+    process.script(("scutil", "--get", "LocalHostName"), stdout="mac\n")
+    process.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
+    _tailnet(process)
+
     result = runner.invoke(
         app,
         ["remote", "status"],
-        obj=make_fake_context(runner=_runner_with_status(), home=tmp_path),
+        obj=make_fake_context(runner=process),
+        env={"COLUMNS": "200"},
+    )
+
+    assert result.exit_code == 0
+    assert "Paseo" in result.output
+    assert "100.64.0.1:6767" in result.output
+    assert "Zellij" not in result.output
+
+
+def test_remote_paseo_rejects_conflicting_actions() -> None:
+    result = runner.invoke(
+        app,
+        ["remote", "paseo", "--start", "--stop"],
+        obj=make_fake_context(),
+    )
+    assert result.exit_code != 0
+    assert "Choose only one" in result.output
+
+
+def test_remote_paseo_rotation_warns_before_restart(tmp_path: Path) -> None:
+    process = FakeProcessRunner()
+    process.script(("id", "-u"), stdout="501\n")
+    _tailnet(process)
+    result = runner.invoke(
+        app,
+        ["remote", "paseo", "--rotate-password"],
+        obj=make_fake_context(runner=process, home=tmp_path),
+        env={"COLUMNS": "200"},
     )
     assert result.exit_code == 0
-    assert "Paseo addr" not in result.output
-    assert "Zellij URL" not in result.output
+    assert "interrupt active Paseo runs" in result.output
+
+
+@pytest.mark.parametrize("args", [["--up", "--down"]])
+def test_remote_tailscale_rejects_conflicting_actions(args: list[str]) -> None:
+    result = runner.invoke(app, ["remote", "tailscale", *args], obj=make_fake_context())
+    assert result.exit_code != 0
+
+
+def test_remote_tailscale_status_up_and_down() -> None:
+    process = FakeProcessRunner()
+    _tailnet(process)
+    status = runner.invoke(app, ["remote", "tailscale"], obj=make_fake_context(runner=process))
+    up = runner.invoke(app, ["remote", "tailscale", "--up"], obj=make_fake_context())
+    down = runner.invoke(app, ["remote", "tailscale", "--down"], obj=make_fake_context())
+    assert status.exit_code == up.exit_code == down.exit_code == 0
+    assert "100.64.0.1" in status.output
+
+
+def test_remote_tailscale_failure_exits_nonzero() -> None:
+    process = FakeProcessRunner()
+    process.script(("tailscale", "up"), exit_code=1, stderr="denied")
+    result = runner.invoke(
+        app,
+        ["remote", "tailscale", "--up"],
+        obj=make_fake_context(runner=process),
+    )
+    assert result.exit_code == 1
+
+
+def test_remote_paseo_status_start_failure_and_stop_dry_run(tmp_path: Path) -> None:
+    status = runner.invoke(app, ["remote", "paseo"], obj=make_fake_context())
+    missing = runner.invoke(
+        app,
+        ["remote", "paseo", "--start"],
+        obj=make_fake_context(home=tmp_path),
+    )
+    stopped = runner.invoke(
+        app,
+        ["remote", "paseo", "--stop", "--dry-run"],
+        obj=make_fake_context(home=tmp_path),
+    )
+    assert status.exit_code == 0
+    assert "stopped" in status.output
+    assert missing.exit_code == 1
+    assert stopped.exit_code == 0
+    assert "DRY RUN" in stopped.output
+
+
+def test_remote_on_reports_failure_without_tailnet(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        ["remote", "on", "--no-tailscale"],
+        obj=make_fake_context(home=tmp_path),
+    )
+    assert result.exit_code == 1
+    assert "no tailnet IPv4" in result.output
+
+
+def test_remote_off_failure_exits_nonzero() -> None:
+    process = FakeProcessRunner()
+    process.script(("tailscale", "down"), exit_code=1, stderr="denied")
+    result = runner.invoke(app, ["remote", "off"], obj=make_fake_context(runner=process))
+    assert result.exit_code == 1

@@ -12,6 +12,5 @@ Two load-bearing rules: `cli.py` renders, `service.py` decides.
 - `app/` wires dependencies and the command tree.
 - `cmd/<feature>/` holds each feature: `cli.py` (Typer rendering),
   `service.py` (decisions), plus whatever else the feature needs
-  (`models.py`, `pane.py` for its TUI panel, colocated `test_*.py`).
-- `adapters/` contains subprocess and launcher effects; `testing/` the fakes.
-- `tui/` renders the Mission Control shell that hosts the feature panes.
+  (`models.py` and colocated `test_*.py`).
+- `adapters/` contains subprocess effects; `testing/` contains fakes.

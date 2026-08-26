@@ -1,8 +1,6 @@
 import plistlib
 from pathlib import Path
 
-import pytest
-
 from dotfiles.cmd.remote.service import RemoteService
 from dotfiles.testing.fakes import FakeProcessRunner
 
@@ -11,446 +9,205 @@ def _service(runner: FakeProcessRunner, home: Path) -> RemoteService:
     return RemoteService(runner=runner, home=home)
 
 
-# --- Tailscale ------------------------------------------------------------
+def _tailnet(runner: FakeProcessRunner, ip: str = "100.64.0.1") -> None:
+    runner.script(("tailscale", "status"), exit_code=0)
+    runner.script(("tailscale", "ip", "-4"), stdout=f"{ip}\n")
 
 
-def test_tailscale_up_down_report_state(tmp_path: Path) -> None:
+def test_tailscale_up_down_and_dry_run(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     service = _service(runner, tmp_path)
     assert service.tailscale_up(dry_run=False).level == "success"
-    assert ("tailscale", "up") in runner.calls
     assert service.tailscale_down(dry_run=False).level == "success"
-    assert ("tailscale", "down") in runner.calls
+    before = list(runner.calls)
+    assert "DRY RUN" in service.tailscale_down(dry_run=True).message
+    assert runner.calls == before
 
 
-def test_tailscale_up_surfaces_failure(tmp_path: Path) -> None:
+def test_tailscale_failure_is_visible(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("tailscale", "up"), exit_code=1, stderr="needs login\n")
-    step = _service(runner, tmp_path).tailscale_up(dry_run=False)
-    assert step.level == "error"
-    assert "needs login" in step.message
+    assert "needs login" in _service(runner, tmp_path).tailscale_up(dry_run=False).message
 
 
-def test_tailscale_dry_run_makes_no_calls(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    assert "DRY RUN" in _service(runner, tmp_path).tailscale_down(dry_run=True).message
-    assert ("tailscale", "down") not in runner.calls
-
-
-# --- serve ----------------------------------------------------------------
-
-
-def test_serve_start_exposes_zellij_web(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    step = _service(runner, tmp_path).serve_start(dry_run=False)
-    assert step.level == "success"
-    assert ("tailscale", "serve", "--bg", "8082") in runner.calls
-
-
-def test_serve_reset_stops_exposure(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    step = _service(runner, tmp_path).serve_reset(dry_run=False)
-    assert step.level == "success"
-    assert ("tailscale", "serve", "reset") in runner.calls
-
-
-def test_serve_dry_run_makes_no_calls(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    assert "DRY RUN" in _service(runner, tmp_path).serve_start(dry_run=True).message
-    assert not any(c[:2] == ("tailscale", "serve") for c in runner.calls)
-
-
-# --- Zellij web launchd agent ---------------------------------------------
-
-
-def test_install_agent_writes_runtime_plist_and_bootstraps(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("id", "-u"), stdout="501\n")
-    steps = _service(runner, tmp_path).zellij_install_agent(dry_run=False)
-
-    plist = tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.zellij-web.plist"
-    assert plist.exists()
-    content = plist.read_text()
-    assert "com.dotfiles.zellij-web" in content
-    assert "/opt/homebrew/bin/zellij" in content
-    # Plist is rendered from home at runtime, so the log path is under this home.
-    assert str(tmp_path) in content
-    assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
-    assert all(s.level != "error" for s in steps)
-
-
-def test_install_agent_dry_run_writes_nothing(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    steps = _service(runner, tmp_path).zellij_install_agent(dry_run=True)
-    assert not (tmp_path / "Library" / "LaunchAgents").exists()
-    assert all("DRY RUN" in s.message for s in steps)
-    assert not any(c[0] == "launchctl" for c in runner.calls)
-
-
-def test_uninstall_agent_boots_out_and_removes_plist(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("id", "-u"), stdout="501\n")
-    service = _service(runner, tmp_path)
-    service.zellij_install_agent(dry_run=False)
-    steps = service.zellij_uninstall_agent(dry_run=False)
-    assert not (tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.zellij-web.plist").exists()
-    assert ("launchctl", "bootout", "gui/501/com.dotfiles.zellij-web") in runner.calls
-    assert all(s.level == "success" for s in steps)
-
-
-def test_zellij_web_running_reads_status(tmp_path: Path) -> None:
-    up = FakeProcessRunner()
-    up.script(("zellij", "web", "--status"), exit_code=0)
-    assert _service(up, tmp_path).zellij_web_running() is True
-
-    down = FakeProcessRunner()
-    down.script(("zellij", "web", "--status"), exit_code=1)
-    assert _service(down, tmp_path).zellij_web_running() is False
-
-
-# --- Paseo daemon launchd agent -------------------------------------------
-
-
-def test_paseo_install_agent_writes_plist_and_bootstraps(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("id", "-u"), stdout="501\n")
-    runner.script(("tailscale", "status"), exit_code=0)
-    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
-    steps = _service(runner, tmp_path).paseo_install_agent(dry_run=False)
-
-    plist = tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.paseo.plist"
-    assert plist.exists()
-    content = plistlib.loads(plist.read_bytes())
-    assert content["Label"] == "com.dotfiles.paseo"
-    assert content["RunAtLoad"] is True
-    assert content["KeepAlive"] is False
-    assert content["EnvironmentVariables"]["PATH"] == (
-        f"{tmp_path}/.local/bin:{tmp_path}/.npm-global/bin:"
-        "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-    )
-    assert content["ProgramArguments"] == [
-        "/opt/homebrew/bin/fnm",
-        "exec",
-        "--using=default",
-        "paseo",
-        "start",
-        "--foreground",
-        "--no-relay",
-        "--listen",
-        "100.64.0.1:6767",
-    ]
-    assert (
-        "/opt/homebrew/bin/fnm",
-        "exec",
-        "--using=default",
-        "paseo",
-        "daemon",
-        "stop",
-    ) in runner.calls
-    assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
-    assert all(s.level != "error" for s in steps)
-
-
-def test_paseo_install_agent_requires_tailnet_ip(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("tailscale", "status"), exit_code=1)
-
-    steps = _service(runner, tmp_path).paseo_install_agent(dry_run=False)
-
+def test_paseo_install_requires_tailnet_ip(tmp_path: Path) -> None:
+    steps = _service(FakeProcessRunner(), tmp_path).paseo_install_agent(dry_run=False)
     assert [step.level for step in steps] == ["error"]
-    assert "tailnet IPv4" in steps[0].message
-    assert not (tmp_path / "Library" / "LaunchAgents" / "com.dotfiles.paseo.plist").exists()
-    assert not any(call[0] == "launchctl" for call in runner.calls)
+    assert not (tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist").exists()
 
 
-def test_paseo_uninstall_stops_legacy_daemon(tmp_path: Path) -> None:
+def test_paseo_install_writes_tailnet_bound_no_relay_plist(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("id", "-u"), stdout="501\n")
+    _tailnet(runner)
 
-    steps = _service(runner, tmp_path).paseo_uninstall_agent(dry_run=False)
+    steps = _service(runner, tmp_path).paseo_install_agent(dry_run=False)
 
-    assert (
-        "/opt/homebrew/bin/fnm",
-        "exec",
-        "--using=default",
-        "paseo",
-        "daemon",
-        "stop",
-    ) in runner.calls
-    assert all(step.level == "success" for step in steps)
-
-
-def test_paseo_rotate_password_uses_terminal_and_reloads_agent(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("id", "-u"), stdout="501\n")
-    runner.script(("tailscale", "status"), exit_code=0)
-    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
-
-    steps = _service(runner, tmp_path).paseo_rotate_password(dry_run=False)
-
-    command = (
-        "/opt/homebrew/bin/fnm",
-        "exec",
-        "--using=default",
-        "paseo",
-        "daemon",
-        "set-password",
-    )
-    call_index = runner.calls.index(command)
-    assert runner.capture_output[call_index] is False
     plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
+    content = plistlib.loads(plist.read_bytes())
+    assert content["ProgramArguments"][-2:] == ["--listen", "100.64.0.1:6767"]
+    assert "--no-relay" in content["ProgramArguments"]
+    assert content["KeepAlive"] is False
     assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
-    assert any("password updated" in step.message.lower() for step in steps)
     assert all(step.level != "error" for step in steps)
 
 
-def test_paseo_rotate_password_does_not_restart_after_cancel(tmp_path: Path) -> None:
+def test_paseo_install_dry_run_writes_nothing(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    runner.script(("tailscale", "status"), exit_code=0)
-    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
-    runner.script(
-        (
-            "/opt/homebrew/bin/fnm",
-            "exec",
-            "--using=default",
-            "paseo",
-            "daemon",
-            "set-password",
-        ),
-        exit_code=1,
-    )
-
-    steps = _service(runner, tmp_path).paseo_rotate_password(dry_run=False)
-
-    assert [step.level for step in steps] == ["error"]
-    assert not any(call[0] == "launchctl" for call in runner.calls)
+    steps = _service(runner, tmp_path).paseo_install_agent(dry_run=True)
+    assert all("DRY RUN" in step.message for step in steps)
+    assert not (tmp_path / "Library/LaunchAgents").exists()
 
 
-def test_paseo_running_reads_launchctl_list(tmp_path: Path) -> None:
-    up = FakeProcessRunner()
-    up.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
-    assert _service(up, tmp_path).paseo_running() is True
+def test_paseo_running_requires_live_launchd_pid(tmp_path: Path) -> None:
+    running = FakeProcessRunner()
+    running.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
+    assert _service(running, tmp_path).paseo_running() is True
 
-    down = FakeProcessRunner()
-    down.script(("launchctl", "list"), stdout="123\t0\tcom.other\n")
-    assert _service(down, tmp_path).paseo_running() is False
-
-    # Loaded label whose process exited (KeepAlive off): PID column is "-".
     crashed = FakeProcessRunner()
     crashed.script(("launchctl", "list"), stdout="-\t0\tcom.dotfiles.paseo\n")
     assert _service(crashed, tmp_path).paseo_running() is False
 
 
-# --- status / connection --------------------------------------------------
-
-
-def test_status_reports_web_state(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("id", "-un"), stdout="evan\n")
-    runner.script(("scutil", "--get", "LocalHostName"), stdout="mac\n")
-    runner.script(("tailscale", "status"), exit_code=0)
-    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
-    runner.script(("zellij", "web", "--status"), exit_code=0)
-    runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
-
-    status = _service(runner, tmp_path).status()
-
-    assert status.tailscale_connected is True
-    assert status.tailnet_ip == "100.64.0.1"
-    assert status.zellij_web_running is True
-    assert status.paseo_running is True
-    assert status.host == "mac"
-
-
-def test_connection_info_uses_magic_dns(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("id", "-un"), stdout="evan\n")
-    runner.script(("scutil", "--get", "LocalHostName"), stdout="mac\n")
-    runner.script(("tailscale", "status"), exit_code=0)
-    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
-    runner.script(
-        ("tailscale", "status", "--json"),
-        stdout='{"Self": {"DNSName": "mac.tailnet.ts.net."}}',
-    )
-    info = _service(runner, tmp_path).connection_info("mobile")
-    assert info.magic_dns == "mac.tailnet.ts.net"
-    assert info.phone_url == "https://mac.tailnet.ts.net/mobile"
-    # The Paseo app connects to the tailnet IP:port directly (no relay/TLS).
-    assert info.paseo_addr == "100.64.0.1:6767"
-
-
-def test_connection_info_off_tailnet_has_no_magic_dns(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("id", "-un"), stdout="evan\n")
-    runner.script(("scutil", "--get", "LocalHostName"), stdout="mac\n")
-    runner.script(("tailscale", "status"), exit_code=1)
-    info = _service(runner, tmp_path).connection_info("mobile")
-    assert info.tailnet_ip is None
-    assert info.magic_dns is None
-    assert info.phone_url == "https://mac/mobile"
-    assert info.paseo_addr == "mac:6767"
-
-
-# --- Zellij web token helpers ---------------------------------------------
-
-
-def test_web_status_running_vs_stopped(tmp_path: Path) -> None:
-    running = FakeProcessRunner()
-    running.script(("zellij", "web", "--status"), stdout="Server running on 127.0.0.1:8082\n")
-    assert _service(running, tmp_path).web_status().level == "info"
-
-    stopped = FakeProcessRunner()
-    stopped.script(("zellij", "web", "--status"), exit_code=1)
-    assert "not running" in _service(stopped, tmp_path).web_status().message
-
-
-def test_web_token_returns_token_text(tmp_path: Path) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("zellij", "web", "--create-token"), stdout="token_0: abc123\n")
-    step = _service(runner, tmp_path).web_token()
-    assert step.level == "success"
-    assert "abc123" in step.message
-
-
-def test_mobile_session_step_ready_when_present(tmp_path: Path) -> None:
-    r = FakeProcessRunner()
-    r.script(
-        ("zellij", "list-sessions", "--no-formatting"),
-        stdout="mobile [Created 2m ago]\nfoo [Created 1h ago]\n",
-    )
-    step = _service(r, tmp_path).mobile_session_step("mobile", dry_run=False)
-    assert step.level == "success"
-    assert "ready" in step.message
-
-
-def test_mobile_session_step_guides_when_absent(tmp_path: Path) -> None:
-    r = FakeProcessRunner()
-    r.script(("zellij", "list-sessions", "--no-formatting"), stdout="foo [Created 1h ago]\n")
-    step = _service(r, tmp_path).mobile_session_step("mobile", dry_run=False)
-    assert step.level == "warn"
-    assert "zellij --session mobile --layout mobile" in step.message
-
-
-def test_ensure_paseo_reinstalls_when_listen_ip_went_stale(tmp_path: Path) -> None:
+def test_paseo_uninstall_removes_plist_and_stops_daemon(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("id", "-u"), stdout="501\n")
-    runner.script(("tailscale", "status"), exit_code=0)
-    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.2\n")
+    plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
+    plist.parent.mkdir(parents=True)
+    plist.write_text("stale")
+
+    steps = _service(runner, tmp_path).paseo_uninstall_agent(dry_run=False)
+
+    assert not plist.exists()
+    assert ("launchctl", "bootout", "gui/501/com.dotfiles.paseo") in runner.calls
+    assert any(call[-2:] == ("daemon", "stop") for call in runner.calls)
+    assert all(step.level == "success" for step in steps)
+
+
+def test_paseo_rotation_uses_hidden_prompt_and_reloads(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-u"), stdout="501\n")
+    _tailnet(runner)
+
+    steps = _service(runner, tmp_path).paseo_rotate_password(dry_run=False)
+
+    command = (
+        "/Applications/Paseo.app/Contents/Resources/bin/paseo",
+        "daemon",
+        "set-password",
+    )
+    index = runner.calls.index(command)
+    assert runner.capture_output[index] is False
+    assert any("password updated" in step.message.lower() for step in steps)
+
+
+def test_ensure_paseo_reinstalls_stale_tailnet_binding(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-u"), stdout="501\n")
     runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
-    service = _service(runner, tmp_path)
-    # Plist frozen at install time with the OLD tailnet IP.
-    plist_dir = tmp_path / "Library" / "LaunchAgents"
-    plist_dir.mkdir(parents=True)
-    (plist_dir / "com.dotfiles.paseo.plist").write_bytes(
-        plistlib.dumps(
-            {"Label": "com.dotfiles.paseo", "ProgramArguments": ["--listen", "100.64.0.1:6767"]}
-        )
+    _tailnet(runner, "100.64.0.2")
+    plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
+    plist.parent.mkdir(parents=True)
+    plist.write_bytes(
+        plistlib.dumps({"ProgramArguments": ["paseo", "--listen", "100.64.0.1:6767"]})
     )
 
-    steps = service.ensure_paseo_agent(dry_run=False)
+    steps = _service(runner, tmp_path).ensure_paseo_agent(dry_run=False)
 
     assert steps[0].level == "warn"
     assert "stale tailnet IP" in steps[0].message
-    assert ("launchctl", "bootstrap", "gui/501", str(plist_dir / "com.dotfiles.paseo.plist")) in (
-        runner.calls
-    )
 
 
-@pytest.mark.parametrize(
-    ("exit_code", "payload"),
-    [
-        (1, ""),
-        (0, "not json"),
-        (0, "[]"),
-        (0, '{"Self": null}'),
-        (0, '{"Self": {"DNSName": 42}}'),
-        (0, '{"Self": {"DNSName": "."}}'),
-    ],
-)
-def test_magic_dns_rejects_unusable_tailscale_payloads(
-    tmp_path: Path, exit_code: int, payload: str
-) -> None:
+def test_status_and_connection_report_only_paseo_path(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    runner.script(("tailscale", "status"), exit_code=0)
-    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
-    runner.script(("tailscale", "status", "--json"), exit_code=exit_code, stdout=payload)
-    assert _service(runner, tmp_path).connection_info("mobile").magic_dns is None
+    runner.script(("id", "-un"), stdout="dev\n")
+    runner.script(("scutil", "--get", "LocalHostName"), stdout="mac\n")
+    runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
+    _tailnet(runner)
+    service = _service(runner, tmp_path)
+
+    status = service.status()
+    assert status.paseo_running is True
+    assert status.tailnet_ip == "100.64.0.1"
+    assert service.connection_info().paseo_addr == "100.64.0.1:6767"
 
 
-def test_serve_and_launchd_failures_are_reported(tmp_path: Path) -> None:
+def test_disconnected_status_falls_back_to_hostname(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("tailscale", "status"), exit_code=1)
+    runner.script(("hostname", "-s"), stdout="fallback\n")
+    service = _service(runner, tmp_path)
+    assert service.status().tailscale_connected is False
+    assert service.connection_info().paseo_addr == "fallback:6767"
+
+
+def test_bootstrap_failure_is_reported(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("id", "-u"), stdout="501\n")
-    runner.script(("tailscale", "serve", "--bg", "8082"), exit_code=1, stderr="denied")
-    runner.script(("tailscale", "serve", "reset"), exit_code=1)
+    _tailnet(runner)
+    plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
     runner.script(
-        (
-            "launchctl",
-            "bootstrap",
-            "gui/501",
-            str(tmp_path / "Library/LaunchAgents/com.dotfiles.zellij-web.plist"),
-        ),
+        ("launchctl", "bootstrap", "gui/501", str(plist)),
         exit_code=1,
         stderr="bad plist",
     )
-    service = _service(runner, tmp_path)
-
-    assert service.serve_start(dry_run=False).level == "error"
-    assert service.serve_reset(dry_run=False).level == "warn"
-    steps = service.zellij_install_agent(dry_run=False)
+    steps = _service(runner, tmp_path).paseo_install_agent(dry_run=False)
     assert steps[-1].level == "error"
     assert "bad plist" in steps[-1].message
 
 
-def test_paseo_listen_parser_rejects_malformed_plists(tmp_path: Path) -> None:
+def test_rotation_cancel_missing_tailnet_and_dry_run(tmp_path: Path) -> None:
+    missing = _service(FakeProcessRunner(), tmp_path).paseo_rotate_password(dry_run=False)
+    assert missing[0].level == "error"
+
+    dry = _service(FakeProcessRunner(), tmp_path).paseo_rotate_password(dry_run=True)
+    assert len(dry) == 2
+    assert all("DRY RUN" in step.message for step in dry)
+
+    cancelled_runner = FakeProcessRunner()
+    _tailnet(cancelled_runner)
+    cancelled_runner.script(
+        (
+            "/Applications/Paseo.app/Contents/Resources/bin/paseo",
+            "daemon",
+            "set-password",
+        ),
+        exit_code=1,
+    )
+    cancelled = _service(cancelled_runner, tmp_path).paseo_rotate_password(dry_run=False)
+    assert cancelled[0].level == "error"
+
+
+def test_malformed_listen_plists_are_ignored(tmp_path: Path) -> None:
     service = _service(FakeProcessRunner(), tmp_path)
     plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
     plist.parent.mkdir(parents=True)
-
-    assert service._paseo_listen_address() is None
     for payload in (
         b"not a plist",
-        plistlib.dumps({"ProgramArguments": "not-a-list"}),
-        plistlib.dumps({"ProgramArguments": ["paseo", "start"]}),
+        plistlib.dumps({"ProgramArguments": "bad"}),
+        plistlib.dumps({"ProgramArguments": ["paseo"]}),
         plistlib.dumps({"ProgramArguments": ["--listen"]}),
     ):
         plist.write_bytes(payload)
         assert service._paseo_listen_address() is None
 
 
-def test_paseo_rotation_requires_tailnet_and_supports_dry_run(tmp_path: Path) -> None:
-    service = _service(FakeProcessRunner(), tmp_path)
-    missing = service.paseo_rotate_password(dry_run=False)
-    dry = service.paseo_rotate_password(dry_run=True)
-    assert missing[0].level == "error"
-    assert len(dry) == 2
-    assert all("DRY RUN" in step.message for step in dry)
-
-
-def test_web_token_reports_empty_success_and_failure(tmp_path: Path) -> None:
-    success = FakeProcessRunner()
-    assert _service(success, tmp_path).web_token().message == "Token created"
-
-    failure = FakeProcessRunner()
-    failure.script(("zellij", "web", "--create-token"), exit_code=1, stderr="stopped")
-    step = _service(failure, tmp_path).web_token()
-    assert step.level == "error"
-    assert "stopped" in step.message
-
-
-def test_ensure_paseo_leaves_matching_listen_ip_alone(tmp_path: Path) -> None:
+def test_ensure_running_matching_daemon_is_left_alone(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
-    runner.script(("tailscale", "status"), exit_code=0)
-    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
     runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
-    service = _service(runner, tmp_path)
-    plist_dir = tmp_path / "Library" / "LaunchAgents"
-    plist_dir.mkdir(parents=True)
-    (plist_dir / "com.dotfiles.paseo.plist").write_bytes(
-        plistlib.dumps(
-            {"Label": "com.dotfiles.paseo", "ProgramArguments": ["--listen", "100.64.0.1:6767"]}
-        )
+    _tailnet(runner)
+    plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
+    plist.parent.mkdir(parents=True)
+    plist.write_bytes(
+        plistlib.dumps({"ProgramArguments": ["paseo", "--listen", "100.64.0.1:6767"]})
     )
-
-    steps = service.ensure_paseo_agent(dry_run=False)
-
+    steps = _service(runner, tmp_path).ensure_paseo_agent(dry_run=False)
     assert [step.level for step in steps] == ["info"]
+
+
+def test_tailscale_down_failure_is_visible(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("tailscale", "down"), exit_code=1, stderr="denied")
+    step = _service(runner, tmp_path).tailscale_down(dry_run=False)
+    assert step.level == "error"
+    assert "denied" in step.message

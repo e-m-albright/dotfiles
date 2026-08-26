@@ -7,8 +7,7 @@ import string
 from typer.testing import CliRunner
 
 from dotfiles.app.main import app
-from dotfiles.cmd.email.service import copy_to_clipboard
-from dotfiles.cmd.password.service import generate_password
+from dotfiles.cmd.password.service import copy_to_clipboard, generate_password
 from dotfiles.testing.fakes import FakeProcessRunner, make_fake_context
 
 runner = CliRunner()

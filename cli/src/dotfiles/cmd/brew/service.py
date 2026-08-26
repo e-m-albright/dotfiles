@@ -8,8 +8,7 @@ provides:
   - installed_formulae() / installed_casks() to query the current machine
   - InstallPlan.compute() for install-plan computation (missing + stale)
   - add_taps() / install_packages() for install execution
-  - install_rust() / install_claude_code() / install_typewhisper() / install_npm_globals()
-    for bespoke special installers
+  - install_rust() / install_claude_code() / install_npm_globals() for bespoke installers
 """
 
 from __future__ import annotations
@@ -85,7 +84,7 @@ class Section(BaseModel):
 
 
 class SpecialInstaller(BaseModel):
-    """Bespoke installer block (rust, typewhisper, claude-code, etc.)."""
+    """Bespoke installer block (rust, TypeWhisper, Claude Code, etc.)."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -288,6 +287,14 @@ def stale_taps(manifest: PackageManifest, runner: ProcessRunner) -> list[str]:
 
 
 @dataclass(frozen=True)
+class PruneCandidate:
+    """An installed Homebrew package retained as a disabled tombstone."""
+
+    name: str
+    kind: Literal["formula", "cask"]
+
+
+@dataclass(frozen=True)
 class InstallPlan:
     """Computed install plan: what's missing vs stale on this machine."""
 
@@ -318,6 +325,60 @@ class InstallPlan:
             if name not in declared and _strip_version(name) not in declared
         )
         return cls(missing=missing, stale=stale)
+
+
+def _installed_prune_kind(
+    name: str,
+    declared_kind: PackageKind,
+    formulae: set[str],
+    casks: set[str],
+) -> Literal["formula", "cask"] | None:
+    if declared_kind != "cask" and name in formulae:
+        return "formula"
+    if declared_kind != "formula" and name in casks:
+        return "cask"
+    return None
+
+
+def prune_candidates(
+    manifest: PackageManifest,
+    runner: ProcessRunner,
+) -> list[PruneCandidate]:
+    """Return installed packages whose manifest entries are disabled tombstones."""
+    formulae = installed_formulae(runner)
+    casks = installed_casks(runner)
+    candidates: list[PruneCandidate] = []
+    for section in manifest.sections:
+        for package in (package for package in section.packages if package.disabled):
+            kind = _installed_prune_kind(package.name, section.kind, formulae, casks)
+            if kind is not None:
+                candidates.append(PruneCandidate(name=package.name, kind=kind))
+    return candidates
+
+
+def uninstall_prune_candidates(
+    candidates: list[PruneCandidate],
+    runner: ProcessRunner,
+) -> list[StepResult]:
+    """Uninstall candidates without altering their manifest tombstones."""
+    results: list[StepResult] = []
+    for candidate in candidates:
+        command = (
+            ("brew", "uninstall", candidate.name)
+            if candidate.kind == "formula"
+            else ("brew", "uninstall", "--cask", candidate.name)
+        )
+        result = runner.run(command)
+        if result.ok:
+            results.append(StepResult(level="success", message=f"uninstalled {candidate.name}"))
+        else:
+            results.append(
+                StepResult(
+                    level="error",
+                    message=f"{' '.join(command)} failed: {result.stderr.strip()}",
+                )
+            )
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -528,16 +589,8 @@ _TW_FETCH_URL = (
 
 
 def install_typewhisper(runner: ProcessRunner, *, dotfiles_dir: Path) -> list[StepResult]:
-    """Install TypeWhisper (if absent) and apply its version-controlled config.
-
-    Install is idempotent — skips the DMG download when /Applications/TypeWhisper.app
-    exists, but still re-applies the tracked config (macos/typewhisper/) so the repo
-    stays the source of truth. Config apply is best-effort and never fails the
-    install: if the app is running it can't write live SQLite-backed settings, which
-    is reported as a warning, not an error.
-    """
+    """Install TypeWhisper if absent and apply its version-controlled config."""
     results: list[StepResult] = []
-
     if Path(_TW_APP_PATH).exists():
         results.append(
             StepResult(level="info", message="TypeWhisper already installed — skipping download")
@@ -546,62 +599,53 @@ def install_typewhisper(runner: ProcessRunner, *, dotfiles_dir: Path) -> list[St
         install_steps = _download_typewhisper(runner)
         results.extend(install_steps)
         if any(step.level == "error" for step in install_steps):
-            return results  # don't try to configure a failed install
-
+            return results
     results.extend(_apply_typewhisper_config(runner, dotfiles_dir))
     return results
 
 
 def _download_typewhisper(runner: ProcessRunner) -> list[StepResult]:
-    """Fetch the latest stable DMG → download → hdiutil attach → cp -R → detach."""
-    # Fetch latest stable DMG URL
-    url_res = runner.run(_TW_FETCH_URL)
-    tw_url = url_res.stdout.strip()
-    if not tw_url:
+    url_result = runner.run(_TW_FETCH_URL)
+    url = url_result.stdout.strip()
+    if not url:
         return [
             StepResult(level="error", message="TypeWhisper: no stable DMG found on GitHub Releases")
         ]
 
     install_dir = Path(mkdtemp(prefix="dotfiles-typewhisper-"))
     dmg_path = str(install_dir / "TypeWhisper.dmg")
-    tw_mount = ""
+    mount = ""
     try:
-        dl_res = runner.run(("curl", "-fsSL", "-o", dmg_path, tw_url))
-        if dl_res.exit_code != 0:
+        if not runner.run(("curl", "-fsSL", "-o", dmg_path, url)).ok:
             return [StepResult(level="error", message="TypeWhisper: download failed")]
-
-        mount_cmd = (
+        mount_command = (
             f"hdiutil attach {dmg_path!r} -nobrowse -noautoopen 2>/dev/null"
             " | grep -oE '/Volumes/.*' | tail -1"
         )
-        tw_mount = runner.run(("sh", "-c", mount_cmd)).stdout.strip()
-        if not tw_mount:
+        mount = runner.run(("sh", "-c", mount_command)).stdout.strip()
+        if not mount:
             return [StepResult(level="error", message="TypeWhisper: DMG mount failed")]
-
-        app_path = f"{tw_mount}/TypeWhisper.app"
+        app_path = f"{mount}/TypeWhisper.app"
         verified = runner.run(("codesign", "--verify", "--deep", "--strict", app_path))
         identity = runner.run(("codesign", "-dv", "--verbose=4", app_path))
         signature = identity.stdout + identity.stderr
         if not verified.ok or f"TeamIdentifier={_TW_TEAM_ID}" not in signature:
             return [StepResult(level="error", message="TypeWhisper: signature verification failed")]
-
-        copied = runner.run(("cp", "-R", app_path, "/Applications/"))
-        if not copied.ok:
+        if not runner.run(("cp", "-R", app_path, "/Applications/")).ok:
             return [StepResult(level="error", message="TypeWhisper: copy to /Applications failed")]
         return [StepResult(level="success", message="TypeWhisper installed")]
     finally:
-        if tw_mount:
-            runner.run(("hdiutil", "detach", tw_mount, "-quiet"))
+        if mount:
+            runner.run(("hdiutil", "detach", mount, "-quiet"))
         rmtree(install_dir)
 
 
 def _apply_typewhisper_config(runner: ProcessRunner, dotfiles_dir: Path) -> list[StepResult]:
-    """Apply the tracked TypeWhisper config via macos/typewhisper.sh (best-effort)."""
     script = dotfiles_dir / "macos" / "typewhisper.sh"
     if not script.is_file():
         return []
-    res = runner.run((str(script), "apply"))
-    if res.exit_code == 0:
+    result = runner.run((str(script), "apply"))
+    if result.ok:
         return [
             StepResult(level="success", message="TypeWhisper config applied (macos/typewhisper/)")
         ]

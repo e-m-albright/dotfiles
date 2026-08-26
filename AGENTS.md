@@ -13,7 +13,7 @@ This repo owns the host layer:
 - `editors/` - host editor and Obsidian configuration
 - `bin/` - the `dotfiles`/`dfs` shim that routes to bash-native commands or the
   Python CLI (load-bearing: half the daily commands pass through it)
-- `cli/` - the `dotfiles` Typer CLI and Mission Control Textual TUI
+- `cli/` - the `dotfiles` Typer CLI
 - `docs/` - machine-specific operating notes
 
 It does not own agent rules, skills, MCP definitions, prompts, engineering
@@ -35,7 +35,7 @@ because they are vendor-native host config; the `cc` wrappers depend on
 - New CLI commands are Typer commands under `cli/src/dotfiles/cmd/`.
 - `dotfiles doctor` checks live desired state. Do not introduce stored machine
   snapshots to detect drift.
-- Remote/session management and Mission Control are core capabilities.
+- Remote access is deliberately limited to Tailscale-direct Paseo lifecycle and health. Do not reintroduce a phone shell, terminal multiplexer, browser terminal, or Mission Control without a demonstrated non-Paseo need.
 - Never commit secrets or personal Git identity. `~/.gitconfig.local` stays local.
 
 ## Verification
@@ -53,13 +53,7 @@ scheduled AI audit, or multi-vendor agent framework.
   from anywhere in the repo.
 - Tests are colocated next to their modules. Single module:
   `cd cli && uv run pytest src/dotfiles/cmd/doctor/`.
-- TUI snapshot tests (pytest-textual-snapshot): update intentionally changed
-  snapshots with `uv run pytest --snapshot-update`; the HTML diff report lands
-  at `cli/snapshot_report.html` (ephemeral, scrubbed by `just scrub`).
-- Launch the TUI with `dotfiles tui`; `bin/dotfiles` routes bash-native
-  commands (`update`, `clean`, `dock`, `profile-shell`) and delegates the rest
-  to the Python CLI. `app/test_command_tree.py` keeps shim, help, and zsh
-  completions in sync.
+- `bin/dotfiles` routes bash-native commands (`update`, `clean`, `dock`, `profile-shell`) and delegates the rest to the Python CLI. `app/test_command_tree.py` keeps shim, help, and zsh completions in sync.
 - Install git hooks once with `lefthook install`.
 
 ## Privacy (public repo)
