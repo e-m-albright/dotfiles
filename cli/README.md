@@ -7,8 +7,11 @@ Dev tasks: `just` (grouped help); `just check` (full gate); `just check --fast` 
 
 ## Layout
 
+Two load-bearing rules: `cli.py` renders, `service.py` decides.
+
 - `app/` wires dependencies and the command tree.
-- `cmd/<feature>/cli.py` renders Typer commands.
-- `cmd/<feature>/service.py` owns feature decisions.
-- `adapters/` contains subprocess and launcher effects.
-- `tui/` and feature `pane.py` files render Textual UI.
+- `cmd/<feature>/` holds each feature: `cli.py` (Typer rendering),
+  `service.py` (decisions), plus whatever else the feature needs
+  (`models.py`, `pane.py` for its TUI panel, colocated `test_*.py`).
+- `adapters/` contains subprocess and launcher effects; `testing/` the fakes.
+- `tui/` renders the Mission Control shell that hosts the feature panes.

@@ -2,7 +2,7 @@
 
 Personal macOS bootstrap and operating configuration. This repo turns a fresh
 MacBook into the host environment I want: packages, shell, terminal, editors,
-privacy utilities, local models, and remote session control.
+privacy utilities, and remote session control.
 
 Dotfiles is the base layer of a three-repository capability stack, described
 canonically in workbench's
@@ -35,7 +35,7 @@ git clone https://github.com/e-m-albright/dotfiles.git ~/code/public/dotfiles
 The installer is macOS-only and safe to rerun. It:
 
 1. Links the tracked shell and Git configuration.
-2. configures SSH and installs Homebrew when needed.
+2. Configures SSH and installs Homebrew when needed.
 3. Reconciles packages from `macos/packages.toml`.
 4. Applies macOS, Dock, terminal, editor, and Obsidian configuration.
 5. Clones `~/code/public/workbench`, runs `workbench sync all`, and fails the
@@ -56,6 +56,8 @@ dotfiles update                 update macOS, packages, and runtimes
 dotfiles clean                  clean package caches
 dotfiles dock                   reset the Dock layout
 dotfiles profile-shell          profile shell startup
+dotfiles tui                    Mission Control TUI (phone-drivable dashboard)
+dotfiles speak '...'            local neural text-to-speech
 ```
 
 There are no machine-state snapshots. `doctor`, `brew stale`, and

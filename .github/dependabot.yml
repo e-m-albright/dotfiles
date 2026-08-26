@@ -1,0 +1,14 @@
+# Turns manual "chore: update X lock" bumps into merge-a-PR.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/cli"
+    schedule:
+      interval: "weekly"
+    groups:
+      python-deps:
+        patterns: ["*"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

@@ -12,6 +12,10 @@ fi
 # Get dotfiles dir (so run this script from anywhere)
 export DOTFILES_DIR
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Supply-chain pins for first-install bootstrap. Advance them deliberately
+# (verify the new commit/version, then update). WORKBENCH_COMMIT pins the
+# FRESH clone only — an existing ~/code/public/workbench is a live working
+# repo and is deliberately left at whatever it has checked out.
 OH_MY_ZSH_COMMIT="677a4592b18c08ddea737f8aca70bac0e9fc9313"
 HOMEBREW_INSTALL_COMMIT="fea42d9aedd20a82bea800a6898dcde19401ab1f"
 WORKBENCH_COMMIT="dfadab4f9f8f1cccfb2bb5ea4921b2627ef05367"

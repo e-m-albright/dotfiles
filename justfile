@@ -27,7 +27,7 @@ lint:
 
 # Pyright typecheck.
 [group('quality')]
-types:
+typecheck:
     uv run pyright
 
 # Vulture dead-code scan.
@@ -63,7 +63,7 @@ check mode='all':
     esac
     just fmt --check
     just lint
-    just types
+    just typecheck
     just deadcode
     just complexity
     if [[ "$run_test" -eq 1 ]]; then
