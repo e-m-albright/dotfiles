@@ -1,6 +1,8 @@
 import plistlib
 from pathlib import Path
 
+import pytest
+
 from dotfiles.cmd.remote.service import RemoteService
 from dotfiles.testing.fakes import FakeProcessRunner
 
@@ -352,6 +354,87 @@ def test_ensure_paseo_reinstalls_when_listen_ip_went_stale(tmp_path: Path) -> No
     assert ("launchctl", "bootstrap", "gui/501", str(plist_dir / "com.dotfiles.paseo.plist")) in (
         runner.calls
     )
+
+
+@pytest.mark.parametrize(
+    ("exit_code", "payload"),
+    [
+        (1, ""),
+        (0, "not json"),
+        (0, "[]"),
+        (0, '{"Self": null}'),
+        (0, '{"Self": {"DNSName": 42}}'),
+        (0, '{"Self": {"DNSName": "."}}'),
+    ],
+)
+def test_magic_dns_rejects_unusable_tailscale_payloads(
+    tmp_path: Path, exit_code: int, payload: str
+) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("tailscale", "status"), exit_code=0)
+    runner.script(("tailscale", "ip", "-4"), stdout="100.64.0.1\n")
+    runner.script(("tailscale", "status", "--json"), exit_code=exit_code, stdout=payload)
+    assert _service(runner, tmp_path).connection_info("mobile").magic_dns is None
+
+
+def test_serve_and_launchd_failures_are_reported(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-u"), stdout="501\n")
+    runner.script(("tailscale", "serve", "--bg", "8082"), exit_code=1, stderr="denied")
+    runner.script(("tailscale", "serve", "reset"), exit_code=1)
+    runner.script(
+        (
+            "launchctl",
+            "bootstrap",
+            "gui/501",
+            str(tmp_path / "Library/LaunchAgents/com.dotfiles.zellij-web.plist"),
+        ),
+        exit_code=1,
+        stderr="bad plist",
+    )
+    service = _service(runner, tmp_path)
+
+    assert service.serve_start(dry_run=False).level == "error"
+    assert service.serve_reset(dry_run=False).level == "warn"
+    steps = service.zellij_install_agent(dry_run=False)
+    assert steps[-1].level == "error"
+    assert "bad plist" in steps[-1].message
+
+
+def test_paseo_listen_parser_rejects_malformed_plists(tmp_path: Path) -> None:
+    service = _service(FakeProcessRunner(), tmp_path)
+    plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
+    plist.parent.mkdir(parents=True)
+
+    assert service._paseo_listen_address() is None
+    for payload in (
+        b"not a plist",
+        plistlib.dumps({"ProgramArguments": "not-a-list"}),
+        plistlib.dumps({"ProgramArguments": ["paseo", "start"]}),
+        plistlib.dumps({"ProgramArguments": ["--listen"]}),
+    ):
+        plist.write_bytes(payload)
+        assert service._paseo_listen_address() is None
+
+
+def test_paseo_rotation_requires_tailnet_and_supports_dry_run(tmp_path: Path) -> None:
+    service = _service(FakeProcessRunner(), tmp_path)
+    missing = service.paseo_rotate_password(dry_run=False)
+    dry = service.paseo_rotate_password(dry_run=True)
+    assert missing[0].level == "error"
+    assert len(dry) == 2
+    assert all("DRY RUN" in step.message for step in dry)
+
+
+def test_web_token_reports_empty_success_and_failure(tmp_path: Path) -> None:
+    success = FakeProcessRunner()
+    assert _service(success, tmp_path).web_token().message == "Token created"
+
+    failure = FakeProcessRunner()
+    failure.script(("zellij", "web", "--create-token"), exit_code=1, stderr="stopped")
+    step = _service(failure, tmp_path).web_token()
+    assert step.level == "error"
+    assert "stopped" in step.message
 
 
 def test_ensure_paseo_leaves_matching_listen_ip_alone(tmp_path: Path) -> None:

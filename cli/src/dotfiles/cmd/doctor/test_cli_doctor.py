@@ -1,6 +1,7 @@
 """Tests for the `dotfiles doctor` Typer command."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from typer.testing import CliRunner
@@ -48,8 +49,29 @@ def test_doctor_fix_workbench_hint_only_when_not_ok(
     assert "workbench sync" in result.output
 
 
-# The "all checks pass → no failures" scenario is covered as a direct
-# DoctorService unit test in test_doctor_core.py::test_run_all_present_has_no_failure,
-# where the system paths (/Applications, /opt/homebrew/bin) are injected under
-# tmp_path. Re-testing it through the CLI added nothing but a host-dependent,
-# mock-heavy duplicate, so it lives at the service layer instead.
+@pytest.mark.parametrize(
+    ("check", "expected"),
+    [
+        (
+            {"section": "Runtime", "name": "Node", "status": "warn"},
+            "1 warning(s)",
+        ),
+        (
+            {"section": "Runtime", "name": "Node", "status": "ok"},
+            "All checks passed",
+        ),
+    ],
+)
+def test_doctor_renders_nonfailure_outcomes(
+    monkeypatch: pytest.MonkeyPatch, check: dict[str, str], expected: str
+) -> None:
+    from dotfiles.cmd.doctor import cli as doctor_cli
+    from dotfiles.cmd.doctor.models import CheckResult
+
+    service = SimpleNamespace(run=lambda: [CheckResult(**check)])
+    monkeypatch.setattr(doctor_cli, "DoctorService", lambda **_kwargs: service)
+
+    result = runner.invoke(app, ["doctor"], obj=make_fake_context())
+
+    assert result.exit_code == 0
+    assert expected in result.output

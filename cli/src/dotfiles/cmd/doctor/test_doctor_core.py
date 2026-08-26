@@ -288,6 +288,114 @@ def test_tool_checks_stay_in_sync_with_packages_toml(name: str, hint: str) -> No
         )
 
 
+def test_runtime_checks_report_degraded_but_usable_states(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("fnm", "list"), exit_code=1)
+    runner.script(("python3", "--version"), stdout="Python 3.13.4\n")
+
+    def which(name: str) -> str | None:
+        return f"/usr/bin/{name}" if name in {"fnm", "python3"} else None
+
+    service = DoctorService(
+        runner=runner,
+        home=tmp_path,
+        dotfiles_dir=tmp_path / "dotfiles",
+        fix=False,
+        which=which,
+        apps_dir=tmp_path / "Applications",
+        brew_bin=tmp_path / "brew-bin",
+    )
+
+    node = service._check_node("Runtimes")[0]
+    python = service._check_python("Runtimes")[0]
+    node_link = service._check_node_symlink("Runtimes")[0]
+
+    assert (node.status, python.status, node_link.status) == ("warn", "warn", "missing")
+    assert python.detail == "Python 3.13.4"
+
+
+def test_runtime_checks_report_missing_python_without_fnm() -> None:
+    service = _svc()
+    assert service._check_node("Runtimes") == []
+    assert service._check_node_symlink("Runtimes") == []
+    assert service._check_python("Runtimes")[0].status == "missing"
+
+
+def test_node_check_tolerates_inactive_node() -> None:
+    runner = FakeProcessRunner()
+    runner.script(("fnm", "list"), stdout="lts-latest\n")
+    runner.script(("node", "--version"), exit_code=1)
+    service = _svc(runner, which=lambda name: "/usr/bin/fnm" if name == "fnm" else None)
+    result = service._check_node("Runtimes")[0]
+    assert result.status == "ok"
+    assert result.detail == "not active"
+
+
+def test_node_symlink_fix_links_node_and_optional_npx(tmp_path: Path) -> None:
+    node = tmp_path / "fnm/node"
+    npx = tmp_path / "fnm/npx"
+    node.parent.mkdir()
+    node.write_text("node")
+    npx.write_text("npx")
+    paths = {"fnm": str(tmp_path / "fnm/fnm"), "node": str(node), "npx": str(npx)}
+    brew_bin = tmp_path / "brew-bin"
+    service = DoctorService(
+        runner=FakeProcessRunner(),
+        home=tmp_path,
+        dotfiles_dir=tmp_path / "dotfiles",
+        fix=True,
+        which=paths.get,
+        apps_dir=tmp_path / "Applications",
+        brew_bin=brew_bin,
+    )
+
+    result = service._check_node_symlink("Runtimes")[0]
+
+    assert result.status == "fixed"
+    assert (brew_bin / "node").resolve() == node
+    assert (brew_bin / "npx").resolve() == npx
+
+
+def test_workbench_falls_back_to_checkout_and_handles_empty_drift(tmp_path: Path) -> None:
+    command = tmp_path / "code/public/workbench/bin/workbench"
+    command.parent.mkdir(parents=True)
+    command.write_text("#!/bin/sh\n")
+    runner = FakeProcessRunner()
+    runner.script((str(command), "drift", "all"), exit_code=1)
+
+    result = _svc(runner, home=tmp_path)._check_workbench("AI Tools")[0]
+
+    assert result.status == "warn"
+    assert result.detail == "managed agent config has drifted"
+
+
+def test_configuration_reports_app_only_states(tmp_path: Path) -> None:
+    apps = tmp_path / "Applications"
+    (apps / "Tailscale.app").mkdir(parents=True)
+    (apps / "Ghostty.app").mkdir()
+    service = DoctorService(
+        runner=FakeProcessRunner(),
+        home=tmp_path / "home",
+        dotfiles_dir=tmp_path / "dotfiles",
+        fix=False,
+        which=lambda _name: None,
+        apps_dir=apps,
+        brew_bin=tmp_path / "brew-bin",
+    )
+
+    assert service._check_essentials()[0].status == "ok"
+    ghostty = service._check_ghostty("Configuration")[0]
+    assert ghostty.status == "warn"
+
+
+def test_tool_without_version_output_uses_installed_fallback() -> None:
+    result = _svc(which=lambda _name: "/usr/bin/tool")._tool(
+        "Core Tools", "Tool", "tool", "install tool"
+    )
+    assert result.status == "ok"
+    assert result.detail == "installed"
+
+
 def test_fix_backs_up_a_regular_file_instead_of_deleting_it(tmp_path: Path) -> None:
     """--fix on a hand-rolled (non-symlink) config must preserve its content."""
     src = tmp_path / "dotfiles-zshrc"

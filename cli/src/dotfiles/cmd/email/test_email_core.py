@@ -63,6 +63,24 @@ def test_provider_exception_becomes_mask_error() -> None:
         create_mask(BrokenProvider(), "x")
 
 
+def test_reservation_exception_becomes_mask_error() -> None:
+    class BrokenProvider(FakeMaskProvider):
+        def reserve(self, email: str, label: str):
+            raise RuntimeError("reserve unavailable")
+
+    with pytest.raises(MaskError, match=r"reservation failed.*reserve unavailable"):
+        create_mask(BrokenProvider(), "x")
+
+
+def test_listing_exception_becomes_mask_error() -> None:
+    class BrokenProvider(FakeMaskProvider):
+        def __iter__(self):
+            raise RuntimeError("listing unavailable")
+
+    with pytest.raises(MaskError, match=r"listing failed.*listing unavailable"):
+        list_masks(BrokenProvider())
+
+
 def test_mutations_reject_explicit_provider_failure() -> None:
     class RejectingProvider(FakeMaskProvider):
         def deactivate(self, anonymous_id: str) -> dict[str, object]:

@@ -173,6 +173,76 @@ def test_brew_install_only_runs_specials_declared_by_manifest(tmp_path: Path) ->
     assert not any("rustup.rs" in part for call in ctx.runner.calls for part in call)
 
 
+def test_brew_clean_reports_success_and_failure(tmp_path: Path) -> None:
+    success_ctx = _make_ctx(tmp_path / "success")
+    success = runner.invoke(app, ["clean"], obj=success_ctx)
+
+    failure_ctx = _make_ctx(tmp_path / "failure")
+    failure_ctx.runner.script(("brew", "cleanup", "--prune=30"), exit_code=1, stderr="busy")
+    failure = runner.invoke(app, ["clean"], obj=failure_ctx)
+
+    assert success.exit_code == 0
+    assert failure.exit_code == 1
+    assert "cleanup failed" in failure.output
+
+
+def test_brew_install_surfaces_inventory_failure(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "list", "--formula", "-1"), exit_code=1, stderr="offline")
+
+    result = runner.invoke(app, ["brew", "install"], obj=ctx)
+
+    assert result.exit_code == 1
+    assert "offline" in result.output
+
+
+def test_brew_install_exits_nonzero_when_a_package_fails(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "install", "git"), exit_code=1, stderr="failed")
+
+    result = runner.invoke(app, ["brew", "install"], obj=ctx)
+
+    assert result.exit_code == 1
+    assert "git" in result.output
+
+
+def test_brew_stale_surfaces_inventory_failure(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "leaves", "--installed-on-request"), exit_code=1)
+
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+
+    assert result.exit_code == 1
+    assert "Homebrew inventory failed" in result.output
+
+
+def test_brew_stale_reports_runtime_tool_drift(tmp_path: Path) -> None:
+    manifest = (
+        _PACKAGES_TOML
+        + """
+[[npm_package]]
+name = "wrangler"
+version = "4.0.0"
+
+[[go_package]]
+name = "gopls"
+module = "golang.org/x/tools/gopls"
+version = "v1.0.0"
+"""
+    )
+    ctx = _make_ctx(tmp_path)
+    (tmp_path / "macos/packages.toml").write_text(manifest)
+    ctx.runner.script(("npm", "ls", "-g", "--depth=0", "--json"), stdout="{}")
+    ctx.runner.script(("which", "gopls"), exit_code=1)
+
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+
+    assert result.exit_code == 0
+    assert "wrangler (missing)" in result.output
+    assert "gopls (missing)" in result.output
+    assert "Heal with" in result.output
+
+
 def test_no_ai_flag_disables_a_flagged_section(tmp_path: Path) -> None:
     manifest = _PACKAGES_TOML.replace('name = "Core"', 'name = "Core"\nflag = "ai"')
     macos_dir = tmp_path / "macos"

@@ -126,7 +126,7 @@ verify:
 # Pytest with coverage floor.
 [group('testing')]
 test:
-    uv run pytest --cov=dotfiles --cov-report=term-missing --cov-fail-under=85
+    uv run pytest --cov=dotfiles --cov-report=term-missing --cov-fail-under=95
 
 # ── Dependencies ──────────────────────────────────────────────────────────────
 
@@ -158,7 +158,7 @@ scrub mode='all':
     fi
     if $do_caches; then
         rm -rf "{{repo}}/cli/.complexipy_cache" "{{repo}}/.crush" "{{repo}}/cli/.ruff_cache" "{{repo}}/cli/.pytest_cache"
-        rm -rf "{{repo}}/.complexipy_cache" "{{repo}}/.ruff_cache" "{{repo}}/.pytest_cache" "{{repo}}/cli/snapshot_report.html"
+        rm -rf "{{repo}}/.complexipy_cache" "{{repo}}/.ruff_cache" "{{repo}}/.pytest_cache" "{{repo}}/cli/coverage.json" "{{repo}}/cli/snapshot_report.html"
     fi
 
 # ── Help (default) ────────────────────────────────────────────────────────────

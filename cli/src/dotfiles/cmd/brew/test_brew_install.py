@@ -399,6 +399,51 @@ def test_install_typewhisper_no_url_is_error(
     assert "no stable DMG" in results[0].message
 
 
+@pytest.mark.parametrize(
+    ("failure", "expected"),
+    [
+        ("download", "download failed"),
+        ("mount", "DMG mount failed"),
+        ("copy", "copy to /Applications failed"),
+    ],
+)
+def test_install_typewhisper_reports_install_stage_failures(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: str,
+    expected: str,
+) -> None:
+    monkeypatch.setattr(Path, "exists", lambda self: False)
+    install_dir = tmp_path / failure
+    install_dir.mkdir()
+    monkeypatch.setattr("dotfiles.cmd.brew.service.mkdtemp", lambda *, prefix: str(install_dir))
+    runner = FakeProcessRunner()
+    url = "https://example.test/TypeWhisper.dmg"
+    runner.script(_TW_FETCH_CMD, stdout=url + "\n")
+    dmg_path = str(install_dir / "TypeWhisper.dmg")
+    if failure == "download":
+        runner.script(("curl", "-fsSL", "-o", dmg_path, url), exit_code=1)
+    else:
+        mount_cmd = (
+            f"hdiutil attach {dmg_path!r} -nobrowse -noautoopen 2>/dev/null"
+            " | grep -oE '/Volumes/.*' | tail -1"
+        )
+        if failure == "mount":
+            runner.script(("sh", "-c", mount_cmd), stdout="")
+        else:
+            runner.script(("sh", "-c", mount_cmd), stdout="/Volumes/TypeWhisper\n")
+            app = "/Volumes/TypeWhisper/TypeWhisper.app"
+            runner.script(
+                ("codesign", "-dv", "--verbose=4", app), stdout="TeamIdentifier=2D8ALY3LCL"
+            )
+            runner.script(("cp", "-R", app, "/Applications/"), exit_code=1)
+
+    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
+
+    assert results[0].level == "error"
+    assert expected in results[0].message
+
+
 def test_install_typewhisper_full_happy_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -574,6 +619,33 @@ def test_install_npm_globals_reports_missing_runtime(tmp_path: Path) -> None:
 
     assert [step.level for step in results] == ["error"]
     assert "neither is available" in results[0].message
+
+
+@pytest.mark.parametrize(
+    ("failed_command", "expected"),
+    [("install", "failed to install"), ("default", "failed to select")],
+)
+def test_install_npm_globals_reports_fnm_bootstrap_failure(
+    tmp_path: Path, failed_command: str, expected: str
+) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("which", "npm"), exit_code=1)
+    runner.script(("which", "fnm"), stdout="/opt/homebrew/bin/fnm\n")
+    command = (
+        ("fnm", "install", "--lts")
+        if failed_command == "install"
+        else (
+            "fnm",
+            "default",
+            "lts-latest",
+        )
+    )
+    runner.script(command, exit_code=1)
+
+    results = install_npm_globals(load(tmp_path), runner, flags_on={"ai"})
+
+    assert [step.level for step in results] == ["error"]
+    assert expected in results[0].message
 
 
 def test_install_npm_globals_flag_gates_ai_packages(tmp_path: Path) -> None:

@@ -9,6 +9,7 @@ from dotfiles.cmd.brew.service import (
     BrewInventoryError,
     InstallPlan,
     PackageManifest,
+    _npm_installed_versions,
     enabled_packages,
     installed_casks,
     installed_formulae,
@@ -491,6 +492,22 @@ def test_stale_ignores_versioned_keg_of_declared_alias(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 from dotfiles.cmd.brew.service import go_drift, npm_drift  # noqa: E402
+
+
+@pytest.mark.parametrize("payload", ["not json", "[]", '{"dependencies": []}'])
+def test_npm_inventory_rejects_malformed_payloads(payload: str) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("npm", "ls", "-g", "--depth=0", "--json"), stdout=payload)
+    assert _npm_installed_versions(runner) == {}
+
+
+def test_npm_inventory_ignores_malformed_entries() -> None:
+    runner = FakeProcessRunner()
+    runner.script(
+        ("npm", "ls", "-g", "--depth=0", "--json"),
+        stdout='{"dependencies": {"good": {"version": "1.2.3"}, "bad": null}}',
+    )
+    assert _npm_installed_versions(runner) == {"good": "1.2.3"}
 
 
 def test_npm_drift_reports_missing_and_version_mismatch(tmp_path: Path) -> None:

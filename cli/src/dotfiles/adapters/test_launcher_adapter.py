@@ -36,6 +36,17 @@ def test_pick_returns_none_when_fzf_cancelled(monkeypatch) -> None:
     assert FzfExecLauncher().pick(["mobile"]) is None
 
 
+def test_attach_execs_the_selected_command(monkeypatch) -> None:
+    import os
+
+    calls: list[tuple[str, list[str]]] = []
+    monkeypatch.setattr(os, "execvp", lambda executable, argv: calls.append((executable, argv)))
+
+    FzfExecLauncher().attach(("zellij", "attach", "work"))
+
+    assert calls == [("zellij", ["zellij", "attach", "work"])]
+
+
 def test_attach_rejects_empty_command() -> None:
     import pytest
 
