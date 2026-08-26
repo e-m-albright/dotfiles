@@ -1,4 +1,4 @@
-"""`dotfiles remote` — Tailscale-direct Paseo lifecycle and status."""
+"""`dotfiles remote` — Tailscale-direct phone access lifecycle and status."""
 
 import typer
 from rich.console import Console
@@ -18,7 +18,7 @@ from dotfiles.console import (
 from dotfiles.result import StepResult
 
 remote_app = typer.Typer(
-    help="Manage Paseo phone access over the private Tailscale network.",
+    help="Manage phone access over the private Tailscale network.",
 )
 
 
@@ -53,15 +53,17 @@ def on(
     ),
     no_tailscale: bool = typer.Option(False, "--no-tailscale", help="Skip bringing Tailscale up."),
 ) -> None:
-    """Bring Tailscale and the tailnet-bound Paseo daemon up."""
+    """Bring Tailscale, Paseo, and the tailnet-only private site up."""
     service = _service(ctx)
     print_title(console, "Remote", "on")
     steps: list[StepResult] = []
     if not no_tailscale:
         steps.append(service.tailscale_up(dry_run=dry_run))
     steps.extend(service.ensure_paseo_agent(dry_run=dry_run))
+    steps.append(service.private_site_enable(dry_run=dry_run))
     render_steps(console, steps)
     render_connection_info(console, service.connection_info())
+    print_field(console, "Private site", service.private_site_url() or "not configured")
     print_field(console, "Caffeine", service.caffeine_status().summary)
     if has_errors(steps):
         raise typer.Exit(code=1)
@@ -190,12 +192,13 @@ def tailscale(
 
 @remote_app.command()
 def status(ctx: typer.Context) -> None:
-    """Show Tailscale, Paseo, and the direct daemon address."""
+    """Show Tailscale, Paseo, private-site, and direct daemon status."""
     service = _service(ctx)
     state = service.status()
     print_title(console, "Remote", "status")
     print_field(console, "Tailscale", _tailscale_value(state))
     print_field(console, "Paseo", "running" if state.paseo_running else "stopped")
+    print_field(console, "Private site", state.private_site_url or "not configured")
     print_field(console, "Caffeine", state.caffeine.summary)
     print_field(console, "Host", f"{state.user}@{state.host}")
     if state.tailnet_ip:

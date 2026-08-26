@@ -32,6 +32,7 @@ class RemoteStatus(BaseModel):
     host: str
     user: str
     paseo_running: bool = False
+    private_site_url: str | None = None
     caffeine: CaffeineStatus = CaffeineStatus(available=False)
 
 

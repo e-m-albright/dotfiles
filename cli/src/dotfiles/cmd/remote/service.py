@@ -1,11 +1,12 @@
-"""Tailscale-direct Paseo lifecycle over the ProcessRunner port.
+"""Tailscale-direct phone access lifecycle over the ProcessRunner port.
 
-Paseo is the only phone surface. Its daemon drives Pi, Claude Code, and Codex
-on the Mac and binds only to the current Tailscale IPv4 address. The relay stays
-disabled. No terminal-session wrapper is involved.
+Paseo drives local agents and binds only to the current Tailscale IPv4 address.
+Tailscale Serve exposes one loopback-only private site to the tailnet. Paseo's
+relay stays disabled, and no terminal-session wrapper is involved.
 """
 
 import plistlib
+import re
 from functools import cached_property
 from pathlib import Path
 from typing import cast
@@ -24,6 +25,15 @@ _PASEO_BASE_ARGS = [
 ]
 _PASEO_STOP_COMMAND = (_PASEO_BIN, "daemon", "stop")
 _PASEO_SET_PASSWORD_COMMAND = (_PASEO_BIN, "daemon", "set-password")
+_PRIVATE_SITE_COMMAND = (
+    "tailscale",
+    "serve",
+    "--https=8443",
+    "--bg",
+    "--yes",
+    "http://127.0.0.1:8765",
+)
+_PRIVATE_SITE_URL = re.compile(r"https://[^\s/]+:8443")
 
 
 class RemoteService:
@@ -75,6 +85,21 @@ class RemoteService:
 
     def tailscale_status(self) -> tuple[bool, str | None]:
         return self._tailscale
+
+    def private_site_enable(self, *, dry_run: bool) -> StepResult:
+        if dry_run:
+            return StepResult(level="info", message="DRY RUN: enable private site on Tailscale")
+        result = self._runner.run(_PRIVATE_SITE_COMMAND)
+        if result.ok:
+            return StepResult(level="success", message="Private site available on Tailscale")
+        return StepResult(level="error", message=f"Tailscale Serve failed: {result.stderr.strip()}")
+
+    def private_site_url(self) -> str | None:
+        result = self._runner.run(("tailscale", "serve", "status"))
+        if not result.ok or "No serve config" in result.stdout:
+            return None
+        match = _PRIVATE_SITE_URL.search(result.stdout)
+        return match.group(0) if match else None
 
     def _agent_plist(self) -> Path:
         return self._home / "Library" / "LaunchAgents" / f"{_PASEO_LABEL}.plist"
@@ -246,6 +271,7 @@ class RemoteService:
             host=self._host,
             user=self._user,
             paseo_running=self.paseo_running(),
+            private_site_url=self.private_site_url(),
             caffeine=self.caffeine_status(),
         )
 

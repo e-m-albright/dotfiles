@@ -30,6 +30,41 @@ def test_tailscale_failure_is_visible(tmp_path: Path) -> None:
     assert "needs login" in _service(runner, tmp_path).tailscale_up(dry_run=False).message
 
 
+def test_private_site_enable_and_status(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    command = (
+        "tailscale",
+        "serve",
+        "--https=8443",
+        "--bg",
+        "--yes",
+        "http://127.0.0.1:8765",
+    )
+    runner.script(
+        ("tailscale", "serve", "status"),
+        stdout=(
+            "Available on your tailnet:\n"
+            "https://mac.example.ts.net:8443\n"
+            "|-- proxy http://127.0.0.1:8765\n"
+        ),
+    )
+    service = _service(runner, tmp_path)
+
+    assert service.private_site_enable(dry_run=False).level == "success"
+    assert command in runner.calls
+    assert service.private_site_url() == "https://mac.example.ts.net:8443"
+
+
+def test_private_site_dry_run_and_missing_status(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("tailscale", "serve", "status"), stdout="No serve config\n")
+    service = _service(runner, tmp_path)
+
+    assert "DRY RUN" in service.private_site_enable(dry_run=True).message
+    assert not any(call[:2] == ("tailscale", "serve") and len(call) > 2 for call in runner.calls)
+    assert service.private_site_url() is None
+
+
 def test_paseo_install_requires_tailnet_ip(tmp_path: Path) -> None:
     steps = _service(FakeProcessRunner(), tmp_path).paseo_install_agent(dry_run=False)
     assert [step.level for step in steps] == ["error"]
@@ -156,6 +191,7 @@ def test_status_and_connection_report_only_paseo_path(tmp_path: Path) -> None:
     assert status.paseo_running is True
     assert status.caffeine.summary == "active · preventing sleep"
     assert status.tailnet_ip == "100.64.0.1"
+    assert status.private_site_url is None
     assert service.connection_info().paseo_addr == "100.64.0.1:6767"
 
 

@@ -45,7 +45,15 @@ def test_remote_on_ensures_tailscale_and_paseo(tmp_path: Path) -> None:
     assert "100.64.0.1:6767" in result.output
     assert "Caffeine" in result.output
     assert "active · preventing sleep" in result.output
-    assert not any(call[:2] == ("tailscale", "serve") for call in process.calls)
+    assert (
+        "tailscale",
+        "serve",
+        "--https=8443",
+        "--bg",
+        "--yes",
+        "http://127.0.0.1:8765",
+    ) in process.calls
+    assert "Private site" in result.output
 
 
 def test_remote_on_dry_run_has_no_effects(tmp_path: Path) -> None:
@@ -93,6 +101,8 @@ def test_remote_status_reports_direct_paseo_address() -> None:
     assert "Paseo" in result.output
     assert "100.64.0.1:6767" in result.output
     assert "active · preventing sleep" in result.output
+    assert "Private site" in result.output
+    assert "not configured" in result.output
     assert "Zellij" not in result.output
 
 

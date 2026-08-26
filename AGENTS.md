@@ -35,7 +35,7 @@ because they are vendor-native host config; the `cc` wrappers depend on
 - New CLI commands are Typer commands under `cli/src/dotfiles/cmd/`.
 - `dotfiles doctor` checks live desired state. Do not introduce stored machine
   snapshots to detect drift.
-- Remote access is deliberately limited to Tailscale-direct Paseo lifecycle and health. Do not reintroduce a phone shell, terminal multiplexer, browser terminal, or Mission Control without a demonstrated non-Paseo need.
+- Remote access is deliberately limited to Tailscale-direct Paseo lifecycle and health plus one loopback-only private site proxied by Tailscale Serve. Never enable Funnel. Do not reintroduce a phone shell, terminal multiplexer, browser terminal, or Mission Control without a demonstrated need.
 - Never commit secrets or personal Git identity. `~/.gitconfig.local` stays local.
 
 ## Verification

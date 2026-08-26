@@ -66,7 +66,7 @@ is no stored observation to become stale.
 
 ## Remote Control
 
-The remote stack is intentionally only Tailscale plus Paseo. Paseo owns agent process continuity and the native mobile interface for Pi, Claude Code, and Codex. There is no phone shell, terminal multiplexer, browser terminal, or Mission Control session manager.
+The remote stack is intentionally limited to Tailscale, Paseo, and one tailnet-only private web surface. Paseo owns agent process continuity and the native mobile interface for Pi, Claude Code, and Codex. Tailscale Serve proxies the loopback web service over HTTPS on port 8443. There is no phone shell, terminal multiplexer, browser terminal, or Mission Control session manager.
 
 ```text
 dotfiles remote status
