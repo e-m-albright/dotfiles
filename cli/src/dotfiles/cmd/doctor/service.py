@@ -1,5 +1,6 @@
 """`dotfiles doctor` checks. Pure over ProcessRunner port + direct pathlib."""
 
+import re
 import shutil
 from collections.abc import Callable
 from pathlib import Path
@@ -134,7 +135,7 @@ class DoctorService:
             return []
         fnm_result = self._runner.run(("fnm", "list"))
         fnm_out = fnm_result.stdout if fnm_result.ok else ""
-        if "lts-latest" in fnm_out or "v" in fnm_out:
+        if "lts-latest" in fnm_out or re.search(r"\bv\d+", fnm_out):
             node_result = self._runner.run(("node", "--version"))
             detail = node_result.stdout.strip() if node_result.ok else "not active"
             return [CheckResult(section=sec, name="Node.js", status="ok", detail=detail)]
@@ -234,7 +235,7 @@ class DoctorService:
                 )
             ]
 
-        checked = self._runner.run((command, "check"))
+        checked = self._runner.run((command, "drift", "all"))
         if checked.ok:
             return [
                 CheckResult(

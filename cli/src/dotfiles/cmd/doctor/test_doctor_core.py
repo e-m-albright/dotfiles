@@ -133,7 +133,7 @@ def _fully_equipped_runner(home: Path) -> FakeProcessRunner:
     runner.script(("node", "--version"), stdout="v20.0.0\n")
     # python3.14 version
     runner.script(("python3.14", "--version"), stdout="Python 3.14.0\n")
-    runner.script(("/usr/bin/workbench", "check"), stdout="OK managed config matches\n")
+    runner.script(("/usr/bin/workbench", "drift", "all"), stdout="OK managed config matches\n")
     return runner
 
 
@@ -207,7 +207,9 @@ def test_run_all_present_has_no_failure(tmp_path: Path) -> None:
 
 def test_workbench_check_reports_live_drift() -> None:
     runner = FakeProcessRunner()
-    runner.script(("/usr/bin/workbench", "check"), stdout="DRIFT Claude rules\n", exit_code=1)
+    runner.script(
+        ("/usr/bin/workbench", "drift", "all"), stdout="DRIFT Claude rules\n", exit_code=1
+    )
     result = _svc(runner, which=lambda n: "/usr/bin/workbench" if n == "workbench" else None)
     check = result._check_workbench("AI Tools")[0]
     assert check.status == "warn"

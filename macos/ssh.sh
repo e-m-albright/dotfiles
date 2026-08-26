@@ -12,7 +12,7 @@ if [[ -f "$HOME/.gitconfig.local" ]]; then
 fi
 if [[ -z "${EMAIL:-}" ]]; then
     printf "  Enter email for SSH key: "
-    read EMAIL
+    read -r EMAIL
     if [[ -z "$EMAIL" ]]; then
         print_warn "Email required for SSH key generation"
         exit 1
@@ -60,7 +60,8 @@ else
     # Check if our configuration is already present
     if ! grep -q "IdentityFile ~/.ssh/id_ed25519" "$SSH_CONFIG"; then
         echo "Updating SSH config..."
-        cp "$SSH_CONFIG" "${SSH_CONFIG}.backup"
+        # Timestamped backup so a rerun never overwrites the previous backup.
+        cp "$SSH_CONFIG" "${SSH_CONFIG}.backup.$(date +%Y%m%d%H%M%S)"
         cat >> "$SSH_CONFIG" <<EOL
 
 # Added by setup script

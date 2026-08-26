@@ -175,7 +175,14 @@ class RemoteService:
         return self._home / "Library" / "LaunchAgents" / f"{label}.plist"
 
     def _agent_running(self, label: str) -> bool:
-        return label in self._line(("launchctl", "list"))
+        # `launchctl list` rows are "PID\tStatus\tLabel"; a loaded label whose
+        # process has exited (KeepAlive off) shows "-" in the PID column, so a
+        # substring match would report a crashed daemon as running.
+        for line in self._line(("launchctl", "list")).splitlines():
+            parts = line.split()
+            if len(parts) >= 3 and parts[2] == label:
+                return parts[0] != "-"
+        return False
 
     def _render_plist(
         self,
@@ -202,9 +209,6 @@ class RemoteService:
         if environment:
             plist["EnvironmentVariables"] = environment
         if interactive:
-            plist["EnvironmentVariables"] = {
-                "PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-            }
             plist["ProcessType"] = "Interactive"
         return plistlib.dumps(plist)
 
@@ -270,6 +274,7 @@ class RemoteService:
             "zellij-web.log",
             "Zellij web",
             dry_run=dry_run,
+            environment={"PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"},
             interactive=True,
         )
 

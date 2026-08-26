@@ -33,8 +33,11 @@ fi
 # Set zsh as default shell
 if [ "$SHELL" != "$(which zsh)" ]; then
     print_action "Setting zsh as default shell..."
-    chsh -s "$(which zsh)" >/dev/null 2>&1
-    print_success "Shell changed to zsh"
+    if chsh -s "$(which zsh)" >/dev/null 2>&1; then
+        print_success "Shell changed to zsh"
+    else
+        print_warn "chsh failed (often a password/PAM prompt) — run manually: chsh -s \$(which zsh)"
+    fi
 fi
 
 # Dotfile symlinks
@@ -64,19 +67,18 @@ if [ ! -f ~/.gitconfig.local ]; then
     git_name=""
     while [[ -z "$git_name" ]]; do
         printf "  Enter your full name: "
-        read git_name
+        read -r git_name
     done
     git_email=""
     while [[ -z "$git_email" ]]; do
         printf "  Enter your email: "
-        read git_email
+        read -r git_email
     done
-    cat > ~/.gitconfig.local << EOF
-# Local git identity (not committed to dotfiles repo)
-[user]
-    name = $git_name
-    email = $git_email
-EOF
+    # git config writes the values as literal strings — an unquoted heredoc
+    # here would command-substitute whatever the user typed.
+    printf '# Local git identity (not committed to dotfiles repo)\n' > ~/.gitconfig.local
+    git config --file ~/.gitconfig.local user.name "$git_name"
+    git config --file ~/.gitconfig.local user.email "$git_email"
     print_success "Git identity configured"
 else
     print_info "Git identity already configured in ~/.gitconfig.local"
@@ -92,14 +94,8 @@ if ! command -v brew >/dev/null 2>&1; then
     print_action "Installing Homebrew..."
     /bin/bash -c "$(curl -fsSL "https://raw.githubusercontent.com/Homebrew/install/$HOMEBREW_INSTALL_COMMIT/install.sh")"
 
-    # Add Homebrew to PATH for this session and persist for future shells.
-    # SC2016: single quotes are intentional — we want the literal string written to .zprofile, not expanded.
-    # shellcheck disable=SC2016
-    if ! grep -q 'eval "$(/opt/homebrew/bin/brew shellenv)"' "$HOME/.zprofile" 2>/dev/null; then
-        # shellcheck disable=SC2016
-        printf '\neval "$(/opt/homebrew/bin/brew shellenv)"\n' >> "$HOME/.zprofile"
-        print_success "Added Homebrew to .zprofile"
-    fi
+    # ~/.zprofile is already the tracked symlink that runs brew shellenv for
+    # future shells; activate it for this session only.
     eval "$(/opt/homebrew/bin/brew shellenv)"
     print_success "Homebrew installed"
 else
@@ -148,21 +144,8 @@ fi
 # Languages & Runtimes
 print_header "🔧 Languages & Runtimes"
 
-# -- Go
-print_section "Go"
-if ! command -v go >/dev/null 2>&1; then
-    print_info "Go not found (should be installed via packages.toml)"
-else
-    print_info "Go already installed ($(go version | awk '{print $3}'))"
-fi
-# -- Node.js / FNM (Fast Node Manager — installed via packages.toml)
+# -- Node.js / FNM (fnm and go install via packages.toml; doctor reports presence)
 print_section "Node.js / FNM"
-if ! command -v fnm >/dev/null 2>&1; then
-    print_info "FNM not found (should be installed via packages.toml)"
-else
-    print_info "FNM already installed"
-fi
-
 # Initialize FNM and install Node.js LTS (idempotent)
 if command -v fnm >/dev/null 2>&1; then
     eval "$(fnm env)"

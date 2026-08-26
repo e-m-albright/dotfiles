@@ -510,7 +510,7 @@ def test_install_npm_globals_skips_present(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     # Both wrangler and agent-browser are already installed
     runner.script(("npm", "list", "-g", "--depth=0", "wrangler@4.112.0"), stdout="wrangler\n")
-    runner.script(("sh", "-c", "command -v agent-browser"), stdout="/usr/local/bin/agent-browser\n")
+    runner.script(("which", "agent-browser"), stdout="/usr/local/bin/agent-browser\n")
 
     results = install_npm_globals(manifest, runner, flags_on={"ai"})
     npm_calls = [c for c in runner.calls if c[0] == "npm"]
@@ -523,19 +523,25 @@ def test_install_npm_globals_skips_disabled(tmp_path: Path) -> None:
     manifest = load(tmp_path)
     runner = FakeProcessRunner()
     runner.script(("npm", "list", "-g", "--depth=0", "wrangler@4.112.0"), exit_code=1)
-    runner.script(("sh", "-c", "command -v agent-browser"), stdout="", exit_code=1)
+    runner.script(("which", "agent-browser"), stdout="", exit_code=1)
 
     install_npm_globals(manifest, runner, flags_on={"ai"})
     # pinchtab is disabled — it must not be probed or installed
-    assert ("sh", "-c", "command -v pinchtab") not in runner.calls
+    assert ("which", "pinchtab") not in runner.calls
     assert ("npm", "install", "-g", "pinchtab") not in runner.calls
 
 
 def test_install_npm_globals_installs_missing(tmp_path: Path) -> None:
     manifest = load(tmp_path)
     runner = FakeProcessRunner()
-    runner.script(("npm", "list", "-g", "--depth=0", "wrangler@4.112.0"), exit_code=1)
-    runner.script(("sh", "-c", "command -v agent-browser"), stdout="", exit_code=1)
+    # A version mismatch still prints the tree root — only the exit code signals
+    # "not installed at this version", so stdout must not short-circuit install.
+    runner.script(
+        ("npm", "list", "-g", "--depth=0", "wrangler@4.112.0"),
+        stdout="/opt/homebrew/lib\n",
+        exit_code=1,
+    )
+    runner.script(("which", "agent-browser"), stdout="", exit_code=1)
 
     results = install_npm_globals(manifest, runner, flags_on={"ai"})
     assert ("npm", "install", "-g", "wrangler@4.112.0") in runner.calls
@@ -560,7 +566,7 @@ def test_install_npm_globals_error_on_failure(tmp_path: Path) -> None:
     manifest = load(tmp_path)
     runner = FakeProcessRunner()
     runner.script(("npm", "list", "-g", "--depth=0", "wrangler@4.112.0"), exit_code=1)
-    runner.script(("sh", "-c", "command -v agent-browser"), stdout="", exit_code=1)
+    runner.script(("which", "agent-browser"), stdout="", exit_code=1)
     runner.script(("npm", "install", "-g", "wrangler@4.112.0"), exit_code=1)
 
     results = install_npm_globals(manifest, runner, flags_on={"ai"})

@@ -233,6 +233,11 @@ def test_paseo_running_reads_launchctl_list(tmp_path: Path) -> None:
     down.script(("launchctl", "list"), stdout="123\t0\tcom.other\n")
     assert _service(down, tmp_path).paseo_running() is False
 
+    # Loaded label whose process exited (KeepAlive off): PID column is "-".
+    crashed = FakeProcessRunner()
+    crashed.script(("launchctl", "list"), stdout="-\t0\tcom.dotfiles.paseo\n")
+    assert _service(crashed, tmp_path).paseo_running() is False
+
 
 # --- status / connection --------------------------------------------------
 

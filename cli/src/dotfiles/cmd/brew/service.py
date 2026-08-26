@@ -690,13 +690,13 @@ def _install_one_npm(
     target = f"{pkg.name}@{pkg.version}" if pkg.version else pkg.name
     if dry_run:
         return StepResult(level="info", message=f"DRY RUN: npm install -g {target}")
+    # `npm list -g name@version` exits non-zero on a version mismatch even
+    # though it still prints the tree root — only the exit code is the signal.
     check_command = (
-        ("npm", "list", "-g", "--depth=0", target)
-        if pkg.version
-        else ("sh", "-c", f"command -v {pkg.name}")
+        ("npm", "list", "-g", "--depth=0", target) if pkg.version else ("which", pkg.name)
     )
     check = runner.run(check_command)
-    if check.stdout.strip() or check.exit_code == 0:
+    if check.exit_code == 0:
         return StepResult(level="info", message=f"{pkg.name} already installed — skipping")
     res = runner.run(("npm", "install", "-g", target))
     if res.exit_code == 0:
