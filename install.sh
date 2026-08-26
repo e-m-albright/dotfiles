@@ -21,8 +21,9 @@ HOMEBREW_INSTALL_COMMIT="fea42d9aedd20a82bea800a6898dcde19401ab1f"
 WORKBENCH_COMMIT="dfadab4f9f8f1cccfb2bb5ea4921b2627ef05367"
 UV_VERSION="0.11.29"
 
-# Source shared print functions
+# Source shared installer functions.
 source "$DOTFILES_DIR/macos/print_utils.sh"
+source "$DOTFILES_DIR/macos/link_utils.sh"
 
 # Install oh-my-zsh if not already installed
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
@@ -44,25 +45,14 @@ if [ "$SHELL" != "$(which zsh)" ]; then
     fi
 fi
 
-# Dotfile symlinks
+# Dotfile symlinks. Unmanaged destinations are backed up, never overwritten.
 print_section "Symlinks"
-_link() {
-    local src="$1" dest="$2"
-    local name
-    name="$(basename "$dest")"
-    if [[ -L "$dest" ]] && [[ "$(readlink "$dest")" == "$src" ]]; then
-        print_skip "$name"
-    else
-        ln -sf "$src" "$dest"
-        print_step "Linked $name"
-    fi
-}
-_link "$DOTFILES_DIR/git/.gitconfig" ~/.gitconfig
-_link "$DOTFILES_DIR/git/.gitignore_global" ~/.gitignore_global
-_link "$DOTFILES_DIR/shell/.zprofile" ~/.zprofile
-_link "$DOTFILES_DIR/shell/.zshenv" ~/.zshenv
-_link "$DOTFILES_DIR/shell/.zshrc" ~/.zshrc
-_link "$DOTFILES_DIR/shell/amuse.zsh-theme" ~/.oh-my-zsh/custom/themes/amuse.zsh-theme
+safe_link "$DOTFILES_DIR/git/.gitconfig" ~/.gitconfig
+safe_link "$DOTFILES_DIR/git/.gitignore_global" ~/.gitignore_global
+safe_link "$DOTFILES_DIR/shell/.zprofile" ~/.zprofile
+safe_link "$DOTFILES_DIR/shell/.zshenv" ~/.zshenv
+safe_link "$DOTFILES_DIR/shell/.zshrc" ~/.zshrc
+safe_link "$DOTFILES_DIR/shell/amuse.zsh-theme" ~/.oh-my-zsh/custom/themes/amuse.zsh-theme
 
 # Git identity setup (stored in ~/.gitconfig.local, not committed)
 if [ ! -f ~/.gitconfig.local ]; then
@@ -180,9 +170,9 @@ if command -v fnm >/dev/null 2>&1; then
     # don't source .zshrc. Symlinks in a PATH they do search solve this.
     node_bin="$(command -v node 2>/dev/null)"
     npx_bin="$(command -v npx 2>/dev/null)"
-    if [[ -n "$node_bin" && -d /opt/homebrew/bin ]]; then
-        ln -sf "$node_bin" /opt/homebrew/bin/node
-        ln -sf "$npx_bin" /opt/homebrew/bin/npx
+    if [[ -n "$node_bin" && -n "$npx_bin" && -d /opt/homebrew/bin ]]; then
+        safe_link "$node_bin" /opt/homebrew/bin/node
+        safe_link "$npx_bin" /opt/homebrew/bin/npx
         print_success "Node/npx symlinked to /opt/homebrew/bin (GUI app support)"
     fi
 fi
@@ -206,7 +196,7 @@ print_header "💻 Terminal Configuration"
 print_section "Ghostty"
 if command -v ghostty >/dev/null 2>&1 || [[ -d "/Applications/Ghostty.app" ]]; then
     mkdir -p ~/.config/ghostty
-    ln -sf "$DOTFILES_DIR/terminal/ghostty.config" ~/.config/ghostty/config 2>/dev/null || true
+    safe_link "$DOTFILES_DIR/terminal/ghostty.config" ~/.config/ghostty/config
     print_success "Ghostty configured (notifications enabled)"
 else
     print_info "Ghostty not installed — skipping config"
@@ -216,7 +206,7 @@ fi
 print_section "Yazi"
 if command -v yazi >/dev/null 2>&1; then
     mkdir -p ~/.config/yazi
-    ln -sf "$DOTFILES_DIR/terminal/yazi/yazi.toml" ~/.config/yazi/yazi.toml 2>/dev/null || true
+    safe_link "$DOTFILES_DIR/terminal/yazi/yazi.toml" ~/.config/yazi/yazi.toml
     print_success "Yazi configured (show_hidden enabled)"
 else
     print_info "Yazi not installed — skipping config"
@@ -226,8 +216,8 @@ fi
 print_section "Zellij"
 if command -v zellij >/dev/null 2>&1; then
     mkdir -p ~/.config/zellij/layouts
-    ln -sf "$DOTFILES_DIR/terminal/zellij/config.kdl" ~/.config/zellij/config.kdl 2>/dev/null || true
-    ln -sf "$DOTFILES_DIR/terminal/zellij/layouts/mobile.kdl" ~/.config/zellij/layouts/mobile.kdl 2>/dev/null || true
+    safe_link "$DOTFILES_DIR/terminal/zellij/config.kdl" ~/.config/zellij/config.kdl
+    safe_link "$DOTFILES_DIR/terminal/zellij/layouts/mobile.kdl" ~/.config/zellij/layouts/mobile.kdl
     print_success "Zellij configured (minimal config + mobile deck layout)"
 else
     print_info "Zellij not installed — skipping config"
@@ -240,8 +230,8 @@ print_header "📝 Editor Configuration"
 if command -v zed >/dev/null 2>&1; then
     print_section "Zed"
     mkdir -p ~/.config/zed
-    ln -sf "$DOTFILES_DIR/editors/zed/settings.json" ~/.config/zed/settings.json 2>/dev/null || true
-    ln -sf "$DOTFILES_DIR/editors/zed/keymap.json" ~/.config/zed/keymap.json 2>/dev/null || true
+    safe_link "$DOTFILES_DIR/editors/zed/settings.json" ~/.config/zed/settings.json
+    safe_link "$DOTFILES_DIR/editors/zed/keymap.json" ~/.config/zed/keymap.json
     print_success "Zed configured (settings + keymap symlinked)"
 fi
 
@@ -253,7 +243,7 @@ if [[ -d "$OBSIDIAN_VAULT/.obsidian" ]]; then
     for cfg in "${OBSIDIAN_CONFIGS[@]}"; do
         local_file="$DOTFILES_DIR/editors/obsidian/${cfg}.json"
         vault_file="$OBSIDIAN_VAULT/.obsidian/${cfg}.json"
-        _link "$local_file" "$vault_file"
+        safe_link "$local_file" "$vault_file"
     done
     # Community plugins
     chmod +x "$DOTFILES_DIR/editors/obsidian/plugins.sh"
@@ -265,13 +255,13 @@ fi
 
 if [[ -x "$OBSIDIAN_VAULT/bin/notes" ]]; then
     mkdir -p "$HOME/.local/bin"
-    ln -sf "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/notes"
-    ln -sf "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/nts"
+    safe_link "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/notes"
+    safe_link "$OBSIDIAN_VAULT/bin/notes" "$HOME/.local/bin/nts"
     print_success "Notes CLI linked as notes and nts"
     # Apple bridge CLIs live in the notes layer (they encode its conventions).
     for bridge in apple-notes apple-contacts; do
         if [[ -x "$OBSIDIAN_VAULT/bin/$bridge" ]]; then
-            ln -sf "$OBSIDIAN_VAULT/bin/$bridge" "$HOME/.local/bin/$bridge"
+            safe_link "$OBSIDIAN_VAULT/bin/$bridge" "$HOME/.local/bin/$bridge"
         fi
     done
 fi
@@ -291,9 +281,9 @@ if [[ ! -d "$WORKBENCH_DIR/.git" ]]; then
     fi
 fi
 mkdir -p "$HOME/.local/bin"
-ln -sf "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/workbench"
-ln -sf "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/wb"
-ln -sf "$WORKBENCH_DIR/bin/wf" "$HOME/.local/bin/wf"
+safe_link "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/workbench"
+safe_link "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/wb"
+safe_link "$WORKBENCH_DIR/bin/wf" "$HOME/.local/bin/wf"
 # The workbench tool prints its own verbose banners and boxes (and has no quiet
 # flag). Capture its output so this section stays in the installer's own visual
 # language, replaying the raw output only when something actually fails.

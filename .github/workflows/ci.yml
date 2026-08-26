@@ -14,26 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Syntax check all shell scripts
-        run: |
-          find . -name '*.sh' -not -path './.git/*' | while read -r f; do
-            bash -n "$f" || exit 1
-          done
-          echo "All shell scripts pass syntax check"
-
-      - name: Validate JSON files
-        run: |
-          # Editor settings are JSONC and intentionally excluded.
-          find . -name '*.json' \
-            -not -path './.git/*' \
-            -not -path './.claude/*' \
-            -not -path './editors/*' | while read -r f; do
-            python3 -m json.tool "$f" >/dev/null || exit 1
-          done
-          echo "All JSON files are valid"
-
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+
+      # Keep file validation owned by the same recipe as local `just verify`.
+      - name: Validate tracked shell and JSON files
+        run: just validate-files
+
       - name: Privacy sweep (no absolute home paths in tracked files)
         run: just privacy-sweep
 
@@ -43,7 +29,7 @@ jobs:
           severity: warning
           ignore_paths: ".git"
 
-  # The same Python quality recipes lefthook runs locally.
+  # Together with lint above, this is the same gate set as local `just verify`.
   cli:
     runs-on: ubuntu-latest
     steps:

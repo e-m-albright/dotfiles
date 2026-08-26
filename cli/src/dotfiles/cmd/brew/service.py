@@ -616,6 +616,25 @@ def _apply_typewhisper_config(runner: ProcessRunner, dotfiles_dir: Path) -> list
     ]
 
 
+def _npm_runtime(
+    runner: ProcessRunner, *, dry_run: bool
+) -> tuple[tuple[str, ...] | None, StepResult | None]:
+    if dry_run or runner.run(("which", "npm")).ok:
+        return ("npm",), None
+    if not runner.run(("which", "fnm")).ok:
+        return None, StepResult(
+            level="error", message="npm globals require npm or fnm, but neither is available"
+        )
+    if not runner.run(("fnm", "install", "--lts")).ok:
+        return None, StepResult(level="error", message="fnm failed to install Node.js LTS")
+    if not runner.run(("fnm", "default", "lts-latest")).ok:
+        return None, StepResult(level="error", message="fnm failed to select Node.js LTS")
+    return (
+        ("fnm", "exec", "--using", "lts-latest", "npm"),
+        StepResult(level="success", message="Node.js LTS installed via fnm"),
+    )
+
+
 def install_npm_globals(
     manifest: PackageManifest,
     runner: ProcessRunner,
@@ -623,16 +642,23 @@ def install_npm_globals(
     flags_on: set[FeatureFlag],
     dry_run: bool = False,
 ) -> list[StepResult]:
-    """Install npm global packages declared in [[npm_package]] sections.
-
-    Idempotency guard: skips each package if `which <name>` succeeds.
-    Flag-gated: packages with a flag are skipped when that flag is not in flags_on.
-    """
-    steps = (
-        _install_one_npm(pkg, runner, flags_on=flags_on, dry_run=dry_run)
+    """Install declared npm globals, bootstrapping fnm's LTS runtime when needed."""
+    active = [
+        pkg
         for pkg in manifest.npm_packages
+        if not pkg.disabled and _flag_active(pkg.flag, flags_on)
+    ]
+    if not active:
+        return []
+
+    npm_command, runtime_step = _npm_runtime(runner, dry_run=dry_run)
+    if npm_command is None:
+        return [runtime_step] if runtime_step else []
+    results = [runtime_step] if runtime_step else []
+    results.extend(
+        _install_one_npm(pkg, runner, npm_command=npm_command, dry_run=dry_run) for pkg in active
     )
-    return [s for s in steps if s is not None]
+    return results
 
 
 def _npm_installed_versions(runner: ProcessRunner) -> dict[str, str]:
@@ -713,24 +739,19 @@ def _install_one_npm(
     pkg: NpmPackage,
     runner: ProcessRunner,
     *,
-    flags_on: set[FeatureFlag],
+    npm_command: tuple[str, ...],
     dry_run: bool,
-) -> StepResult | None:
-    """Install one npm global, or None if it's disabled/flag-gated. Idempotent."""
-    if pkg.disabled or not _flag_active(pkg.flag, flags_on):
-        return None
+) -> StepResult:
+    """Install one active npm global at its declared version."""
     target = f"{pkg.name}@{pkg.version}" if pkg.version else pkg.name
     if dry_run:
         return StepResult(level="info", message=f"DRY RUN: npm install -g {target}")
     # `npm list -g name@version` exits non-zero on a version mismatch even
     # though it still prints the tree root — only the exit code is the signal.
-    check_command = (
-        ("npm", "list", "-g", "--depth=0", target) if pkg.version else ("which", pkg.name)
-    )
-    check = runner.run(check_command)
+    check = runner.run((*npm_command, "list", "-g", "--depth=0", target))
     if check.exit_code == 0:
         return StepResult(level="info", message=f"{pkg.name} already installed — skipping")
-    res = runner.run(("npm", "install", "-g", target))
+    res = runner.run((*npm_command, "install", "-g", target))
     if res.exit_code == 0:
         return StepResult(level="success", message=f"npm install -g {target}")
     return StepResult(level="error", message=f"npm install -g {target} failed")

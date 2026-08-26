@@ -40,6 +40,22 @@ deadcode:
 complexity:
     uv run complexipy src -mx 9
 
+# Parse every tracked shell script and strict-JSON file.
+[group('quality')]
+validate-files:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{repo}}"
+    git ls-files -z '*.sh' | while IFS= read -r -d '' file; do
+        bash -n "$file"
+    done
+    git ls-files -z '*.json' | while IFS= read -r -d '' file; do
+        case "$file" in
+            .claude/* | editors/*) continue ;; # JSONC/vendor-managed files
+        esac
+        python3 -m json.tool "$file" >/dev/null
+    done
+
 # ShellCheck every shell script at the pre-commit warning threshold.
 [group('quality')]
 lint-shell:
@@ -99,6 +115,7 @@ privacy-sweep:
 # Everything AGENTS.md lists as the verification set, in one command.
 [group('quality')]
 verify:
+    just validate-files
     just check
     just lint-shell
     just audit

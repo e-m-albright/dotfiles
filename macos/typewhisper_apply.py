@@ -12,6 +12,7 @@ import sqlite3
 import sys
 import time
 import uuid
+from tempfile import TemporaryDirectory
 from typing import Any
 
 from typewhisper_config import normalize_correction, normalize_term, normalize_workflow
@@ -33,8 +34,13 @@ def apply_preferences(prefs_path: pathlib.Path, settings: dict[str, Any]) -> Non
         else:
             prefs[key] = value
 
-    with prefs_path.open("wb") as handle:
-        plistlib.dump(prefs, handle, sort_keys=True)
+    temporary = prefs_path.with_name(f".{prefs_path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        with temporary.open("wb") as handle:
+            plistlib.dump(prefs, handle, sort_keys=True)
+        temporary.replace(prefs_path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def upsert_workflows(con: sqlite3.Connection, workflows: list[dict[str, Any]], now: float) -> None:
@@ -229,40 +235,89 @@ def _apply_store(store: pathlib.Path, apply: Any) -> None:
         con.close()
 
 
-def main(argv: list[str]) -> None:
-    config_dir = pathlib.Path(argv[1])
-    prefs_path = pathlib.Path(argv[2])
-    support_dir = pathlib.Path(argv[3])
+def _copy_store(source: pathlib.Path, destination: pathlib.Path) -> None:
+    source_connection = sqlite3.connect(source)
+    destination_connection = sqlite3.connect(destination)
+    try:
+        source_connection.backup(destination_connection)
+    finally:
+        destination_connection.close()
+        source_connection.close()
 
+
+def _restore_preferences(path: pathlib.Path, original: bytes | None) -> None:
+    if original is None:
+        path.unlink(missing_ok=True)
+        return
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.restore")
+    try:
+        temporary.write_bytes(original)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def apply_configuration(
+    config_dir: pathlib.Path, prefs_path: pathlib.Path, support_dir: pathlib.Path
+) -> tuple[int, int, int, int]:
+    """Apply all three stores as one recoverable operation.
+
+    SQLite cannot atomically commit independent WAL databases plus a plist. We
+    therefore preflight every input and store, take consistent SQLite backups,
+    and restore every surface if any later write fails.
+    """
     settings = json.loads((config_dir / "settings.json").read_text())["preferences"]
     workflows = json.loads((config_dir / "workflows.json").read_text())["workflows"]
     dictionary = json.loads((config_dir / "dictionary.json").read_text())
-
-    apply_preferences(prefs_path, settings)
-
-    support_dir.mkdir(parents=True, exist_ok=True)
-    workflow_store = support_dir / "workflows.store"
-    if not workflow_store.exists():
-        raise SystemExit(
-            f"Missing workflow store: {workflow_store}. Open TypeWhisper once, then retry."
-        )
-
-    now = time.time() - MAC_EPOCH_OFFSET
-    _apply_store(workflow_store, lambda con: upsert_workflows(con, workflows, now))
-
-    dictionary_store = support_dir / "dictionary.store"
-    if not dictionary_store.exists():
-        raise SystemExit(
-            f"Missing dictionary store: {dictionary_store}. Open TypeWhisper once, then retry."
-        )
-
     terms = dictionary.get("terms", [])
     corrections = dictionary.get("corrections", [])
-    _apply_store(dictionary_store, lambda con: upsert_dictionary(con, terms, corrections, now))
 
+    # Validate all tracked records before touching live state.
+    for index, workflow in enumerate(workflows):
+        normalize_workflow(workflow, index)
+    for term in terms:
+        normalize_term(term)
+    for correction in corrections:
+        normalize_correction(correction)
+
+    workflow_store = support_dir / "workflows.store"
+    dictionary_store = support_dir / "dictionary.store"
+    for label, store in (("workflow", workflow_store), ("dictionary", dictionary_store)):
+        if not store.exists():
+            raise SystemExit(f"Missing {label} store: {store}. Open TypeWhisper once, then retry.")
+
+    prefs_original = prefs_path.read_bytes() if prefs_path.exists() else None
+    with TemporaryDirectory(prefix="dotfiles-typewhisper-backup-") as backup_dir:
+        workflow_backup = pathlib.Path(backup_dir) / "workflows.store"
+        dictionary_backup = pathlib.Path(backup_dir) / "dictionary.store"
+        _copy_store(workflow_store, workflow_backup)
+        _copy_store(dictionary_store, dictionary_backup)
+
+        now = time.time() - MAC_EPOCH_OFFSET
+        try:
+            apply_preferences(prefs_path, settings)
+            _apply_store(workflow_store, lambda con: upsert_workflows(con, workflows, now))
+            _apply_store(
+                dictionary_store,
+                lambda con: upsert_dictionary(con, terms, corrections, now),
+            )
+        except BaseException:
+            _restore_preferences(prefs_path, prefs_original)
+            _copy_store(workflow_backup, workflow_store)
+            _copy_store(dictionary_backup, dictionary_store)
+            raise
+
+    return len(settings), len(workflows), len(terms), len(corrections)
+
+
+def main(argv: list[str]) -> None:
+    counts = apply_configuration(
+        pathlib.Path(argv[1]), pathlib.Path(argv[2]), pathlib.Path(argv[3])
+    )
+    settings_count, workflow_count, term_count, correction_count = counts
     print(
-        f"Applied {len(settings)} preferences, {len(workflows)} workflow(s), "
-        f"{len(terms)} dictionary term(s), and {len(corrections)} correction(s)."
+        f"Applied {settings_count} preferences, {workflow_count} workflow(s), "
+        f"{term_count} dictionary term(s), and {correction_count} correction(s)."
     )
 
 

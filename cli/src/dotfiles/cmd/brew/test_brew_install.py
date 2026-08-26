@@ -506,11 +506,14 @@ def test_install_npm_globals_skips_present(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     # Both wrangler and agent-browser are already installed
     runner.script(("npm", "list", "-g", "--depth=0", "wrangler@4.112.0"), stdout="wrangler\n")
-    runner.script(("which", "agent-browser"), stdout="/usr/local/bin/agent-browser\n")
+    runner.script(("npm", "list", "-g", "--depth=0", "agent-browser"))
 
     results = install_npm_globals(manifest, runner, flags_on={"ai"})
     npm_calls = [c for c in runner.calls if c[0] == "npm"]
-    assert npm_calls == [("npm", "list", "-g", "--depth=0", "wrangler@4.112.0")]
+    assert npm_calls == [
+        ("npm", "list", "-g", "--depth=0", "wrangler@4.112.0"),
+        ("npm", "list", "-g", "--depth=0", "agent-browser"),
+    ]
     assert all(r.level == "info" for r in results)
 
 
@@ -519,11 +522,11 @@ def test_install_npm_globals_skips_disabled(tmp_path: Path) -> None:
     manifest = load(tmp_path)
     runner = FakeProcessRunner()
     runner.script(("npm", "list", "-g", "--depth=0", "wrangler@4.112.0"), exit_code=1)
-    runner.script(("which", "agent-browser"), stdout="", exit_code=1)
+    runner.script(("npm", "list", "-g", "--depth=0", "agent-browser"), exit_code=1)
 
     install_npm_globals(manifest, runner, flags_on={"ai"})
     # pinchtab is disabled — it must not be probed or installed
-    assert ("which", "pinchtab") not in runner.calls
+    assert ("npm", "list", "-g", "--depth=0", "pinchtab") not in runner.calls
     assert ("npm", "install", "-g", "pinchtab") not in runner.calls
 
 
@@ -537,12 +540,40 @@ def test_install_npm_globals_installs_missing(tmp_path: Path) -> None:
         stdout="/opt/homebrew/lib\n",
         exit_code=1,
     )
-    runner.script(("which", "agent-browser"), stdout="", exit_code=1)
+    runner.script(("npm", "list", "-g", "--depth=0", "agent-browser"), exit_code=1)
 
     results = install_npm_globals(manifest, runner, flags_on={"ai"})
     assert ("npm", "install", "-g", "wrangler@4.112.0") in runner.calls
     assert ("npm", "install", "-g", "agent-browser") in runner.calls
     assert all(r.level == "success" for r in results)
+
+
+def test_install_npm_globals_bootstraps_node_through_fnm(tmp_path: Path) -> None:
+    manifest = load(tmp_path)
+    runner = FakeProcessRunner()
+    runner.script(("which", "npm"), exit_code=1)
+    runner.script(("which", "fnm"), stdout="/opt/homebrew/bin/fnm\n")
+    npm = ("fnm", "exec", "--using", "lts-latest", "npm")
+    runner.script((*npm, "list", "-g", "--depth=0", "wrangler@4.112.0"), exit_code=1)
+    runner.script((*npm, "list", "-g", "--depth=0", "agent-browser"), exit_code=1)
+
+    results = install_npm_globals(manifest, runner, flags_on={"ai"})
+
+    assert ("fnm", "install", "--lts") in runner.calls
+    assert ("fnm", "default", "lts-latest") in runner.calls
+    assert (*npm, "install", "-g", "wrangler@4.112.0") in runner.calls
+    assert not any(step.level == "error" for step in results)
+
+
+def test_install_npm_globals_reports_missing_runtime(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("which", "npm"), exit_code=1)
+    runner.script(("which", "fnm"), exit_code=1)
+
+    results = install_npm_globals(load(tmp_path), runner, flags_on={"ai"})
+
+    assert [step.level for step in results] == ["error"]
+    assert "neither is available" in results[0].message
 
 
 def test_install_npm_globals_flag_gates_ai_packages(tmp_path: Path) -> None:
@@ -562,7 +593,7 @@ def test_install_npm_globals_error_on_failure(tmp_path: Path) -> None:
     manifest = load(tmp_path)
     runner = FakeProcessRunner()
     runner.script(("npm", "list", "-g", "--depth=0", "wrangler@4.112.0"), exit_code=1)
-    runner.script(("which", "agent-browser"), stdout="", exit_code=1)
+    runner.script(("npm", "list", "-g", "--depth=0", "agent-browser"), exit_code=1)
     runner.script(("npm", "install", "-g", "wrangler@4.112.0"), exit_code=1)
 
     results = install_npm_globals(manifest, runner, flags_on={"ai"})

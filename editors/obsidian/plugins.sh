@@ -8,6 +8,7 @@ set -eo pipefail
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DOTFILES_DIR="$( cd "$SCRIPT_DIR/../.." && pwd )"
 source "$DOTFILES_DIR/macos/print_utils.sh"
+source "$DOTFILES_DIR/macos/link_utils.sh"
 
 VAULT="${1:-$HOME/code/private/notes}"
 PLUGINS_DIR="$VAULT/.obsidian/plugins"
@@ -69,12 +70,7 @@ mkdir -p "$PLUGINS_DIR"
 # Symlink community-plugins.json (enables the plugins in Obsidian)
 local_community="$SCRIPT_DIR/community-plugins.json"
 vault_community="$VAULT/.obsidian/community-plugins.json"
-if [[ -L "$vault_community" ]] && [[ "$(readlink "$vault_community")" == "$local_community" ]]; then
-    print_skip "community-plugins.json"
-else
-    ln -sf "$local_community" "$vault_community"
-    print_step "Linked community-plugins.json"
-fi
+safe_link "$local_community" "$vault_community"
 
 # Install plugins from GitHub releases
 while IFS='|' read -r id repo tag main_hash manifest_hash styles_hash; do
@@ -88,10 +84,5 @@ for config_file in "$SCRIPT_DIR/plugin-configs"/*.json; do
     local_id="$(basename "$config_file" .json)"
     config_dest="$PLUGINS_DIR/$local_id/data.json"
     mkdir -p "$PLUGINS_DIR/$local_id"
-    if [[ -L "$config_dest" ]] && [[ "$(readlink "$config_dest")" == "$config_file" ]]; then
-        print_skip "$local_id config"
-    else
-        ln -sf "$config_file" "$config_dest"
-        print_step "Linked $local_id config"
-    fi
+    safe_link "$config_file" "$config_dest"
 done

@@ -332,7 +332,7 @@ class DoctorService:
         sec = "Configuration"
         results: list[CheckResult] = []
 
-        # Mirrors install.sh's _link/ln -sf list so `doctor --fix` can repair
+        # Mirrors install.sh's safe_link list so `doctor --fix` can repair
         # everything the installer manages, not just a subset.
         links: tuple[tuple[str, Path, Path], ...] = (
             (".zshrc", self._dotfiles / "shell" / ".zshrc", self._home / ".zshrc"),
