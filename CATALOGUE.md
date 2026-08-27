@@ -13,7 +13,7 @@ Counts are physical lines in the current working tree, including comments and bl
 | Package manifest, installation, drift, upgrade, and prune | 1,124 | 1,692 | 322 | 3,138 | Core; strongest and most heavily tested subsystem |
 | Host doctor and configuration repair | 507 | 478 | 0 | 985 | Core |
 | Tailscale, Paseo, private-site, and sleep-control operations | 536 | 497 | 0 | 1,033 | Core for remote continuity |
-| TypeWhisper installation and configuration | 504 | 195 | 74 | 773 | Active; keep isolated from generic package logic |
+| TypeWhisper installation and configuration | 599 | 263 | 105 | 967 | Active; keep isolated from generic package logic |
 | Fresh-Mac bootstrap and macOS configuration | 808 | 89 | 0 | 897 | Core; shell-heavy boundary merits smoke coverage |
 | CLI application, banner, adapters, rendering, and test fakes | 479 | 499 | 0 | 978 | Supporting platform |
 | Command launchers and Just recipes | 509 | 0 | 0 | 509 | Core entry points |
@@ -59,6 +59,7 @@ Counts are physical lines in the current working tree, including comments and bl
 ### TypeWhisper
 
 - Verified installation, signing validation, tracked settings, workflow application, and fallback behavior.
+- Loopback API and CLI recovery runbook with token-authentication and privacy boundaries.
 
 **Assessment:** Keep while used. It is correctly isolated because its distribution and configuration semantics differ from Homebrew. Review if the vendor gains a stable package and native configuration interface.
 

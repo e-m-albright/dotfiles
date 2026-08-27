@@ -1,7 +1,12 @@
 import json
 from pathlib import Path
 
-from typewhisper_config import normalize_correction, normalize_term, normalize_workflow
+from typewhisper_config import (
+    normalize_correction,
+    normalize_snippet,
+    normalize_term,
+    normalize_workflow,
+)
 
 
 def test_normalize_workflow_defaults_and_drops_none() -> None:
@@ -27,7 +32,7 @@ def test_managed_hotkey_is_the_fn_key() -> None:
     assert preferences["hybridHotkeys"] == [expected]
 
 
-def test_managed_dictation_is_raw_apple_speech_analyzer() -> None:
+def test_managed_dictation_uses_apple_speech_with_fast_local_postprocessing() -> None:
     config_dir = Path(__file__).with_name("typewhisper")
     preferences = json.loads((config_dir / "settings.json").read_text())["preferences"]
     workflows = json.loads((config_dir / "workflows.json").read_text())["workflows"]
@@ -35,7 +40,10 @@ def test_managed_dictation_is_raw_apple_speech_analyzer() -> None:
     assert preferences["selectedEngine"] == "speechAnalyzer"
     assert preferences["plugin.com.typewhisper.speechanalyzer.enabled"] is True
     assert preferences["plugin.com.typewhisper.parakeet.enabled"] is False
-    assert preferences["plugin.com.typewhisper.filler-words.enabled"] is False
+    assert preferences["plugin.com.typewhisper.filler-words.enabled"] is True
+    assert preferences["targetAppCorrectionLearningEnabled"] is True
+    assert preferences["apiServerEnabled"] is True
+    assert preferences["apiServerRequiresAuthentication"] is True
     assert "plugin.com.typewhisper.parakeet.selectedModel" not in preferences
     assert "plugin.com.typewhisper.parakeet.selectedVersion" not in preferences
     assert all(workflow["enabled"] is False for workflow in workflows)
@@ -48,3 +56,16 @@ def test_normalize_dictionary_entries() -> None:
     correction = normalize_correction({"original": "teh", "replacement": "the"})
     assert correction is not None
     assert correction.replacement == "the"
+
+
+def test_normalize_snippet_requires_trigger_and_replacement() -> None:
+    snippet = normalize_snippet({"trigger": " agent closeout ", "replacement": " Done "})
+    assert snippet.trigger == "agent closeout"
+    assert snippet.replacement == "Done"
+
+    try:
+        normalize_snippet({"trigger": "agent closeout", "replacement": ""})
+    except ValueError as error:
+        assert str(error) == "Snippet trigger and replacement must not be empty"
+    else:
+        raise AssertionError("Expected an empty snippet replacement to fail")

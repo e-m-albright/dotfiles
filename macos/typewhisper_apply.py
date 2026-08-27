@@ -15,7 +15,12 @@ import uuid
 from tempfile import TemporaryDirectory
 from typing import Any
 
-from typewhisper_config import normalize_correction, normalize_term, normalize_workflow
+from typewhisper_config import (
+    normalize_correction,
+    normalize_snippet,
+    normalize_term,
+    normalize_workflow,
+)
 
 MAC_EPOCH_OFFSET = 978307200
 
@@ -224,6 +229,62 @@ def upsert_dictionary(
             bump_primary_key(z_pk)
 
 
+def upsert_snippets(
+    con: sqlite3.Connection, snippets: list[dict[str, Any]], now: float
+) -> None:
+    z_ent_row = con.execute("select Z_ENT from Z_PRIMARYKEY where Z_NAME='Snippet'").fetchone()
+    z_ent = int(z_ent_row[0]) if z_ent_row else 1
+
+    for snippet in snippets:
+        spec = normalize_snippet(snippet)
+        existing = con.execute(
+            "select Z_PK, Z_OPT from ZSNIPPET where lower(ZTRIGGER)=lower(?)",
+            (spec.trigger,),
+        ).fetchone()
+        if existing:
+            z_pk, z_opt = existing
+            con.execute(
+                """
+                update ZSNIPPET
+                set Z_OPT=?, ZCASESENSITIVE=?, ZISENABLED=?, ZUPDATEDAT=?, ZREPLACEMENT=?
+                where Z_PK=?
+                """,
+                (
+                    int(z_opt) + 1,
+                    1 if spec.case_sensitive else 0,
+                    1 if spec.enabled else 0,
+                    now,
+                    spec.replacement,
+                    z_pk,
+                ),
+            )
+        else:
+            z_pk = int(con.execute("select coalesce(max(Z_PK), 0) from ZSNIPPET").fetchone()[0]) + 1
+            con.execute(
+                """
+                insert into ZSNIPPET (
+                    Z_PK, Z_ENT, Z_OPT, ZCASESENSITIVE, ZISENABLED, ZUSAGECOUNT,
+                    ZCREATEDAT, ZREPLACEMENT, ZTRIGGER, ZID, ZUPDATEDAT
+                ) values (?, ?, 1, ?, ?, 0, ?, ?, ?, ?, ?)
+                """,
+                (
+                    z_pk,
+                    z_ent,
+                    1 if spec.case_sensitive else 0,
+                    1 if spec.enabled else 0,
+                    now,
+                    spec.replacement,
+                    spec.trigger,
+                    uuid.uuid4().bytes,
+                    now,
+                ),
+            )
+            con.execute(
+                "update Z_PRIMARYKEY set Z_MAX=max(Z_MAX, ?) where Z_NAME='Snippet'",
+                (z_pk,),
+            )
+
+
 def _apply_store(store: pathlib.Path, apply: Any) -> None:
     con = sqlite3.connect(store)
     try:
@@ -259,8 +320,8 @@ def _restore_preferences(path: pathlib.Path, original: bytes | None) -> None:
 
 def apply_configuration(
     config_dir: pathlib.Path, prefs_path: pathlib.Path, support_dir: pathlib.Path
-) -> tuple[int, int, int, int]:
-    """Apply all three stores as one recoverable operation.
+) -> tuple[int, int, int, int, int]:
+    """Apply every tracked TypeWhisper surface as one recoverable operation.
 
     SQLite cannot atomically commit independent WAL databases plus a plist. We
     therefore preflight every input and store, take consistent SQLite backups,
@@ -269,6 +330,7 @@ def apply_configuration(
     settings = json.loads((config_dir / "settings.json").read_text())["preferences"]
     workflows = json.loads((config_dir / "workflows.json").read_text())["workflows"]
     dictionary = json.loads((config_dir / "dictionary.json").read_text())
+    snippets = json.loads((config_dir / "snippets.json").read_text())["snippets"]
     terms = dictionary.get("terms", [])
     corrections = dictionary.get("corrections", [])
 
@@ -279,10 +341,17 @@ def apply_configuration(
         normalize_term(term)
     for correction in corrections:
         normalize_correction(correction)
+    for snippet in snippets:
+        normalize_snippet(snippet)
 
     workflow_store = support_dir / "workflows.store"
     dictionary_store = support_dir / "dictionary.store"
-    for label, store in (("workflow", workflow_store), ("dictionary", dictionary_store)):
+    snippet_store = support_dir / "snippets.store"
+    for label, store in (
+        ("workflow", workflow_store),
+        ("dictionary", dictionary_store),
+        ("snippet", snippet_store),
+    ):
         if not store.exists():
             raise SystemExit(f"Missing {label} store: {store}. Open TypeWhisper once, then retry.")
 
@@ -290,8 +359,10 @@ def apply_configuration(
     with TemporaryDirectory(prefix="dotfiles-typewhisper-backup-") as backup_dir:
         workflow_backup = pathlib.Path(backup_dir) / "workflows.store"
         dictionary_backup = pathlib.Path(backup_dir) / "dictionary.store"
+        snippet_backup = pathlib.Path(backup_dir) / "snippets.store"
         _copy_store(workflow_store, workflow_backup)
         _copy_store(dictionary_store, dictionary_backup)
+        _copy_store(snippet_store, snippet_backup)
 
         now = time.time() - MAC_EPOCH_OFFSET
         try:
@@ -301,23 +372,26 @@ def apply_configuration(
                 dictionary_store,
                 lambda con: upsert_dictionary(con, terms, corrections, now),
             )
+            _apply_store(snippet_store, lambda con: upsert_snippets(con, snippets, now))
         except BaseException:
             _restore_preferences(prefs_path, prefs_original)
             _copy_store(workflow_backup, workflow_store)
             _copy_store(dictionary_backup, dictionary_store)
+            _copy_store(snippet_backup, snippet_store)
             raise
 
-    return len(settings), len(workflows), len(terms), len(corrections)
+    return len(settings), len(workflows), len(terms), len(corrections), len(snippets)
 
 
 def main(argv: list[str]) -> None:
     counts = apply_configuration(
         pathlib.Path(argv[1]), pathlib.Path(argv[2]), pathlib.Path(argv[3])
     )
-    settings_count, workflow_count, term_count, correction_count = counts
+    settings_count, workflow_count, term_count, correction_count, snippet_count = counts
     print(
         f"Applied {settings_count} preferences, {workflow_count} workflow(s), "
-        f"{term_count} dictionary term(s), and {correction_count} correction(s)."
+        f"{term_count} dictionary term(s), {correction_count} correction(s), "
+        f"and {snippet_count} snippet(s)."
     )
 
 

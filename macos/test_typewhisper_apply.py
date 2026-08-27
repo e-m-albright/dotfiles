@@ -5,7 +5,12 @@ from contextlib import closing
 from pathlib import Path
 
 import pytest
-from typewhisper_apply import apply_configuration, upsert_dictionary, upsert_workflows
+from typewhisper_apply import (
+    apply_configuration,
+    upsert_dictionary,
+    upsert_snippets,
+    upsert_workflows,
+)
 
 NOW = 700000000.0
 
@@ -28,6 +33,16 @@ create table ZDICTIONARYENTRY (
     Z_PK integer primary key, Z_ENT integer, Z_OPT integer,
     ZCASESENSITIVE integer, ZISENABLED integer, ZUSAGECOUNT integer,
     ZCREATEDAT real, ZENTRYTYPE text, ZORIGINAL text, ZREPLACEMENT text, ZID blob
+);
+"""
+
+SNIPPET_SCHEMA = """
+create table Z_PRIMARYKEY (Z_ENT integer, Z_NAME text, Z_MAX integer);
+insert into Z_PRIMARYKEY values (4, 'Snippet', 0);
+create table ZSNIPPET (
+    Z_PK integer primary key, Z_ENT integer, Z_OPT integer,
+    ZCASESENSITIVE integer, ZISENABLED integer, ZUSAGECOUNT integer,
+    ZCREATEDAT real, ZREPLACEMENT text, ZTRIGGER text, ZID blob, ZUPDATEDAT real
 );
 """
 
@@ -97,11 +112,42 @@ def test_terms_and_corrections_share_pk_sequence() -> None:
         ).fetchone() == (2,)
 
 
+def test_snippet_insert_then_case_insensitive_update() -> None:
+    with closing(_connect(SNIPPET_SCHEMA)) as con:
+        upsert_snippets(
+            con,
+            [{"trigger": "agent closeout", "replacement": "First version"}],
+            NOW,
+        )
+        upsert_snippets(
+            con,
+            [
+                {
+                    "trigger": "Agent Closeout",
+                    "replacement": "Updated version",
+                    "enabled": False,
+                }
+            ],
+            NOW + 5,
+        )
+        row = con.execute(
+            "select Z_OPT, ZCASESENSITIVE, ZISENABLED, ZUSAGECOUNT, ZCREATEDAT,"
+            " ZUPDATEDAT, ZTRIGGER, ZREPLACEMENT from ZSNIPPET"
+        ).fetchone()
+        assert row == (2, 0, 0, 0, NOW, NOW + 5, "agent closeout", "Updated version")
+        assert con.execute("select Z_MAX from Z_PRIMARYKEY where Z_NAME='Snippet'").fetchone() == (
+            1,
+        )
+
+
 def _write_config(config_dir: Path) -> None:
     config_dir.mkdir()
     (config_dir / "settings.json").write_text(json.dumps({"preferences": {"sound": True}}))
     (config_dir / "workflows.json").write_text(json.dumps({"workflows": [{"name": "Clean"}]}))
     (config_dir / "dictionary.json").write_text(json.dumps({"terms": ["Codex"]}))
+    (config_dir / "snippets.json").write_text(
+        json.dumps({"snippets": [{"trigger": "agent closeout", "replacement": "Done"}]})
+    )
 
 
 def _write_store(path: Path, schema: str) -> None:
@@ -138,6 +184,7 @@ def test_apply_configuration_restores_all_surfaces_after_late_failure(tmp_path: 
     prefs.write_bytes(plistlib.dumps({"sound": False}))
     _write_config(config_dir)
     _write_store(support_dir / "workflows.store", WORKFLOW_SCHEMA)
+    _write_store(support_dir / "snippets.store", SNIPPET_SCHEMA)
     # A valid SQLite store that lacks TypeWhisper's dictionary schema fails only
     # after preferences and workflows have been written.
     _write_store(support_dir / "dictionary.store", "create table unrelated (id integer);")

@@ -26,6 +26,14 @@ class DictionarySpec:
     enabled: bool
 
 
+@dataclass(frozen=True)
+class SnippetSpec:
+    trigger: str
+    replacement: str
+    case_sensitive: bool
+    enabled: bool
+
+
 def _without_none(value: object) -> dict[str, Any]:
     return {key: item for key, item in dict(value or {}).items() if item is not None}
 
@@ -74,4 +82,17 @@ def normalize_correction(correction: dict[str, Any]) -> DictionarySpec | None:
         replacement=str(correction.get("replacement", "")),
         case_sensitive=bool(correction.get("caseSensitive", False)),
         enabled=bool(correction.get("enabled", True)),
+    )
+
+
+def normalize_snippet(snippet: dict[str, Any]) -> SnippetSpec:
+    trigger = str(snippet.get("trigger", "")).strip()
+    replacement = str(snippet.get("replacement", "")).strip()
+    if not trigger or not replacement:
+        raise ValueError("Snippet trigger and replacement must not be empty")
+    return SnippetSpec(
+        trigger=trigger,
+        replacement=replacement,
+        case_sensitive=bool(snippet.get("caseSensitive", False)),
+        enabled=bool(snippet.get("enabled", True)),
     )

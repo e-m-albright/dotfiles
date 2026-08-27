@@ -1,0 +1,28 @@
+{
+  "snippets": [
+    {
+      "trigger": "agent commit all",
+      "replacement": "Commit and push everything in every repository touched. Verify that the staged changes contain no secrets, private data, or unrelated files, then report the checks."
+    },
+    {
+      "trigger": "agent closeout",
+      "replacement": "Check for unfinished work and open threads I may be dropping. If everything is complete and verified, give me a thumbs up and we can close."
+    },
+    {
+      "trigger": "agent repo health",
+      "replacement": "Run the relevant tests, lint, type checks, and health checks. Fix root causes rather than suppressing failures, then report the verification evidence."
+    },
+    {
+      "trigger": "agent privacy pass",
+      "replacement": "Before committing, verify that no secrets, credentials, personal records, private project names, absolute home paths, or unrelated files are entering source control."
+    },
+    {
+      "trigger": "agent handoff",
+      "replacement": "Create a temporary handoff for this repository using the handoff skill. Capture the goal, current state, decisions, verification evidence, open threads, and next best action. Check git status, save the artifact in the canonical handoff queue, and report its exact path. Keep durable decisions in the repository documentation rather than the handoff."
+    },
+    {
+      "trigger": "agent repo clean",
+      "replacement": "Run a workspace health audit and clean this repository and its associated worktrees. Inventory stashes, worktrees, local and remote branches, pull requests, and interrupted agent work. Preserve and integrate unique work; consolidate branches where appropriate; commit and push intended changes; remove only merged, clean, and proven-stale worktrees and branches; prune stale remote references; and recover or drop each stash only after verifying whether its work is valuable, superseded, or ambiguous. Run relevant verification and finish with a clean status where safely possible. Never delete ambiguous or unmerged work; report anything requiring my decision."
+    }
+  ]
+}
