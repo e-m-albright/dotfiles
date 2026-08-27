@@ -6,8 +6,12 @@ import os
 from pathlib import Path
 
 import typer
+from typer._click.core import Context
+from typer._click.formatting import HelpFormatter
+from typer.core import TyperGroup
 
 from dotfiles.app.context import build_real_context
+from dotfiles.banner import print_banner
 from dotfiles.cmd.brew.cli import brew_app, clean_command
 from dotfiles.cmd.doctor.cli import doctor_command
 from dotfiles.cmd.password.cli import password_command
@@ -20,7 +24,17 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _SHIM = _REPO_ROOT / "bin" / "dotfiles"
 _PASSTHROUGH = {"allow_extra_args": True, "ignore_unknown_options": True}
 
+
+class BrandedGroup(TyperGroup):
+    """Add the wordmark, then delegate help rendering entirely to Typer."""
+
+    def format_help(self, ctx: Context, formatter: HelpFormatter) -> None:
+        print_banner()
+        super().format_help(ctx, formatter)
+
+
 app = typer.Typer(
+    cls=BrandedGroup,
     name="dotfiles",
     help="Curated Mac dev environment: machine setup, remote control, and utilities.",
     no_args_is_help=True,
@@ -74,4 +88,4 @@ app.command("password", rich_help_panel=PANEL_CONTROL)(password_command)
 
 
 if __name__ == "__main__":  # pragma: no cover
-    app()
+    app(prog_name="dotfiles")

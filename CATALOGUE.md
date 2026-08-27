@@ -15,7 +15,7 @@ Counts are physical lines in the current working tree, including comments and bl
 | Tailscale, Paseo, private-site, and sleep-control operations | 536 | 497 | 0 | 1,033 | Core for remote continuity |
 | TypeWhisper installation and configuration | 504 | 195 | 74 | 773 | Active; keep isolated from generic package logic |
 | Fresh-Mac bootstrap and macOS configuration | 808 | 89 | 0 | 897 | Core; shell-heavy boundary merits smoke coverage |
-| CLI application, banner, adapters, rendering, and test fakes | 465 | 498 | 0 | 963 | Supporting platform |
+| CLI application, banner, adapters, rendering, and test fakes | 479 | 499 | 0 | 978 | Supporting platform |
 | Command launchers and Just recipes | 509 | 0 | 0 | 509 | Core entry points |
 | Shell, Git, terminal, editor, and completion configuration | 0 | 0 | 813 | 813 | Core desired state |
 | Password generation and clipboard utility | 69 | 80 | 0 | 149 | Small and complete |

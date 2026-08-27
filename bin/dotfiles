@@ -34,7 +34,7 @@ cli_dotfiles () {
 }
 
 sub_help () {
-    # Use Typer's native help instead of maintaining a custom renderer.
+    # Typer owns help formatting; the root group adds the canonical banner.
     local error="${1:-}"
     if [[ -n "$error" ]]; then
         printf "Error: %s\n\n" "$error" >&2
@@ -163,5 +163,5 @@ case $COMMAND_NAME in
     # profile-shell is a canonical flat command (Machine group in sub_help)
     profile-shell) shift; sub_shell_profile "$@" ;;
 
-    *) sub_help "'$COMMAND_NAME' is not a known command. Choose a command below."; exit 2 ;;
+    *) cli_dotfiles "$@" ;;
 esac

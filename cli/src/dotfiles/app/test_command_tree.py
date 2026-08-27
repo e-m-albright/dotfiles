@@ -54,6 +54,7 @@ def test_native_help_lists_active_commands_only() -> None:
     result = subprocess.run([str(_SHIM), "--help"], capture_output=True, text=True, check=False)
 
     assert result.returncode == 0
+    assert "██████╗" in result.stdout
     for command in ("doctor", "brew", "remote", "password"):
         assert command in result.stdout
     for retired in ("session", "tui", "email-mask"):
