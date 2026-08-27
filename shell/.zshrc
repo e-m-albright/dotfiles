@@ -112,6 +112,7 @@ alias j='just'
 # Agent launchers (gcmw, gacp, co, cc, ccc, ccr, cca) are workbench-owned;
 # `workbench sync` deploys the fragment sourced here.
 _wb_launchers="$HOME/.local/share/workbench/shell/agent-launchers.zsh"
+# shellcheck disable=SC1090  # workbench deploys this machine-local fragment
 [[ -f "$_wb_launchers" ]] && source "$_wb_launchers"
 unset _wb_launchers
 
