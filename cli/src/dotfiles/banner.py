@@ -1,4 +1,4 @@
-"""DOTFILES wordmark with the horizontal Agate gradient."""
+"""DOTFILES wordmark with the horizontal Red Granite gradient."""
 
 from __future__ import annotations
 
@@ -18,14 +18,14 @@ BLOCK_LINES: tuple[str, ...] = (
     "╚═════╝  ╚═════╝    ╚═╝   ╚═╝     ╚═╝╚══════╝╚══════╝╚══════╝",
 )
 
-# Shell and lichen through sea glass, clay, plum, and slate.
+# Feldspar and iron through quartz, black mica, and mineral gray.
 _STOPS = (
-    (241, 223, 194),
-    (201, 195, 140),
-    (114, 164, 154),
-    (181, 109, 104),
-    (117, 81, 111),
-    (52, 77, 88),
+    (228, 210, 189),
+    (194, 154, 130),
+    (166, 103, 87),
+    (123, 80, 73),
+    (81, 75, 73),
+    (48, 56, 58),
 )
 
 
