@@ -1,4 +1,4 @@
-# Dotfiles
+# <img src="assets/brand/icon.svg" alt="" width="48" /> Dotfiles
 
 Personal macOS bootstrap and operating configuration. This repo turns a fresh
 MacBook into the host environment I want: packages, shell, terminal, editors,
