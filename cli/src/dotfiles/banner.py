@@ -48,7 +48,7 @@ def gradient_banner(lines: Sequence[str] = BLOCK_LINES) -> Text:
     text = Text(no_wrap=True)
     for line in lines:
         for column, character in enumerate(line):
-            red, green, blue = _gradient(column / max(1, width - 1))
+            red, green, blue = _gradient(1 - column / max(1, width - 1))
             text.append(character, style=f"#{red:02x}{green:02x}{blue:02x}")
         text.append("\n")
     return text
