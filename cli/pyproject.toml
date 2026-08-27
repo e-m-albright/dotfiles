@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Hexagonal Typer CLI for the dotfiles dev environment"
 requires-python = ">=3.13"
 dependencies = [
-    "typer>=0.15",
+    "typer>=0.27.1",
     "rich>=13.9",
     "pydantic>=2.10",
 ]
@@ -17,10 +17,10 @@ dev = [
     "pytest>=8.3",
     "pytest-cov>=6.0",
     "pytest-timeout>=2.3",
-    "ruff>=0.9",
+    "ruff>=0.16.4",
     "pyright>=1.1.390",
     "vulture>=2.14",
-    "complexipy>=2.0",
+    "complexipy>=7.0.1",
     "pip-audit>=2.7",
 ]
 
