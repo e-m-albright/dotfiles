@@ -27,6 +27,21 @@ def test_managed_hotkey_is_the_fn_key() -> None:
     assert preferences["hybridHotkeys"] == [expected]
 
 
+def test_managed_dictation_is_raw_apple_speech_analyzer() -> None:
+    config_dir = Path(__file__).with_name("typewhisper")
+    preferences = json.loads((config_dir / "settings.json").read_text())["preferences"]
+    workflows = json.loads((config_dir / "workflows.json").read_text())["workflows"]
+
+    assert preferences["selectedEngine"] == "speechAnalyzer"
+    assert preferences["plugin.com.typewhisper.speechanalyzer.enabled"] is True
+    assert preferences["plugin.com.typewhisper.parakeet.enabled"] is False
+    assert preferences["plugin.com.typewhisper.filler-words.enabled"] is False
+    assert "plugin.com.typewhisper.parakeet.selectedModel" not in preferences
+    assert "plugin.com.typewhisper.parakeet.selectedVersion" not in preferences
+    assert all(workflow["enabled"] is False for workflow in workflows)
+    assert all("fineTuning" not in workflow.get("behavior", {}) for workflow in workflows)
+
+
 def test_normalize_dictionary_entries() -> None:
     assert normalize_term("  Codex ").original == "Codex"
     assert normalize_term("  ") is None

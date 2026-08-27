@@ -232,7 +232,7 @@ note = "Official installer; preferred over Homebrew for version management"
 [special.typewhisper]
 method = "github_dmg"
 flag = "productivity"
-note = "On-device voice-to-text via Apple SpeechAnalyzer. Replaced Wispr Flow 2026-05-29. No Homebrew cask. Corrected 2026-07-24: the live engine is `speechAnalyzer` - the Parakeet plugin is installed but its model was never downloaded (0 B), and no local-LLM cleanup plugin is present. GPLv3; ships a REST API on 127.0.0.1:8978 (off by default) and a `typewhisper` CLI."
+note = "On-device voice-to-text via Apple SpeechAnalyzer. Replaced Wispr Flow 2026-05-29. No Homebrew cask. Keep the live engine set to `speechAnalyzer`; Parakeet was disabled 2026-08-26 because its local model added latency and memory use without enough quality benefit. GPLv3; ships a REST API on 127.0.0.1:8978 (off by default) and a `typewhisper` CLI."
 
 [special.supertonic]
 method = "python_package"
