@@ -33,7 +33,6 @@ apps=(
     "/Applications/Google Chrome.app"
     "/Applications/Spotify.app"
     "/Applications/Zed.app"
-    "/Applications/Claude.app"
     "/Applications/ChatGPT.app"
     "/Applications/Paseo.app"
     "/Applications/Ghostty.app"

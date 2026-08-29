@@ -815,3 +815,29 @@ reason = "Retired 2026-08-26: not useful enough"
     )
 
     assert runner.calls.count((str(script), "apply")) == 1
+
+
+def test_omlx_special_runs_tracked_idempotent_setup(tmp_path: Path) -> None:
+    manifest = load(
+        tmp_path,
+        """\
+[taps]
+list = []
+
+[special.omlx]
+method = "omlx_setup"
+flag = "ai"
+""",
+    )
+    runner = FakeProcessRunner()
+
+    steps = install_specials(
+        manifest,
+        runner,
+        flags_on={"ai"},
+        dotfiles_dir=tmp_path,
+        dry_run=False,
+    )
+
+    assert ("bash", str(tmp_path / "macos" / "configure-omlx.sh")) in runner.calls
+    assert steps[0].level == "success"

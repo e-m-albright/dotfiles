@@ -40,7 +40,7 @@ FeatureFlag = Literal["ai", "productivity", "social"]
 PackageKind = Literal["formula", "cask", "auto"]
 # Records how a non-Homebrew package reaches this host. `python_package` is
 # declarative only: that software arrives through this repo's Python dependencies.
-SpecialMethod = Literal["rustup", "github_dmg", "curl_install", "python_package"]
+SpecialMethod = Literal["rustup", "github_dmg", "curl_install", "python_package", "omlx_setup"]
 
 # Tombstone invariant (AGENTS.md): disabled entries retain a *dated* reason.
 _TOMBSTONE_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -824,6 +824,16 @@ def _install_special(
         return install_typewhisper(runner, dotfiles_dir=dotfiles_dir)
     if installer.method == "curl_install":
         return install_claude_code(runner)
+    if installer.method == "omlx_setup":
+        script = dotfiles_dir / "macos" / "configure-omlx.sh"
+        result = runner.run(("bash", str(script)))
+        return [
+            StepResult(
+                level="success" if result.ok else "error",
+                message="configure oMLX grammar, model, and service",
+                details=result.stderr.strip(),
+            )
+        ]
     raise ValueError(f"Unsupported special installer method: {installer.method}")
 
 

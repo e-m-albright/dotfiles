@@ -1,30 +1,73 @@
 # Local LLM Stack — M4 Pro 48GB
 
-> **Retired 2026-07-25 — kept as a reference, not a description of this machine.**
+> **Active for supervised private work; not trusted for autonomous operations.**
 >
-> Local inference is no longer installed here. LM Studio was the front-runner and
-> it did its job well; the stack was removed because local models stayed
-> materially slower and weaker at coding than hosted frontier models, so 28 GB of
-> weights earned nothing back. Nothing below was wrong — it stopped being worth
-> the disk.
+> oMLX is installed as the active open-source, MLX-native runner. An optimized
+> Qwen3.6-35B-A3B build is the local default and also classifies Pi's automatic
+> route. Model serving, tool calls, strict structured output, software-offline
+> inference, and fail-closed local-provider failure have passed. A physical
+> network-disconnect test and broader operational accuracy remain open.
 >
-> This document survives because the expensive part was the measurement, not the
-> install. The hardware envelope, the MLX-vs-GGUF numbers, the context-window and
-> guardrail traps, and the rejected-options table are all still valid for an M4
-> Pro and would have to be re-derived from scratch otherwise.
->
-> **If you revisit local models:** re-run the speed check below before trusting
-> any of the tok/s figures, and re-survey the field first — LM Studio is the
-> incumbent to beat, not automatically the pick. Reinstall via `macos/packages.toml`
-> (the `lm-studio` entry is tombstoned, not deleted).
+> The measurements below preserve the original LM Studio evaluation where they
+> still describe this hardware. Re-run them through oMLX before treating the old
+> speeds as current. The cross-platform model, runtime, router, managed-host, and
+> serverless-GPU ranking lives in Workbench's
+> [open-model-inference.md](https://github.com/e-m-albright/workbench/blob/main/playbook/knowledge/open-model-inference.md).
 
-**Original decision (2026-05-29):** LM Studio only, MLX-preferred. Ollama and
-llama.cpp evaluated and dropped. Two models kept: Qwen3.6-35B-A3B (coding/agents)
-and Gemma-4-E4B (vision/quick chat).
+**Current decision:** oMLX first, LM Studio as the fallback, and native MLX
+weights. Qwen3.6-35B-A3B oQ4e with multi-token prediction is the private agent
+and classifier. Gemma 4 26B-A4B was slower and showed no quality advantage in
+the initial A/B, so its local weights were removed.
 
-Model and context settings were managed by `macos/lmstudio.sh` (removed with the
-stack). Agent-specific model routing belongs to Workbench, not this host
-repository.
+Agent-specific model routing belongs to Workbench. This host page owns the
+runner, hardware envelope, measured performance, and privacy acceptance test.
+
+## Reproducible installation
+
+`macos/packages.toml` declares oMLX and its `omlx_setup` special installer.
+`macos/configure-omlx.sh` idempotently installs and verifies xgrammar, repairs the
+known macOS loader defect, merges the non-secret settings overlay from
+`macos/omlx/settings.json`, downloads the selected Qwen weights when absent, and
+restarts the service only after a change. Generated authentication material and
+unknown future settings are preserved. Workbench owns Pi's provider, model,
+router, and launcher configuration.
+
+Run the full reconciliation with:
+
+```bash
+dotfiles brew install
+```
+
+## Structured output support
+
+The managed setup installs oMLX with xgrammar so JSON schemas and tool arguments
+can be enforced. The underlying Homebrew command is:
+
+```bash
+brew reinstall jundot/omlx/omlx --with-grammar
+```
+
+oMLX 0.6.3 may install the macOS binding without the loader metadata its own
+formula expects. Verify after every reinstall:
+
+```bash
+"$(brew --prefix omlx)/libexec/bin/python" -c 'import xgrammar; print("xgrammar import OK")'
+```
+
+If that import cannot find `libxgrammar_bindings.dylib`, apply the formula's
+loader fix manually:
+
+```bash
+site="$(brew --prefix omlx)/libexec/lib/python3.11/site-packages"
+dylib="$site/xgrammar/libxgrammar_bindings.dylib"
+record="$(find "$site" -maxdepth 1 -type d -name 'xgrammar-*.dist-info' -print -quit)/RECORD"
+install_name_tool -add_rpath "$site/tvm_ffi/lib" "$dylib"
+codesign --force --sign - "$dylib"
+printf 'xgrammar/libxgrammar_bindings.dylib,,\n' > "$record"
+"$(brew --prefix omlx)/libexec/bin/python" -c 'import xgrammar; print("xgrammar import OK")'
+```
+
+Remove this workaround when the upstream oMLX packaging fix supersedes it.
 
 ## Hardware envelope
 
@@ -50,7 +93,16 @@ repository.
 | Qwen3.6-27B (dense, MLX) | **14 tok/s** — 5.4× slower than 35B-A3B. Memory-bandwidth bound; dense 27B reads ~17 GB/token from RAM. Quality is ~3-4 SWE-Bench points better, but UX cost too high. |
 | Qwen3.6-27B (dense, GGUF) | 12 tok/s — even worse. |
 | Qwen3.6-35B-A3B (GGUF) | 56 tok/s — MLX variant strictly dominates (+36%, less memory). |
+| Gemma 4 26B-A4B (MLX) | 65 tok/s versus Qwen's 71 in the local short-context A/B, with lower broad intelligence and no observed quality advantage. |
 | Ollama runtime | ~30% slower than raw llama.cpp on same model. Redundant with LM Studio. |
+| Qwen3.8-27B dense 4-bit | 14.3 tok/s conventionally and 25.9 tok/s with oQ4e + native MTP on matching M4 Pro hardware. `xhigh` adds reasoning tokens but does not cause the memory-bandwidth limit. |
+| Qwen3.8 Flash-Next | Roughly 180B total parameters; even 2-bit weights are about 45 GB before runtime overhead, beyond the practical Metal envelope. |
+
+An experimental Qwen3.8-27B oMLX recipe reaches 53 tok/s prose and 72 tok/s
+code on an M4 Max by combining Neural Engine prefill and native MTP. The M4 Max
+has roughly twice this machine's memory bandwidth, so that result is not evidence
+for 50 tok/s here. Revisit Qwen3.8 only after a matching M4 Pro result clears the
+Pi harness target, not merely a raw-server benchmark.
 
 ## Performance — Llama-3.2-1B sanity bench (cross-runtime)
 
@@ -165,9 +217,9 @@ When considering a new local model:
    leaderboard](https://aider.chat/docs/leaderboards/), SWE-Bench Verified,
    and Terminal-Bench 2.0. For coding work, Terminal-Bench is the most
    predictive of real agentic behavior.
-6. **Speed check:** use LM Studio's current runtime metrics during a representative
-   prompt. Target: > 40 tok/s generation for interactive use and > 100 for
-   autocomplete.
+6. **Speed check:** measure both oMLX decode and Pi's end-to-end rate with the
+   same prompt, tools, and context. The adoption target is at least 50 tok/s in
+   representative Pi sessions, not merely a short raw-server generation.
 
 ## Process learnings (this session)
 

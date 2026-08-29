@@ -89,14 +89,15 @@ dotfiles password [LENGTH] [--no-copy]
 
 ## Local Models
 
-Not installed. LM Studio was trialled as the local-inference runner and removed
-on 2026-07-25 — it worked fine, but local models stayed slower and weaker at
-coding than hosted frontier models, so the weights weren't earning their disk.
+oMLX is the active open-source Apple Silicon inference runner. Qwen3.6 is the
+private Pi model. Serving, tool calling, structured output, and software-offline
+checks pass; autonomous operational use and the physical network-disconnect test
+remain unapproved.
 
-The `lm-studio` entry in `macos/packages.toml` is tombstoned rather than deleted,
-and the benchmarks that justified the choice are preserved in
-[`docs/local-llm-stack.md`](docs/local-llm-stack.md) for whenever it's worth
-another look.
+LM Studio remains a tombstoned fallback. The current setup and historical
+benchmarks live in [`docs/local-llm-stack.md`](docs/local-llm-stack.md); the
+cross-platform model and provider ranking lives in Workbench's
+[`open-model-inference.md`](https://github.com/e-m-albright/workbench/blob/main/playbook/knowledge/open-model-inference.md).
 
 ## Package Manifest
 

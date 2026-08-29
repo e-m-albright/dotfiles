@@ -4,7 +4,8 @@
 # Skip flagged groups per run: dotfiles brew install --no-ai --no-productivity --no-social
 
 [taps]
-list = ["axiomhq/tap"]
+list = ["axiomhq/tap", "jundot/omlx"]
+trusted_formulae = ["jundot/omlx/omlx"]
 trusted_casks = ["axiomhq/tap/axiom"]
 
 # =============================================================================
@@ -192,7 +193,7 @@ kind = "auto"
 flag = "ai"
 packages = [
   { name = "claude-code",          note = "Installed via the special.claude_code block", disabled = true, reason = "Disabled 2026-05-17: cask tracks the stable dist-tag and can lag releases by days or weeks" },
-  { name = "claude",               note = "Claude Desktop (macOS app)" },
+  { name = "claude",               note = "Claude Desktop (macOS app)", disabled = true, reason = "Disabled 2026-08-29: unused, while taking a break from Anthropic products" },
   { name = "conductor",            note = "Claude Code parallelisation", disabled = true, reason = "Disabled 2026-07-15: large agent fleets do not solve a current problem; native subagents and Ghostty tabs cover the desired maximum of roughly five concurrent agents" },
   { name = "codex",                note = "OpenAI Codex CLI (terminal agent) — or: npm i -g @openai/codex" },
   { name = "open-interpreter",     note = "Rust Codex fork for low-cost/open models and provider-specific harness emulation (openinterpreter.com); Apache-2.0, installs via upstream script", disabled = true, reason = "Watch 2026-07-25: very popular, promising harness for cheap/open models and a strong tool to try later; no need to evaluate today because Pi + Codex cover the current workflow. Catalogued in workbench playbook/knowledge/agent-harness-landscape.md" },
@@ -208,7 +209,7 @@ packages = [
   { name = "amp",                  note = "Sourcegraph Amp agent (ampcode.com); CLI via curl installer, npm @sourcegraph/amp, or sourcegraph/amp-cli tap", disabled = true, reason = "Watch 2026-07-20: heavily built-out frontier-pushing agent; tracking, not adopting — active agent support stays on Claude Code + Codex" },
   { name = "droid",               note = "Factory.ai droid agent (factory.ai); CLI via curl app.factory.ai/cli, no Homebrew", disabled = true, reason = "Watch 2026-07-20: heavily built-out frontier-pushing agent; tracking, not adopting — active agent support stays on Claude Code + Codex" },
   { name = "aider",               note = "Aider git-native terminal pair-programmer (aider.chat); install via pipx/uv, Apache-2.0", disabled = true, reason = "Watch 2026-07-20: OG minimal BYOK harness, closest cousin to Pi; catalogued in workbench playbook/knowledge/agent-harness-landscape.md, not adopted — daily drivers stay Claude Code + Codex" },
-  { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server", disabled = true, reason = "Disabled 2026-07-25: the front-runner we trialled for local models, and still the one to beat — it worked well and nothing went wrong with it. Removed only because local models stayed materially slower and weaker at coding than hosted frontier models, so the 28GB of weights bought nothing. Reinstall gladly when revisiting local inference, unless a competitor has clearly advanced past it by then. Benchmarks and rationale preserved in docs/local-llm-stack.md" },
+  { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server", disabled = true, reason = "Disabled 2026-08-28: oMLX replaced it for the active local-inference trial because the open-source server adds multi-model serving, prefix caching, and the agent-facing controls now needed. LM Studio worked well and remains the fallback if oMLX fails acceptance. Benchmarks and rationale are preserved in docs/local-llm-stack.md" },
   { name = "huggingface-cli",      note = "Hugging Face CLI", disabled = true, reason = "Disabled 2026-07-15: no model-development workflow needs it; install per-project if local-model experimentation resumes" },
 ]
 
@@ -217,13 +218,19 @@ name = "Special Formulae"
 kind = "formula"
 packages = [
   { name = "docker-compose",  note = "Docker Compose (formula-only, not cask)" },
-  { name = "ollama",          note = "~30% slower than llama.cpp; redundant", disabled = true, reason = "Disabled 2026-05-28: LM Studio (MLX) was the daily driver; local inference removed entirely 2026-07-25 — re-evaluate the whole field, not just this entry, if it returns" },
-  { name = "llama.cpp",       note = "Useful for raw `llama-bench` / `llama-server`; reinstall when needed", disabled = true, reason = "Disabled 2026-05-28: LM Studio (MLX) was the daily driver; local inference removed entirely 2026-07-25 — re-evaluate the whole field, not just this entry, if it returns" },
+  { name = "omlx",            flag = "ai", note = "Open-source MLX inference server for Apple Silicon: multi-model serving, prefix caching, OpenAI/Anthropic APIs (jundot/omlx)" },
+  { name = "ollama",          note = "~30% slower than llama.cpp; redundant", disabled = true, reason = "Disabled 2026-08-28: oMLX is the active Apple Silicon runner; Ollama adds no needed compatibility advantage and previously trailed native MLX throughput" },
+  { name = "llama.cpp",       note = "Useful for raw `llama-bench` / `llama-server`; reinstall when needed", disabled = true, reason = "Disabled 2026-08-28: oMLX is the active runner; reinstall llama.cpp only for a cross-runtime benchmark or a GGUF model with no viable MLX build" },
 ]
 
 # =============================================================================
 # Special installers (not plain brew)
 # =============================================================================
+
+[special.omlx]
+method = "omlx_setup"
+flag = "ai"
+note = "Idempotently install xgrammar, repair its macOS loader metadata when needed, download the selected Qwen model, and restart oMLX after changes"
 
 [special.rust]
 method = "rustup"

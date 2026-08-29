@@ -12,7 +12,7 @@ Companion doc: [local-llm-stack.md](./local-llm-stack.md) (the local tier).
 
 Three tiers, by how far your prompt travels:
 
-1. **On-device only** - a local model. Prompts never leave the machine. No training, no retention, no breach surface beyond your own disk. This is the tier for anything genuinely sensitive. **Not currently available on this machine** - local inference was removed on 2026-07-25 (see below), so tier 3 is presently the floor.
+1. **On-device only** - a local model. Prompts never leave the machine. No training, no retention, no breach surface beyond your own disk. This is the tier for anything genuinely sensitive. **Under final acceptance testing on this machine** - oMLX serving, tool use, structured output, software-offline inference, and fail-closed provider failure pass; the physical network-disconnect test remains open.
 2. **Cloud consumer** (ChatGPT, Gemini, Claude Free/Pro/Max) - trained on by default unless you opt out, multi-year retention if you don't. The toggles below exist precisely because the default is "yes, use my data."
 3. **Cloud commercial / API** (Anthropic API, OpenAI API/Business/Enterprise, Workspace, GitHub Business/Enterprise) - not trained on by default, short retention (about 30 days), zero-data-retention (ZDR) available on request. Categorically better than consumer.
 
@@ -63,11 +63,11 @@ Three tiers, by how far your prompt travels:
 
 ---
 
-## The local tier - currently unused
+## The local tier - acceptance testing
 
-**Status (2026-07-25):** no local runner is installed. LM Studio filled this role and was removed - it worked, but local models stayed too slow and too weak at coding to earn 28 GB of disk. Tier 3 (commercial/API terms) is the current floor for sensitive content, which is a real downgrade to be aware of: it is safe-by-default, not private-by-construction.
+**Status:** oMLX serves Qwen3.6 over loopback. Model generation, tool calls, strict structured output, software-offline inference with external proxies blackholed, and local-provider failure all pass. A physical network-disconnect test remains required before declaring the privacy gate complete. Operational accuracy is a separate gate: current evidence supports supervised assistance, not autonomous writes.
 
-The standard below is kept because it is the acceptance test for *any* local runner, not just LM Studio. Reinstate via the tombstoned `lm-studio` entry in `macos/packages.toml`, or whatever has surpassed it by then; see [local-llm-stack.md](./local-llm-stack.md) for the benchmarks and model choices.
+The standard below is the gate for declaring the local tier available. See [local-llm-stack.md](./local-llm-stack.md) for the active setup and host measurements.
 
 **Hygiene standard for "is this actually private?":**
 - Confirm the runner is serving a local model, not a remote/proxy provider. The whole guarantee is that nothing leaves the machine - verify that's true before trusting it with sensitive input.

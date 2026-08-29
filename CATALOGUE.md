@@ -1,16 +1,18 @@
 # Feature Catalogue
 
-Canonical map of maintained host capabilities in this repository. Update the affected row when a capability is added, removed, materially expanded, split, or consolidated.
+Timestamped map of maintained host capabilities in this repository.
+
+**Snapshot:** 2026-08-29. Refresh the map and counts on demand during an explicit capability-health review, not during routine implementation.
 
 ## Counting method
 
-Counts are physical lines in the current working tree, including comments and blank lines. Implementation includes Python, shell, and launcher code. Tests are counted separately. Config/data includes the package manifest and user-facing shell, Git, terminal, and editor configuration. Documentation is not included in line totals. Attribution is file-based; shared CLI files remain in a shared row. In-progress files present in the working tree are included when they already participate in the verified command path.
+Counts are physical lines at snapshot time, including comments and blank lines. Implementation includes Python, shell, and launcher code. Tests are counted separately. Config/data includes the package manifest and user-facing shell, Git, terminal, and editor configuration. Documentation is not included in line totals. Attribution is file-based; shared CLI files remain in a shared row. In-progress files present in the working tree are included when they already participate in the verified command path.
 
 ## Registry
 
 | Capability | Implementation | Tests | Config/data | Total | Posture |
 |---|---:|---:|---:|---:|---|
-| Package manifest, installation, drift, upgrade, and prune | 1,124 | 1,692 | 322 | 3,138 | Core; strongest and most heavily tested subsystem |
+| Package manifest, installation, drift, upgrade, and prune | 1,209 | 1,718 | 379 | 3,306 | Core; strongest and most heavily tested subsystem |
 | Host doctor and configuration repair | 507 | 478 | 0 | 985 | Core |
 | Tailscale, Paseo, private-site, and sleep-control operations | 536 | 497 | 0 | 1,033 | Core for remote continuity |
 | TypeWhisper installation and configuration | 599 | 263 | 105 | 967 | Active; keep isolated from generic package logic |
@@ -24,7 +26,7 @@ Counts are physical lines in the current working tree, including comments and bl
 
 ### Package lifecycle
 
-- Declarative Homebrew formula, cask, tap, Go, npm, and special-installer inventory.
+- Declarative Homebrew formula, cask, tap, Go, npm, and special-installer inventory, including the active open-source MLX inference runner.
 - Feature flags, disabled dated tombstones, installed and missing inventory, stale-item reporting, upgrades, cleanup, and confirmed pruning.
 - Verified TypeWhisper download and signing identity checks.
 - Workbench installation as a pinned adjacent public capability.

@@ -2,8 +2,8 @@
 
 Personal macOS bootstrap and host configuration. Shared agent behavior and
 engineering guidance are maintained in the sibling `workbench` repository.
-`CATALOGUE.md` is the maintained feature map; update it when a capability is
-added, removed, materially expanded, split, or consolidated.
+`CATALOGUE.md` is a timestamped capability-health snapshot, refreshed on demand
+rather than maintained during routine implementation.
 
 ## Project Context
 
