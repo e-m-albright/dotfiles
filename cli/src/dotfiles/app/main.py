@@ -13,6 +13,7 @@ from typer.core import TyperGroup
 from dotfiles.app.context import build_real_context
 from dotfiles.banner import print_banner
 from dotfiles.cmd.brew.cli import brew_app, clean_command
+from dotfiles.cmd.credential.cli import credential_app
 from dotfiles.cmd.doctor.cli import doctor_command
 from dotfiles.cmd.password.cli import password_command
 from dotfiles.cmd.remote.cli import remote_app
@@ -68,6 +69,7 @@ def update(ctx: typer.Context) -> None:
 
 app.command("doctor", rich_help_panel=PANEL_MACHINE)(doctor_command)
 app.add_typer(brew_app, name="brew", rich_help_panel=PANEL_MACHINE)
+app.add_typer(credential_app, name="credential", rich_help_panel=PANEL_MACHINE)
 app.command("clean", rich_help_panel=PANEL_MACHINE)(clean_command)
 
 

@@ -131,7 +131,7 @@ sub_shell_profile() {
 
 # Every Python command must also appear in the Typer registry and zsh completion;
 # app/test_command_tree.py enforces the routing contract.
-PY_CLI_COMMANDS=" remote doctor brew password clean "
+PY_CLI_COMMANDS=" remote doctor brew credential password clean "
 if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
     cli_dotfiles "$@"
 fi

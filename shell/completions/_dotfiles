@@ -7,6 +7,7 @@ local -a commands
 commands=(
     'install:Run full dotfiles setup'
     'doctor:Check tools and config (--fix to repair)'
+    'credential:Inventory and enroll local programmatic credentials'
     'update:Update OS, Homebrew, runtimes, and dev tools'
     'clean:Clean caches'
     'dock:Reset macOS Dock'

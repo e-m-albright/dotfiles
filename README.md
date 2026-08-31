@@ -47,8 +47,13 @@ writes Git identity to `~/.gitconfig.local`.
 ## Daily Commands
 
 ```text
-dotfiles doctor                 live host and workbench drift check
+dotfiles doctor                 live host, credential, and workbench drift check
 dotfiles doctor --fix           repair supported symlinks and local config
+dotfiles credential init        create the private metadata-only inventory
+dotfiles credential list        show grants, consumers, scopes, and local status
+dotfiles credential set ID      prompt securely and store one grant in Keychain
+dotfiles credential link-pi ID  resolve one Pi provider grant from Keychain
+dotfiles credential run ID --…  inject one grant into one child process
 dotfiles brew install           install missing declared packages
 dotfiles brew stale             show undeclared installed packages
 dotfiles brew prune             preview installed disabled tombstones
@@ -61,8 +66,10 @@ dotfiles profile-shell          profile shell startup
 ```
 
 There are no machine-state snapshots. `doctor`, `brew stale`, and
-`workbench drift` compares desired state with the live machine directly, so there
-is no stored observation to become stale.
+`workbench drift` compare desired state with the live machine directly, so there
+is no stored observation to become stale. The credential inventory contains
+private declarations, not observed status or secret values. See
+[`docs/credentials.md`](docs/credentials.md).
 
 ## Remote Control
 

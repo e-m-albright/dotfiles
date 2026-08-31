@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.cmd.credential.models import CredentialRecord
+from dotfiles.cmd.credential.service import CredentialInventoryError, CredentialService
 from dotfiles.cmd.doctor.models import CheckResult
 from dotfiles.cmd.remote.service import RemoteService
 
@@ -46,6 +48,12 @@ _TOOL_CHECKS: dict[str, tuple[tuple[str, str, str], ...]] = {
     ),
     "Remote Shell": (),
 }
+
+
+def _credential_needs_attention(record: CredentialRecord) -> bool:
+    return record.status in {"expired", "inaccessible"} or (
+        record.spec.required and record.status == "missing"
+    )
 
 
 class DoctorService:
@@ -102,6 +110,7 @@ class DoctorService:
             self._check_editors,
             self._check_runtimes,
             self._check_ai_tools,
+            self._check_credentials,
             self._check_dev_tools,
             self._check_remote_shell,
             self._check_configuration,
@@ -280,6 +289,45 @@ class DoctorService:
                 status="warn",
                 detail=detail,
                 hint="Run: workbench sync",
+            )
+        ]
+
+    def _check_credentials(self) -> list[CheckResult]:
+        sec = "Credentials"
+        try:
+            records = CredentialService(runner=self._runner, home=self._home).list()
+        except CredentialInventoryError as exc:
+            return [
+                CheckResult(
+                    section=sec,
+                    name="Inventory",
+                    status="warn",
+                    detail=str(exc),
+                    hint="Run: dotfiles credential init",
+                )
+            ]
+        problems = [record for record in records if _credential_needs_attention(record)]
+        stored = sum(record.status == "stored" for record in records)
+        resolved = sum(record.status in {"stored", "superseded", "deferred"} for record in records)
+        if problems:
+            ids = ", ".join(record.spec.id for record in problems)
+            return [
+                CheckResult(
+                    section=sec,
+                    name="Inventory",
+                    status="warn",
+                    detail=(
+                        f"{resolved}/{len(records)} resolved ({stored} stored); attention: {ids}"
+                    ),
+                    hint="Run: dotfiles credential list",
+                )
+            ]
+        return [
+            CheckResult(
+                section=sec,
+                name="Inventory",
+                status="ok",
+                detail=f"{resolved}/{len(records)} resolved ({stored} stored)",
             )
         ]
 
