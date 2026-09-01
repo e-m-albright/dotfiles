@@ -230,10 +230,13 @@ if command -v fnm >/dev/null 2>&1; then
     fnm use --install-if-missing lts-latest >/dev/null 2>&1
     fnm default lts-latest >/dev/null 2>&1
     
-    # Enable corepack for pnpm/yarn (idempotent - safe to run multiple times)
+    # Keep pnpm reproducible through Node's package-manager shim.
     if command -v corepack >/dev/null 2>&1; then
-        corepack enable >/dev/null 2>&1 || true
-        print_info "Corepack enabled (pnpm/yarn support)"
+        if corepack enable >/dev/null 2>&1 && corepack install --global pnpm@10.11.1 >/dev/null 2>&1; then
+            print_info "Corepack enabled (pnpm 10.11.1)"
+        else
+            print_warning "Corepack could not activate pnpm; rerun the installer after checking Node"
+        fi
     fi
     
     # Stable symlinks for node/npx in /opt/homebrew/bin
