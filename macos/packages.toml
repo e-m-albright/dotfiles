@@ -149,7 +149,7 @@ packages = [
   { name = "ghostty",          note = "GPU-accelerated terminal" },
   { name = "caffeine",         note = "Intel-only, requires Rosetta" },
   { name = "flux-app",         note = "Screen color temperature" },
-  { name = "granola",          note = "AI notepad for meetings" },
+  { name = "granola",          note = "Install manually from https://www.granola.ai/download", disabled = true, reason = "Disabled 2026-09-01: the Homebrew cask can lag official releases and overwrite a newer Granola app" },
   { name = "perplexity",       note = "No Homebrew cask; app was installed manually", disabled = true, reason = "Disabled 2026-07-14: desktop app removed; use web only if needed" },
   { name = "wispr-flow",       note = "No Homebrew cask exists; installed via special.typewhisper block", disabled = true, reason = "Disabled 2026-05-29: switched to TypeWhisper (on-device Apple SpeechAnalyzer dictation)" },
   { name = "aqua-voice",       note = "Voice dictation alternative", disabled = true, reason = "Disabled 2026-07-15: local TypeWhisper is private, adequate, and subscription-free" },

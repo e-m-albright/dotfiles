@@ -125,6 +125,15 @@ else
     print_warn "Skipping brew install — uv not available (install uv and run: dotfiles brew install)"
 fi
 
+# Granola updates faster than its Homebrew cask; keep it manually installed so
+# bootstrap cannot replace a newer official build with an older cask version.
+print_section "Manual application: Granola"
+if [[ -d /Applications/Granola.app ]]; then
+    print_success "Granola is installed and remains outside Homebrew management"
+else
+    print_warn "Install Granola manually from https://www.granola.ai/download"
+fi
+
 # Setup macos dock
 "$DOTFILES_DIR/macos/dock.sh"
 # Set file-type defaults (Zed for .md/.txt, etc.) — requires duti from packages.toml
