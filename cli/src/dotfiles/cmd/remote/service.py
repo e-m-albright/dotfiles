@@ -118,7 +118,9 @@ class RemoteService:
                 "Label": _PASEO_LABEL,
                 "ProgramArguments": program_args,
                 "RunAtLoad": True,
-                "KeepAlive": False,
+                # A desktop shutdown RPC may stop a healthy daemon. Keep launchd
+                # authoritative so the direct-tailnet service restores itself.
+                "KeepAlive": True,
                 "StandardOutPath": str(log),
                 "StandardErrorPath": str(log),
                 "WorkingDirectory": str(self._home),

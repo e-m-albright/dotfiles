@@ -82,7 +82,7 @@ def test_paseo_install_writes_tailnet_bound_no_relay_plist(tmp_path: Path) -> No
     content = plistlib.loads(plist.read_bytes())
     assert content["ProgramArguments"][-2:] == ["--listen", "100.64.0.1:6767"]
     assert "--no-relay" in content["ProgramArguments"]
-    assert content["KeepAlive"] is False
+    assert content["KeepAlive"] is True
     assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
     assert all(step.level != "error" for step in steps)
 
