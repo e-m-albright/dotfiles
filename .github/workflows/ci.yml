@@ -41,15 +41,17 @@ jobs:
       - name: Dependency vulnerability audit (pip-audit)
         run: just audit
 
-  # Clean-machine rehearsal for the read-only doctor command.
-  # Non-zero exits are expected (a clean box has gaps to report); a traceback is not.
-  # NOTE: full install.sh is macOS-specific and not rehearsed here.
+  # Clean-machine rehearsal for the portable install plan and read-only doctor command.
+  # Non-zero doctor exits are expected (a clean box has gaps to report); a traceback is not.
+  # The mutating install path remains macOS-specific and is never run here.
   clean-machine:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+      - name: Validate the read-only macOS install plan
+        run: ./install.sh --plan
       - name: Install the dotfiles CLI
         working-directory: cli
         run: uv sync --frozen

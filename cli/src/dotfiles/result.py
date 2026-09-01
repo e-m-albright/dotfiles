@@ -8,7 +8,7 @@ StepLevel = Literal["success", "info", "warn", "error"]
 
 
 class StepResult(BaseModel):
-    """One reported step of an action (remote, sessions, brew, and bootstrap).
+    """One reported step of an action (remote, credentials, brew, and bootstrap).
 
     The single step-result type for the whole app, rendered by ``console.render_steps``.
     *details* is optional supplementary text shown dimmed after the message.

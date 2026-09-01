@@ -40,7 +40,7 @@ deadcode:
 complexity:
     uv run complexipy src -mx 9
 
-# Parse every tracked shell script and strict-JSON file.
+# Parse every tracked shell script, strict-JSON file, and YAML file.
 [group('quality')]
 validate-files:
     #!/usr/bin/env bash
@@ -54,6 +54,9 @@ validate-files:
             .claude/* | editors/*) continue ;; # JSONC/vendor-managed files
         esac
         python3 -m json.tool "$file" >/dev/null
+    done
+    git ls-files -z '*.yaml' '*.yml' | while IFS= read -r -d '' file; do
+        ruby -e 'require "yaml"; YAML.parse_file(ARGV.fetch(0))' "$file"
     done
 
 # ShellCheck every shell script at the pre-commit warning threshold.

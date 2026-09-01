@@ -1,17 +1,79 @@
 #!/bin/bash
 set -euo pipefail
 
+# Get dotfiles dir (so run this script from anywhere)
+export DOTFILES_DIR
+DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+print_install_plan() {
+    local required
+    for required in \
+        git/.gitconfig \
+        git/.gitignore_global \
+        shell/.zprofile \
+        shell/.zshenv \
+        shell/.zshrc \
+        shell/amuse.zsh-theme \
+        bin/dotfiles \
+        macos/packages.toml \
+        macos/print_utils.sh \
+        macos/link_utils.sh \
+        macos/ssh.sh \
+        macos/dock.sh \
+        macos/file-associations.sh \
+        macos/login-items.sh \
+        macos/orbstack.sh \
+        terminal/ghostty.config \
+        terminal/yazi/yazi.toml \
+        editors/zed/settings.json \
+        editors/zed/keymap.json; do
+        if [[ ! -e "$DOTFILES_DIR/$required" ]]; then
+            printf 'install plan: missing required input: %s\n' "$required" >&2
+            return 1
+        fi
+    done
+
+    cat <<'EOF'
+Dotfiles macOS install plan (read-only)
+
+ 1. Install Oh My Zsh and select zsh as the default shell
+ 2. Link tracked shell and Git configuration
+ 3. Configure local Git identity and SSH
+ 4. Bootstrap Homebrew and uv when absent
+ 5. Reconcile packages from macos/packages.toml
+ 6. Apply Dock, file association, login item, and OrbStack settings
+ 7. Reconcile Node.js and Python runtimes
+ 8. Link terminal, editor, and optional private-tool configuration
+ 9. Sync and verify Workbench configuration
+10. Install Git hooks and clean package caches
+
+No host state was inspected or changed.
+EOF
+}
+
+case "$#" in
+    0) ;;
+    1)
+        if [[ "$1" == "--plan" ]]; then
+            print_install_plan
+            exit
+        fi
+        printf 'Usage: install.sh [--plan]\n' >&2
+        exit 2
+        ;;
+    *)
+        printf 'Usage: install.sh [--plan]\n' >&2
+        exit 2
+        ;;
+esac
+
 # Fail clearly on a non-macOS host instead of cascading through chsh/defaults/
-# softwareupdate/duti errors. (This is a macOS bootstrap; the clean-machine CI
-# exercises `doctor` on Linux, not install.sh.)
+# softwareupdate/duti errors. The read-only plan above is intentionally portable
+# so Linux CI can verify the installer's declared inputs and sequence.
 if [[ "$OSTYPE" != darwin* ]]; then
     printf 'install.sh targets macOS (OSTYPE=%s). Aborting.\n' "$OSTYPE" >&2
     exit 1
 fi
-
-# Get dotfiles dir (so run this script from anywhere)
-export DOTFILES_DIR
-DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Supply-chain pins for first-install bootstrap. Advance them deliberately
 # (verify the new commit/version, then update). WORKBENCH_COMMIT pins the
 # FRESH clone only — an existing ~/code/public/workbench is a live working

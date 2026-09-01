@@ -32,7 +32,8 @@ git clone https://github.com/e-m-albright/dotfiles.git ~/code/public/dotfiles
 ~/code/public/dotfiles/install.sh
 ```
 
-The installer is macOS-only and safe to rerun. It:
+The installer is macOS-only and safe to rerun. Its read-only plan can be
+validated on any host with `./install.sh --plan`. It:
 
 1. Links the tracked shell and Git configuration.
 2. Configures SSH and installs Homebrew when needed.
@@ -141,11 +142,12 @@ The CLI uses Python 3.13+, Typer, Pydantic, and uv. Tests are colocated
 with the modules they cover.
 
 ```bash
-just fmt
-just check
-just test
-just audit
-just lint-shell
+just verify          # complete project gate
+just fmt             # focused formatting while iterating
+just check           # Python static checks and tests
+just test            # tests and coverage
+just audit           # dependency vulnerabilities
+just lint-shell      # ShellCheck
 ```
 
 The repo deliberately has no custom health scorecard, scheduled AI audit, or
