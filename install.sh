@@ -232,8 +232,8 @@ if command -v fnm >/dev/null 2>&1; then
     
     # Keep pnpm reproducible through Node's package-manager shim.
     if command -v corepack >/dev/null 2>&1; then
-        if corepack enable >/dev/null 2>&1 && corepack install --global pnpm@10.11.1 >/dev/null 2>&1; then
-            print_info "Corepack enabled (pnpm 10.11.1)"
+        if corepack enable >/dev/null 2>&1 && corepack install --global pnpm@10.28.1 >/dev/null 2>&1; then
+            print_info "Corepack enabled (pnpm 10.28.1)"
         else
             print_warning "Corepack could not activate pnpm; rerun the installer after checking Node"
         fi
