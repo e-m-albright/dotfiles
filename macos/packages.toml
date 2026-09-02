@@ -87,6 +87,7 @@ name = "Security"
 kind = "formula"
 packages = [
   { name = "gitleaks",     note = "Secret scanner: hardcoded creds in git history/working tree" },
+  { name = "restic",       note = "Encrypted offsite backups to object storage" },
   { name = "osv-scanner",  note = "Dependency vulnerability scanner using the OSV database", disabled = true, reason = "Disabled 2026-08-26: no tracked use across the private repositories; project-native audits cover current dependency checks" },
   { name = "semgrep",      note = "Static analysis / SAST: pattern-based code vulnerability rules" },
   { name = "trivy",        note = "Container, filesystem, dependency, and IaC vulnerability scanner", disabled = true, reason = "Disabled 2026-08-26: no tracked container or IaC scanning workflow across the private repositories" },

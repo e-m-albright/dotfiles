@@ -146,38 +146,19 @@ class Taps(BaseModel):
 class PackageManifest(BaseModel):
     """Full parsed contents of macos/packages.toml."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     taps: Taps
-    sections: list[Section] = []
-    specials: dict[str, SpecialInstaller] = {}
-    npm_packages: list[NpmPackage] = []
-    go_packages: list[GoPackage] = []
+    sections: list[Section] = Field(default=[], alias="section")
+    specials: dict[str, SpecialInstaller] = Field(default={}, alias="special")
+    npm_packages: list[NpmPackage] = Field(default=[], alias="npm_package")
+    go_packages: list[GoPackage] = Field(default=[], alias="go_package")
 
     @classmethod
     def load(cls, path: Path) -> PackageManifest:
         """Parse packages.toml and return a validated PackageManifest."""
         with path.open("rb") as fh:
-            raw = tomllib.load(fh)
-
-        taps = Taps.model_validate(raw.get("taps", {}))
-
-        sections = [Section.model_validate(s) for s in raw.get("section", [])]
-
-        specials: dict[str, SpecialInstaller] = {}
-        for key, value in raw.get("special", {}).items():
-            specials[key] = SpecialInstaller.model_validate(value)
-
-        npm_packages = [NpmPackage.model_validate(n) for n in raw.get("npm_package", [])]
-        go_packages = [GoPackage.model_validate(n) for n in raw.get("go_package", [])]
-
-        return cls(
-            taps=taps,
-            sections=sections,
-            specials=specials,
-            npm_packages=npm_packages,
-            go_packages=go_packages,
-        )
+            return cls.model_validate(tomllib.load(fh))
 
 
 # ---------------------------------------------------------------------------
