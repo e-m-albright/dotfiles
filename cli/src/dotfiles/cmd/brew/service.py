@@ -224,18 +224,20 @@ def _strip_version(name: str) -> str:
     return name.split("@", 1)[0]
 
 
-def installed_formulae(runner: ProcessRunner) -> set[str]:
-    """Return the set of formulae currently installed via Homebrew."""
-    result = runner.run(("brew", "list", "--formula", "-1"))
+def _brew_inventory(runner: ProcessRunner, *args: str) -> set[str]:
+    result = runner.run(("brew", *args))
     _require_inventory(result.exit_code, result.stderr)
     return {line for line in result.stdout.splitlines() if line.strip()}
+
+
+def installed_formulae(runner: ProcessRunner) -> set[str]:
+    """Return the set of formulae currently installed via Homebrew."""
+    return _brew_inventory(runner, "list", "--formula", "-1")
 
 
 def installed_casks(runner: ProcessRunner) -> set[str]:
     """Return the set of casks currently installed via Homebrew."""
-    result = runner.run(("brew", "list", "--cask", "-1"))
-    _require_inventory(result.exit_code, result.stderr)
-    return {line for line in result.stdout.splitlines() if line.strip()}
+    return _brew_inventory(runner, "list", "--cask", "-1")
 
 
 def requested_formulae(runner: ProcessRunner) -> set[str]:
@@ -249,9 +251,10 @@ def requested_formulae(runner: ProcessRunner) -> set[str]:
     # `brew leaves` returns tap-qualified names for tapped formulae
     # (ariga/tap/atlas), while packages.toml declares the short name (atlas).
     # Strip the tap prefix so declared-matching stays aligned with installed_*.
-    result = runner.run(("brew", "leaves", "--installed-on-request"))
-    _require_inventory(result.exit_code, result.stderr)
-    return {line.rsplit("/", 1)[-1] for line in result.stdout.splitlines() if line.strip()}
+    return {
+        line.rsplit("/", 1)[-1]
+        for line in _brew_inventory(runner, "leaves", "--installed-on-request")
+    }
 
 
 def _require_inventory(exit_code: int, stderr: str) -> None:
@@ -261,9 +264,7 @@ def _require_inventory(exit_code: int, stderr: str) -> None:
 
 def stale_taps(manifest: PackageManifest, runner: ProcessRunner) -> list[str]:
     """Return installed third-party taps that are not declared in the manifest."""
-    result = runner.run(("brew", "tap"))
-    _require_inventory(result.exit_code, result.stderr)
-    installed = {line for line in result.stdout.splitlines() if line.strip()}
+    installed = _brew_inventory(runner, "tap")
     return sorted(installed - set(manifest.taps.items))
 
 
