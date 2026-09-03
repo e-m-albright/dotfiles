@@ -2,7 +2,7 @@
 
 Timestamped map of maintained host capabilities in this repository.
 
-**Snapshot:** 2026-08-29. Refresh the map and counts on demand during an explicit capability-health review, not during routine implementation.
+**Snapshot:** 2026-09-03. Refresh the map and counts on demand during an explicit capability-health review, not during routine implementation.
 
 ## Counting method
 
@@ -12,14 +12,15 @@ Counts are physical lines at snapshot time, including comments and blank lines. 
 
 | Capability | Implementation | Tests | Config/data | Total | Posture |
 |---|---:|---:|---:|---:|---|
-| Package manifest, installation, drift, upgrade, and prune | 1,209 | 1,718 | 379 | 3,306 | Core; strongest and most heavily tested subsystem |
-| Host doctor and configuration repair | 507 | 478 | 0 | 985 | Core |
-| Tailscale, Paseo, private-site, and sleep-control operations | 536 | 497 | 0 | 1,033 | Core for remote continuity |
-| TypeWhisper installation and configuration | 599 | 263 | 105 | 967 | Active; keep isolated from generic package logic |
-| Fresh-Mac bootstrap and macOS configuration | 808 | 89 | 0 | 897 | Core; shell-heavy boundary merits smoke coverage |
-| CLI application, banner, adapters, rendering, and test fakes | 479 | 499 | 0 | 978 | Supporting platform |
-| Command launchers and Just recipes | 509 | 0 | 0 | 509 | Core entry points |
-| Shell, Git, terminal, editor, and completion configuration | 0 | 0 | 813 | 813 | Core desired state |
+| Package manifest, installation, drift, upgrade, and prune | 1,191 | 1,718 | 378 | 3,287 | Core; strongest and most heavily tested subsystem |
+| Host doctor and configuration repair | 549 | 512 | 0 | 1,061 | Core |
+| Local credential inventory and secure enrollment | 552 | 605 | 0 | 1,157 | Active; bounded host security capability |
+| Tailscale, Paseo, private-site, and sleep-control operations | 538 | 497 | 0 | 1,035 | Core for remote continuity |
+| TypeWhisper installation and configuration | 599 | 268 | 102 | 969 | Active; keep isolated from generic package logic |
+| Fresh-Mac bootstrap and macOS configuration | 881 | 149 | 0 | 1,030 | Core; shell-heavy boundary has focused plan coverage |
+| CLI application, banner, adapters, rendering, and test fakes | 489 | 495 | 0 | 984 | Supporting platform |
+| Command launchers and Just recipes | 341 | 0 | 0 | 341 | Core entry points |
+| Shell, Git, terminal, editor, and completion configuration | 0 | 0 | 838 | 838 | Core desired state |
 | Password generation and clipboard utility | 69 | 80 | 0 | 149 | Small and complete |
 
 ## Capability map
@@ -64,6 +65,14 @@ Counts are physical lines at snapshot time, including comments and blank lines. 
 - Loopback API and CLI recovery runbook with token-authentication and privacy boundaries.
 
 **Assessment:** Keep while used. It is correctly isolated because its distribution and configuration semantics differ from Homebrew. Review if the vendor gains a stable package and native configuration interface.
+
+### Credential lifecycle
+
+- Machine-local, metadata-only inventory of revocable grants, consumers, scopes, expiry, rotation, and restoration instructions.
+- Secure enrollment into macOS Keychain, command-based Pi references, and single-child-process injection without secret arguments or durable environment files.
+- Credential status in Doctor without reading or printing secret values.
+
+**Assessment:** Keep. This closes a recurring host-level secret-management gap while leaving OAuth token ownership and CI secrets with their native platforms. Preserve the documented limitation that Keychain does not isolate mutually untrusted processes running as the same macOS user.
 
 ### CLI platform and utilities
 

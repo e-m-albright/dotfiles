@@ -373,7 +373,41 @@ def test_configuration_reports_app_only_states(tmp_path: Path) -> None:
 
     assert service._check_essentials()[0].status == "ok"
     ghostty = service._check_ghostty("Configuration")[0]
-    assert ghostty.status == "warn"
+    assert ghostty.status == "missing"
+
+
+def test_ghostty_config_is_checked_and_fixable(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    dotfiles = tmp_path / "dotfiles"
+    source = dotfiles / "terminal/ghostty.config"
+    source.parent.mkdir(parents=True)
+    source.write_text("font-size = 14\n")
+    apps = tmp_path / "Applications"
+    (apps / "Ghostty.app").mkdir(parents=True)
+
+    missing = DoctorService(
+        runner=FakeProcessRunner(),
+        home=home,
+        dotfiles_dir=dotfiles,
+        fix=False,
+        which=lambda _name: None,
+        apps_dir=apps,
+        brew_bin=tmp_path / "brew-bin",
+    )._check_ghostty("Configuration")[0]
+    assert missing.status == "missing"
+
+    fixed = DoctorService(
+        runner=FakeProcessRunner(),
+        home=home,
+        dotfiles_dir=dotfiles,
+        fix=True,
+        which=lambda _name: None,
+        apps_dir=apps,
+        brew_bin=tmp_path / "brew-bin",
+    )._check_ghostty("Configuration")[0]
+    config = home / ".config/ghostty/config"
+    assert fixed.status == "fixed"
+    assert config.resolve() == source.resolve()
 
 
 def test_tool_without_version_output_uses_installed_fallback() -> None:

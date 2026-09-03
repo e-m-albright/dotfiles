@@ -46,7 +46,6 @@ _TOOL_CHECKS: dict[str, tuple[tuple[str, str, str], ...]] = {
         ("Delta", "delta", "brew install git-delta"),
         ("golangci-lint", "golangci-lint", "brew install golangci-lint"),
     ),
-    "Remote Shell": (),
 }
 
 
@@ -335,9 +334,7 @@ class DoctorService:
         return self._tools("Dev Tools")
 
     def _check_remote_shell(self) -> list[CheckResult]:
-        results = self._tools("Remote Shell")
-        results.extend(self._check_remote_agents("Remote Shell"))
-        return results
+        return self._check_remote_agents("Remote Shell")
 
     def _check_remote_agents(self, sec: str) -> list[CheckResult]:
         """The parts of the remote stack that actually break: are the daemons alive?
@@ -440,17 +437,14 @@ class DoctorService:
         return results
 
     def _check_ghostty(self, sec: str) -> list[CheckResult]:
-        """Ghostty config or app presence."""
-        ghostty_config = self._home / ".config" / "ghostty" / "config"
-        if ghostty_config.exists():
-            return [CheckResult(section=sec, name="Ghostty", status="ok", detail="configured")]
-        if (self._apps_dir / "Ghostty.app").exists():
-            return [
-                CheckResult(
-                    section=sec,
-                    name="Ghostty",
-                    status="warn",
-                    hint="Run install.sh to configure",
-                )
-            ]
-        return []
+        """Check the managed Ghostty config when the application is installed."""
+        if not (self._apps_dir / "Ghostty.app").exists():
+            return []
+        return [
+            self._symlink(
+                sec,
+                "Ghostty",
+                self._dotfiles / "terminal" / "ghostty.config",
+                self._home / ".config" / "ghostty" / "config",
+            )
+        ]
