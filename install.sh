@@ -230,12 +230,12 @@ if command -v fnm >/dev/null 2>&1; then
     fnm use --install-if-missing lts-latest >/dev/null 2>&1
     fnm default lts-latest >/dev/null 2>&1
     
-    # Keep pnpm reproducible through Node's package-manager shim.
-    if command -v corepack >/dev/null 2>&1; then
-        if corepack enable >/dev/null 2>&1 && corepack install --global pnpm@10.28.1 >/dev/null 2>&1; then
-            print_info "Corepack enabled (pnpm 10.28.1)"
+    # pnpm 12 is a native binary; install it outside fnm's Corepack shims.
+    if command -v npx >/dev/null 2>&1; then
+        if PNPM_HOME="$HOME/.npm-global/bin" npx --yes get-pnpm 12.1.0 >/dev/null 2>&1; then
+            print_info "pnpm 12.1.0 installed"
         else
-            print_warning "Corepack could not activate pnpm; rerun the installer after checking Node"
+            print_warning "pnpm could not be installed; rerun the installer after checking Node"
         fi
     fi
     
