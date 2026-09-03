@@ -81,7 +81,7 @@ fi
 OH_MY_ZSH_COMMIT="677a4592b18c08ddea737f8aca70bac0e9fc9313"
 HOMEBREW_INSTALL_COMMIT="fea42d9aedd20a82bea800a6898dcde19401ab1f"
 WORKBENCH_COMMIT="dfadab4f9f8f1cccfb2bb5ea4921b2627ef05367"
-UV_VERSION="0.11.29"
+UV_VERSION="0.12.9"
 
 # Source shared installer functions.
 source "$DOTFILES_DIR/macos/print_utils.sh"
@@ -232,7 +232,7 @@ if command -v fnm >/dev/null 2>&1; then
     
     # pnpm 12 is a native binary; install it outside fnm's Corepack shims.
     if command -v npx >/dev/null 2>&1; then
-        if PNPM_HOME="$HOME/.npm-global/bin" npx --yes get-pnpm 12.1.0 >/dev/null 2>&1; then
+        if PNPM_HOME="$HOME/.npm-global" npx --yes get-pnpm 12.1.0 >/dev/null 2>&1; then
             print_info "pnpm 12.1.0 installed"
         else
             print_warning "pnpm could not be installed; rerun the installer after checking Node"

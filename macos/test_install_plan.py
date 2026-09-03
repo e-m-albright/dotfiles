@@ -28,6 +28,13 @@ def test_install_plan_runs_on_linux_without_mutating_home(tmp_path: Path) -> Non
     assert list(home.iterdir()) == []
 
 
+def test_native_pnpm_uses_the_global_prefix_not_its_bin_directory() -> None:
+    installer = INSTALLER.read_text()
+
+    assert 'PNPM_HOME="$HOME/.npm-global" npx --yes get-pnpm 12.1.0' in installer
+    assert 'PNPM_HOME="$HOME/.npm-global/bin" npx --yes get-pnpm' not in installer
+
+
 def test_install_rejects_unknown_arguments_before_host_checks(tmp_path: Path) -> None:
     env = {**os.environ, "HOME": str(tmp_path)}
     result = subprocess.run(
