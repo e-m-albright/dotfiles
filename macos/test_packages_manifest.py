@@ -27,7 +27,7 @@ def test_disabled_entries_carry_dated_reasons() -> None:
                 assert package.reason.strip(), package.name
 
 
-def test_granola_is_manual_not_homebrew_managed() -> None:
+def test_granola_is_retired() -> None:
     manifest = PackageManifest.load(MANIFEST)
     granola = next(
         package
@@ -36,4 +36,4 @@ def test_granola_is_manual_not_homebrew_managed() -> None:
         if package.name == "granola"
     )
     assert granola.disabled
-    assert "manual" in granola.note.lower()
+    assert "retired" in granola.reason.lower()

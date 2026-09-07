@@ -47,15 +47,18 @@ validate-files:
     set -euo pipefail
     cd "{{repo}}"
     git ls-files -z '*.sh' | while IFS= read -r -d '' file; do
+        [[ -e "$file" ]] || continue
         bash -n "$file"
     done
     git ls-files -z '*.json' | while IFS= read -r -d '' file; do
+        [[ -e "$file" ]] || continue
         case "$file" in
             .claude/* | editors/*) continue ;; # JSONC/vendor-managed files
         esac
         python3 -m json.tool "$file" >/dev/null
     done
     git ls-files -z '*.yaml' '*.yml' | while IFS= read -r -d '' file; do
+        [[ -e "$file" ]] || continue
         ruby -e 'require "yaml"; YAML.parse_file(ARGV.fetch(0))' "$file"
     done
 
@@ -65,7 +68,11 @@ lint-shell:
     #!/usr/bin/env bash
     set -euo pipefail
     # Only tracked scripts — never vendored third-party .sh under .venv/node_modules.
-    cd "{{repo}}" && git ls-files -z '*.sh' | xargs -0 shellcheck -S warning
+    cd "{{repo}}"
+    git ls-files -z '*.sh' | while IFS= read -r -d '' file; do
+        [[ -e "$file" ]] || continue
+        shellcheck -S warning "$file"
+    done
 
 # Full static-check + test gate. `just check --fast` (or `check fast`) skips tests — pre-commit.
 [group('quality')]

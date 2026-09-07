@@ -11,7 +11,6 @@ from dotfiles.cmd.brew.service import (
     _CLAUDE_CODE_URL,
     _RUSTUP_SHA256,
     _RUSTUP_URL,
-    _TW_FETCH_URL,
     PackageManifest,
     PruneCandidate,
     add_taps,
@@ -22,7 +21,6 @@ from dotfiles.cmd.brew.service import (
     install_packages,
     install_rust,
     install_specials,
-    install_typewhisper,
     uninstall_prune_candidates,
     upgrade,
 )
@@ -381,187 +379,6 @@ def test_install_claude_code_error_on_failure(
 
 
 # ---------------------------------------------------------------------------
-# install_typewhisper
-# ---------------------------------------------------------------------------
-
-# The fetch-URL shell command is imported from the service so
-# tests script exactly the same tuple the implementation passes to runner.run().
-_TW_FETCH_CMD = _TW_FETCH_URL  # tuple[str, str, str] — (sh, -c, <shell>)
-
-
-def test_install_typewhisper_skips_when_present(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # Patch Path.exists so /Applications/TypeWhisper.app looks present. With no
-    # typewhisper.sh under dotfiles_dir=tmp_path, the config-apply step is a no-op.
-    monkeypatch.setattr(Path, "exists", lambda self: str(self) == "/Applications/TypeWhisper.app")
-    runner = FakeProcessRunner()
-    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
-    assert results[0].level == "info"
-    assert "already installed" in results[0].message
-    assert runner.calls == []
-
-
-def test_install_typewhisper_no_url_is_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(Path, "exists", lambda self: False)
-    runner = FakeProcessRunner()
-    runner.script(_TW_FETCH_CMD, stdout="")
-    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
-    assert results[0].level == "error"
-    assert "no stable DMG" in results[0].message
-
-
-@pytest.mark.parametrize(
-    ("failure", "expected"),
-    [
-        ("download", "download failed"),
-        ("mount", "DMG mount failed"),
-        ("copy", "copy to /Applications failed"),
-    ],
-)
-def test_install_typewhisper_reports_install_stage_failures(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    failure: str,
-    expected: str,
-) -> None:
-    monkeypatch.setattr(Path, "exists", lambda self: False)
-    install_dir = tmp_path / failure
-    install_dir.mkdir()
-    monkeypatch.setattr(
-        "dotfiles.cmd.brew.service.mkdtemp",
-        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
-    )
-    runner = FakeProcessRunner()
-    url = "https://example.test/TypeWhisper.dmg"
-    runner.script(_TW_FETCH_CMD, stdout=url + "\n")
-    dmg_path = str(install_dir / "TypeWhisper.dmg")
-    if failure == "download":
-        runner.script(("curl", "-fsSL", "-o", dmg_path, url), exit_code=1)
-    else:
-        mount_cmd = (
-            f"hdiutil attach {dmg_path!r} -nobrowse -noautoopen 2>/dev/null"
-            " | grep -oE '/Volumes/.*' | tail -1"
-        )
-        if failure == "mount":
-            runner.script(("sh", "-c", mount_cmd), stdout="")
-        else:
-            runner.script(("sh", "-c", mount_cmd), stdout="/Volumes/TypeWhisper\n")
-            app = "/Volumes/TypeWhisper/TypeWhisper.app"
-            runner.script(
-                ("codesign", "-dv", "--verbose=4", app), stdout="TeamIdentifier=2D8ALY3LCL"
-            )
-            runner.script(("cp", "-R", app, "/Applications/"), exit_code=1)
-
-    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
-
-    assert results[0].level == "error"
-    assert expected in results[0].message
-
-
-def test_install_typewhisper_full_happy_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(Path, "exists", lambda self: False)
-    install_dir = tmp_path / "private-install"
-    install_dir.mkdir(mode=0o700)
-    monkeypatch.setattr(
-        "dotfiles.cmd.brew.service.mkdtemp",
-        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
-    )
-    runner = FakeProcessRunner()
-    tw_url = "https://github.com/TypeWhisper/typewhisper-mac/releases/download/v1.0/TypeWhisper.dmg"
-    runner.script(_TW_FETCH_CMD, stdout=tw_url + "\n")
-    dmg_path = str(install_dir / "TypeWhisper.dmg")
-    runner.script(
-        ("curl", "-fsSL", "-o", dmg_path, tw_url),
-        exit_code=0,
-    )
-    _mount_cmd = (
-        f"hdiutil attach {dmg_path!r} -nobrowse -noautoopen 2>/dev/null"
-        " | grep -oE '/Volumes/.*' | tail -1"
-    )
-    runner.script(
-        ("sh", "-c", _mount_cmd),
-        stdout="/Volumes/TypeWhisper\n",
-    )
-    app_path = "/Volumes/TypeWhisper/TypeWhisper.app"
-    runner.script(("codesign", "--verify", "--deep", "--strict", app_path))
-    runner.script(
-        ("codesign", "-dv", "--verbose=4", app_path),
-        stderr="TeamIdentifier=2D8ALY3LCL\n",
-    )
-    runner.script(
-        ("cp", "-R", app_path, "/Applications/"),
-        exit_code=0,
-    )
-    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
-    assert results[0].level == "success"
-    assert "TypeWhisper installed" in results[0].message
-    assert ("curl", "-fsSL", "-o", dmg_path, tw_url) in runner.calls
-    assert not install_dir.is_dir()
-
-
-def test_install_typewhisper_rejects_wrong_signing_identity(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(Path, "exists", lambda self: False)
-    install_dir = tmp_path / "private-install"
-    install_dir.mkdir(mode=0o700)
-    monkeypatch.setattr(
-        "dotfiles.cmd.brew.service.mkdtemp",
-        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
-    )
-    runner = FakeProcessRunner()
-    url = "https://example.test/TypeWhisper.dmg"
-    runner.script(_TW_FETCH_CMD, stdout=url)
-    dmg_path = str(install_dir / "TypeWhisper.dmg")
-    mount = (
-        f"hdiutil attach {dmg_path!r} -nobrowse -noautoopen 2>/dev/null "
-        "| grep -oE '/Volumes/.*' | tail -1"
-    )
-    runner.script(("sh", "-c", mount), stdout="/Volumes/TypeWhisper\n")
-    app_path = "/Volumes/TypeWhisper/TypeWhisper.app"
-    runner.script(("codesign", "-dv", "--verbose=4", app_path), stderr="TeamIdentifier=EVIL\n")
-
-    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
-
-    assert results[0].level == "error"
-    assert not any(call[0] == "cp" for call in runner.calls)
-
-
-def test_install_typewhisper_applies_tracked_config_when_present(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # App already installed → no download, but tracked config is re-applied.
-    script = tmp_path / "macos" / "typewhisper.sh"
-    script.parent.mkdir(parents=True)
-    script.write_text("#!/usr/bin/env bash\n")
-    monkeypatch.setattr(Path, "exists", lambda self: str(self) == "/Applications/TypeWhisper.app")
-    runner = FakeProcessRunner()
-    runner.script((str(script), "apply"), exit_code=0)
-    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
-    assert any(r.level == "success" and "config applied" in r.message for r in results)
-
-
-def test_install_typewhisper_config_apply_failure_is_warn_not_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # A non-zero apply (e.g. app running) must never fail the install.
-    script = tmp_path / "macos" / "typewhisper.sh"
-    script.parent.mkdir(parents=True)
-    script.write_text("#!/usr/bin/env bash\n")
-    monkeypatch.setattr(Path, "exists", lambda self: str(self) == "/Applications/TypeWhisper.app")
-    runner = FakeProcessRunner()
-    runner.script((str(script), "apply"), exit_code=1)
-    results = install_typewhisper(runner, dotfiles_dir=tmp_path)
-    assert any(r.level == "warn" for r in results)
-    assert not any(r.level == "error" for r in results)
-
-
-# ---------------------------------------------------------------------------
 # prune disabled packages
 # ---------------------------------------------------------------------------
 
@@ -782,17 +599,12 @@ def test_cleanup_reports_failure_as_an_error() -> None:
     assert steps[0].details == "busy"
 
 
-def test_disabled_python_package_special_does_not_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_disabled_python_package_special_does_not_run(tmp_path: Path) -> None:
     manifest = load(
         tmp_path,
         """\
 [taps]
 list = []
-
-[special.typewhisper]
-method = "github_dmg"
 
 [special.supertonic]
 method = "python_package"
@@ -800,10 +612,6 @@ disabled = true
 reason = "Retired 2026-08-26: not useful enough"
 """,
     )
-    script = tmp_path / "macos" / "typewhisper.sh"
-    script.parent.mkdir()
-    script.touch()
-    monkeypatch.setattr(Path, "exists", lambda self: str(self) == "/Applications/TypeWhisper.app")
     runner = FakeProcessRunner()
 
     install_specials(
@@ -814,7 +622,7 @@ reason = "Retired 2026-08-26: not useful enough"
         dry_run=False,
     )
 
-    assert runner.calls.count((str(script), "apply")) == 1
+    assert runner.calls == []
 
 
 def test_omlx_special_runs_tracked_idempotent_setup(tmp_path: Path) -> None:

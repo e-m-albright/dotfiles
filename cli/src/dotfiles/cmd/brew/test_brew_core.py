@@ -61,11 +61,6 @@ method = "rustup"
 url = "https://sh.rustup.rs"
 args = ["-y"]
 
-[special.typewhisper]
-method = "github_dmg"
-flag = "productivity"
-repo = "TypeWhisper/typewhisper-mac"
-
 [[npm_package]]
 name = "wrangler"
 note = "Cloudflare Workers CLI"
@@ -140,8 +135,6 @@ def test_load_specials(tmp_path: Path) -> None:
     manifest = PackageManifest.load(make_toml(tmp_path))
     assert "rust" in manifest.specials
     assert manifest.specials["rust"].method == "rustup"
-    assert "typewhisper" in manifest.specials
-    assert manifest.specials["typewhisper"].flag == "productivity"
 
 
 def test_load_npm_packages(tmp_path: Path) -> None:

@@ -40,7 +40,7 @@ FeatureFlag = Literal["ai", "productivity", "social"]
 PackageKind = Literal["formula", "cask", "auto"]
 # Records how a non-Homebrew package reaches this host. `python_package` is
 # declarative only: that software arrives through this repo's Python dependencies.
-SpecialMethod = Literal["rustup", "github_dmg", "curl_install", "python_package", "omlx_setup"]
+SpecialMethod = Literal["rustup", "curl_install", "python_package", "omlx_setup"]
 
 # Tombstone invariant (AGENTS.md): disabled entries retain a *dated* reason.
 _TOMBSTONE_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -84,7 +84,7 @@ class Section(BaseModel):
 
 
 class SpecialInstaller(BaseModel):
-    """Bespoke installer block (rust, TypeWhisper, Claude Code, etc.)."""
+    """Bespoke installer block for software outside ordinary Homebrew management."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -558,90 +558,6 @@ def install_claude_code(runner: ProcessRunner) -> list[StepResult]:
         rmtree(install_dir)
 
 
-_TW_APP_PATH = "/Applications/TypeWhisper.app"
-_TW_TEAM_ID = "2D8ALY3LCL"
-_TW_FETCH_URL = (
-    "sh",
-    "-c",
-    "curl -fsSL 'https://api.github.com/repos/TypeWhisper/typewhisper-mac/releases?per_page=100' "
-    "| grep -oE 'https://[^\"]+\\.dmg' "
-    "| grep -viE 'daily|-rc|plugin' "
-    "| head -1",
-)
-
-
-def install_typewhisper(runner: ProcessRunner, *, dotfiles_dir: Path) -> list[StepResult]:
-    """Install TypeWhisper if absent and apply its version-controlled config."""
-    results: list[StepResult] = []
-    if Path(_TW_APP_PATH).exists():
-        results.append(
-            StepResult(level="info", message="TypeWhisper already installed — skipping download")
-        )
-    else:
-        install_steps = _download_typewhisper(runner)
-        results.extend(install_steps)
-        if any(step.level == "error" for step in install_steps):
-            return results
-    results.extend(_apply_typewhisper_config(runner, dotfiles_dir))
-    return results
-
-
-def _download_typewhisper(runner: ProcessRunner) -> list[StepResult]:
-    url_result = runner.run(_TW_FETCH_URL)
-    url = url_result.stdout.strip()
-    if not url:
-        return [
-            StepResult(level="error", message="TypeWhisper: no stable DMG found on GitHub Releases")
-        ]
-
-    install_dir = Path(mkdtemp(prefix="dotfiles-typewhisper-"))
-    dmg_path = str(install_dir / "TypeWhisper.dmg")
-    mount = ""
-    try:
-        if not runner.run(("curl", "-fsSL", "-o", dmg_path, url)).ok:
-            return [StepResult(level="error", message="TypeWhisper: download failed")]
-        mount_command = (
-            f"hdiutil attach {dmg_path!r} -nobrowse -noautoopen 2>/dev/null"
-            " | grep -oE '/Volumes/.*' | tail -1"
-        )
-        mount = runner.run(("sh", "-c", mount_command)).stdout.strip()
-        if not mount:
-            return [StepResult(level="error", message="TypeWhisper: DMG mount failed")]
-        app_path = f"{mount}/TypeWhisper.app"
-        verified = runner.run(("codesign", "--verify", "--deep", "--strict", app_path))
-        identity = runner.run(("codesign", "-dv", "--verbose=4", app_path))
-        signature = identity.stdout + identity.stderr
-        if not verified.ok or f"TeamIdentifier={_TW_TEAM_ID}" not in signature:
-            return [StepResult(level="error", message="TypeWhisper: signature verification failed")]
-        if not runner.run(("cp", "-R", app_path, "/Applications/")).ok:
-            return [StepResult(level="error", message="TypeWhisper: copy to /Applications failed")]
-        return [StepResult(level="success", message="TypeWhisper installed")]
-    finally:
-        if mount:
-            runner.run(("hdiutil", "detach", mount, "-quiet"))
-        rmtree(install_dir)
-
-
-def _apply_typewhisper_config(runner: ProcessRunner, dotfiles_dir: Path) -> list[StepResult]:
-    script = dotfiles_dir / "macos" / "typewhisper.sh"
-    if not script.is_file():
-        return []
-    result = runner.run((str(script), "apply"))
-    if result.ok:
-        return [
-            StepResult(level="success", message="TypeWhisper config applied (macos/typewhisper/)")
-        ]
-    return [
-        StepResult(
-            level="warn",
-            message=(
-                "TypeWhisper config not applied (app running?) — quit it and re-run, "
-                "or: macos/typewhisper.sh apply --quit --reopen"
-            ),
-        )
-    ]
-
-
 def _npm_runtime(
     runner: ProcessRunner, *, dry_run: bool
 ) -> tuple[tuple[str, ...] | None, StepResult | None]:
@@ -802,8 +718,6 @@ def _install_special(
         return [StepResult(level="info", message=f"DRY RUN: install {name}")]
     if installer.method == "rustup":
         return install_rust(runner)
-    if installer.method == "github_dmg":
-        return install_typewhisper(runner, dotfiles_dir=dotfiles_dir)
     if installer.method == "curl_install":
         return install_claude_code(runner)
     if installer.method == "omlx_setup":

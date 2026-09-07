@@ -25,8 +25,8 @@ print_success "Auto-hide enabled (no delay, fast animation, no recents)"
 
 # Desired dock, in left-to-right order. This list is DECLARATIVE: the dock is
 # pruned to exactly these apps (anything else in the apps section is removed).
-# Deliberately omitted: menu-bar apps stay out of the dock (Caffeine, Granola,
-# OrbStack, TypeWhisper, Google Drive, Flycut, Tailscale, Rectangle, Flux);
+# Deliberately omitted: menu-bar apps stay out of the dock (Caffeine, OrbStack,
+# Google Drive, Flycut, Tailscale, Rectangle, Flux);
 # Slack stays off until it's habitual again;
 # zoom.us and WhatsApp are easy enough to reach without dock slots.
 apps=(
