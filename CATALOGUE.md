@@ -2,26 +2,42 @@
 
 Timestamped map of maintained host capabilities in this repository.
 
-**Snapshot:** 2026-09-03. Refresh the map and counts on demand during an explicit capability-health review, not during routine implementation.
+**Snapshot:** 2026-09-07. Refresh the map and counts on demand during an explicit capability-health review, not during routine implementation.
 
-## Counting method
+## Scale snapshot
 
-Counts are physical lines at snapshot time, including comments and blank lines. Implementation includes Python, shell, and launcher code. Tests are counted separately. Config/data includes the package manifest and user-facing shell, Git, terminal, and editor configuration. Documentation is not included in line totals. Attribution is file-based; shared CLI files remain in a shared row. In-progress files present in the working tree are included when they already participate in the verified command path.
+Counts are physical lines in tracked text blobs, including comments and blank lines. Tracked symlinks count as their one-line Git blob rather than duplicating their target. Every tracked file belongs to exactly one group:
+
+- **Code - source:** executable implementation and styling maintained here.
+- **Code - tests:** executable verification, including test helpers and fixtures.
+- **Text:** documentation, instructions, configuration, manifests, and other human-maintained text.
+- **Generated/vendor:** generated dependency state or third-party code retained in the repository.
+
+Binary assets are reported by file count and bytes, not fake line counts. Attribution is file-based; these repository totals deliberately avoid speculative per-capability splitting.
+
+| Group | Files | Lines |
+|---|---:|---:|
+| Code - source | 35 | 4,348 |
+| Code - tests | 26 | 3,857 |
+| Text | 33 | 2,589 |
+| Generated/vendor | 1 | 808 |
+| **Tracked text total** | **95** | **11,602** |
+
+Binary assets: 9 tracked files, 4,119 bytes.
 
 ## Registry
 
-| Capability | Implementation | Tests | Config/data | Total | Posture |
-|---|---:|---:|---:|---:|---|
-| Package manifest, installation, drift, upgrade, and prune | 1,191 | 1,718 | 378 | 3,287 | Core; strongest and most heavily tested subsystem |
-| Host doctor and configuration repair | 549 | 512 | 0 | 1,061 | Core |
-| Local credential inventory and secure enrollment | 552 | 605 | 0 | 1,157 | Active; bounded host security capability |
-| Tailscale, Paseo, private-site, and sleep-control operations | 538 | 497 | 0 | 1,035 | Core for remote continuity |
-| TypeWhisper installation and configuration | 599 | 268 | 102 | 969 | Active; keep isolated from generic package logic |
-| Fresh-Mac bootstrap and macOS configuration | 881 | 149 | 0 | 1,030 | Core; shell-heavy boundary has focused plan coverage |
-| CLI application, banner, adapters, rendering, and test fakes | 489 | 495 | 0 | 984 | Supporting platform |
-| Command launchers and Just recipes | 341 | 0 | 0 | 341 | Core entry points |
-| Shell, Git, terminal, editor, and completion configuration | 0 | 0 | 838 | 838 | Core desired state |
-| Password generation and clipboard utility | 69 | 80 | 0 | 149 | Small and complete |
+| Capability | Posture |
+|---|---|
+| Package manifest, installation, drift, upgrade, and prune | Core; strongest and most heavily tested subsystem |
+| Host doctor and configuration repair | Core |
+| Local credential inventory and secure enrollment | Active; bounded host security capability |
+| Tailscale, Paseo, private-site, and sleep-control operations | Core for remote continuity |
+| Fresh-Mac bootstrap and macOS configuration | Core; shell-heavy boundary has focused plan coverage |
+| CLI application, banner, adapters, rendering, and test fakes | Supporting platform |
+| Command launchers and Just recipes | Core entry points |
+| Shell, Git, terminal, editor, and completion configuration | Core desired state |
+| Password generation and clipboard utility | Small and complete |
 
 ## Capability map
 
@@ -29,7 +45,7 @@ Counts are physical lines at snapshot time, including comments and blank lines. 
 
 - Declarative Homebrew formula, cask, tap, Go, npm, and special-installer inventory, including the active open-source MLX inference runner.
 - Feature flags, disabled dated tombstones, installed and missing inventory, stale-item reporting, upgrades, cleanup, and confirmed pruning.
-- Verified TypeWhisper download and signing identity checks.
+- OpenWhispr CLI installation through the ordinary pinned npm inventory; the desktop application remains outside bespoke host automation.
 - Workbench installation as a pinned adjacent public capability.
 
 **Assessment:** Keep. This is the repository's deepest module and earns its size through fail-closed inventory handling and dry-run/confirmation behavior. Continue pruning disabled software through tombstones rather than deleting historical intent.
@@ -59,13 +75,6 @@ Counts are physical lines at snapshot time, including comments and blank lines. 
 
 **Assessment:** Keep. It owns a distinct operational boundary. Preserve dry runs, explicit failures, and tailnet checks. Do not reintroduce a general terminal multiplexer without a measured need.
 
-### TypeWhisper
-
-- Verified installation, signing validation, tracked settings, workflow application, and fallback behavior.
-- Loopback API and CLI recovery runbook with token-authentication and privacy boundaries.
-
-**Assessment:** Keep while used. It is correctly isolated because its distribution and configuration semantics differ from Homebrew. Review if the vendor gains a stable package and native configuration interface.
-
 ### Credential lifecycle
 
 - Machine-local, metadata-only inventory of revocable grants, consumers, scopes, expiry, rotation, and restoration instructions.
@@ -84,7 +93,6 @@ Counts are physical lines at snapshot time, including comments and blank lines. 
 ## Review triggers
 
 - Retire a package through a dated disabled manifest entry, then prune it explicitly.
-- Review TypeWhisper's special installer when a trustworthy native package appears.
 - Review remote-control code if Paseo or Tailscale no longer owns the active path.
 - Treat private paths or repository names in tracked public files as privacy defects.
 - Keep shell bootstrap and Python reconciliation as separate layers unless duplicated behavior causes actual drift.
