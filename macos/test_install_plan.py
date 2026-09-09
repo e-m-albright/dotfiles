@@ -35,6 +35,12 @@ def test_native_pnpm_uses_the_global_prefix_not_its_bin_directory() -> None:
     assert 'PNPM_HOME="$HOME/.npm-global/bin" npx --yes get-pnpm' not in installer
 
 
+def test_private_automation_discovery_ignores_linked_worktrees() -> None:
+    installer = INSTALLER.read_text()
+
+    assert '[[ -x "$candidate" && -d "${candidate%/bin/notes}/.git" ]]' in installer
+
+
 def test_install_rejects_unknown_arguments_before_host_checks(tmp_path: Path) -> None:
     env = {**os.environ, "HOME": str(tmp_path)}
     result = subprocess.run(

@@ -293,7 +293,8 @@ fi
 PRIVATE_AUTOMATION_ROOT="${PRIVATE_AUTOMATION_ROOT:-}"
 if [[ -z "$PRIVATE_AUTOMATION_ROOT" ]]; then
     for candidate in "$HOME"/code/private/*/bin/notes; do
-        if [[ -x "$candidate" ]]; then
+        # Only select a primary checkout; linked worktrees are temporary.
+        if [[ -x "$candidate" && -d "${candidate%/bin/notes}/.git" ]]; then
             PRIVATE_AUTOMATION_ROOT="${candidate%/bin/notes}"
             break
         fi
