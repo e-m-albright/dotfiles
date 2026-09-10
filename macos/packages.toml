@@ -152,7 +152,7 @@ packages = [
   { name = "flux-app",         note = "Screen color temperature" },
   { name = "granola",          note = "Former meeting transcription app", disabled = true, reason = "Retired 2026-09-04: transcription reliability was insufficient across repeated meetings" },
   { name = "perplexity",       note = "No Homebrew cask; app was installed manually", disabled = true, reason = "Disabled 2026-07-14: desktop app removed; use web only if needed" },
-  { name = "typewhisper",      note = "Former local macOS dictation tool; no Homebrew cask", disabled = true, reason = "Retired 2026-09-04: OpenWhispr is the active trial because one local app may cover dictation and meetings with speaker diarization; revisit for a FluidAudio diarization integration if that trial fails" },
+  { name = "typewhisper",      note = "Local macOS dictation; use Parakeet Unified EN 0.6B with Pop start, Purr success, and Submarine error sounds" },
   { name = "wispr-flow",       note = "Former cloud voice dictation tool", disabled = true, reason = "Retired 2026-09-04: cloud-only transcription does not meet the local-processing preference while OpenWhispr and TypeWhisper are stronger candidates" },
   { name = "aqua-voice",       note = "Voice dictation alternative", disabled = true, reason = "Disabled 2026-07-15: local transcription alternatives are private, adequate, and subscription-free" },
   { name = "obsidian",         note = "Former Markdown editor; Notes website is the primary knowledge interface", disabled = true, reason = "Retired 2026-08-26: the Notes website now provides the useful reading, editing, finance, and world-model surfaces without the plugin and sync burden" },
@@ -317,7 +317,9 @@ note = "Context7 docs-lookup CLI (replaces the context7 MCP — `ctx7 library <n
 name = "@openwhispr/cli"
 version = "0.1.2"
 flag = "productivity"
-note = "Local-first OpenWhispr CLI for notes, speaker-labeled meeting transcripts, and transcription history; uses the desktop loopback bridge by default"
+note = "Former OpenWhispr desktop bridge CLI"
+disabled = true
+reason = "Retired 2026-09-09: TypeWhisper owns dictation; the OpenWhispr trial has ended"
 
 [[npm_package]]
 name = "pinchtab"
