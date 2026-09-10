@@ -38,7 +38,7 @@ deadcode:
 # Complexipy cognitive complexity gate.
 [group('quality')]
 complexity:
-    uv run complexipy src -mx 9
+    uv run complexipy src --max-complexity-allowed 9
 
 # Parse every tracked shell script, strict-JSON file, and YAML file.
 [group('quality')]
