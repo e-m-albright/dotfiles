@@ -263,19 +263,21 @@ class CredentialService:
             raise CredentialInventoryError(f"could not resolve {credential_id} from Keychain")
         return spec.environment, value
 
-    def set(self, credential_id: str) -> None:
-        """Ask macOS security to read the value from the terminal and write Keychain."""
+    def set(self, credential_id: str, value: str) -> None:
+        """Pipe one supplied secret to macOS Keychain without exposing it in argv."""
         spec = self.get(credential_id)
         if spec.backend != "keychain":
             raise CredentialInventoryError(
                 f"{credential_id} is owned by {spec.backend}, not Keychain"
             )
+        if not value:
+            raise CredentialInventoryError("credential value cannot be empty")
         assert spec.service is not None
         command = ["security", "add-generic-password", "-U", "-s", spec.service]
         if spec.account:
             command.extend(("-a", spec.account))
         command.append("-w")
-        result = self._runner.run(tuple(command), capture_output=False)
+        result = self._runner.run(tuple(command), stdin=f"{value}\n")
         if not result.ok:
             raise CredentialInventoryError("Keychain enrollment failed")
 

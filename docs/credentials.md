@@ -34,7 +34,7 @@ dotfiles credential run google-pi -- python local_job.py
 dotfiles doctor
 ```
 
-`credential set` invokes the macOS `security` prompt directly. It does not accept a secret argument, read the secret into Python, or capture terminal output. `credential link-pi` writes a command reference into Pi's private auth store, so Pi resolves the key from Keychain at use time. `credential run` removes ambient API and OAuth variables, resolves only the named grant, injects its declared environment variable into one child process, and replaces itself with that process. Launchd jobs can use this wrapper without putting a secret literal in a property list.
+`credential set` asks once with a hidden, kind-specific prompt such as `API key`, then pipes the value directly to macOS `security`. The value exists transiently in the CLI process but is never placed in an argument, printed, or captured. `credential link-pi` writes a command reference into Pi's private auth store, so Pi resolves the key from Keychain at use time. `credential run` removes ambient API and OAuth variables, resolves only the named grant, injects its declared environment variable into one child process, and replaces itself with that process. Launchd jobs can use this wrapper without putting a secret literal in a property list.
 
 Edit the private TOML file to add application grants or annotate consumers, scopes, expiry, rotation, and restoration. Unknown fields and duplicate identifiers are rejected. `credential list --json` is the stable local inventory interface for other repositories.
 

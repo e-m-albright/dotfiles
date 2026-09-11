@@ -126,13 +126,11 @@ def test_resolve_environment_reads_only_the_requested_grant(tmp_path: Path) -> N
     assert runner.calls == [command]
 
 
-def test_set_uses_interactive_security_prompt_and_never_argv_or_captured_output(
-    tmp_path: Path,
-) -> None:
+def test_set_pipes_secret_to_security_without_putting_it_in_argv(tmp_path: Path) -> None:
     _inventory(tmp_path)
     runner = FakeProcessRunner()
 
-    CredentialService(runner=runner, home=tmp_path).set("google-pi")
+    CredentialService(runner=runner, home=tmp_path).set("google-pi", "test-api-key")
 
     command = runner.calls[-1]
     assert command == (
@@ -145,8 +143,16 @@ def test_set_uses_interactive_security_prompt_and_never_argv_or_captured_output(
         "api-key",
         "-w",
     )
-    assert runner.inputs[-1] is None
-    assert runner.capture_output[-1] is False
+    assert "test-api-key" not in command
+    assert runner.inputs[-1] == "test-api-key\n"
+    assert runner.capture_output[-1] is True
+
+    with pytest.raises(CredentialInventoryError, match="cannot be empty"):
+        CredentialService(runner=runner, home=tmp_path).set("google-pi", "")
+
+    runner.script(command, exit_code=1)
+    with pytest.raises(CredentialInventoryError, match="enrollment failed"):
+        CredentialService(runner=runner, home=tmp_path).set("google-pi", "test-api-key")
 
 
 def test_link_pi_writes_keychain_command_reference_without_secret(tmp_path: Path) -> None:
@@ -467,7 +473,7 @@ def test_invalid_operations_fail_closed(tmp_path: Path) -> None:
     with pytest.raises(CredentialInventoryError, match="unknown"):
         service.get("unknown")
     with pytest.raises(CredentialInventoryError, match="owned by file"):
-        service.set("gmail-oauth")
+        service.set("gmail-oauth", "test-value")
     with pytest.raises(CredentialInventoryError, match="no Keychain-backed"):
         service.resolve_environment("gmail-oauth")
     with pytest.raises(CredentialInventoryError, match="not a Keychain-backed Pi"):

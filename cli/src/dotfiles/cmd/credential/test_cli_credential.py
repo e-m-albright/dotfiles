@@ -93,14 +93,24 @@ def test_commands_report_inventory_errors(tmp_path: Path) -> None:
     assert "already exists" in duplicate.stdout
 
 
-def test_set_reports_interactive_enrollment(tmp_path: Path) -> None:
-    context = make_fake_context(runner=FakeProcessRunner(), home=tmp_path)
+def test_set_prompts_once_for_api_key_and_reports_enrollment(tmp_path: Path) -> None:
+    process_runner = FakeProcessRunner()
+    context = make_fake_context(runner=process_runner, home=tmp_path)
     assert runner.invoke(app, ["credential", "init"], obj=context).exit_code == 0
 
-    result = runner.invoke(app, ["credential", "set", "google-pi"], obj=context)
+    result = runner.invoke(
+        app,
+        ["credential", "set", "google-pi"],
+        input="test-api-key\n",
+        obj=context,
+    )
 
     assert result.exit_code == 0
+    assert result.stdout.count("API key") == 1
+    assert "password" not in result.stdout.lower()
+    assert "test-api-key" not in result.stdout
     assert "stored in Keychain" in result.stdout
+    assert process_runner.inputs[-1] == "test-api-key\n"
 
 
 def test_link_pi_requires_explicit_force_for_replacement(tmp_path: Path) -> None:

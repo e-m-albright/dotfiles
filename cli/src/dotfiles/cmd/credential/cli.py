@@ -146,9 +146,13 @@ def run_with_credential(
 
 @credential_app.command("set")
 def set_credential(ctx: typer.Context, credential_id: str) -> None:
-    """Prompt in the terminal and store one configured grant in macOS Keychain."""
+    """Prompt once and store one configured grant in macOS Keychain."""
+    service = _service(ctx)
     try:
-        _service(ctx).set(credential_id)
+        spec = service.get(credential_id)
+        prompt = "API key" if spec.kind == "api-key" else "Secret value"
+        value = typer.prompt(prompt, hide_input=True)
+        service.set(credential_id, value)
     except CredentialInventoryError as exc:
         _fail(exc)
     print_status(console, "success", f"{credential_id} stored in Keychain")
