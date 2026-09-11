@@ -29,14 +29,15 @@ dotfiles credential init
 dotfiles credential list
 dotfiles credential list --json
 dotfiles credential set google-pi
+dotfiles credential set azure-example --endpoint https://example.cognitiveservices.azure.com/
 dotfiles credential link-pi google-pi
 dotfiles credential run google-pi -- python local_job.py
 dotfiles doctor
 ```
 
-`credential set` asks once with a hidden, kind-specific prompt such as `API key`, then pipes the value directly to macOS `security`. The value exists transiently in the CLI process but is never placed in an argument, printed, or captured. `credential link-pi` writes a command reference into Pi's private auth store, so Pi resolves the key from Keychain at use time. `credential run` removes ambient API and OAuth variables, resolves only the named grant, injects its declared environment variable into one child process, and replaces itself with that process. Launchd jobs can use this wrapper without putting a secret literal in a property list.
+`credential set` asks once with a hidden, kind-specific prompt such as `API key`, then sends a command through the Keychain CLI's private standard input. Secret bytes are hex-encoded inside that input, never placed in process arguments or files. This bypasses the native hidden password prompt, which silently truncates values at 128 bytes. Enrollment reads the stored value back privately and requires an exact match before reporting success. The Keychain item is labelled with its declared kind. The value exists transiently in process memory but is never printed or logged. For APIs that pair a secret with a non-secret endpoint, declare `endpoint_environment` in the private inventory and pass `--endpoint`; Dotfiles saves the URL as private metadata and `credential run` injects both declared variables. `credential link-pi` writes a command reference into Pi's private auth store, so Pi resolves the key from Keychain at use time. `credential run` removes ambient API and OAuth variables, resolves only the named grant, injects its declared environment variable into one child process, and replaces itself with that process. Launchd jobs can use this wrapper without putting a secret literal in a property list.
 
-Edit the private TOML file to add application grants or annotate consumers, scopes, expiry, rotation, and restoration. Unknown fields and duplicate identifiers are rejected. `credential list --json` is the stable local inventory interface for other repositories.
+Edit the private TOML file to add application grants or annotate consumers, scopes, expiry, rotation, endpoint transport, and restoration. `endpoint` is non-secret metadata; credentials embedded in its URL are rejected. Unknown fields and duplicate identifiers are rejected. `credential list --json` is the stable local inventory interface for other repositories.
 
 ## Isolation boundary
 

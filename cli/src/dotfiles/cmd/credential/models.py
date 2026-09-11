@@ -28,6 +28,8 @@ class CredentialSpec(BaseModel):
     account: str | None = None
     path: str | None = None
     environment: str | None = Field(default=None, pattern=r"^[A-Z][A-Z0-9_]*$")
+    endpoint: str | None = None
+    endpoint_environment: str | None = Field(default=None, pattern=r"^[A-Z][A-Z0-9_]*$")
     consumers: tuple[str, ...] = ()
     scopes: tuple[str, ...] = ()
     expires_on: date | None = None

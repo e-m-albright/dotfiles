@@ -27,6 +27,13 @@ class CommandResult(BaseModel):
 
 
 @runtime_checkable
+class KeychainStore(Protocol):
+    """Stores generic Keychain secrets without exposing them in process arguments."""
+
+    def set_api_key(self, *, service: str, account: str | None, label: str, value: str) -> None: ...
+
+
+@runtime_checkable
 class ProcessRunner(Protocol):
     """Runs external commands. The single subprocess seam for the whole app."""
 

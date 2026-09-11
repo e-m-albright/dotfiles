@@ -43,6 +43,7 @@ community-plugins.json
 # -----------------------------------------------------------------------------
 # Python CLI (cli/) build + tool caches
 cli/.venv/
+.coverage
 cli/.coverage
 cli/coverage.json
 cli/htmlcov/

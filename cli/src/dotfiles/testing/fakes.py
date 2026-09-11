@@ -5,8 +5,23 @@ import threading
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
+from dotfiles.adapters.keychain import KeychainWriteError
 from dotfiles.adapters.ports import CommandResult
 from dotfiles.app.context import AppContext
+
+
+class FakeKeychainStore:
+    """Records non-secret enrollment metadata without retaining supplied values."""
+
+    def __init__(self, *, fail: bool = False) -> None:
+        self.calls: list[tuple[str, str | None, str]] = []
+        self.fail = fail
+
+    def set_api_key(self, *, service: str, account: str | None, label: str, value: str) -> None:
+        assert value
+        if self.fail:
+            raise KeychainWriteError("Keychain enrollment failed")
+        self.calls.append((service, account, label))
 
 
 class FakeProcessRunner:
@@ -75,6 +90,7 @@ def write_tree(base: Path, spec: dict[str, str | None]) -> None:
 def make_fake_context(
     *,
     runner: FakeProcessRunner | None = None,
+    keychain: FakeKeychainStore | None = None,
     home: Path | None = None,
     dotfiles_dir: Path | None = None,
 ) -> AppContext:
@@ -82,6 +98,7 @@ def make_fake_context(
     home_path = home or Path("/home/tester")
     return AppContext(
         runner=runner or FakeProcessRunner(),
+        keychain=keychain or FakeKeychainStore(),
         home=home_path,
         dotfiles_dir=dotfiles_dir or Path("/home/tester/dotfiles"),
     )

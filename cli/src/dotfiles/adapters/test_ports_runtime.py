@@ -1,4 +1,12 @@
-from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.adapters.ports import KeychainStore, ProcessRunner
+
+
+def test_keychain_store_protocol_guards_its_method_set() -> None:
+    class Conforms:
+        def set_api_key(self, *, service, account, label, value): ...
+
+    assert isinstance(Conforms(), KeychainStore)
+    assert not isinstance(object(), KeychainStore)
 
 
 def test_process_runner_protocol_guards_its_method_set() -> None:

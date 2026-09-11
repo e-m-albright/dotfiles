@@ -13,7 +13,7 @@ from dotfiles.cmd.credential.service import (
     CredentialService,
     initialize_inventory,
 )
-from dotfiles.testing.fakes import FakeProcessRunner
+from dotfiles.testing.fakes import FakeKeychainStore, FakeProcessRunner
 
 
 def _inventory(home: Path) -> Path:
@@ -31,6 +31,7 @@ backend = "keychain"
 service = "dotfiles.credential.pi.google"
 account = "api-key"
 environment = "GEMINI_API_KEY"
+endpoint_environment = "GEMINI_API_ENDPOINT"
 consumers = ["Pi interactive"]
 scopes = ["Gemini API"]
 rotation = "manual"
@@ -126,33 +127,84 @@ def test_resolve_environment_reads_only_the_requested_grant(tmp_path: Path) -> N
     assert runner.calls == [command]
 
 
-def test_set_pipes_secret_to_security_without_putting_it_in_argv(tmp_path: Path) -> None:
-    _inventory(tmp_path)
+def test_endpoint_is_saved_as_nonsecret_private_metadata_and_injected(tmp_path: Path) -> None:
+    inventory = _inventory(tmp_path)
+    service = CredentialService(runner=FakeProcessRunner(), home=tmp_path)
+
+    service.set_endpoint("google-pi", "https://example.cognitiveservices.azure.com/")
+
+    assert inventory.stat().st_mode & 0o777 == 0o600
+    spec = service.get("google-pi")
+    assert spec.endpoint == "https://example.cognitiveservices.azure.com/"
     runner = FakeProcessRunner()
-
-    CredentialService(runner=runner, home=tmp_path).set("google-pi", "test-api-key")
-
-    command = runner.calls[-1]
-    assert command == (
-        "security",
-        "add-generic-password",
-        "-U",
-        "-s",
-        "dotfiles.credential.pi.google",
-        "-a",
-        "api-key",
-        "-w",
+    runner.script(
+        (
+            "security",
+            "find-generic-password",
+            "-s",
+            "dotfiles.credential.pi.google",
+            "-a",
+            "api-key",
+            "-w",
+        ),
+        stdout="test-value\n",
     )
-    assert "test-api-key" not in command
-    assert runner.inputs[-1] == "test-api-key\n"
-    assert runner.capture_output[-1] is True
+    environment = CredentialService(runner=runner, home=tmp_path).resolve_environment_bundle(
+        "google-pi"
+    )
+    assert environment == {
+        "GEMINI_API_KEY": "test-value",
+        "GEMINI_API_ENDPOINT": "https://example.cognitiveservices.azure.com/",
+    }
+
+    service.set_endpoint("google-pi", "https://replacement.example.com")
+    assert service.get("google-pi").endpoint == "https://replacement.example.com"
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    ["", "not-a-url", "ftp://example.com", "https://user:password@example.com"],
+)
+def test_endpoint_rejects_invalid_or_credential_bearing_urls(tmp_path: Path, endpoint: str) -> None:
+    _inventory(tmp_path)
+    with pytest.raises(CredentialInventoryError, match="endpoint"):
+        CredentialService(runner=FakeProcessRunner(), home=tmp_path).set_endpoint(
+            "google-pi", endpoint
+        )
+
+
+def test_endpoint_requires_declared_environment_transport(tmp_path: Path) -> None:
+    _inventory(tmp_path)
+    with pytest.raises(CredentialInventoryError, match="endpoint metadata"):
+        CredentialService(runner=FakeProcessRunner(), home=tmp_path).set_endpoint(
+            "gmail-oauth", "https://example.com"
+        )
+
+
+def test_set_uses_keychain_writer_without_retaining_secret(tmp_path: Path) -> None:
+    _inventory(tmp_path)
+    keychain = FakeKeychainStore()
+    service = CredentialService(runner=FakeProcessRunner(), keychain=keychain, home=tmp_path)
+
+    service.set("google-pi", "test-api-key")
+
+    assert keychain.calls == [("dotfiles.credential.pi.google", "api-key", "Google API for Pi")]
+    assert "test-api-key" not in repr(keychain.calls)
 
     with pytest.raises(CredentialInventoryError, match="cannot be empty"):
-        CredentialService(runner=runner, home=tmp_path).set("google-pi", "")
+        service.set("google-pi", "")
 
-    runner.script(command, exit_code=1)
+    with pytest.raises(CredentialInventoryError, match="writer is unavailable"):
+        CredentialService(runner=FakeProcessRunner(), home=tmp_path).set(
+            "google-pi", "test-api-key"
+        )
+
     with pytest.raises(CredentialInventoryError, match="enrollment failed"):
-        CredentialService(runner=runner, home=tmp_path).set("google-pi", "test-api-key")
+        CredentialService(
+            runner=FakeProcessRunner(),
+            keychain=FakeKeychainStore(fail=True),
+            home=tmp_path,
+        ).set("google-pi", "test-api-key")
 
 
 def test_link_pi_writes_keychain_command_reference_without_secret(tmp_path: Path) -> None:

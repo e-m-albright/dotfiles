@@ -27,7 +27,7 @@ _SECRET_NAMES = {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKE
 
 def _service(ctx: typer.Context) -> CredentialService:
     app_ctx = app_context(ctx)
-    return CredentialService(runner=app_ctx.runner, home=app_ctx.home)
+    return CredentialService(runner=app_ctx.runner, keychain=app_ctx.keychain, home=app_ctx.home)
 
 
 def _fail(exc: CredentialInventoryError) -> NoReturn:
@@ -56,6 +56,8 @@ def _json_record(record: CredentialRecord) -> dict[str, object]:
         "service": spec.service,
         "path": spec.path,
         "environment": spec.environment,
+        "endpoint": spec.endpoint,
+        "endpoint_environment": spec.endpoint_environment,
         "pi_provider": spec.pi_provider,
         "status": record.status,
         "consumers": list(spec.consumers),
@@ -132,7 +134,7 @@ def run_with_credential(
         print_status(console, "error", "a command is required after --")
         raise typer.Exit(2)
     try:
-        name, value = _service(ctx).resolve_environment(credential_id)
+        resolved = _service(ctx).resolve_environment_bundle(credential_id)
     except CredentialInventoryError as exc:
         _fail(exc)
     environment = {
@@ -140,19 +142,32 @@ def run_with_credential(
         for key, existing in os.environ.items()
         if not key.endswith(_SECRET_SUFFIXES) and key not in _SECRET_NAMES
     }
-    environment[name] = value
+    environment.update(resolved)
     os.execvpe(command[0], command, environment)
 
 
 @credential_app.command("set")
-def set_credential(ctx: typer.Context, credential_id: str) -> None:
+def set_credential(
+    ctx: typer.Context,
+    credential_id: str,
+    endpoint: Annotated[
+        str | None,
+        typer.Option(help="Save a paired non-secret API endpoint in the private inventory."),
+    ] = None,
+) -> None:
     """Prompt once and store one configured grant in macOS Keychain."""
     service = _service(ctx)
     try:
         spec = service.get(credential_id)
-        prompt = "API key" if spec.kind == "api-key" else "Secret value"
+        if endpoint is not None:
+            endpoint = service.validate_endpoint(endpoint)
+        prompt = (
+            f"{spec.label} - API key" if spec.kind == "api-key" else f"{spec.label} - secret value"
+        )
         value = typer.prompt(prompt, hide_input=True)
         service.set(credential_id, value)
+        if endpoint is not None:
+            service.set_endpoint(credential_id, endpoint)
     except CredentialInventoryError as exc:
         _fail(exc)
     print_status(console, "success", f"{credential_id} stored in Keychain")

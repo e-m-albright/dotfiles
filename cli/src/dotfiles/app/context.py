@@ -9,7 +9,8 @@ from pathlib import Path
 
 import typer
 
-from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.adapters.keychain import MacOSKeychainStore
+from dotfiles.adapters.ports import KeychainStore, ProcessRunner
 from dotfiles.adapters.process import SubprocessRunner
 
 # Repo root: cli/src/dotfiles/app/context.py → parents[4] = repo root
@@ -21,6 +22,7 @@ class AppContext:
     """Runtime ports and host paths shared by commands."""
 
     runner: ProcessRunner
+    keychain: KeychainStore
     home: Path
     dotfiles_dir: Path = _REPO_ROOT
 
@@ -40,6 +42,7 @@ def build_real_context() -> AppContext:
     dotfiles_dir = Path(os.environ["DOTFILES_DIR"]) if "DOTFILES_DIR" in os.environ else _REPO_ROOT
     return AppContext(
         runner=SubprocessRunner(),
+        keychain=MacOSKeychainStore(),
         home=Path.home(),
         dotfiles_dir=dotfiles_dir,
     )

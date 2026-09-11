@@ -10,10 +10,12 @@ import tomllib
 from datetime import date
 from pathlib import Path
 from typing import cast
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.adapters.keychain import KeychainWriteError
+from dotfiles.adapters.ports import KeychainStore, ProcessRunner
 from dotfiles.cmd.credential.models import CredentialRecord, CredentialSpec, CredentialStatus
 
 _CONFIG_RELATIVE = Path(".config/dotfiles/credentials.toml")
@@ -137,11 +139,45 @@ def initialize_inventory(home: Path) -> Path:
     return path
 
 
+def _credential_block(text: str, credential_id: str) -> tuple[int, int, list[str]]:
+    marker = f'id = "{credential_id}"'
+    identifier = text.find(marker)
+    if identifier < 0:
+        raise CredentialInventoryError(f"unknown credential: {credential_id}")
+    start = text.rfind("[[credential]]", 0, identifier)
+    following = text.find("[[credential]]", identifier)
+    end = len(text) if following < 0 else following
+    return start, end, text[start:end].splitlines(keepends=True)
+
+
+def _line_indexes(lines: list[str], prefix: str) -> list[int]:
+    return [index for index, line in enumerate(lines) if line.startswith(prefix)]
+
+
+def _replace_endpoint(text: str, credential_id: str, endpoint: str) -> str:
+    start, end, lines = _credential_block(text, credential_id)
+    matches = _line_indexes(lines, "endpoint = ")
+    if len(matches) > 1:
+        raise CredentialInventoryError(f"{credential_id} has duplicate endpoint metadata")
+    replacement = f"endpoint = {json.dumps(endpoint)}\n"
+    if matches:
+        lines[matches[0]] = replacement
+    else:
+        environments = _line_indexes(lines, "endpoint_environment = ")
+        if len(environments) != 1:
+            raise CredentialInventoryError(f"{credential_id} does not declare endpoint metadata")
+        lines.insert(environments[0], replacement)
+    return text[:start] + "".join(lines) + text[end:]
+
+
 class CredentialService:
     """Loads grants, checks bounded presence, and delegates entry to Keychain."""
 
-    def __init__(self, *, runner: ProcessRunner, home: Path) -> None:
+    def __init__(
+        self, *, runner: ProcessRunner, home: Path, keychain: KeychainStore | None = None
+    ) -> None:
         self._runner = runner
+        self._keychain = keychain
         self._home = home
 
     def specs(self) -> tuple[CredentialSpec, ...]:
@@ -263,6 +299,44 @@ class CredentialService:
             raise CredentialInventoryError(f"could not resolve {credential_id} from Keychain")
         return spec.environment, value
 
+    def resolve_environment_bundle(self, credential_id: str) -> dict[str, str]:
+        """Resolve a secret and its declared non-secret endpoint for one child."""
+        name, value = self.resolve_environment(credential_id)
+        spec = self.get(credential_id)
+        environment = {name: value}
+        if spec.endpoint_environment and spec.endpoint:
+            environment[spec.endpoint_environment] = spec.endpoint
+        return environment
+
+    @staticmethod
+    def validate_endpoint(value: str) -> str:
+        endpoint = value.strip()
+        parsed = urlsplit(endpoint)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
+            raise CredentialInventoryError(
+                "endpoint must be an HTTP(S) URL without embedded credentials"
+            )
+        return endpoint
+
+    def set_endpoint(self, credential_id: str, value: str) -> None:
+        """Save one non-secret endpoint beside its private inventory declaration."""
+        spec = self.get(credential_id)
+        if not spec.endpoint_environment:
+            raise CredentialInventoryError(f"{credential_id} does not declare endpoint metadata")
+        endpoint = self.validate_endpoint(value)
+        path = inventory_path(self._home)
+        text = path.read_text(encoding="utf-8")
+        updated = _replace_endpoint(text, credential_id, endpoint)
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(updated, encoding="utf-8")
+        temporary.chmod(0o600)
+        temporary.replace(path)
+
     def set(self, credential_id: str, value: str) -> None:
         """Pipe one supplied secret to macOS Keychain without exposing it in argv."""
         spec = self.get(credential_id)
@@ -273,13 +347,17 @@ class CredentialService:
         if not value:
             raise CredentialInventoryError("credential value cannot be empty")
         assert spec.service is not None
-        command = ["security", "add-generic-password", "-U", "-s", spec.service]
-        if spec.account:
-            command.extend(("-a", spec.account))
-        command.append("-w")
-        result = self._runner.run(tuple(command), stdin=f"{value}\n")
-        if not result.ok:
-            raise CredentialInventoryError("Keychain enrollment failed")
+        if self._keychain is None:
+            raise CredentialInventoryError("Keychain writer is unavailable")
+        try:
+            self._keychain.set_api_key(
+                service=spec.service,
+                account=spec.account,
+                label=spec.label,
+                value=value,
+            )
+        except KeychainWriteError as exc:
+            raise CredentialInventoryError(str(exc)) from exc
 
     def _load_pi_auth(self, auth_path: Path) -> dict[str, object]:
         if not auth_path.exists():
