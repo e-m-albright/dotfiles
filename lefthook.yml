@@ -1,0 +1,59 @@
+# Lefthook git hooks for dotfiles repo
+# Install hooks: lefthook install
+
+pre-commit:
+  parallel: true
+  commands:
+    shellcheck:
+      # Blocking: the tree is clean at -S warning, so any new warning fails the
+      # commit here instead of sailing past locally and failing in CI.
+      glob: "*.sh"
+      run: |
+        for f in {staged_files}; do
+          shellcheck -S warning "$f"
+        done
+    syntax-check:
+      glob: "*.sh"
+      run: |
+        for f in {staged_files}; do
+          bash -n "$f"
+        done
+    yaml-lint:
+      glob: "*.{yaml,yml}"
+      run: |
+        for f in {staged_files}; do
+          yq eval '.' "$f" >/dev/null || { echo "Invalid YAML: $f"; exit 1; }
+        done
+    privacy-sweep:
+      # Public repo: the AGENTS.md privacy rule, enforced instead of remembered.
+      run: just privacy-sweep
+    gitleaks:
+      # Public repo: scan staged changes for secrets BEFORE they land, not just
+      # weekly over history. Skips cleanly if gitleaks isn't installed (the
+      # scheduled history scan is the backstop), blocks the commit on a finding.
+      run: |
+        if command -v gitleaks >/dev/null 2>&1; then
+          gitleaks protect --staged --no-banner
+        fi
+    cli-check:
+      # toml/lock included so a bare dependency bump still runs the gate locally.
+      glob: "cli/**/*.{py,toml,lock}"
+      run: just check --fast
+commit-msg:
+  commands:
+    subject-quality:
+      # Reject drive-by subjects ("Tweaks", "bump", "wip") — history is the
+      # only durable record of why a change happened.
+      run: |
+        subject="$(head -1 {1})"
+        if printf '%s' "$subject" | grep -qiE '^(tweaks?|bump|fixy?|wip|stuff|misc)\.?$'; then
+          echo "commit-msg: '$subject' says nothing — describe the change." >&2
+          exit 1
+        fi
+        if [ "${#subject}" -lt 8 ]; then
+          echo "commit-msg: subject too short ('$subject') — describe the change." >&2
+          exit 1
+        fi
+
+# No pre-push hooks: pre-commit --fast plus CI's full `just check`/ShellCheck
+# already cover every push; the pre-push reruns only added latency.

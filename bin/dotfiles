@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+
+BIN_NAME=$(basename "$0")
+COMMAND_NAME=$1
+
+# Get dotfiles dir (so run this script from anywhere)
+SOURCE="${BASH_SOURCE[0]}"
+if [[ -L "$SOURCE" ]]; then
+    TARGET="$(readlink "$SOURCE")"
+    [[ "$TARGET" == /* ]] && SOURCE="$TARGET" || SOURCE="$(dirname "$SOURCE")/$TARGET"
+fi
+export DOTFILES_DIR EXTRA_DIR
+DOTFILES_DIR="$(cd "$(dirname "$SOURCE")/.." && pwd)"
+# shellcheck source=../macos/print_utils.sh
+source "$DOTFILES_DIR/macos/print_utils.sh"
+
+# Prefer the synced venv (fast path, no resolver); fall back to uv run, which
+# can provision or heal the environment when the venv is missing or broken.
+cli_python () {
+    local py="$DOTFILES_DIR/cli/.venv/bin/python"
+    if [[ -x "$py" ]]; then
+        "$py" "$@"
+    else
+        uv run --project "$DOTFILES_DIR/cli" python "$@"
+    fi
+}
+
+cli_dotfiles () {
+    local bin="$DOTFILES_DIR/cli/.venv/bin/dotfiles"
+    if [[ -x "$bin" ]]; then
+        exec "$bin" "$@"
+    fi
+    exec uv run --project "$DOTFILES_DIR/cli" dotfiles "$@"
+}
+
+sub_help () {
+    # Typer owns help formatting; the root group adds the canonical banner.
+    local error="${1:-}"
+    if [[ -n "$error" ]]; then
+        printf "Error: %s\n\n" "$error" >&2
+        cli_python -m dotfiles.app.main --help >&2 \
+            || printf "Usage: %s <command>\n" "$BIN_NAME" >&2
+        return
+    fi
+    cli_python -m dotfiles.app.main --help 2>/dev/null \
+        || printf "Usage: %s <command> (run \`dfs doctor\` — Python CLI unreachable)\n" "$BIN_NAME"
+}
+
+sub_update () {
+    set -eo pipefail
+    local fnm_env version
+    # shellcheck source=../macos/print_utils.sh
+    source "$DOTFILES_DIR/macos/print_utils.sh"
+
+    print_header "Updating everything"
+
+    # --- macOS ---
+    print_section "macOS system updates"
+    if sudo softwareupdate -i -a 2>&1 | tail -1; then
+        print_success "macOS up to date"
+    else
+        print_error "macOS update failed"
+        return 1
+    fi
+
+    # --- Homebrew ---
+    if ! "$DOTFILES_DIR/bin/dotfiles" brew upgrade; then
+        print_error "Homebrew update failed"
+        return 1
+    fi
+
+    # --- Node.js (fnm) ---
+    if command -v fnm >/dev/null 2>&1; then
+        print_section "Node.js (fnm)"
+        fnm_env=$(fnm env)
+        eval "$fnm_env"
+        fnm install --lts
+        fnm use --install-if-missing lts-latest
+        fnm default lts-latest
+        version=$(node --version)
+        print_success "Node.js LTS: $version"
+    fi
+
+    # --- Rust (rustup) ---
+    if command -v rustup >/dev/null 2>&1; then
+        print_section "Rust (rustup)"
+        rustup update
+        version=$(rustc --version | awk '{print $2}')
+        print_success "Rust: $version"
+    fi
+
+    # --- UV (Python) ---
+    if command -v uv >/dev/null 2>&1; then
+        print_section "UV (Python package manager)"
+        uv self update
+        version=$(uv --version)
+        print_success "UV: $version"
+    fi
+
+    # --- Global npm packages ---
+    if command -v npm >/dev/null 2>&1; then
+        print_section "Global npm packages"
+        npm update -g
+        print_success "Global npm packages updated"
+    fi
+
+    print_completion "All updates finished"
+}
+
+sub_dock () {
+    . "$DOTFILES_DIR/macos/dock.sh"
+    print_success "macOS Dock configured"
+}
+
+sub_install() {
+    . "$DOTFILES_DIR/install.sh"
+}
+
+sub_shell_profile() {
+    printf "${BLUE}%b Profiling shell startup...${NC}\n\n" "$ARROW"
+    # Time total startup
+    local total
+    total=$( { time zsh -i -c exit 2>&1; } 2>&1 | grep real | awk '{print $2}')
+    printf "  Total startup time: ${BOLD}%s${NC}\n\n" "$total"
+
+    # Time individual sourced files
+    printf "  ${BLUE}File-by-file timing:${NC}\n"
+    for f in ~/.zshenv ~/.zprofile ~/.zshrc; do
+        if [[ -f "$f" ]]; then
+            local t
+            t=$( { time zsh -c "source $f" 2>/dev/null; } 2>&1 | grep real | awk '{print $2}')
+            printf "  %-30s %s\n" "$(basename "$f")" "$t"
+        fi
+    done
+    printf "\n"
+    printf "  ${YELLOW}Tip:${NC} If startup is slow, check for heavy evals (fnm env, brew shellenv).\n"
+}
+
+# Every Python command must also appear in the Typer registry and zsh completion;
+# app/test_command_tree.py enforces the routing contract.
+PY_CLI_COMMANDS=" remote doctor brew credential password clean "
+if [[ -n "${1:-}" && "$PY_CLI_COMMANDS" == *" $1 "* ]]; then
+    cli_dotfiles "$@"
+fi
+
+# Bash-native commands accept no arguments. Route their help through Typer so
+# `dfs install --help` can never enter the installer, and reject every other
+# argument before dispatch for the same reason.
+BASH_NATIVE_COMMANDS=" install update dock profile-shell "
+if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && "${2:-}" == "--help" ]]; then
+    cli_dotfiles "$@"
+fi
+if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && "${2:-}" == "-h" ]]; then
+    set -- "$1" --help
+    cli_dotfiles "$@"
+fi
+if [[ -n "${1:-}" && "$BASH_NATIVE_COMMANDS" == *" $1 "* && $# -gt 1 ]]; then
+    sub_help "Command '$1' accepts no arguments. Run 'dfs $1 --help' for details."
+    exit 2
+fi
+
+case $COMMAND_NAME in
+    "" | "-h" | "--help") sub_help ;;
+
+    # Top-level
+    install)     sub_install ;;
+    update)      sub_update ;;
+    dock)        sub_dock ;;
+
+    # profile-shell is a canonical flat command (Machine group in sub_help)
+    profile-shell) shift; sub_shell_profile "$@" ;;
+
+    *) cli_dotfiles "$@" ;;
+esac

@@ -1,0 +1,206 @@
+"""`dotfiles credential` inventory, enrollment, and Pi linkage commands."""
+
+from __future__ import annotations
+
+import json
+import os
+from typing import Annotated, NoReturn
+
+import typer
+from rich.table import Table
+
+from dotfiles.app.context import app_context
+from dotfiles.cmd.credential.models import CredentialRecord
+from dotfiles.cmd.credential.service import (
+    CredentialInventoryError,
+    CredentialService,
+    initialize_inventory,
+)
+from dotfiles.console import console, print_status, print_title
+
+credential_app = typer.Typer(
+    help="Inventory local programmatic credentials without exposing values."
+)
+# Carry only basic process context; unknown ambient credentials and runtime hooks stay out.
+_CHILD_ENVIRONMENT = {
+    "HOME",
+    "PATH",
+    "USER",
+    "LOGNAME",
+    "SHELL",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
+    "LC_MESSAGES",
+    "TZ",
+    "TERM",
+    "COLORTERM",
+    "NO_COLOR",
+    "CLICOLOR",
+    "CLICOLOR_FORCE",
+}
+
+
+def _service(ctx: typer.Context) -> CredentialService:
+    app_ctx = app_context(ctx)
+    return CredentialService(runner=app_ctx.runner, keychain=app_ctx.keychain, home=app_ctx.home)
+
+
+def _fail(exc: CredentialInventoryError) -> NoReturn:
+    print_status(console, "error", str(exc))
+    raise typer.Exit(1) from exc
+
+
+@credential_app.command("init")
+def initialize(ctx: typer.Context) -> None:
+    """Create a private metadata-only starter inventory."""
+    try:
+        path = initialize_inventory(app_context(ctx).home)
+    except CredentialInventoryError as exc:
+        _fail(exc)
+    print_status(console, "success", f"Created {path}")
+
+
+def _json_record(record: CredentialRecord) -> dict[str, object]:
+    spec = record.spec
+    return {
+        "id": spec.id,
+        "label": spec.label,
+        "provider": spec.provider,
+        "kind": spec.kind,
+        "backend": spec.backend,
+        "service": spec.service,
+        "path": spec.path,
+        "environment": spec.environment,
+        "endpoint": spec.endpoint,
+        "endpoint_environment": spec.endpoint_environment,
+        "pi_provider": spec.pi_provider,
+        "status": record.status,
+        "consumers": list(spec.consumers),
+        "scopes": list(spec.scopes),
+        "expires_on": spec.expires_on.isoformat() if spec.expires_on else None,
+        "rotation": spec.rotation,
+        "disposition": spec.disposition,
+        "required": spec.required,
+        "restore": spec.restore,
+        "note": spec.note,
+        "detail": record.detail,
+    }
+
+
+def _render_records(records: list[CredentialRecord]) -> None:
+    print_title(console, "credential", "list")
+    table = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
+    table.add_column("Grant", no_wrap=True, overflow="ellipsis", max_width=22)
+    table.add_column("Status", no_wrap=True)
+    table.add_column("Consumer boundary", ratio=1)
+    table.add_column("Access and expiry", ratio=1)
+    status_styles = {
+        "stored": "green",
+        "missing": "yellow",
+        "expired": "red",
+        "inaccessible": "red",
+        "superseded": "dim",
+        "deferred": "dim",
+    }
+    for record in records:
+        spec = record.spec
+        expiry = (
+            f"expires {spec.expires_on.isoformat()}"
+            if spec.expires_on
+            else f"rotation: {spec.rotation}"
+        )
+        access = ", ".join(spec.scopes) or "unannotated"
+        table.add_row(
+            spec.id,
+            f"[{status_styles[record.status]}]{record.status}[/]",
+            ", ".join(spec.consumers) or "-",
+            f"{access}; {expiry}",
+        )
+    console.print(table)
+    console.print()
+
+
+@credential_app.command("list")
+def list_credentials(
+    ctx: typer.Context,
+    as_json: Annotated[
+        bool, typer.Option("--json", help="Emit stable machine-readable JSON.")
+    ] = False,
+) -> None:
+    """Show every grant, its consumer boundary, and bounded local status."""
+    try:
+        records = _service(ctx).list()
+    except CredentialInventoryError as exc:
+        _fail(exc)
+    if as_json:
+        typer.echo(json.dumps([_json_record(record) for record in records], indent=2))
+        return
+    _render_records(records)
+
+
+@credential_app.command("run", context_settings={"allow_extra_args": True})
+def run_with_credential(
+    ctx: typer.Context,
+    credential_id: str,
+    command: Annotated[list[str], typer.Argument(help="Command and arguments after --.")],
+) -> None:
+    """Resolve one grant into its declared environment variable and exec a command."""
+    if not command:
+        print_status(console, "error", "a command is required after --")
+        raise typer.Exit(2)
+    try:
+        resolved = _service(ctx).resolve_environment_bundle(credential_id)
+    except CredentialInventoryError as exc:
+        _fail(exc)
+    environment = {
+        key: existing for key, existing in os.environ.items() if key in _CHILD_ENVIRONMENT
+    }
+    environment.update(resolved)
+    os.execvpe(command[0], command, environment)
+
+
+@credential_app.command("set")
+def set_credential(
+    ctx: typer.Context,
+    credential_id: str,
+    endpoint: Annotated[
+        str | None,
+        typer.Option(help="Save a paired non-secret API endpoint in the private inventory."),
+    ] = None,
+) -> None:
+    """Prompt once and store one configured grant in macOS Keychain."""
+    service = _service(ctx)
+    try:
+        spec = service.get(credential_id)
+        if endpoint is not None:
+            endpoint = service.validate_endpoint(endpoint)
+        prompt = (
+            f"{spec.label} - API key" if spec.kind == "api-key" else f"{spec.label} - secret value"
+        )
+        value = typer.prompt(prompt, hide_input=True)
+        service.set(credential_id, value)
+        if endpoint is not None:
+            service.set_endpoint(credential_id, endpoint)
+    except CredentialInventoryError as exc:
+        _fail(exc)
+    print_status(console, "success", f"{credential_id} stored in Keychain")
+
+
+@credential_app.command("link-pi")
+def link_pi(
+    ctx: typer.Context,
+    credential_id: str,
+    force: Annotated[
+        bool, typer.Option("--force", help="Replace an existing Pi provider credential.")
+    ] = False,
+) -> None:
+    """Configure Pi to resolve one API key from its Keychain grant."""
+    try:
+        path = _service(ctx).link_pi(credential_id, force=force)
+    except CredentialInventoryError as exc:
+        _fail(exc)
+    print_status(console, "success", f"Pi now resolves {credential_id} from Keychain ({path})")

@@ -1,0 +1,117 @@
+// Zed settings — managed in dotfiles (symlinked to ~/.config/zed/settings.json)
+//
+// Zed's built-in agents and any manually added external agents have host authority.
+// Editor tools are not enclosed by the terminal agent sandbox. Use Workbench's
+// restricted terminal launchers when repository isolation is required.
+// The "agent.default_model" / "inline_assistant_model" below are the SEPARATE
+// built-in providers — those DO use API keys (billed per token).
+{
+  "autosave": "on_focus_change",
+  // Language-server inlay hints (types, parameter names) — not AI.
+  "inlay_hints": {
+    "enabled": true
+  },
+  // Tab-complete edit predictions: Zed's Zeta model, free with a Zed
+  // account sign-in — NOT billed to the Anthropic key or Claude sub.
+  // "none" kills it entirely; "copilot"/"supermaven" are alternatives.
+  // "eager" = predictions appear as you type; flip to "subtle" for
+  // interview mode (only shown while holding alt). The sparkle icon in
+  // the status bar toggles predictions on/off entirely.
+  "edit_predictions": {
+    "provider": "zed",
+    "mode": "subtle"
+  },
+  "language_models": {
+    "openai": {
+      "available_models": [
+        {
+          "name": "gpt-5.6-terra",
+          "display_name": "GPT-5.6 Terra",
+          "max_tokens": 1050000,
+          "max_completion_tokens": 20000,
+          "reasoning_effort": "medium",
+          "capabilities": {
+            "images": true,
+            "chat_completions": false
+          }
+        }
+      ]
+    }
+  },
+  "project_panel": {
+    "dock": "left"
+  },
+  "outline_panel": {
+    "dock": "right"
+  },
+  "collaboration_panel": {
+    "dock": "right"
+  },
+  "git_panel": {
+    "dock": "right"
+  },
+  "agent": {
+    // Terminal approvals for Claude/Codex ACP sessions launched through Zed are
+    // governed here, not by each agent's own config. Zed's
+    // order is: built-in security -> always_deny -> always_allow -> default.
+    // We keep default "allow" for flow and retain this small destructive-command
+    // floor locally because Zed owns this permission surface.
+    "tool_permissions": {
+      "tools": {
+        "terminal": {
+          "default": "allow",
+          "always_deny": [
+            { "pattern": "(^|[;&|]|&&)\\s*sudo\\b" },
+            { "pattern": "(^|[;&|]|&&)\\s*su\\b" },
+            { "pattern": "\\brm\\s+(-[a-zA-Z]*\\s+)*-?[a-zA-Z]*[rf]" },
+            { "pattern": "(^|[;&|]|&&)\\s*dd\\b" },
+            { "pattern": "\\bmkfs(\\.|\\b)" },
+            { "pattern": "\\bdiskutil\\s+(erase|partitionDisk)\\b" },
+            { "pattern": "\\bchmod\\s+(-[a-zA-Z]*\\s+)*(777|-R)\\b" },
+            { "pattern": "\\bgit\\s+push\\b.*(--force|-f)\\b" },
+            { "pattern": "\\bgit\\s+reset\\s+--hard\\b" },
+            { "pattern": "\\bgit\\s+clean\\b" },
+            { "pattern": "\\bgit\\s+branch\\s+-D\\b" },
+            { "pattern": "\\b(curl|wget)\\b[^|]*\\|\\s*(ba)?sh\\b" },
+            { "pattern": "\\bkillall\\b" },
+            { "pattern": "\\bpkill\\b" },
+            { "pattern": ":\\s*\\(\\s*\\)\\s*\\{\\s*:\\s*\\|\\s*:" }
+          ]
+        }
+      }
+    },
+    "dock": "left",
+    "play_sound_when_agent_done": "always",
+    "default_model": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra"
+    },
+    "inline_assistant_model": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra"
+    }
+  },
+  // Show who last touched the current line, inline at end of line.
+  "git": {
+    "inline_blame": {
+      "enabled": true,
+      "delay_ms": 800
+    }
+  },
+  // Mac-terminal muscle memory: select-to-copy in Zed's terminal panel.
+  "terminal": {
+    "copy_on_select": true
+  },
+  "icon_theme": {
+    "mode": "light",
+    "light": "Material Icon Theme",
+    "dark": "Material Icon Theme"
+  },
+  "ui_font_size": 16,
+  "buffer_font_size": 16,
+  "theme": {
+    "mode": "light",
+    "light": "One Light",
+    "dark": "Tokyo Night Storm"
+  }
+}

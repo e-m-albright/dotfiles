@@ -1,0 +1,50 @@
+# =============================================================================
+# Dotfiles Repository Ignore
+# (OS/editor strays live in git/.gitignore_global, installed as core.excludesfile)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Tool Caches
+# -----------------------------------------------------------------------------
+.claude/
+.crush/
+.pi/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.complexipy_cache/
+
+# -----------------------------------------------------------------------------
+# Agent-generated markdown (scrub with `just scrub --artifacts`)
+# -----------------------------------------------------------------------------
+docs/adr/
+docs/specs/
+docs/plans/
+docs/superpowers/
+
+# -----------------------------------------------------------------------------
+# Harness-local state; portable agent configuration belongs to Workbench.
+# -----------------------------------------------------------------------------
+.agents/
+
+# -----------------------------------------------------------------------------
+# Obsidian (canonical copy lives in editors/obsidian/)
+# -----------------------------------------------------------------------------
+community-plugins.json
+
+# -----------------------------------------------------------------------------
+# Local Configuration (user-specific, not shared)
+# -----------------------------------------------------------------------------
+*.local
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# Python CLI (cli/) build + tool caches
+cli/.venv/
+.coverage
+cli/.coverage
+cli/coverage.json
+cli/htmlcov/
+cli/snapshot_report.html

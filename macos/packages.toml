@@ -1,0 +1,335 @@
+# Package manifest for Homebrew setup.
+# Source of truth for `dotfiles brew install` and `dotfiles brew stale`.
+#
+# Skip flagged groups per run: dotfiles brew install --no-ai --no-productivity --no-social
+
+[taps]
+list = ["axiomhq/tap", "jundot/omlx"]
+trusted_formulae = ["jundot/omlx/omlx"]
+trusted_casks = ["axiomhq/tap/axiom"]
+
+# =============================================================================
+# CLI Tools (formulae)
+# =============================================================================
+
+[[section]]
+name = "Core CLI"
+kind = "formula"
+packages = [
+  { name = "git",                  note = "Version control" },
+  { name = "git-lfs",              note = "Git Large File Storage" },
+  { name = "git-delta",            note = "Beautiful git diffs (used by .gitconfig)" },
+  { name = "gh",                   note = "GitHub CLI (PRs, issues, actions)" },
+  { name = "jq",                   note = "JSON processor" },
+  { name = "yq",                   note = "YAML processor (like jq for YAML)" },
+  { name = "wget",                 note = "Web downloader" },
+  { name = "openssl",              note = "TLS/crypto toolkit" },
+  { name = "bash-completion@2",    note = "Bash completion" },
+  { name = "helix",                note = "Postmodern modal terminal editor (Rust, batteries-included LSP/Treesitter — binary is `hx`)" },
+  { name = "bat",                  note = "Syntax-highlighting `cat` replacement and pager" },
+  { name = "fd",                   note = "Fast file finder (yazi: find-by-name / `f`)" },
+  { name = "ripgrep",              note = "Fast content search (yazi: find-in-files / `F`)" },
+  { name = "fzf",                  note = "Fuzzy finder (yazi: interactive fuzzy jump)" },
+  { name = "zoxide",               note = "Smart `cd` with frecency (yazi: `z` jump)" },
+  { name = "yazi",                 note = "Blazing-fast terminal file manager (Rust)" },
+  { name = "poppler",              note = "PDF preview (pdftoppm)" },
+  { name = "resvg",                note = "SVG-to-PNG rasterizer" },
+  { name = "imagemagick",          note = "Image conversion for long-tail formats (.heic, .psd, .tiff)" },
+  { name = "chafa",                note = "Terminal image renderer (yazi inline image previews)" },
+  { name = "sevenzip",             note = "Peek inside archives (.zip, .7z, .rar)" },
+  { name = "ffmpeg",               note = "Video/audio thumbnails", disabled = true, reason = "Disabled 2026-08-25 (dated retroactively): ~300MB+ with deps, rarely needed" },
+  { name = "tmux",                 note = "Terminal multiplexer", disabled = true, reason = "Retired 2026-08-26: no local or phone terminal-continuity workflow; Paseo owns agent continuity" },
+  { name = "mosh",                 note = "Roaming SSH shell", disabled = true, reason = "Retired 2026-08-26: phone access is Paseo over Tailscale; no phone shell is required" },
+  { name = "zellij",               note = "Former terminal workspace, session manager, and browser shell", disabled = true, reason = "Retired 2026-08-26: web, layouts, and resurrection were unused; Paseo over Tailscale is the sole mobile agent surface" },
+  { name = "pandoc",               note = "Universal markup converter (md ↔ docx ↔ pdf ↔ html ↔ …)" },
+]
+
+[[section]]
+name = "System CLI"
+kind = "formula"
+packages = [
+  { name = "htop",               note = "System monitoring" },
+  { name = "iftop",              note = "Network traffic monitoring", disabled = true, reason = "Disabled 2026-08-26: no tracked use across the private repositories; install temporarily for network diagnosis" },
+  { name = "nmap",               note = "Network discovery and port scanning", disabled = true, reason = "Disabled 2026-08-26: no tracked use across the private repositories; install temporarily for network diagnosis" },
+  { name = "flux",               note = "InfluxDB Flux query language", disabled = true, reason = "Disabled 2026-08-26: undeclared host residue with no tracked database-query workflow; unrelated to the desired flux-app cask" },
+  { name = "dockutil",           note = "Dock management" },
+  { name = "terminal-notifier",  note = "Native Claude and Codex notifications replaced the custom hook", disabled = true, reason = "Disabled 2026-07-15: native Claude and Codex notifications replaced the custom hook" },
+  { name = "duti",               note = "Set default app for file types (used by file-associations.sh)" },
+]
+
+[[section]]
+name = "Developer Tools"
+kind = "formula"
+packages = [
+  { name = "just",           note = "Command runner (like make, but simpler)" },
+  { name = "lima",           note = "Former Linux virtual machines for restricted coding agents", disabled = true, reason = "Retired 2026-09-17: Workbench native macOS sandbox owns restricted terminal agents; editor and mobile integrations have host authority" },
+  { name = "lefthook",       note = "Git hooks (language-agnostic, parallel execution)" },
+  { name = "shellcheck",     note = "Static analysis for shell scripts" },
+  { name = "hyperfine",      note = "Command-line benchmarking tool", disabled = true, reason = "Disabled 2026-08-26: no tracked benchmark workflow across the private repositories; install per investigation" },
+  { name = "graphite",       note = "Stacked PRs", disabled = true, reason = "Disabled 2026-08-25 (dated retroactively): not useful enough (requires withgraphite/tap)" },
+  { name = "atlas",          note = "Database schema migration tool" },
+  { name = "duckdb",         note = "Desired general-purpose analytical SQL database; retain even without a tracked repository reference" },
+  { name = "railway",        note = "Railway.app CLI", disabled = true, reason = "Removed 2026-07-15: no active Railway projects; keep the host free of unused deployment clients" },
+  { name = "opentofu",       note = "Desired open-source Terraform-compatible infrastructure CLI; retain even without a tracked repository reference" },
+  { name = "flyctl",         note = "Desired Fly.io deployment CLI; retain even without a tracked repository reference" },
+  { name = "neonctl",        note = "Desired Neon Postgres administration CLI; retain even without a tracked repository reference" },
+  { name = "infisical",      note = "Secrets management CLI" },
+  { name = "git-filter-repo", note = "Git history rewriting (secrets scrub)", disabled = true, reason = "Disabled 2026-07-15: rarely needed; install temporarily when a repository history rewrite is required" },
+  { name = "libpq",          note = "PostgreSQL client library (psql, pg_dump)" },
+  { name = "sccache",        note = "Shared compilation cache for Rust and C/C++", disabled = true, reason = "Disabled 2026-08-26: no tracked compiler-cache configuration or use across the private repositories" },
+  { name = "temporal",       note = "Temporal workflow CLI", disabled = true, reason = "Disabled 2026-06-01: experiment; reinstall if revisiting durable workflows" },
+  { name = "pulumi",         note = "IaC in real languages", disabled = true, reason = "Disabled 2026-06-01: experiment; opentofu is the active IaC tool" },
+  { name = "sentry-cli",     note = "Sentry error tracking (releases, source maps, deploys)", disabled = true, reason = "Disabled 2026-07-15: no active personal Sentry usage; originally installed only for agent-driven service administration" },
+  { name = "datadog-ci",     note = "Datadog CI test visibility & synthetics", disabled = true, reason = "Disabled 2026-07-15: no active personal Datadog usage; originally installed only for agent-driven service administration" },
+]
+
+[[section]]
+name = "Security"
+kind = "formula"
+packages = [
+  { name = "gitleaks",     note = "Secret scanner: hardcoded creds in git history/working tree" },
+  { name = "restic",       note = "Encrypted offsite backups to object storage" },
+  { name = "osv-scanner",  note = "Dependency vulnerability scanner using the OSV database", disabled = true, reason = "Disabled 2026-08-26: no tracked use across the private repositories; project-native audits cover current dependency checks" },
+  { name = "semgrep",      note = "Static analysis / SAST: pattern-based code vulnerability rules" },
+  { name = "trivy",        note = "Container, filesystem, dependency, and IaC vulnerability scanner", disabled = true, reason = "Disabled 2026-08-26: no tracked container or IaC scanning workflow across the private repositories" },
+]
+
+[[section]]
+name = "JavaScript / TypeScript"
+kind = "formula"
+packages = [
+  { name = "bun",  note = "Retired JavaScript runtime and package manager", disabled = true, reason = "Disabled 2026-09-01: active projects migrated to Node and pnpm; credentialed automation uses bounded Deno" },
+  { name = "deno", note = "Permission-bounded TypeScript runtime for credentialed automation" },
+  { name = "fnm",  note = "Node version manager; installs the current LTS for Astro and other Node projects" },
+]
+
+[[section]]
+name = "Go"
+kind = "formula"
+packages = [
+  { name = "go",             note = "Go programming language" },
+  { name = "golangci-lint",  note = "Go linter aggregator" },
+]
+
+[[section]]
+name = "Python"
+kind = "formula"
+packages = [
+  { name = "uv",     note = "Python package/installer & the dotfiles CLI runtime. Bootstrap prerequisite (installed before this manifest runs); declared here for documentation + stale-suppression." },
+  { name = "py-spy", note = "Sampling profiler for live Python processes", disabled = true, reason = "Disabled 2026-08-26: no tracked profiling workflow across the private repositories; install per investigation" },
+]
+
+# =============================================================================
+# Applications (casks)
+# =============================================================================
+
+[[section]]
+name = "Essentials"
+kind = "cask"
+packages = [
+  { name = "google-chrome",   note = "Web browser" },
+  { name = "google-drive",    note = "Drive <-> Mac selective sync. Use STREAMING mode (default; nothing bulk-downloaded) + per-folder 'Available offline' for local copies; pick which Mac folders upload under Settings > My MacBook. Never enable 'Mirror files' (would pull all of Drive)" },
+  { name = "tailscale-app",   note = "Mesh VPN for secure laptop access" },
+  { name = "termius",         note = "Former phone SSH/Mosh client for remote access; retired", disabled = true, reason = "Retired 2026-08-26: phone access is Paseo over Tailscale; no phone SSH client is needed" },
+]
+
+[[section]]
+name = "IDE"
+kind = "cask"
+packages = [
+  { name = "cursor",              note = "AI-native editor", disabled = true, reason = "Disabled 2026-07-15: extra editor/agent control plane did not earn its overlap with Zed + Claude/Codex" },
+  { name = "zed",                 note = "Primary GPU-native editor with ACP agent panel" },
+]
+
+[[section]]
+name = "Productivity"
+kind = "cask"
+flag = "productivity"
+packages = [
+  { name = "rectangle",        note = "Window management" },
+  { name = "flycut",           note = "Clipboard manager" },
+  { name = "ghostty",          note = "GPU-accelerated terminal" },
+  { name = "caffeine",         note = "Intel-only, requires Rosetta" },
+  { name = "flux-app",         note = "Screen color temperature" },
+  { name = "granola",          note = "Former meeting transcription app", disabled = true, reason = "Retired 2026-09-04: transcription reliability was insufficient across repeated meetings" },
+  { name = "perplexity",       note = "No Homebrew cask; app was installed manually", disabled = true, reason = "Disabled 2026-07-14: desktop app removed; use web only if needed" },
+  { name = "typewhisper",      note = "Local macOS dictation; use Parakeet Unified EN 0.6B with Pop start, Purr success, and Submarine error sounds" },
+  { name = "wispr-flow",       note = "Former cloud voice dictation tool", disabled = true, reason = "Retired 2026-09-04: cloud-only transcription does not meet the local-processing preference while OpenWhispr and TypeWhisper are stronger candidates" },
+  { name = "aqua-voice",       note = "Voice dictation alternative", disabled = true, reason = "Disabled 2026-07-15: local transcription alternatives are private, adequate, and subscription-free" },
+  { name = "obsidian",         note = "Former Markdown editor; Notes website is the primary knowledge interface", disabled = true, reason = "Retired 2026-08-26: the Notes website now provides the useful reading, editing, finance, and world-model surfaces without the plugin and sync burden" },
+  { name = "qlmarkdown",       note = "Quick Look: rendered .md previews (sbarex)" },
+  { name = "syntax-highlight", note = "Quick Look: syntax highlighting for code, yaml, toml, json, cfg, etc. (sbarex)" },
+]
+
+[[section]]
+name = "Development Apps"
+kind = "cask"
+packages = [
+  { name = "orbstack",         note = "Docker Desktop alternative (faster, better macOS integration)" },
+  { name = "ngrok",            note = "Secure tunnels to localhost (official Homebrew cask; installs the CLI binary)" },
+  { name = "axiom",            note = "Axiom observability CLI (axiomhq/tap cask; narrowly trusted above)" },
+  { name = "gcloud-cli",       note = "Google Cloud SDK (cask renamed from google-cloud-sdk). Re-enabled 2026-07-06: hard dependency of `gws auth setup` (OAuth client provisioning)" },
+]
+
+[[section]]
+name = "Social Apps"
+kind = "cask"
+flag = "social"
+packages = [
+  { name = "spotify",             note = "" },
+  { name = "slack",               note = "" },
+  { name = "slack-cli",           note = "Slack platform dev CLI (app development, not chat)", disabled = true, reason = "Disabled 2026-07-15: Slack is infrequently used and does not need local automation" },
+  { name = "zoom",                note = "" },
+  { name = "whatsapp",            note = "" },
+]
+
+[[section]]
+name = "Fonts"
+kind = "cask"
+packages = [
+  { name = "font-fira-code-nerd-font",        note = "Active terminal font (Ghostty primary)" },
+]
+
+[[section]]
+name = "AI CLI Tools"
+kind = "auto"
+flag = "ai"
+packages = [
+  { name = "claude-code",          note = "Installed via the special.claude_code block", disabled = true, reason = "Disabled 2026-05-17: cask tracks the stable dist-tag and can lag releases by days or weeks" },
+  { name = "claude",               note = "Claude Desktop (macOS app)", disabled = true, reason = "Disabled 2026-08-29: unused, while taking a break from Anthropic products" },
+  { name = "conductor",            note = "Claude Code parallelisation", disabled = true, reason = "Disabled 2026-07-15: large agent fleets do not solve a current problem; native subagents and Ghostty tabs cover the desired maximum of roughly five concurrent agents" },
+  { name = "codex",                note = "OpenAI Codex CLI (terminal agent) — or: npm i -g @openai/codex" },
+  { name = "open-interpreter",     note = "Rust Codex fork for low-cost/open models and provider-specific harness emulation (openinterpreter.com); Apache-2.0, installs via upstream script", disabled = true, reason = "Watch 2026-07-25: very popular, promising harness for cheap/open models and a strong tool to try later; no need to evaluate today because Pi + Codex cover the current workflow. Catalogued in workbench playbook/knowledge/agent-harness-landscape.md" },
+  { name = "chatgpt",              note = "OpenAI ChatGPT desktop app", disabled = true, reason = "Disabled 2026-09-15: desktop app removed at owner request" },
+  { name = "paseo",                note = "Desktop client for monitoring and controlling local coding agents from desktop and mobile" },
+  { name = "googleworkspace-cli",  note = "Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin)" },
+  { name = "gemini-cli",           note = "Google terminal coding agent", disabled = true, reason = "Disabled 2026-06-09: replaced during the Antigravity evaluation; active agent support is now focused on Claude and Codex" },
+  { name = "antigravity-cli",      note = "Google Antigravity CLI", disabled = true, reason = "Disabled 2026-07-15: focus active agent support on Claude and Codex" },
+  { name = "antigravity",          note = "Google Antigravity AI-native IDE", disabled = true, reason = "Disabled 2026-07-15: overlaps Cursor and other agentic editors without offering a needed current capability; open to reevaluation" },
+  { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
+  { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
+  { name = "opencode",             note = "Vendor-neutral terminal coding agent", disabled = true, reason = "Disabled 2026-06-01: vendor-neutral CLIs rolled back (subscription economics); standardized on Claude Code + Codex" },
+  { name = "amp",                  note = "Sourcegraph Amp agent (ampcode.com); CLI via curl installer, npm @sourcegraph/amp, or sourcegraph/amp-cli tap", disabled = true, reason = "Watch 2026-07-20: heavily built-out frontier-pushing agent; tracking, not adopting — active agent support stays on Claude Code + Codex" },
+  { name = "droid",               note = "Factory.ai droid agent (factory.ai); CLI via curl app.factory.ai/cli, no Homebrew", disabled = true, reason = "Watch 2026-07-20: heavily built-out frontier-pushing agent; tracking, not adopting — active agent support stays on Claude Code + Codex" },
+  { name = "aider",               note = "Aider git-native terminal pair-programmer (aider.chat); install via pipx/uv, Apache-2.0", disabled = true, reason = "Watch 2026-07-20: OG minimal BYOK harness, closest cousin to Pi; catalogued in workbench playbook/knowledge/agent-harness-landscape.md, not adopted — daily drivers stay Claude Code + Codex" },
+  { name = "lm-studio",            note = "Local LLM runner (GUI): MLX (Apple-native) + GGUF, model browser, OpenAI-compatible server", disabled = true, reason = "Disabled 2026-08-28: oMLX replaced it for the active local-inference trial because the open-source server adds multi-model serving, prefix caching, and the agent-facing controls now needed. LM Studio worked well and remains the fallback if oMLX fails acceptance. Benchmarks and rationale are preserved in docs/local-llm-stack.md" },
+  { name = "huggingface-cli",      note = "Hugging Face CLI", disabled = true, reason = "Disabled 2026-07-15: no model-development workflow needs it; install per-project if local-model experimentation resumes" },
+]
+
+[[section]]
+name = "Special Formulae"
+kind = "formula"
+packages = [
+  { name = "docker-compose",  note = "Docker Compose (formula-only, not cask)" },
+  { name = "omlx",            flag = "ai", note = "Open-source MLX inference server for Apple Silicon: multi-model serving, prefix caching, OpenAI/Anthropic APIs (jundot/omlx)" },
+  { name = "ollama",          note = "~30% slower than llama.cpp; redundant", disabled = true, reason = "Disabled 2026-08-28: oMLX is the active Apple Silicon runner; Ollama adds no needed compatibility advantage and previously trailed native MLX throughput" },
+  { name = "llama.cpp",       note = "Useful for raw `llama-bench` / `llama-server`; reinstall when needed", disabled = true, reason = "Disabled 2026-08-28: oMLX is the active runner; reinstall llama.cpp only for a cross-runtime benchmark or a GGUF model with no viable MLX build" },
+]
+
+# =============================================================================
+# Special installers (not plain brew)
+# =============================================================================
+
+[special.omlx]
+method = "omlx_setup"
+flag = "ai"
+note = "Idempotently install xgrammar, repair its macOS loader metadata when needed, download the selected Qwen model, and restart oMLX after changes"
+
+[special.rust]
+method = "rustup"
+note = "Official installer; preferred over Homebrew for version management"
+
+[special.supertonic]
+method = "python_package"
+flag = "ai"
+disabled = true
+reason = "Retired 2026-08-26: local neural speech did not provide enough value to justify its model, dependency, and cross-repository integration surface; revisit only when a concrete recurring workflow makes speech materially useful"
+note = "Tombstone for the retired Supertonic local neural text-to-speech experiment."
+
+[special.claude_code]
+method = "curl_install"
+flag = "ai"
+note = "Tracks `latest`, not the lagging `stable` cask. Migrated off npm global 2026-05-28."
+
+# =============================================================================
+# Go tools
+# =============================================================================
+
+[[go_package]]
+name = "gopls"
+module = "golang.org/x/tools/gopls"
+version = "v0.23.0"
+
+[[go_package]]
+name = "dlv"
+module = "github.com/go-delve/delve/cmd/dlv"
+version = "v1.27.0"
+
+[[go_package]]
+name = "air"
+module = "github.com/air-verse/air"
+version = "v1.66.0"
+
+[[go_package]]
+name = "sqlc"
+module = "github.com/sqlc-dev/sqlc/cmd/sqlc"
+version = "v1.31.1"
+
+[[go_package]]
+name = "goose"
+module = "github.com/pressly/goose/v3/cmd/goose"
+version = "v3.27.2"
+
+[[go_package]]
+name = "templ"
+module = "github.com/a-h/templ/cmd/templ"
+version = "v0.3.1020"
+
+[[go_package]]
+name = "staticcheck"
+module = "honnef.co/go/tools/cmd/staticcheck"
+version = "v0.7.0"
+
+# =============================================================================
+# npm globals (no brew formula available / brew formula is wrong package)
+# =============================================================================
+
+[[npm_package]]
+name = "@getpaseo/cli"
+version = "0.5.2"
+flag = "ai"
+disabled = true
+reason = "Retired 2026-08-26: the managed daemon uses the CLI bundled with Paseo.app so daemon and desktop protocol versions stay aligned"
+note = "Former standalone Paseo daemon CLI; binary is `paseo`"
+
+[[npm_package]]
+name = "agent-browser"
+version = "0.32.2"
+flag = "ai"
+note = "Browser-automation CLI for AI agents (Tier 2 — shell out, no MCP overhead)"
+
+[[npm_package]]
+name = "ctx7"
+version = "0.5.6"
+flag = "ai"
+note = "Context7 docs-lookup CLI (replaces the context7 MCP — `ctx7 library <name>` / `ctx7 docs <id> <query>`, no MCP context tax, universal across agents)"
+
+[[npm_package]]
+name = "@openwhispr/cli"
+version = "0.1.2"
+flag = "productivity"
+note = "Former OpenWhispr desktop bridge CLI"
+disabled = true
+reason = "Retired 2026-09-09: TypeWhisper owns dictation; the OpenWhispr trial has ended"
+
+[[npm_package]]
+name = "pinchtab"
+flag = "ai"
+note = "Browser automation CLI for AI agents"
+disabled = true
+reason = "Removed 2026-07-30: the experiment produced no unique use case; Playwright plus agent-browser cover the active workflows"
+
+[[npm_package]]
+name = "wrangler"
+version = "4.114.0"
+note = "Cloudflare Workers CLI (brew formula `wrangler` is the unrelated Erlang refactor tool, disabled upstream 2025-07-01)"

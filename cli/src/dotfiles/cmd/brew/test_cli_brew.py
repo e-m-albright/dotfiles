@@ -1,0 +1,299 @@
+"""Tests for the `dotfiles brew` Typer commands."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from typer.testing import CliRunner
+
+from dotfiles.app.main import app
+from dotfiles.testing.fakes import FakeProcessRunner, make_fake_context
+
+runner = CliRunner()
+
+# Minimal packages.toml for CLI tests
+_PACKAGES_TOML = """\
+[taps]
+list = []
+
+[[section]]
+name = "Core"
+kind = "formula"
+packages = [
+  { name = "git" },
+  { name = "old-tool", disabled = true, reason = "Disabled 2026-08-26: no longer needed" },
+]
+"""
+
+
+def _make_ctx(tmp_path: Path) -> object:
+    """Build a fake context with packages.toml under tmp_path/macos/."""
+    macos_dir = tmp_path / "macos"
+    macos_dir.mkdir(parents=True, exist_ok=True)
+    (macos_dir / "packages.toml").write_text(_PACKAGES_TOML)
+
+    runner_fake = FakeProcessRunner()
+    # brew list/leaves commands return empty (nothing installed)
+    runner_fake.script(("brew", "list", "--formula", "-1"), stdout="")
+    runner_fake.script(("brew", "leaves", "--installed-on-request"), stdout="")
+    runner_fake.script(("brew", "list", "--cask", "-1"), stdout="")
+
+    return make_fake_context(
+        runner=runner_fake,
+        home=tmp_path / "home",
+        dotfiles_dir=tmp_path,
+    )
+
+
+# ---------------------------------------------------------------------------
+# brew --help
+# ---------------------------------------------------------------------------
+
+
+def test_brew_help_lists_subcommands() -> None:
+    result = runner.invoke(app, ["brew", "--help"])
+    assert result.exit_code == 0
+    assert "install" in result.output
+    assert "prune" in result.output
+    assert "stale" in result.output
+    assert "upgrade" in result.output
+
+
+# ---------------------------------------------------------------------------
+# brew upgrade
+# ---------------------------------------------------------------------------
+
+
+def test_brew_upgrade_runs_and_exits_zero(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    result = runner.invoke(app, ["brew", "upgrade"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "Upgrading Homebrew packages" in result.output
+
+
+def test_brew_upgrade_nonzero_exit_on_failure(tmp_path: Path) -> None:
+    macos_dir = tmp_path / "macos"
+    macos_dir.mkdir(parents=True, exist_ok=True)
+    (macos_dir / "packages.toml").write_text(_PACKAGES_TOML)
+
+    runner_fake = FakeProcessRunner()
+    runner_fake.script(("brew", "upgrade"), exit_code=1, stderr="boom")
+    ctx = make_fake_context(runner=runner_fake, home=tmp_path / "home", dotfiles_dir=tmp_path)
+    result = runner.invoke(app, ["brew", "upgrade"], obj=ctx)
+    assert result.exit_code == 1
+
+
+# ---------------------------------------------------------------------------
+# brew stale
+# ---------------------------------------------------------------------------
+
+
+def test_brew_stale_exit_zero(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+    assert result.exit_code == 0, result.output
+
+
+def test_brew_stale_shows_sections(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+    assert "Stale packages" in result.output
+    assert "Stale taps" in result.output
+    assert "Missing packages" in result.output
+
+
+def test_brew_stale_reports_missing(tmp_path: Path) -> None:
+    """git is declared but not installed → appears in missing."""
+    ctx = _make_ctx(tmp_path)
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+    assert "git" in result.output
+
+
+def test_brew_stale_reports_stale_tap(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "tap"), stdout="old/tap\n")
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+    assert "old/tap" in result.output
+    assert "brew untap old/tap" in result.output
+
+
+def test_brew_stale_reports_stale(tmp_path: Path) -> None:
+    """Package installed but not declared → appears as stale."""
+    macos_dir = tmp_path / "macos"
+    macos_dir.mkdir(parents=True, exist_ok=True)
+    (macos_dir / "packages.toml").write_text(_PACKAGES_TOML)
+
+    runner_fake = FakeProcessRunner()
+    runner_fake.script(("brew", "leaves", "--installed-on-request"), stdout="git\nextra-tool\n")
+    runner_fake.script(("brew", "list", "--formula", "-1"), stdout="git\nextra-tool\n")
+    runner_fake.script(("brew", "list", "--cask", "-1"), stdout="")
+
+    ctx = make_fake_context(runner=runner_fake, home=tmp_path / "home", dotfiles_dir=tmp_path)
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+    assert "extra-tool" in result.output
+
+
+# ---------------------------------------------------------------------------
+# brew prune
+# ---------------------------------------------------------------------------
+
+
+def test_brew_prune_previews_without_uninstalling(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "list", "--formula", "-1"), stdout="old-tool\n")
+
+    result = runner.invoke(app, ["brew", "prune"], obj=ctx)
+
+    assert result.exit_code == 0
+    assert "old-tool" in result.output
+    assert "brew uninstall old-tool" in result.output
+    assert ("brew", "uninstall", "old-tool") not in ctx.runner.calls
+    assert "--yes" in result.output
+
+
+def test_brew_prune_yes_uninstalls_but_keeps_manifest_tombstone(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "list", "--formula", "-1"), stdout="old-tool\n")
+
+    result = runner.invoke(app, ["brew", "prune", "--yes"], obj=ctx)
+
+    assert result.exit_code == 0
+    assert ("brew", "uninstall", "old-tool") in ctx.runner.calls
+    manifest = (tmp_path / "macos" / "packages.toml").read_text()
+    assert 'name = "old-tool"' in manifest
+    assert "disabled = true" in manifest
+
+
+def test_brew_prune_reports_nothing_to_remove(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["brew", "prune"], obj=_make_ctx(tmp_path))
+
+    assert result.exit_code == 0
+    assert "none" in result.output
+
+
+# ---------------------------------------------------------------------------
+# brew install --dry-run
+# ---------------------------------------------------------------------------
+
+
+def test_brew_install_dry_run_exit_zero(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    result = runner.invoke(app, ["brew", "install", "--dry-run"], obj=ctx)
+    assert result.exit_code == 0, result.output
+
+
+def test_brew_install_dry_run_no_mutating_runner_calls(tmp_path: Path) -> None:
+    """--dry-run must not call brew install or rustup or npm install."""
+    macos_dir = tmp_path / "macos"
+    macos_dir.mkdir(parents=True, exist_ok=True)
+    (macos_dir / "packages.toml").write_text(_PACKAGES_TOML)
+
+    runner_fake = FakeProcessRunner()
+    runner_fake.script(("brew", "list", "--formula", "-1"), stdout="")
+    runner_fake.script(("brew", "list", "--cask", "-1"), stdout="")
+
+    ctx = make_fake_context(runner=runner_fake, home=tmp_path / "home", dotfiles_dir=tmp_path)
+    runner.invoke(app, ["brew", "install", "--dry-run"], obj=ctx)
+
+    mutating = [
+        c
+        for c in runner_fake.calls
+        if (c[0] == "brew" and "install" in c and "list" not in c)
+        or (c[0] == "npm" and "install" in c)
+        or any("rustup.rs" in part for part in c)
+    ]
+    assert mutating == [], f"Unexpected mutating calls in dry-run: {mutating}"
+
+
+def test_brew_install_only_runs_specials_declared_by_manifest(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    result = runner.invoke(app, ["brew", "install"], obj=ctx)
+
+    assert result.exit_code == 0, result.output
+    assert not any("rustup.rs" in part for call in ctx.runner.calls for part in call)
+
+
+def test_brew_clean_reports_success_and_failure(tmp_path: Path) -> None:
+    success_ctx = _make_ctx(tmp_path / "success")
+    success = runner.invoke(app, ["clean"], obj=success_ctx)
+
+    failure_ctx = _make_ctx(tmp_path / "failure")
+    failure_ctx.runner.script(("brew", "cleanup", "--prune=30"), exit_code=1, stderr="busy")
+    failure = runner.invoke(app, ["clean"], obj=failure_ctx)
+
+    assert success.exit_code == 0
+    assert failure.exit_code == 1
+    assert "cleanup failed" in failure.output
+
+
+def test_brew_install_surfaces_inventory_failure(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "list", "--formula", "-1"), exit_code=1, stderr="offline")
+
+    result = runner.invoke(app, ["brew", "install"], obj=ctx)
+
+    assert result.exit_code == 1
+    assert "offline" in result.output
+
+
+def test_brew_install_exits_nonzero_when_a_package_fails(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "install", "git"), exit_code=1, stderr="failed")
+
+    result = runner.invoke(app, ["brew", "install"], obj=ctx)
+
+    assert result.exit_code == 1
+    assert "git" in result.output
+
+
+def test_brew_stale_surfaces_inventory_failure(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    ctx.runner.script(("brew", "leaves", "--installed-on-request"), exit_code=1)
+
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+
+    assert result.exit_code == 1
+    assert "Homebrew inventory failed" in result.output
+
+
+def test_brew_stale_reports_runtime_tool_drift(tmp_path: Path) -> None:
+    manifest = (
+        _PACKAGES_TOML
+        + """
+[[npm_package]]
+name = "wrangler"
+version = "4.0.0"
+
+[[go_package]]
+name = "gopls"
+module = "golang.org/x/tools/gopls"
+version = "v1.0.0"
+"""
+    )
+    ctx = _make_ctx(tmp_path)
+    (tmp_path / "macos/packages.toml").write_text(manifest)
+    ctx.runner.script(("npm", "ls", "-g", "--depth=0", "--json"), stdout="{}")
+    ctx.runner.script(("which", "gopls"), exit_code=1)
+
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+
+    assert result.exit_code == 0
+    assert "wrangler (missing)" in result.output
+    assert "gopls (missing)" in result.output
+    assert "Heal with" in result.output
+
+
+def test_no_ai_flag_disables_a_flagged_section(tmp_path: Path) -> None:
+    manifest = _PACKAGES_TOML.replace('name = "Core"', 'name = "Core"\nflag = "ai"')
+    macos_dir = tmp_path / "macos"
+    macos_dir.mkdir(parents=True)
+    (macos_dir / "packages.toml").write_text(manifest)
+    fake = FakeProcessRunner()
+    fake.script(("brew", "list", "--formula", "-1"), stdout="")
+    fake.script(("brew", "list", "--cask", "-1"), stdout="")
+    ctx = make_fake_context(runner=fake, dotfiles_dir=tmp_path)
+
+    result = runner.invoke(app, ["brew", "install", "--dry-run", "--no-ai"], obj=ctx)
+
+    assert result.exit_code == 0, result.output
+    assert "brew install git" not in result.output

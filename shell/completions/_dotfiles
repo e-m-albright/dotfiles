@@ -1,0 +1,19 @@
+#compdef dotfiles dfs
+# Zsh completion for the `dotfiles` CLI (and its `dfs` alias).
+# Autoloaded from $fpath — see shell/.zshrc, which prepends shell/completions/.
+# The Typer registry is authoritative; app/test_command_tree.py prevents drift.
+
+local -a commands
+commands=(
+    'install:Run full dotfiles setup'
+    'doctor:Check tools and config (--fix to repair)'
+    'credential:Inventory and enroll local programmatic credentials'
+    'update:Update OS, Homebrew, runtimes, and dev tools'
+    'clean:Clean caches'
+    'dock:Reset macOS Dock'
+    'remote:Paseo phone access over Tailscale'
+    'password:Generate a random password and copy it to the clipboard'
+    'brew:Brew namespace (install, upgrade, stale)'
+    'profile-shell:Profile shell startup time'
+)
+_describe 'command' commands

@@ -1,0 +1,48 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8000,
+    "cors_origins": [
+      "http://127.0.0.1:8000",
+      "http://localhost:8000"
+    ],
+    "auto_start_on_launch": true,
+    "burst_decode_mode": "balanced",
+    "preserve_mid_system_cache": true
+  },
+  "model": {
+    "model_dirs": [
+      "${HOME}/.omlx/models"
+    ],
+    "model_dir": "${HOME}/.omlx/models",
+    "model_fallback": false,
+    "hide_helper_models": false
+  },
+  "memory": {
+    "prefill_memory_guard": true,
+    "memory_guard_tier": "balanced",
+    "soft_threshold": 0.85,
+    "hard_threshold": 0.95
+  },
+  "scheduler": {
+    "max_concurrent_requests": 8,
+    "chunked_prefill": false,
+    "prefill_priority": "context",
+    "decode_fairness": true
+  },
+  "cache": {
+    "enabled": true,
+    "gdn_ssd_split_enabled": true,
+    "gdn_snapshot_storage": "auto",
+    "ssd_cache_max_size": "auto"
+  },
+  "sampling": {
+    "max_context_window": 32768,
+    "max_tokens": 32768,
+    "temperature": 1.0,
+    "top_p": 0.95
+  },
+  "logging": {
+    "retention_days": 7
+  }
+}

@@ -1,0 +1,79 @@
+#!/bin/bash
+# Shared print functions for consistent formatting across all scripts.
+# Used by: install.sh, bin/dotfiles
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+DIM='\033[2m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Symbols
+CHECK="${GREEN}✓${NC}"
+CROSS="${RED}✗${NC}"
+BULLET="${CYAN}•${NC}"
+WARN="${YELLOW}⚠${NC}"
+ARROW="${BLUE}→${NC}"
+SKIP="${YELLOW}○${NC}"
+
+# --- Headers & Sections ---
+
+print_header() {
+    printf "\n"
+    printf "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+    printf "${BOLD}${BLUE}  %s${NC}\n" "$1"
+    printf "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+}
+
+print_section() {
+    printf "\n"
+    printf "${CYAN}┌─${NC} ${BOLD}${CYAN}%s${NC}\n" "$1"
+}
+
+print_completion() {
+    printf "\n"
+    printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+    printf "${CHECK} ${BOLD}${GREEN}%s${NC}\n" "$1"
+    printf "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+    printf "\n"
+}
+
+# --- Status messages ---
+
+print_success() {
+    printf "  ${CHECK} ${GREEN}%s${NC}\n" "$1"
+}
+
+print_info() {
+    printf "  ${BULLET} ${CYAN}%s${NC}\n" "$1"
+}
+
+print_dim() {
+    printf "  ${DIM}%s${NC}\n" "$1"
+}
+
+print_warn() {
+    printf "  ${WARN} ${YELLOW}%s${NC}\n" "$1"
+}
+
+print_error() {
+    printf "  ${CROSS} ${RED}%s${NC}\n" "$1"
+}
+
+# --- Action messages ---
+
+print_action() {
+    printf "  ${ARROW} ${BOLD}%s${NC}\n" "$1"
+}
+
+print_step() {
+    printf "  ${CHECK} %s\n" "$1"
+}
+
+print_skip() {
+    printf "  ${SKIP} %s ${DIM}(already exists)${NC}\n" "$1"
+}

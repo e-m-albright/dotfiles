@@ -1,0 +1,194 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from typer.testing import CliRunner
+
+from dotfiles.app.main import app
+from dotfiles.testing.fakes import FakeKeychainStore, FakeProcessRunner, make_fake_context
+
+runner = CliRunner()
+
+
+def test_init_and_json_list(tmp_path: Path) -> None:
+    context = make_fake_context(home=tmp_path)
+    initialized = runner.invoke(app, ["credential", "init"], obj=context)
+    assert initialized.exit_code == 0
+
+    listed = runner.invoke(app, ["credential", "list", "--json"], obj=context)
+    assert listed.exit_code == 0
+    payload = json.loads(listed.stdout)
+    assert [item["id"] for item in payload] == [
+        "google-pi",
+        "anthropic-pi",
+        "openai-pi",
+        "openrouter-pi",
+    ]
+    assert all("secret" not in item for item in payload)
+
+
+def test_run_injects_only_declared_environment_into_child(tmp_path: Path, monkeypatch) -> None:
+    process_runner = FakeProcessRunner()
+    context = make_fake_context(runner=process_runner, home=tmp_path)
+    assert runner.invoke(app, ["credential", "init"], obj=context).exit_code == 0
+    command = (
+        "security",
+        "find-generic-password",
+        "-s",
+        "dotfiles.credential.pi.google",
+        "-a",
+        "api-key",
+        "-w",
+    )
+    process_runner.script(command, stdout="test-value\n")
+    executed: dict[str, object] = {}
+
+    def fake_exec(file: str, args: list[str], env: dict[str, str]) -> None:
+        executed.update(
+            file=file,
+            args=args,
+            value=env["GEMINI_API_KEY"],
+            inherited_openai="OPENAI_API_KEY" in env,
+            endpoint=env.get("GEMINI_API_ENDPOINT"),
+            environment=env,
+        )
+
+    monkeypatch.setattr(
+        "dotfiles.cmd.credential.cli.os.environ",
+        {
+            "HOME": str(tmp_path),
+            "PATH": "/usr/bin:/bin",
+            "LANG": "en_US.UTF-8",
+            "TMPDIR": str(tmp_path / "tmp"),
+            "TERM": "xterm-256color",
+            "OPENAI_API_KEY": "ambient-value",
+            "GH_TOKEN": "fake-github-secret",
+            "RESTIC_PASSWORD": "fake-backup-secret",
+            "CUSTOM_SESSION": "fake-unclassified-secret",
+            "NODE_OPTIONS": "--require=/fake/injected.js",
+            "PYTHONPATH": "/fake/injected",
+            "HTTP_PROXY": "http://fake-proxy.invalid",
+            "DYLD_INSERT_LIBRARIES": "/fake/injected.dylib",
+        },
+    )
+    monkeypatch.setattr("dotfiles.cmd.credential.cli.os.execvpe", fake_exec)
+
+    result = runner.invoke(
+        app, ["credential", "run", "google-pi", "--", "python", "job.py"], obj=context
+    )
+
+    assert result.exit_code == 0
+    assert executed == {
+        "file": "python",
+        "args": ["python", "job.py"],
+        "value": "test-value",
+        "inherited_openai": False,
+        "endpoint": None,
+        "environment": {
+            "HOME": str(tmp_path),
+            "PATH": "/usr/bin:/bin",
+            "LANG": "en_US.UTF-8",
+            "TMPDIR": str(tmp_path / "tmp"),
+            "TERM": "xterm-256color",
+            "GEMINI_API_KEY": "test-value",
+        },
+    }
+
+
+def test_human_list_renders_grants_status_consumers_and_access(tmp_path: Path) -> None:
+    context = make_fake_context(home=tmp_path)
+    assert runner.invoke(app, ["credential", "init"], obj=context).exit_code == 0
+
+    result = runner.invoke(app, ["credential", "list"], obj=context)
+
+    assert result.exit_code == 0
+    assert "google-pi" in result.stdout
+    assert "Consumer boundary" in result.stdout
+    assert "Gemini API" in result.stdout
+
+
+def test_commands_report_inventory_errors(tmp_path: Path) -> None:
+    context = make_fake_context(home=tmp_path)
+
+    missing = runner.invoke(app, ["credential", "list"], obj=context)
+    assert missing.exit_code == 1
+    assert "not initialized" in missing.stdout
+
+    assert runner.invoke(app, ["credential", "init"], obj=context).exit_code == 0
+    duplicate = runner.invoke(app, ["credential", "init"], obj=context)
+    assert duplicate.exit_code == 1
+    assert "already exists" in duplicate.stdout
+
+
+def test_set_can_save_nonsecret_endpoint_with_api_key(tmp_path: Path) -> None:
+    process_runner = FakeProcessRunner()
+    context = make_fake_context(runner=process_runner, home=tmp_path)
+    assert runner.invoke(app, ["credential", "init"], obj=context).exit_code == 0
+    inventory = tmp_path / ".config/dotfiles/credentials.toml"
+    text = inventory.read_text()
+    text = text.replace(
+        'environment = "GEMINI_API_KEY"\n',
+        'environment = "GEMINI_API_KEY"\nendpoint_environment = "GEMINI_API_ENDPOINT"\n',
+        1,
+    )
+    inventory.write_text(text)
+    inventory.chmod(0o600)
+
+    result = runner.invoke(
+        app,
+        [
+            "credential",
+            "set",
+            "google-pi",
+            "--endpoint",
+            "https://example.cognitiveservices.azure.com/",
+        ],
+        input="test-api-key\n",
+        obj=context,
+    )
+
+    assert result.exit_code == 0
+    listed = json.loads(runner.invoke(app, ["credential", "list", "--json"], obj=context).stdout)
+    assert listed[0]["endpoint"] == "https://example.cognitiveservices.azure.com/"
+    assert "test-api-key" not in result.stdout
+
+
+def test_set_prompts_once_for_api_key_and_reports_enrollment(tmp_path: Path) -> None:
+    process_runner = FakeProcessRunner()
+    keychain = FakeKeychainStore()
+    context = make_fake_context(runner=process_runner, keychain=keychain, home=tmp_path)
+    assert runner.invoke(app, ["credential", "init"], obj=context).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["credential", "set", "google-pi"],
+        input="test-api-key\n",
+        obj=context,
+    )
+
+    assert result.exit_code == 0
+    assert "Google Gemini API for Pi - API key:" in result.stdout
+    assert result.stdout.count("API key") == 1
+    assert "password" not in result.stdout.lower()
+    assert "test-api-key" not in result.stdout
+    assert "stored in Keychain" in result.stdout
+    assert keychain.calls == [
+        ("dotfiles.credential.pi.google", "api-key", "Google Gemini API for Pi")
+    ]
+
+
+def test_link_pi_requires_explicit_force_for_replacement(tmp_path: Path) -> None:
+    context = make_fake_context(home=tmp_path)
+    assert runner.invoke(app, ["credential", "init"], obj=context).exit_code == 0
+    auth = tmp_path / ".pi" / "agent" / "auth.json"
+    auth.parent.mkdir(parents=True)
+    auth.write_text('{"google": {"type": "api_key", "key": "existing"}}')
+    auth.chmod(0o600)
+
+    refused = runner.invoke(app, ["credential", "link-pi", "google-pi"], obj=context)
+    assert refused.exit_code == 1
+    assert "already configured" in refused.stdout
+
+    linked = runner.invoke(app, ["credential", "link-pi", "google-pi", "--force"], obj=context)
+    assert linked.exit_code == 0
