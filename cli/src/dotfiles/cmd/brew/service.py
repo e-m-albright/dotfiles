@@ -40,7 +40,7 @@ FeatureFlag = Literal["ai", "productivity", "social"]
 PackageKind = Literal["formula", "cask", "auto"]
 # Records how a non-Homebrew package reaches this host. `python_package` is
 # declarative only: that software arrives through this repo's Python dependencies.
-SpecialMethod = Literal["rustup", "curl_install", "python_package", "omlx_setup"]
+SpecialMethod = Literal["rustup", "claude_code", "python_package", "omlx_setup"]
 
 # Tombstone invariant (AGENTS.md): disabled entries retain a *dated* reason.
 _TOMBSTONE_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -55,10 +55,12 @@ def _require_dated_reason(kind: str, name: str, *, disabled: bool, reason: str) 
         raise ValueError(f"disabled {kind} {name!r} requires a dated reason (YYYY-MM-DD)")
 
 
-class Package(BaseModel):
-    """One installable package entry within a section."""
+class _ManifestModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, populate_by_name=True)
 
-    model_config = ConfigDict(frozen=True)
+
+class Package(_ManifestModel):
+    """One installable package entry within a section."""
 
     name: str
     note: str = ""
@@ -72,10 +74,8 @@ class Package(BaseModel):
         return self
 
 
-class Section(BaseModel):
+class Section(_ManifestModel):
     """A named group of packages sharing a kind and optional feature flag."""
-
-    model_config = ConfigDict(frozen=True)
 
     name: str
     kind: PackageKind
@@ -83,10 +83,8 @@ class Section(BaseModel):
     packages: list[Package] = []
 
 
-class SpecialInstaller(BaseModel):
+class SpecialInstaller(_ManifestModel):
     """Bespoke installer block for software outside ordinary Homebrew management."""
-
-    model_config = ConfigDict(frozen=True)
 
     method: SpecialMethod
     flag: FeatureFlag | None = None
@@ -102,10 +100,8 @@ class SpecialInstaller(BaseModel):
         return self
 
 
-class NpmPackage(BaseModel):
+class NpmPackage(_ManifestModel):
     """An npm-global package (no brew formula available)."""
-
-    model_config = ConfigDict(frozen=True)
 
     name: str
     version: str = ""
@@ -120,10 +116,8 @@ class NpmPackage(BaseModel):
         return self
 
 
-class GoPackage(BaseModel):
+class GoPackage(_ManifestModel):
     """A version-pinned Go command installed with `go install`."""
-
-    model_config = ConfigDict(frozen=True)
 
     name: str
     module: str
@@ -133,20 +127,16 @@ class GoPackage(BaseModel):
 ALL_FLAGS: set[FeatureFlag] = {"ai", "productivity", "social"}
 
 
-class Taps(BaseModel):
+class Taps(_ManifestModel):
     """Homebrew taps and narrowly scoped items to trust before installation."""
-
-    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     items: list[str] = Field(default=[], alias="list")
     trusted_formulae: list[str] = []
     trusted_casks: list[str] = []
 
 
-class PackageManifest(BaseModel):
+class PackageManifest(_ManifestModel):
     """Full parsed contents of macos/packages.toml."""
-
-    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     taps: Taps
     sections: list[Section] = Field(default=[], alias="section")
@@ -718,7 +708,7 @@ def _install_special(
         return [StepResult(level="info", message=f"DRY RUN: install {name}")]
     if installer.method == "rustup":
         return install_rust(runner)
-    if installer.method == "curl_install":
+    if installer.method == "claude_code":
         return install_claude_code(runner)
     if installer.method == "omlx_setup":
         script = dotfiles_dir / "macos" / "configure-omlx.sh"

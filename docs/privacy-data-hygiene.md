@@ -1,140 +1,117 @@
-# Data Privacy & Hygiene
+# Data Privacy and Hygiene
 
-Last updated: 2026-05-25
+Provider sources checked: 2026-09-19. Account settings were not inspected.
 
-> Default-deny posture on AI training and scraping of private/personal content. Two separate risks to manage: (1) training use - your data improving someone's model - and (2) retention/exposure - your data sitting on their servers (or your disk) to be breached, subpoenaed, or reviewed. Different controls fix each. This doc is the practical playbook across the tools used in this setup.
+Training permission, retention, deletion, and access are separate controls.
+Turning off model improvement does not remove stored chats or prevent all
+safety review. Choose a service by the actual account terms, features, connected
+tools, and data involved; a consumer subscription, API key, or local model alone
+does not establish a complete privacy boundary.
 
-Companion doc: [local-llm-stack.md](./local-llm-stack.md) (the local tier).
+## Provider controls
 
----
+### Anthropic
 
-## Where does your data go? (the mental model)
+Review Model Improvement in Claude's Privacy settings. Consumer terms cover
+Free, Pro, Max, and Claude Code used through those accounts. Training can follow
+consent, feedback, or safety review; do not assume every consumer account has
+the same consent state. Feedback can include the related conversation.
+[Anthropic training policy](https://privacy.claude.com/en/articles/10023580-is-my-data-used-for-model-training)
 
-Three tiers, by how far your prompt travels:
+Deleting a chat normally removes it from backend storage within 30 days.
+Consented training data may remain de-identified for up to five years. Turning
+off improvement excludes previous and new chats from future training, but does
+not reverse training already running or completed. Legal, dispute, safety, and
+feedback retention exceptions apply. These consumer rules do not describe
+Claude for Work or API retention.
+[Anthropic retention policy](https://privacy.claude.com/en/articles/10023548-how-long-do-you-store-my-data)
 
-1. **On-device only** - a local model. Prompts never leave the machine. No training, no retention, no breach surface beyond your own disk. This is the tier for anything genuinely sensitive. **Under final acceptance testing on this machine** - oMLX serving, tool use, structured output, software-offline inference, and fail-closed provider failure pass; the physical network-disconnect test remains open.
-2. **Cloud consumer** (ChatGPT, Gemini, Claude Free/Pro/Max) - trained on by default unless you opt out, multi-year retention if you don't. The toggles below exist precisely because the default is "yes, use my data."
-3. **Cloud commercial / API** (Anthropic API, OpenAI API/Business/Enterprise, Workspace, GitHub Business/Enterprise) - not trained on by default, short retention (about 30 days), zero-data-retention (ZDR) available on request. Categorically better than consumer.
+### OpenAI
 
-**Rule of thumb:** consumer plans are the dangerous default; API/commercial terms are safe-by-default; local is safest. Match the tier to the sensitivity.
+In ChatGPT Settings, open Data Controls and turn off **Improve the model for
+everyone**. This covers new ChatGPT conversations and Codex tasks on personal
+plans. Codex has a separate full-environment training setting to review.
+Temporary Chats avoid history, memory creation, and model training, but can be
+reviewed for abuse and are retained for 30 days under the documented policy.
+[OpenAI Data Controls FAQ](https://help.openai.com/en/articles/7730893-chatgpt-data-usage-for-model-training)
 
----
+API data is not used for model training unless explicitly shared. Abuse logs
+normally last up to 30 days, with legal and safety exceptions. Application
+state has separate retention that varies by endpoint. Approved Zero Data
+Retention has endpoint, feature, and safety limitations; it is not a promise
+that every API feature stores nothing. Check the endpoint table before relying
+on it, and assess third-party tools separately.
+[OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data)
 
-## Provider-by-provider
+### Google Gemini
 
-### Anthropic - Claude & Claude Code
-- **Opt out:** `claude.ai` -> Settings -> Privacy -> turn off the model-training toggle.
-- **Plans:** Free/Pro/Max are consumer terms - toggle applies, and "coding sessions" (Claude Code) are explicitly covered. API / Claude for Work are commercial - never trained on.
-- **Retention:** opted out -> 30 days backend, then purged. Opted in -> up to 5 years de-identified in training pipelines.
-- **Claude Code specifics:** auth method decides the terms. Subscription login (`oauthAccount`, `organizationType: claude_max`) = consumer. API key = commercial. Check the account type, not the app.
-- **The overlooked copy:** Claude Code writes full plaintext transcripts to `~/.claude/projects/<project>/*.jsonl` that persist forever locally regardless of server settings. See cleanup below.
-- **Delete:** delete chats in-app -> removed from history, purged backend within 30 days; excluded from future training. Cannot un-train completed runs.
+Turn off **Keep Activity** in Gemini Apps Activity and review connected apps.
+Future chats then avoid model improvement unless feedback is submitted, but
+remain associated with the account for 72 hours. Human review can still support
+safety. Previously reviewed chats are disconnected from the account and may
+remain for up to three years; deleting activity does not delete those copies
+or data held by other connected services. Workspace accounts have separate
+terms, so verify the actual account rather than applying consumer rules to it.
+[Gemini Apps Privacy Hub](https://support.google.com/gemini/answer/13594961)
 
-### OpenAI - ChatGPT & API
-- **Opt out:** Profile -> Settings -> Data Controls -> turn off "Improve the model for everyone." Account-wide, forward-looking, immediate.
-- **Ephemeral option:** use Temporary Chat for one-offs (not saved to history, not trained on). The Memory feature persists data across chats - review/clear it.
-- **API / Business / Enterprise:** not trained on by default; about 30-day retention; opt-in only. ZDR available for eligible use cases.
-- **Delete:** Settings -> Data Controls -> clear conversations; deleted chats removed within 30 days.
+### GitHub Copilot
 
-### Google - Gemini & Workspace
-- **Opt out:** `myaccount.google.com` -> Data & Privacy -> Gemini Apps Activity -> Turn off. Stops future conversations from human review and model training.
-- **Sharp caveats (Gemini is the worst-behaved of the four):**
-  - Even with activity off, chats are kept up to 72h "to provide the service."
-  - Anything a human reviewer already saw is kept up to 3 years on a separate path with no user-facing delete. Treat anything you would regret a Google contractor reading as never safe to paste into consumer Gemini.
-  - Default auto-delete is 18 months - shorten it (Gemini Apps Activity -> Auto-delete -> 3 months).
-  - Personal Intelligence dashboard (in the Gemini UI) controls which Google services (Gmail, Drive, Calendar, Maps) Gemini can read - audit it.
-- **Workspace (paid):** content is not used to train models under Workspace terms - different from consumer Gmail/Gemini.
+Review AI training under Privacy in [Copilot settings](https://github.com/settings/copilot/features).
+The April 24, 2026 policy allows training from Free, Pro, and Pro+ interaction
+data unless opted out; previous opt-outs are preserved. Private repository
+content sent as context can be interaction data, even though private repository
+content at rest is excluded. Business and Enterprise accounts are outside this
+consumer policy change.
+[GitHub policy announcement](https://github.blog/changelog/2026-03-25-updates-to-our-privacy-statement-and-terms-of-service-how-we-use-your-data/)
 
-### GitHub - Copilot
-- **Opt out:** `github.com/settings/copilot/features` -> Privacy -> turn off "Allow GitHub to use my data for AI model training." Account-wide (one switch covers all repos).
-- **Default changed Apr 24, 2026:** GitHub now defaults this ON for Copilot Free/Pro/Pro+, using interaction data (prompts, suggestions, code snippets sent as context - including from private repos while you code). Business/Enterprise are exempt by contract.
-- **Private repos at rest are NOT trained on** - never were. The exposure is only the live Copilot interaction data, and only if you use Copilot.
+## Local inference acceptance
 
----
+The recorded [local stack](local-llm-stack.md) uses oMLX over loopback. Model
+generation, tool calls, structured output, software-offline inference, and
+failure when the local provider is unavailable have passed. The physical
+network-disconnect test remains open. Operational accuracy supports supervised
+assistance; autonomous writes remain outside the accepted use.
 
-## Settings to turn OFF (consolidated checklist)
+Before treating a workflow as local:
 
-- [ ] Claude: Privacy -> model training off
-- [ ] ChatGPT: Data Controls -> "Improve the model for everyone" off; review/clear Memory
-- [ ] Gemini: Gemini Apps Activity off; Auto-delete -> 3 months; audit Personal Intelligence connections
-- [ ] GitHub: Copilot features -> training off
-- [ ] Any AI IDE (Cursor/Windsurf/Zed AI): enable Privacy Mode / disable telemetry & code snippet collection
-- [ ] OS: keep FileVault (or equivalent full-disk encryption) on - the backstop for every local plaintext transcript
+1. Confirm that the selected model and endpoint are local and cloud fallback
+   is disabled.
+2. Disconnect external networking and repeat representative inference with
+   already-downloaded weights. Confirm provider failure does not trigger a
+   remote model.
+3. Review each agent tool, connector, extension, and telemetry setting. A local
+   model can still call a tool that sends content elsewhere. Offline success
+   proves offline operation is possible, not that online operation never sends
+   data.
+4. Locate transcripts, caches, exports, and backups. Confirm their access and
+   synchronization settings independently of the model endpoint.
 
----
+## Host hygiene
 
-## The local tier - acceptance testing
+- Keep FileVault enabled and lock the session when unattended. Disk encryption
+  protects a powered-off device; it does not isolate an unlocked session from
+  software running as the same user.
+- Use encrypted backups and test recovery. Include backup destinations and
+  retention in the privacy review instead of avoiding backups entirely.
+- Review agent transcript and cache locations before deleting anything. Cloud
+  deletion does not remove local copies; local deletion does not remove cloud
+  copies or backups. Do not assume local transcripts are kept forever or
+  automatically removed without checking the installed client's settings.
+- Inspect privacy, telemetry, file-context, and connected-app settings in each
+  editor and assistant. On-device and cloud processing vary by feature.
+- Keep credentials out of prompts, transcripts, shell history, and source
+  control. Use the [credential lifecycle](credentials.md) for host secrets.
 
-**Status:** oMLX serves Qwen3.6 over loopback. Model generation, tool calls, strict structured output, software-offline inference with external proxies blackholed, and local-provider failure all pass. A physical network-disconnect test remains required before declaring the privacy gate complete. Operational accuracy is a separate gate: current evidence supports supervised assistance, not autonomous writes.
-
-The standard below is the gate for declaring the local tier available. See [local-llm-stack.md](./local-llm-stack.md) for the active setup and host measurements.
-
-**Hygiene standard for "is this actually private?":**
-- Confirm the runner is serving a local model, not a remote/proxy provider. The whole guarantee is that nothing leaves the machine - verify that's true before trusting it with sensitive input.
-- It must run fully offline - a hard test is to pull the network and confirm inference still works. Disable any update/telemetry checks in its settings.
-- Model downloads come from Hugging Face (weights coming in, not your data going out) - fine. Your prompts and the model's outputs stay local.
-- Local does not mean immortal-safe: the only remaining surface is your disk, so full-disk encryption plus not syncing the chat store to cloud backup is what closes the loop.
-
----
-
-## Other tools & gotchas (anything that sends data away)
-
-- **Claude Code local transcripts** - `~/.claude/projects/<project>/*.jsonl`, full plaintext, forever. The single most overlooked copy. Scrub periodically (below).
-- **AI IDEs** (Cursor, Windsurf, Zed AI, Copilot in editors) - each sends file context to a cloud model. Look for a Privacy Mode (Cursor's, when on, means code is not stored/trained) and disable telemetry.
-- **Apple Intelligence / Siri, browser AI sidebars, AI keyboards, meeting transcribers** - all ship content off-device. Each has its own data-use setting; treat anything pasted into them as "left the building."
-- **Vetting framework - 5 questions for any new tool:**
-  1. Does it send my input off-device? (If no, done - it's the local tier.)
-  2. Where does it go - which company, which plan tier, which region/sub-processors?
-  3. Is it trained on by default? (Consumer = usually yes; API/commercial = usually no.)
-  4. What is the retention, and is there a delete that actually purges?
-  5. Is there an opt-out / ZDR / local mode? Set it before first real use.
-
----
-
-## How to tell a provider "don't touch my data"
-
-- **Consumer plans:** flip the training toggle off (per-provider above). That is the only lever, and it is forward-looking, never retroactive.
-- **API / commercial:** you are opted out of training by default; for retention, request a Zero Data Retention (ZDR) agreement (Anthropic, OpenAI both offer it for eligible use). ZDR = prompts not logged at all.
-- **The strongest signal is tier choice:** running sensitive work on an API key under commercial terms (or locally) tells them far more than any toggle - there is simply nothing to train on.
-
----
-
-## Periodic cleanup
-
-**Cloud chats:** delete in-app per provider (above). Remember: deletion excludes from future training and triggers backend purge (about 30 days), but cannot pull data out of a completed training run, and (Gemini) cannot remove human-reviewed chats.
-
-**Local Claude Code transcripts** - inventory, then targeted delete with a dry-run first:
+Inventory any existing Claude project transcripts without reading their contents:
 
 ```bash
-# Inventory: sessions per project, size, date range
-find ~/.claude/projects -maxdepth 1 -mindepth 1 -type d | while read -r d; do
-  cnt=$(find "$d" -name '*.jsonl' | wc -l | tr -d ' '); [ "$cnt" -eq 0 ] && continue
-  printf '%4s  %6s  %s\n' "$cnt" "$(du -sh "$d" | cut -f1)" "$(basename "$d")"
-done | sort -rn
-
-# DRY RUN - list what a pattern would remove (no deletion)
-find ~/.claude/projects -maxdepth 1 -type d -name '*<project>*'
-
-# DELETE - only after eyeballing the dry run
-find ~/.claude/projects -maxdepth 1 -type d -name '*<project>*' -exec rm -rf {} +
+if [ -d "$HOME/.claude/projects" ]; then
+    du -sh "$HOME/.claude/projects"
+    find "$HOME/.claude/projects" -type f -name '*.jsonl' -print
+fi
 ```
 
-**Before deleting**, mine dead projects for durable insights worth crystallizing into a repo/wiki/note - once the transcript and repo are both gone, that thinking is unrecoverable.
-
----
-
-## The real backstop: local-disk hygiene
-
-Toggles stop training. They do nothing for the plaintext piling up on your own disk. What protects that:
-
-- **Full-disk encryption (FileVault):** keep it on. A lost/stolen machine becomes a non-event. This is higher-leverage than any chat scrub.
-- **Backups are a tradeoff:** no backup is privacy-good (nothing replicated to a backup set or to iCloud) but a data-loss risk (a dead SSD loses everything). The privacy-respecting fix is an encrypted, self-controlled backup (encrypted external drive via Time Machine, or `restic`/Arq to a destination you hold the key to) - not iCloud/Drive sync of `~/.claude` or code dirs.
-
----
-
-## Sources
-
-- [Anthropic - Updates to Consumer Terms](https://www.anthropic.com/news/updates-to-our-consumer-terms) and [retention](https://privacy.claude.com/en/articles/10023548-how-long-do-you-store-my-data)
-- [OpenAI - turn off model training](https://help.openai.com/en/articles/8983082-how-do-i-turn-off-model-training-to-stop-openai-training-models-on-my-conversations) and [how data is used](https://openai.com/policies/how-your-data-is-used-to-improve-model-performance/)
-- [Google - Gemini Apps Privacy Hub](https://support.google.com/gemini/answer/13594961) and [Workspace Gen-AI Privacy Hub](https://knowledge.workspace.google.com/admin/gemini/generative-ai-in-google-workspace-privacy-hub)
-- [GitHub - Privacy/ToS update Apr 2026](https://github.blog/changelog/2026-03-25-updates-to-our-privacy-statement-and-terms-of-service-how-we-use-your-data/) and [community FAQ](https://github.com/orgs/community/discussions/188488)
+Before cleanup, preserve needed work, select exact files, and check what the
+client needs for session recovery. Provider controls should be rechecked when
+the account, plan, feature, or policy changes; this page is a dated reference,
+not verification of current account settings.

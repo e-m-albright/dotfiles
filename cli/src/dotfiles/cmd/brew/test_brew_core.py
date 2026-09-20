@@ -58,8 +58,6 @@ packages = [
 
 [special.rust]
 method = "rustup"
-url = "https://sh.rustup.rs"
-args = ["-y"]
 
 [[npm_package]]
 name = "wrangler"
@@ -76,6 +74,26 @@ def make_toml(tmp_path: Path, content: str = MINIMAL_TOML) -> Path:
     p = tmp_path / "packages.toml"
     p.write_text(content)
     return p
+
+
+@pytest.mark.parametrize(
+    "contents",
+    [
+        "sectoin = []\n[taps]\nlist = []",
+        '[taps]\nlist = []\ntrust = ["example/tap"]',
+        '[taps]\nlist = []\n[[section]]\nname = "tools"\nkind = "formula"\nflga = "ai"',
+        '[taps]\nlist = []\n[[section]]\nname = "tools"\nkind = "formula"\n'
+        'packages = [{name = "tool", disable = true}]',
+        '[taps]\nlist = []\n[special.rust]\nmethod = "rustup"\ndisable = true',
+        '[taps]\nlist = []\n[[npm_package]]\nname = "tool"\ndisable = true',
+        '[taps]\nlist = []\n[[go_package]]\nname = "tool"\nmodule = "example/tool"\n'
+        'version = "v1.0.0"\nversoin = "v2.0.0"',
+    ],
+    ids=["root", "taps", "section", "package", "special", "npm", "go"],
+)
+def test_manifest_rejects_unknown_fields_at_every_level(tmp_path: Path, contents: str) -> None:
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        PackageManifest.load(make_toml(tmp_path, contents))
 
 
 # ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ import stat
 import tomllib
 from datetime import date
 from pathlib import Path
+from tempfile import mkstemp
 from typing import cast
 from urllib.parse import urlsplit
 
@@ -95,26 +96,43 @@ class CredentialInventoryError(RuntimeError):
     """The local inventory or requested credential is invalid."""
 
 
-def _persistent_environment() -> dict[str, str]:
-    secret_suffixes = ("_API_KEY", "_AUTH_TOKEN", "_OAUTH_TOKEN")
-    secret_names = {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"}
+def _persistent_environment(home: Path) -> dict[str, str]:
+    """Inspect persisted auth without ambient grants or runtime injection settings."""
+    allowed = {"HOME", "PATH", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE"}
     return {
-        key: value
-        for key, value in os.environ.items()
-        if not key.endswith(secret_suffixes) and key not in secret_names
+        **{key: value for key, value in os.environ.items() if key in allowed},
+        "HOME": str(home),
     }
 
 
-def _pi_auth_detail(output: str) -> str:
+def _pi_auth_detail(output: str) -> str | None:
     try:
         payload = json.loads(output)
     except json.JSONDecodeError:
-        return "OAuth/API key managed by Pi"
-    if isinstance(payload, dict):
-        auth = cast(dict[str, object], payload).get("authType")
-        if isinstance(auth, str):
-            return f"Pi {auth}"
-    return "OAuth/API key managed by Pi"
+        return None
+    if not isinstance(payload, dict):
+        return None
+    data = cast(dict[str, object], payload)
+    if data.get("status") != "ready":
+        return None
+    auth = data.get("authType")
+    return f"Pi {auth}" if isinstance(auth, str) else "OAuth/API key managed by Pi"
+
+
+def _write_private(path: Path, text: str, *, replace: bool = True) -> None:
+    """Publish complete text atomically; temporary content is private from creation."""
+    descriptor, name = mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(text)
+        if replace:
+            temporary.replace(path)
+        else:
+            # Exclusive publication never overwrites an existing inventory.
+            os.link(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 class _Inventory(BaseModel):
@@ -131,11 +149,11 @@ def inventory_path(home: Path) -> Path:
 def initialize_inventory(home: Path) -> Path:
     """Create the metadata-only starter inventory without replacing an existing file."""
     path = inventory_path(home)
-    if path.exists():
-        raise CredentialInventoryError(f"inventory already exists: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(_STARTER_INVENTORY, encoding="utf-8")
-    path.chmod(0o600)
+    try:
+        _write_private(path, _STARTER_INVENTORY, replace=False)
+    except FileExistsError as exc:
+        raise CredentialInventoryError(f"inventory already exists: {path}") from exc
     return path
 
 
@@ -260,16 +278,16 @@ class CredentialService:
                 "--json",
                 "--no-refresh",
             ),
-            env=_persistent_environment(),
+            env=_persistent_environment(self._home),
+            timeout=10,
         )
-        if result.ok and '"status":"ready"' in result.stdout.replace(" ", ""):
-            return CredentialRecord(
-                spec=spec, status="stored", detail=_pi_auth_detail(result.stdout)
-            )
+        detail = _pi_auth_detail(result.stdout) if result.ok else None
+        if detail is not None:
+            return CredentialRecord(spec=spec, status="stored", detail=detail)
         return CredentialRecord(spec=spec, status="missing", detail="Pi auth store")
 
     def _check_keychain(self, spec: CredentialSpec) -> CredentialRecord:
-        result = self._runner.run(self._keychain_command(spec))
+        result = self._runner.run(self._keychain_command(spec), timeout=10)
         if result.ok:
             return CredentialRecord(spec=spec, status="stored", detail="Keychain")
         if result.exit_code == 44:
@@ -332,10 +350,7 @@ class CredentialService:
         path = inventory_path(self._home)
         text = path.read_text(encoding="utf-8")
         updated = _replace_endpoint(text, credential_id, endpoint)
-        temporary = path.with_suffix(".tmp")
-        temporary.write_text(updated, encoding="utf-8")
-        temporary.chmod(0o600)
-        temporary.replace(path)
+        _write_private(path, updated)
 
     def set(self, credential_id: str, value: str) -> None:
         """Pipe one supplied secret to macOS Keychain without exposing it in argv."""
@@ -393,8 +408,5 @@ class CredentialService:
             shlex.quote(part) for part in self._keychain_command(spec, reveal=True)
         )
         payload[spec.pi_provider] = {"type": "api_key", "key": key_command}
-        temporary = auth_path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        temporary.chmod(0o600)
-        temporary.replace(auth_path)
+        _write_private(auth_path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
         return auth_path

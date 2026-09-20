@@ -46,4 +46,5 @@ class ProcessRunner(Protocol):
         stdin: str | None = None,
         cwd: Path | None = None,
         capture_output: bool = True,
+        timeout: float | None = None,
     ) -> CommandResult: ...

@@ -98,9 +98,10 @@ dotfiles password [LENGTH] [--no-copy]
 ## Local Models
 
 oMLX is the active open-source Apple Silicon inference runner. Qwen3.6 is the
-private Pi model. Serving, tool calling, structured output, and software-offline
-checks pass; autonomous operational use and the physical network-disconnect test
-remain unapproved.
+local Pi model. Serving, tool calling, structured output, and software-offline
+checks have passed. The physical network-disconnect test remains open, and
+operational accuracy supports supervised use only. Privacy also depends on the
+agent's tools, logs, and backups; see [data hygiene](docs/privacy-data-hygiene.md).
 
 LM Studio remains a tombstoned fallback. The current setup and historical
 benchmarks live in [`docs/local-llm-stack.md`](docs/local-llm-stack.md); the
@@ -109,7 +110,8 @@ cross-platform model and provider ranking lives in Workbench's
 
 ## Package Manifest
 
-`macos/packages.toml` is the source of truth. Disabled entries preserve an
+`macos/packages.toml` is the source of truth; unknown fields are rejected to
+catch configuration typos before installation. Disabled entries preserve an
 intentional absence: rejected tools, deferred installs, or clients that belong
 on another device. They prevent casual reintroduction without falsely treating
 every absence as a bad product. Keep the reason and date when disabling one.
@@ -134,7 +136,6 @@ editors/             Zed host configuration
 git/                 global Git configuration
 docs/                machine-specific operating notes
 ```
-
 
 ## Development
 

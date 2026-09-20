@@ -2,8 +2,14 @@
 
 CLI for the dotfiles dev environment.
 
-Run from repo root: `dotfiles <command>` (via `bin/dotfiles` shim → `uv run`).
-Dev tasks: `just` (grouped help); `just check` (full gate); `just check --fast` (pre-commit, no tests); `just fmt --check`; `just scrub --artifacts` / `just scrub --caches`.
+Run `dotfiles <command>` through the `bin/dotfiles` shim. Python commands use
+the synced virtual environment when present, with `uv run` as the fallback.
+
+Run `just` for grouped help and `just verify` for the complete project gate.
+`just check` runs Python checks and tests; `just check --fast` skips tests for
+pre-commit. Use `just fmt --check` to check formatting and
+`just scrub --caches` to remove generated caches. `just scrub --artifacts`
+deletes local working notes under the ignored documentation directories.
 
 ## Layout
 

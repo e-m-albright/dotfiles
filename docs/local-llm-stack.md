@@ -14,23 +14,29 @@
 > serverless-GPU ranking lives in Workbench's
 > [open-model-inference.md](https://github.com/e-m-albright/workbench/blob/main/playbook/knowledge/open-model-inference.md).
 
-**Current decision:** oMLX first, LM Studio as the fallback, and native MLX
-weights. Qwen3.6-35B-A3B oQ4e with multi-token prediction serves local agents.
+**Current decision:** oMLX first, native MLX weights, and LM Studio retained as a
+disabled manifest entry for possible fallback use. Qwen3.6-35B-A3B oQ4e with
+multi-token prediction serves local agents.
 Gemma 4 26B-A4B was slower and showed no quality advantage in the initial A/B,
 so its local weights were removed.
 
 Agent-specific model routing belongs to Workbench. This host page owns the
 runner, hardware envelope, measured performance, and privacy acceptance test.
+Passing offline inference confirms that model generation can run without the
+network; it does not establish that agent tools, logs, telemetry, or backups
+stay local. See [data hygiene](privacy-data-hygiene.md) for the complete boundary.
 
 ## Reproducible installation
 
 `macos/packages.toml` declares oMLX and its `omlx_setup` special installer.
 `macos/configure-omlx.sh` idempotently installs and verifies xgrammar, repairs the
 known macOS loader defect, merges the non-secret settings overlay from
-`macos/omlx/settings.json`, downloads the selected Qwen weights when absent, and
-restarts the service only after a change. Generated authentication material and
-unknown future settings are preserved. Workbench owns Pi's provider, model,
-router, and launcher configuration.
+`macos/omlx/settings.json`, and downloads missing or incomplete Qwen weights.
+It restarts after changes or an unhealthy service, then checks the local health
+endpoint before reporting ready. A pending restart marker survives failed runs
+so a rerun retries the restart even when the files already match. Generated
+authentication material and unknown settings are preserved. Workbench owns
+Pi's provider, model, router, and launcher configuration.
 
 Run the full reconciliation with:
 

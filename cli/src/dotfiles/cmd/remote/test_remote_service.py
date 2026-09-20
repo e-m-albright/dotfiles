@@ -1,6 +1,8 @@
 import plistlib
 from pathlib import Path
 
+import pytest
+
 from dotfiles.cmd.remote.service import RemoteService
 from dotfiles.testing.fakes import FakeProcessRunner
 
@@ -274,3 +276,56 @@ def test_tailscale_down_failure_is_visible(tmp_path: Path) -> None:
     step = _service(runner, tmp_path).tailscale_down(dry_run=False)
     assert step.level == "error"
     assert "denied" in step.message
+
+
+@pytest.mark.parametrize("failure", ["bootout", "stop", "still_loaded", "verification"])
+def test_paseo_stop_failure_never_reports_success(tmp_path, failure):
+    runner = FakeProcessRunner()
+    runner.script(("id", "-u"), stdout="501\n")
+    plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
+    plist.parent.mkdir(parents=True)
+    plist.write_text("keep until unloaded")
+    if failure == "bootout":
+        runner.script(
+            ("launchctl", "bootout", "gui/501/com.dotfiles.paseo"), exit_code=1, stderr="denied"
+        )
+        runner.script(("launchctl", "list"), stdout="-\t0\tcom.dotfiles.paseo\n")
+    elif failure == "still_loaded":
+        runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
+    elif failure == "verification":
+        runner.script(("launchctl", "list"), exit_code=124, stderr="timed out")
+    else:
+        runner.script(
+            ("/Applications/Paseo.app/Contents/Resources/bin/paseo", "daemon", "stop"),
+            exit_code=1,
+            stderr="denied",
+        )
+    steps = _service(runner, tmp_path).paseo_uninstall_agent(dry_run=False)
+    assert any(step.level == "error" for step in steps)
+    assert not any(step.level == "success" for step in steps)
+    assert plist.exists()
+
+
+def test_paseo_stop_is_idempotent_when_absent(tmp_path):
+    runner = FakeProcessRunner()
+    runner.script(("id", "-u"), stdout="501\n")
+    runner.script(
+        ("launchctl", "bootout", "gui/501/com.dotfiles.paseo"),
+        exit_code=3,
+        stderr="No such process",
+    )
+    runner.script(
+        ("/Applications/Paseo.app/Contents/Resources/bin/paseo", "daemon", "stop"),
+        exit_code=127,
+        stderr="No such file",
+    )
+    steps = _service(runner, tmp_path).paseo_uninstall_agent(dry_run=False)
+    assert all(step.level == "success" for step in steps)
+    assert ("launchctl", "list") in runner.calls
+
+
+def test_remote_status_probes_are_bounded(tmp_path):
+    runner = FakeProcessRunner()
+    _service(runner, tmp_path).status()
+    assert runner.timeouts
+    assert all(timeout == 10 for timeout in runner.timeouts)

@@ -56,7 +56,9 @@ scheduled AI audit, or multi-vendor agent framework.
   from anywhere in the repo.
 - Tests are colocated next to their modules. Single module:
   `cd cli && uv run pytest src/dotfiles/cmd/doctor/`.
-- `bin/dotfiles` routes bash-native commands (`update`, `clean`, `dock`, `profile-shell`) and delegates the rest to the Python CLI. `app/test_command_tree.py` keeps shim, help, and zsh completions in sync.
+- `bin/dotfiles` routes bash-native commands (`install`, `update`, `dock`,
+  `profile-shell`) and delegates the rest, including `clean`, to the Python CLI.
+  `app/test_command_tree.py` keeps shim, help, and zsh completions in sync.
 - Install git hooks once with `lefthook install`.
 
 ## Privacy (public repo)

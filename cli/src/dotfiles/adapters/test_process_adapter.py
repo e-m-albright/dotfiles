@@ -43,3 +43,33 @@ def test_subprocess_runner_can_inherit_terminal_output(
     assert result.ok is True
     assert result.stdout == ""
     assert capfd.readouterr().out.strip() == "prompt"
+
+
+@pytest.mark.parametrize("check", [False, True])
+@pytest.mark.parametrize(
+    ("failure", "code"), [("missing", 127), ("permission", 126), ("timeout", 124)]
+)
+def test_launch_failures_are_command_results(tmp_path, failure, code, check):
+    import subprocess
+    import sys
+
+    executable = tmp_path / "command"
+    kwargs = {}
+    command = [str(executable)]
+    if failure == "permission":
+        executable.write_text("#!/bin/sh\nexit 0\n")
+        executable.chmod(0o600)
+    elif failure == "timeout":
+        command = [sys.executable, "-c", "import time; print('started', flush=True); time.sleep(5)"]
+        kwargs["timeout"] = 1
+    if check:
+        with pytest.raises(subprocess.CalledProcessError) as raised:
+            SubprocessRunner().run(command, check=True, **kwargs)
+        assert raised.value.returncode == code
+        assert raised.value.stderr
+    else:
+        result = SubprocessRunner().run(command, **kwargs)
+        assert result.exit_code == code
+        assert result.stderr
+        if failure == "timeout":
+            assert result.stdout == "started\n"

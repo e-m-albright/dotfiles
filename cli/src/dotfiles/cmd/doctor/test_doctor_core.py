@@ -225,6 +225,8 @@ def test_notes_launchers_are_checked_and_fixable(tmp_path: Path) -> None:
     source = home / "code/private/notes/bin/notes"
     source.parent.mkdir(parents=True)
     source.write_text("#!/bin/sh\n")
+    source.chmod(0o700)
+    (source.parent.parent / ".git").mkdir()
 
     missing = _svc(home=home)._check_notes_launchers("Configuration")
     assert [result.name for result in missing] == ["notes CLI", "nts alias"]
@@ -315,8 +317,8 @@ def test_node_check_tolerates_inactive_node() -> None:
     runner.script(("node", "--version"), exit_code=1)
     service = _svc(runner, which=lambda name: "/usr/bin/fnm" if name == "fnm" else None)
     result = service._check_node("Runtimes")[0]
-    assert result.status == "ok"
-    assert result.detail == "not active"
+    assert result.status == "warn"
+    assert "exit 1" in result.detail
 
 
 def test_node_symlink_fix_links_node_and_optional_npx(tmp_path: Path) -> None:
@@ -433,3 +435,56 @@ def test_fix_backs_up_a_regular_file_instead_of_deleting_it(tmp_path: Path) -> N
     assert dest.resolve() == src.resolve()
     backup = tmp_path / ".zshrc.backup"
     assert backup.read_text() == "# hand-rolled customizations"
+
+
+@pytest.mark.parametrize("command", ["git", "python3.14", "python3"])
+def test_failed_version_probe_never_reports_healthy(command):
+    runner = FakeProcessRunner()
+    runner.script((command, "--version"), exit_code=124, stderr="timed out")
+    service = _svc(runner, which=lambda name: "/bin/" + name if name == command else None)
+    if command == "git":
+        result = service._tool("Core Tools", "Git", command, "install git")
+    else:
+        result = service._check_python("Runtimes")[0]
+    assert result.status == "warn"
+    assert "timed out" in result.detail
+    assert runner.timeouts == [10]
+
+
+@pytest.mark.parametrize("override", [False, True])
+def test_private_launchers_use_installer_discovery(tmp_path, monkeypatch, override):
+    root = tmp_path / ("custom" if override else "code/private/vault")
+    source = root / "bin/notes"
+    source.parent.mkdir(parents=True)
+    source.write_text("#!/bin/sh\n")
+    source.chmod(0o700)
+    if not override:
+        (root / ".git").mkdir()
+    if override:
+        monkeypatch.setenv("PRIVATE_AUTOMATION_ROOT", str(root))
+    else:
+        monkeypatch.delenv("PRIVATE_AUTOMATION_ROOT", raising=False)
+    results = _svc(home=tmp_path, fix=True)._check_notes_launchers("Configuration")
+    assert [result.name for result in results] == ["notes CLI", "nts alias"]
+    assert (tmp_path / ".local/bin/notes").resolve() == source
+
+
+def test_go_uses_its_version_subcommand():
+    runner = FakeProcessRunner()
+    runner.script(("go", "version"), stdout="go version go1.26.0 darwin/arm64\n")
+    runner.script(("go", "--version"), exit_code=2, stderr="flag provided but not defined")
+    service = _svc(runner, which=lambda name: "/bin/go" if name == "go" else None)
+    result = next(item for item in service._check_runtimes() if item.name == "Go")
+    assert result.status == "ok"
+    assert "go1.26.0" in result.detail
+
+
+def test_private_discovery_skips_linked_worktrees(tmp_path, monkeypatch):
+    monkeypatch.delenv("PRIVATE_AUTOMATION_ROOT", raising=False)
+    root = tmp_path / "code/private/worktree"
+    source = root / "bin/notes"
+    source.parent.mkdir(parents=True)
+    source.write_text("#!/bin/sh\n")
+    source.chmod(0o700)
+    (root / ".git").write_text("gitdir: elsewhere")
+    assert _svc(home=tmp_path)._check_notes_launchers("Configuration") == []

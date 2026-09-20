@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import io
 import json
+import os
 import stat
 from pathlib import Path
 
@@ -225,6 +227,59 @@ def test_link_pi_writes_keychain_command_reference_without_secret(tmp_path: Path
     assert stat.S_IMODE(auth.stat().st_mode) == 0o600
 
 
+@pytest.mark.parametrize("operation", ["initialize", "endpoint", "link"])
+def test_credential_writes_are_private_before_content_is_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, operation: str
+) -> None:
+    if operation != "initialize":
+        _inventory(tmp_path)
+    modes = []
+    original_open = io.open
+
+    def observe_open(*args, **kwargs):
+        stream = original_open(*args, **kwargs)
+        if stream.writable():
+            modes.append(stat.S_IMODE(os.fstat(stream.fileno()).st_mode))
+        return stream
+
+    monkeypatch.setattr(io, "open", observe_open)
+    previous = os.umask(0o022)
+    try:
+        service = CredentialService(runner=FakeProcessRunner(), home=tmp_path)
+        if operation == "initialize":
+            initialize_inventory(tmp_path)
+        elif operation == "endpoint":
+            service.set_endpoint("google-pi", "https://example.com")
+        else:
+            service.link_pi("google-pi")
+    finally:
+        os.umask(previous)
+
+    assert modes
+    assert all(mode == 0o600 for mode in modes)
+
+
+def test_failed_auth_replacement_preserves_original_and_cleans_temporary_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _inventory(tmp_path)
+    auth = tmp_path / ".pi/agent/auth.json"
+    auth.parent.mkdir(parents=True)
+    original = '{"existing": {"type": "oauth", "access": "synthetic"}}'
+    auth.write_text(original)
+    auth.chmod(0o600)
+
+    def fail_replace(self, target):
+        raise OSError("simulated replacement failure")
+
+    monkeypatch.setattr(Path, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated"):
+        CredentialService(runner=FakeProcessRunner(), home=tmp_path).link_pi("google-pi")
+
+    assert auth.read_text() == original
+    assert list(auth.parent.iterdir()) == [auth]
+
+
 def test_link_pi_requires_stored_keychain_grant(tmp_path: Path) -> None:
     _inventory(tmp_path)
     runner = FakeProcessRunner()
@@ -339,12 +394,25 @@ pi_provider = "anthropic"
     )
     runner.script(command, stdout='{"status":"ready","authType":"oauth"}')
     monkeypatch.setenv("ANTHROPIC_API_KEY", "ambient-only")
+    monkeypatch.setenv("UNRELATED_TOKEN", "ambient-only")
+    monkeypatch.setenv("NODE_OPTIONS", "--require=untrusted.js")
+    environments = []
+    original_run = runner.run
+
+    def observe_run(*args, **kwargs):
+        environments.append(kwargs.get("env"))
+        return original_run(*args, **kwargs)
+
+    monkeypatch.setattr(runner, "run", observe_run)
 
     record = CredentialService(runner=runner, home=tmp_path).list()[0]
 
     assert record.status == "stored"
     assert record.detail == "Pi oauth"
     assert runner.calls == [command]
+    assert environments[0]["PATH"] == os.environ["PATH"]
+    assert environments[0]["HOME"] == str(tmp_path)
+    assert not {"ANTHROPIC_API_KEY", "UNRELATED_TOKEN", "NODE_OPTIONS"} & environments[0].keys()
 
 
 def test_pi_backend_reports_unavailable_missing_and_untyped_ready(tmp_path: Path) -> None:
@@ -382,7 +450,11 @@ pi_provider = "openrouter"
     runner.script(command, exit_code=1, stdout='{"status":"not_ready"}')
     assert service.list()[0].status == "missing"
 
-    runner.script(command, stdout='{"status":"ready"} trailing')
+    for output in ('{"status":"ready"} trailing', "[]", '{"status":"not_ready"}'):
+        runner.script(command, stdout=output)
+        assert service.list()[0].status == "missing"
+
+    runner.script(command, stdout='{"status": "ready"}')
     record = service.list()[0]
     assert record.status == "stored"
     assert record.detail == "OAuth/API key managed by Pi"

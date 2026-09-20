@@ -1,5 +1,6 @@
 """`dotfiles doctor` checks. Pure over ProcessRunner port + direct pathlib."""
 
+import os
 import re
 import shutil
 from collections.abc import Callable
@@ -55,6 +56,21 @@ def _credential_needs_attention(record: CredentialRecord) -> bool:
     )
 
 
+def _notes_launcher(home: Path) -> Path | None:
+    """Match install.sh: explicit override, otherwise the first executable primary checkout."""
+    root = os.environ.get("PRIVATE_AUTOMATION_ROOT")
+    candidates = (
+        [Path(root) / "bin" / "notes"]
+        if root
+        else [
+            path
+            for path in sorted((home / "code" / "private").glob("*/bin/notes"))
+            if (path.parent.parent / ".git").is_dir()
+        ]
+    )
+    return next((path for path in candidates if path.is_file() and os.access(path, os.X_OK)), None)
+
+
 class DoctorService:
     """Produces a list[CheckResult] representing the health of the dotfiles install."""
 
@@ -82,10 +98,18 @@ class DoctorService:
     def _tool(self, section: str, name: str, cmd: str, hint: str) -> CheckResult:
         """Check a CLI tool via shutil.which; detail = first line of --version."""
         if self._which(cmd) is not None:
-            result = self._runner.run((cmd, "--version"))
+            return self._probe(
+                section, name, (cmd, "version" if cmd == "go" else "--version"), hint
+            )
+        return CheckResult(section=section, name=name, status="missing", hint=hint)
+
+    def _probe(self, section: str, name: str, command: tuple[str, ...], hint: str) -> CheckResult:
+        result = self._runner.run(command, timeout=10)
+        if result.ok:
             detail = result.stdout.splitlines()[0].strip() if result.stdout.strip() else "installed"
             return CheckResult(section=section, name=name, status="ok", detail=detail)
-        return CheckResult(section=section, name=name, status="missing", hint=hint)
+        detail = result.stderr.strip() or f"probe failed (exit {result.exit_code})"
+        return CheckResult(section=section, name=name, status="warn", detail=detail, hint=hint)
 
     def _symlink(self, section: str, name: str, src: Path, dest: Path) -> CheckResult:
         """Check (and optionally fix) a symlink from dest -> src."""
@@ -111,7 +135,7 @@ class DoctorService:
             self._check_ai_tools,
             self._check_credentials,
             self._check_dev_tools,
-            self._check_remote_shell,
+            self._check_remote_continuity,
             self._check_configuration,
         )
 
@@ -165,12 +189,10 @@ class DoctorService:
         """Node.js via fnm — only checked if fnm present."""
         if self._which("fnm") is None:
             return []
-        fnm_result = self._runner.run(("fnm", "list"))
+        fnm_result = self._runner.run(("fnm", "list"), timeout=10)
         fnm_out = fnm_result.stdout if fnm_result.ok else ""
         if "lts-latest" in fnm_out or re.search(r"\bv\d+", fnm_out):
-            node_result = self._runner.run(("node", "--version"))
-            detail = node_result.stdout.strip() if node_result.ok else "not active"
-            return [CheckResult(section=sec, name="Node.js", status="ok", detail=detail)]
+            return [self._probe(sec, "Node.js", ("node", "--version"), "Run: fnm use --lts")]
         return [
             CheckResult(
                 section=sec,
@@ -182,22 +204,16 @@ class DoctorService:
 
     def _check_python(self, sec: str) -> list[CheckResult]:
         """Python — ok if 3.14, warn if only 3, missing otherwise."""
-        if self._which("python3.14") is not None:
-            result = self._runner.run(("python3.14", "--version"))
-            detail = result.stdout.strip() if result.ok else "python3.14"
-            return [CheckResult(section=sec, name="Python", status="ok", detail=detail)]
-        if self._which("python3") is not None:
-            result = self._runner.run(("python3", "--version"))
-            detail = result.stdout.strip() if result.ok else "python3"
-            return [
-                CheckResult(
-                    section=sec,
-                    name="Python",
-                    status="warn",
-                    detail=detail,
-                    hint="consider: uv python install 3.14",
+        for command in ("python3.14", "python3"):
+            if self._which(command) is not None:
+                result = self._probe(
+                    sec, "Python", (command, "--version"), "Run: uv python install 3.14"
                 )
-            ]
+                if command == "python3" and result.status == "ok":
+                    result = result.model_copy(
+                        update={"status": "warn", "hint": "consider: uv python install 3.14"}
+                    )
+                return [result]
         return [
             CheckResult(
                 section=sec,
@@ -267,7 +283,7 @@ class DoctorService:
                 )
             ]
 
-        checked = self._runner.run((command, "drift", "all"))
+        checked = self._runner.run((command, "drift", "all"), timeout=30)
         if checked.ok:
             return [
                 CheckResult(
@@ -333,8 +349,8 @@ class DoctorService:
     def _check_dev_tools(self) -> list[CheckResult]:
         return self._tools("Dev Tools")
 
-    def _check_remote_shell(self) -> list[CheckResult]:
-        return self._check_remote_agents("Remote Shell")
+    def _check_remote_continuity(self) -> list[CheckResult]:
+        return self._check_remote_agents("Remote Continuity")
 
     def _check_remote_agents(self, sec: str) -> list[CheckResult]:
         """The parts of the remote stack that actually break: are the daemons alive?
@@ -421,8 +437,8 @@ class DoctorService:
 
     def _check_notes_launchers(self, sec: str) -> list[CheckResult]:
         """Check private Notes launchers when the vault is present."""
-        source = self._home / "code" / "private" / "notes" / "bin" / "notes"
-        if not source.exists():
+        source = _notes_launcher(self._home)
+        if source is None:
             return []
         bin_dir = self._home / ".local" / "bin"
         results = [
@@ -431,7 +447,7 @@ class DoctorService:
         ]
         # Apple Contacts remains an optional private projection; Apple Notes is blocked.
         bridge_source = source.parent / "apple-contacts"
-        if bridge_source.exists():
+        if bridge_source.is_file() and os.access(bridge_source, os.X_OK):
             results.append(
                 self._symlink(sec, "apple-contacts", bridge_source, bin_dir / "apple-contacts")
             )

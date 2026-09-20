@@ -82,11 +82,14 @@ if ssh-add -l 2>/dev/null | grep -q "$SSH_KEY" || ssh-add -l 2>/dev/null | grep 
     print_info "SSH key already in ssh-agent"
 else
     print_action "Adding SSH key to ssh-agent..."
-    ssh-add --apple-use-keychain "$SSH_KEY" 2>/dev/null || {
+    if ssh-add --apple-use-keychain "$SSH_KEY" 2>/dev/null || {
         eval "$(ssh-agent -s)" >/dev/null 2>&1
-        ssh-add --apple-use-keychain "$SSH_KEY" 2>/dev/null || print_warn "Could not add key to ssh-agent"
-    }
-    print_success "SSH key added to ssh-agent"
+        ssh-add --apple-use-keychain "$SSH_KEY" 2>/dev/null
+    }; then
+        print_success "SSH key added to ssh-agent"
+    else
+        print_warn "Could not add key to ssh-agent"
+    fi
 fi
 
 # Test GitHub SSH connection — skip manual steps if already working

@@ -40,47 +40,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+      # Includes real diagnostic commands with an empty HOME/PATH and bounded execution.
       - name: Quality gate (fmt, lint, types, deadcode, complexity, tests)
         run: just check
       - name: Dependency vulnerability audit (pip-audit)
         run: just audit
-
-  # Clean-machine rehearsal for the portable install plan and read-only doctor command.
-  # Non-zero doctor exits are expected (a clean box has gaps to report); a traceback is not.
-  # The mutating install path remains macOS-specific and is never run here.
-  clean-machine:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-      - name: Validate the read-only macOS install plan
-        run: ./install.sh --plan
-      - name: Install the dotfiles CLI
-        working-directory: cli
-        run: uv sync --frozen
-      - name: Rehearse doctor against a clean HOME
-        working-directory: cli
-        run: |
-          set -u
-          home="$(mktemp -d)"
-          bin=".venv/bin/dotfiles"
-          fail=0
-          check() {  # <label> <args...> — fails the job only on a Python traceback
-            local label="$1"; shift
-            echo "::group::dotfiles $label (clean HOME)"
-            HOME="$home" timeout 150 "$bin" "$@" >out.txt 2>&1 || echo "(exit $? — tolerated unless traceback)"
-            cat out.txt
-            if grep -q 'Traceback (most recent call last)' out.txt; then
-              echo "::error::dotfiles $label crashed with a traceback on a clean machine"
-              fail=1
-            fi
-            echo "::endgroup::"
-          }
-          check "doctor" doctor
-          check "remote status" remote status
-          check "brew stale" brew stale
-          exit "$fail"
 
   gitleaks:
     runs-on: ubuntu-latest

@@ -7,16 +7,22 @@ model_dir="$HOME/.omlx/models/$model_repo"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 settings_overlay="$script_dir/omlx/settings.json"
 settings_file="$HOME/.omlx/settings.json"
-changed=false
+restart_required="$HOME/.omlx/.restart-required"
+
+# Keep restart intent across failed runs, even if the old server stays healthy.
+require_restart() {
+    mkdir -p "$HOME/.omlx"
+    touch "$restart_required"
+}
 
 prefix="$(brew --prefix omlx)"
 python="$prefix/libexec/bin/python"
 
 if ! "$python" -c 'import xgrammar' >/dev/null 2>&1; then
+    require_restart
     brew reinstall "$formula" --with-grammar
     prefix="$(brew --prefix omlx)"
     python="$prefix/libexec/bin/python"
-    changed=true
 fi
 
 if ! "$python" -c 'import xgrammar' >/dev/null 2>&1; then
@@ -33,7 +39,6 @@ if ! "$python" -c 'import xgrammar' >/dev/null 2>&1; then
     /usr/bin/codesign --force --sign - "$dylib"
     printf 'xgrammar/libxgrammar_bindings.dylib,,\n' > "$record"
     "$python" -c 'import xgrammar'
-    changed=true
 fi
 
 mkdir -p "$(dirname "$settings_file")"
@@ -53,23 +58,45 @@ jq --arg home "$HOME" \
     "$settings_overlay" > "$expanded_overlay"
 jq -s '.[0] * .[1]' "$base_settings" "$expanded_overlay" > "$merged_settings"
 if [[ ! -f "$settings_file" ]] || ! cmp -s "$settings_file" "$merged_settings"; then
+    require_restart
     install -m 600 "$merged_settings" "$settings_file"
-    changed=true
 fi
 
-model_complete=true
-[[ -f "$model_dir/model.safetensors.index.json" ]] || model_complete=false
-for shard in 00001 00002 00003 00004 00005; do
-    [[ -f "$model_dir/model-${shard}-of-00005.safetensors" ]] || model_complete=false
-done
+model_complete() {
+    local shard
+    # This pinned model has five shards; update the check when replacing it.
+    [[ -s "$model_dir/model.safetensors.index.json" ]] || return 1
+    for shard in 00001 00002 00003 00004 00005; do
+        [[ -s "$model_dir/model-${shard}-of-00005.safetensors" ]] || return 1
+    done
+}
 
-if [[ "$model_complete" != true ]]; then
+if ! model_complete; then
+    require_restart
     "$prefix/libexec/bin/hf" download "$model_repo" --local-dir "$model_dir"
-    changed=true
+    if ! model_complete; then
+        printf 'oMLX model download is incomplete: %s\n' "$model_dir" >&2
+        exit 1
+    fi
 fi
 
-if [[ "$changed" == true ]]; then
+health_url="http://127.0.0.1:8000/health"
+server_healthy() {
+    # oMLX exposes this endpoint without authentication and returns 503 while loading.
+    curl --fail --silent --connect-timeout 2 --max-time 5 "$@" "$health_url" |
+        jq -es 'length == 1 and .[0].status == "healthy" and
+            (.[0].engine_pool.model_count | type == "number" and . > 0)' >/dev/null
+}
+
+if [[ -f "$restart_required" ]] || ! server_healthy; then
+    require_restart
     brew services restart "$formula"
 fi
+
+if ! server_healthy --show-error --retry 30 --retry-connrefused --retry-delay 2 --retry-max-time 120; then
+    printf 'oMLX did not become healthy at %s\n' "$health_url" >&2
+    exit 1
+fi
+rm -f "$restart_required"
 
 printf 'oMLX ready: xgrammar + %s\n' "$model_repo"

@@ -173,7 +173,8 @@ if ! command -v uv >/dev/null 2>&1; then
         export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
         print_success "uv installed"
     else
-        print_warn "uv $UV_VERSION install failed"
+        print_error "uv $UV_VERSION install failed — package reconciliation requires uv"
+        exit 1
     fi
 else
     print_info "uv already installed ($(uv --version))"
@@ -181,11 +182,11 @@ fi
 
 # Install brew with packages & casks via Python CLI (packages.toml is source of truth)
 print_section "Homebrew packages"
-if command -v uv >/dev/null 2>&1; then
-    uv run --project "$DOTFILES_DIR/cli" dotfiles brew install
-else
-    print_warn "Skipping brew install — uv not available (install uv and run: dotfiles brew install)"
+if ! command -v uv >/dev/null 2>&1; then
+    print_error "uv is unavailable after bootstrap — cannot reconcile packages"
+    exit 1
 fi
+uv run --project "$DOTFILES_DIR/cli" dotfiles brew install
 
 # Setup macos dock
 "$DOTFILES_DIR/macos/dock.sh"
@@ -226,7 +227,7 @@ if command -v fnm >/dev/null 2>&1; then
         if PNPM_HOME="$HOME/.npm-global" npx --yes get-pnpm 12.1.0 >/dev/null 2>&1; then
             print_info "pnpm 12.1.0 installed"
         else
-            print_warning "pnpm could not be installed; rerun the installer after checking Node"
+            print_warn "pnpm could not be installed; rerun the installer after checking Node"
         fi
     fi
     
@@ -244,7 +245,7 @@ fi
 
 # -- Python / UV
 # Only install Python 3.14 if it's not already installed via UV
-if command -v uv >/dev/null 2>&1 && ! command -v python3.14 >/dev/null 2>&1; then
+if ! command -v python3.14 >/dev/null 2>&1; then
     print_action "Installing Python 3.14 via UV..."
     uv python install 3.14 >/dev/null 2>&1
     print_success "Python 3.14 installed"

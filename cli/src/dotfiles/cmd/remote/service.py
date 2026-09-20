@@ -44,7 +44,7 @@ class RemoteService:
         self._home = home
 
     def _line(self, command: tuple[str, ...]) -> str:
-        result = self._runner.run(command)
+        result = self._runner.run(command, timeout=10)
         return result.stdout.strip() if result.ok else ""
 
     @cached_property
@@ -78,7 +78,7 @@ class RemoteService:
 
     @cached_property
     def _tailscale(self) -> tuple[bool, str | None]:
-        if self._runner.run(("tailscale", "status")).ok:
+        if self._runner.run(("tailscale", "status"), timeout=10).ok:
             ip = self._line(("tailscale", "ip", "-4"))
             return True, (ip or None)
         return False, None
@@ -95,7 +95,7 @@ class RemoteService:
         return StepResult(level="error", message=f"Tailscale Serve failed: {result.stderr.strip()}")
 
     def private_site_url(self) -> str | None:
-        result = self._runner.run(("tailscale", "serve", "status"))
+        result = self._runner.run(("tailscale", "serve", "status"), timeout=10)
         if not result.ok or "No serve config" in result.stdout:
             return None
         match = _PRIVATE_SITE_URL.search(result.stdout)
@@ -156,17 +156,6 @@ class RemoteService:
             )
         return out
 
-    def _remove_agent(self, *, dry_run: bool) -> list[StepResult]:
-        if dry_run:
-            return [
-                StepResult(level="info", message=f"DRY RUN: remove launchd agent {_PASEO_LABEL}")
-            ]
-        self._runner.run(("launchctl", "bootout", f"gui/{self._uid}/{_PASEO_LABEL}"))
-        plist = self._agent_plist()
-        if plist.exists():
-            plist.unlink()
-        return [StepResult(level="success", message="Removed Paseo daemon launchd agent")]
-
     def paseo_install_agent(self, *, dry_run: bool) -> list[StepResult]:
         """Install Paseo bound to the current tailnet IP with relay disabled."""
         if dry_run:
@@ -226,10 +215,35 @@ class RemoteService:
         return self.paseo_install_agent(dry_run=dry_run)
 
     def paseo_uninstall_agent(self, *, dry_run: bool) -> list[StepResult]:
-        steps = self._remove_agent(dry_run=dry_run)
-        if not dry_run:
-            self._runner.run(_PASEO_STOP_COMMAND)
-        return steps
+        if dry_run:
+            return [
+                StepResult(level="info", message="DRY RUN: stop Paseo and remove its launchd agent")
+            ]
+        removed = self._runner.run(("launchctl", "bootout", f"gui/{self._uid}/{_PASEO_LABEL}"))
+        stopped = self._runner.run(_PASEO_STOP_COMMAND)
+        listed = self._runner.run(("launchctl", "list"), timeout=10)
+        if not listed.ok:
+            return [
+                StepResult(
+                    level="error",
+                    message=f"Could not verify Paseo shutdown: {listed.stderr.strip()}",
+                )
+            ]
+        loaded = any(
+            len(parts) >= 3 and parts[2] == _PASEO_LABEL
+            for line in listed.stdout.splitlines()
+            if (parts := line.split())
+        )
+        if loaded:
+            detail = removed.stderr.strip() or "agent remains loaded"
+            return [StepResult(level="error", message=f"Paseo launchd removal failed: {detail}")]
+        # Missing app is harmless once launchd confirms the agent is absent.
+        if not stopped.ok and stopped.exit_code != 127:
+            return [
+                StepResult(level="error", message=f"Paseo stop failed: {stopped.stderr.strip()}")
+            ]
+        self._agent_plist().unlink(missing_ok=True)
+        return [StepResult(level="success", message="Paseo stopped; removed launchd agent")]
 
     def paseo_rotate_password(self, *, dry_run: bool) -> list[StepResult]:
         if dry_run:
@@ -259,7 +273,7 @@ class RemoteService:
         return self._agent_running()
 
     def caffeine_status(self) -> CaffeineStatus:
-        result = self._runner.run(("pmset", "-g", "assertions"))
+        result = self._runner.run(("pmset", "-g", "assertions"), timeout=10)
         if not result.ok:
             return CaffeineStatus(available=False)
         active = "Caffeine is Active" in result.stdout
