@@ -12,7 +12,7 @@ _REPO = Path(__file__).resolve().parents[4]
 @pytest.mark.parametrize(
     ("args", "exit_code", "messages"),
     [
-        (("doctor",), 1, ("Core Tools", "Remote Continuity", "missing")),
+        (("doctor",), 1, ("Core Tools", "Configuration", "missing")),
         (("remote", "status"), 0, ("Tailscale", "not connected", "Paseo", "stopped")),
         (("brew", "stale"), 1, ("No such file or directory", "brew")),
     ],
