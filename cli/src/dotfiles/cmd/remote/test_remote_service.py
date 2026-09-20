@@ -16,6 +16,40 @@ def _tailnet(runner: FakeProcessRunner, ip: str = "100.64.0.1") -> None:
     runner.script(("tailscale", "ip", "-4"), stdout=f"{ip}\n")
 
 
+def _canonical_paseo_plist(home: Path, ip: str = "100.64.0.1") -> dict[str, object]:
+    paseo = "/Applications/Paseo.app/Contents/Resources/bin/paseo"
+    log = home / "Library/Logs/paseo.log"
+    return {
+        "Label": "com.dotfiles.paseo",
+        "ProgramArguments": [
+            paseo,
+            "start",
+            "--foreground",
+            "--no-relay",
+            "--listen",
+            f"{ip}:6767",
+        ],
+        "RunAtLoad": True,
+        "KeepAlive": True,
+        "StandardOutPath": str(log),
+        "StandardErrorPath": str(log),
+        "WorkingDirectory": str(home),
+        "EnvironmentVariables": {
+            "PATH": (
+                f"{home}/.local/bin:{home}/.npm-global/bin:"
+                "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+            )
+        },
+    }
+
+
+def _write_paseo_plist(home: Path, content: dict[str, object]) -> Path:
+    plist = home / "Library/LaunchAgents/com.dotfiles.paseo.plist"
+    plist.parent.mkdir(parents=True)
+    plist.write_bytes(plistlib.dumps(content))
+    return plist
+
+
 def test_tailscale_up_down_and_dry_run(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     service = _service(runner, tmp_path)
@@ -152,7 +186,7 @@ def test_ensure_paseo_reinstalls_stale_tailnet_binding(tmp_path: Path) -> None:
     steps = _service(runner, tmp_path).ensure_paseo_agent(dry_run=False)
 
     assert steps[0].level == "warn"
-    assert "stale tailnet IP" in steps[0].message
+    assert "configuration" in steps[0].message
 
 
 def test_caffeine_status_reports_effective_sleep_prevention(tmp_path: Path) -> None:
@@ -243,8 +277,10 @@ def test_rotation_cancel_missing_tailnet_and_dry_run(tmp_path: Path) -> None:
     assert cancelled[0].level == "error"
 
 
-def test_malformed_listen_plists_are_ignored(tmp_path: Path) -> None:
-    service = _service(FakeProcessRunner(), tmp_path)
+def test_malformed_running_agent_configuration_is_stale(tmp_path: Path) -> None:
+    runner = FakeProcessRunner()
+    _tailnet(runner)
+    service = _service(runner, tmp_path)
     plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
     plist.parent.mkdir(parents=True)
     for payload in (
@@ -254,20 +290,63 @@ def test_malformed_listen_plists_are_ignored(tmp_path: Path) -> None:
         plistlib.dumps({"ProgramArguments": ["--listen"]}),
     ):
         plist.write_bytes(payload)
-        assert service._paseo_listen_address() is None
+        assert service.paseo_configuration_stale() is True
 
 
-def test_ensure_running_matching_daemon_is_left_alone(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("name", "mutate"),
+    [
+        (
+            "missing no-relay",
+            lambda data: data["ProgramArguments"].remove("--no-relay"),
+        ),
+        (
+            "wrong executable",
+            lambda data: data["ProgramArguments"].__setitem__(0, "/usr/local/bin/paseo"),
+        ),
+        (
+            "wrong port",
+            lambda data: data["ProgramArguments"].__setitem__(-1, "100.64.0.1:9999"),
+        ),
+        ("KeepAlive false", lambda data: data.__setitem__("KeepAlive", False)),
+        (
+            "wrong environment",
+            lambda data: data["EnvironmentVariables"].__setitem__("PATH", "/usr/bin"),
+        ),
+    ],
+)
+def test_ensure_running_paseo_reinstalls_noncanonical_agent(
+    tmp_path: Path, name: str, mutate
+) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("id", "-u"), stdout="501\n")
+    runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
+    _tailnet(runner)
+    content = _canonical_paseo_plist(tmp_path)
+    mutate(content)
+    plist = _write_paseo_plist(tmp_path, content)
+
+    steps = _service(runner, tmp_path).ensure_paseo_agent(dry_run=False)
+
+    assert steps[0].level == "warn", name
+    assert "configuration" in steps[0].message
+    assert plistlib.loads(plist.read_bytes()) == _canonical_paseo_plist(tmp_path)
+    assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
+
+
+def test_ensure_running_canonical_daemon_is_left_alone(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     runner.script(("launchctl", "list"), stdout="123\t0\tcom.dotfiles.paseo\n")
     _tailnet(runner)
-    plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
-    plist.parent.mkdir(parents=True)
-    plist.write_bytes(
-        plistlib.dumps({"ProgramArguments": ["paseo", "--listen", "100.64.0.1:6767"]})
-    )
+    plist = _write_paseo_plist(tmp_path, _canonical_paseo_plist(tmp_path))
+    original = plist.read_bytes()
+
     steps = _service(runner, tmp_path).ensure_paseo_agent(dry_run=False)
+
     assert [step.level for step in steps] == ["info"]
+    assert plist.read_bytes() == original
+    assert not any(call[-2:] == ("daemon", "stop") for call in runner.calls)
+    assert not any("bootstrap" in call for call in runner.calls)
 
 
 def test_tailscale_down_failure_is_visible(tmp_path: Path) -> None:

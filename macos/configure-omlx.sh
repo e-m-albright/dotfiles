@@ -3,7 +3,9 @@ set -euo pipefail
 
 formula="jundot/omlx/omlx"
 model_repo="Jundot/Qwen3.6-35B-A3B-oQ4e-mtp"
+model_revision="14c285372cbdb1777adea5bb49087ced0bffc0b5"
 model_dir="$HOME/.omlx/models/$model_repo"
+model_revision_file="$model_dir/.dotfiles-revision"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 settings_overlay="$script_dir/omlx/settings.json"
 settings_file="$HOME/.omlx/settings.json"
@@ -37,7 +39,9 @@ if ! "$python" -c 'import xgrammar' >/dev/null 2>&1; then
         /usr/bin/install_name_tool -add_rpath "$tvm_lib" "$dylib"
     fi
     /usr/bin/codesign --force --sign - "$dylib"
-    printf 'xgrammar/libxgrammar_bindings.dylib,,\n' > "$record"
+    if ! grep -Fqx 'xgrammar/libxgrammar_bindings.dylib,,' "$record"; then
+        printf 'xgrammar/libxgrammar_bindings.dylib,,\n' >> "$record"
+    fi
     "$python" -c 'import xgrammar'
 fi
 
@@ -62,7 +66,7 @@ if [[ ! -f "$settings_file" ]] || ! cmp -s "$settings_file" "$merged_settings"; 
     install -m 600 "$merged_settings" "$settings_file"
 fi
 
-model_complete() {
+model_files_complete() {
     local shard
     # This pinned model has five shards; update the check when replacing it.
     [[ -s "$model_dir/model.safetensors.index.json" ]] || return 1
@@ -71,13 +75,21 @@ model_complete() {
     done
 }
 
+model_complete() {
+    model_files_complete &&
+        [[ -f "$model_revision_file" ]] &&
+        [[ "$(< "$model_revision_file")" == "$model_revision" ]]
+}
+
 if ! model_complete; then
     require_restart
-    "$prefix/libexec/bin/hf" download "$model_repo" --local-dir "$model_dir"
-    if ! model_complete; then
+    "$prefix/libexec/bin/hf" download "$model_repo" \
+        --revision "$model_revision" --local-dir "$model_dir"
+    if ! model_files_complete; then
         printf 'oMLX model download is incomplete: %s\n' "$model_dir" >&2
         exit 1
     fi
+    printf '%s\n' "$model_revision" > "$model_revision_file"
 fi
 
 health_url="http://127.0.0.1:8000/health"
@@ -99,4 +111,4 @@ if ! server_healthy --show-error --retry 30 --retry-connrefused --retry-delay 2 
 fi
 rm -f "$restart_required"
 
-printf 'oMLX ready: xgrammar + %s\n' "$model_repo"
+printf 'oMLX ready: xgrammar + %s@%s\n' "$model_repo" "$model_revision"

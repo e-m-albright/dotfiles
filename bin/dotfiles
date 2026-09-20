@@ -97,11 +97,12 @@ sub_update () {
         print_success "UV: $version"
     fi
 
-    # --- Global npm packages ---
-    if command -v npm >/dev/null 2>&1; then
-        print_section "Global npm packages"
-        npm update -g
-        print_success "Global npm packages updated"
+    # Reconcile exact npm and Go pins after runtime updates. A blanket
+    # `npm update -g` would create drift from packages.toml.
+    print_section "Declared software"
+    if ! "$DOTFILES_DIR/bin/dotfiles" brew install; then
+        print_error "Declared software reconciliation failed"
+        return 1
     fi
 
     print_completion "All updates finished"

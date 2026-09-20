@@ -104,7 +104,7 @@ def clean_command(ctx: typer.Context) -> None:
 
 @brew_app.command()
 def upgrade(ctx: typer.Context) -> None:
-    """Upgrade all installed packages (brew is the only version-pinning surface)."""
+    """Upgrade installed Homebrew formulae and casks."""
     app_ctx = app_context(ctx)
     print_title(console, "brew", "upgrade")
     print_section(console, "Upgrading Homebrew packages")

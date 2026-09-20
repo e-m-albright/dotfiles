@@ -9,7 +9,6 @@ import plistlib
 import re
 from functools import cached_property
 from pathlib import Path
-from typing import cast
 
 from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.cmd.remote.models import PASEO_PORT, CaffeineStatus, ConnectionInfo, RemoteStatus
@@ -175,39 +174,29 @@ class RemoteService:
             [*_PASEO_BASE_ARGS, "--listen", f"{tailnet_ip}:{PASEO_PORT}"], dry_run=False
         )
 
-    def _paseo_listen_address(self) -> str | None:
-        plist = self._agent_plist()
-        if not plist.exists():
-            return None
-        try:
-            data = plistlib.loads(plist.read_bytes())
-        except (plistlib.InvalidFileException, ValueError):
-            return None
-        raw_args = data.get("ProgramArguments")
-        if not isinstance(raw_args, list):
-            return None
-        args = [str(item) for item in cast("list[object]", raw_args)]
-        if "--listen" not in args:
-            return None
-        index = args.index("--listen") + 1
-        return args[index] if index < len(args) else None
-
-    def paseo_listen_stale(self) -> bool:
-        address = self._paseo_listen_address()
-        if address is None:
-            return False
+    def paseo_configuration_stale(self) -> bool:
         connected, ip = self._tailscale
         if not connected or not ip:
             return False
-        return not address.startswith(f"{ip}:")
+
+        plist = self._agent_plist()
+        try:
+            persisted = plistlib.loads(plist.read_bytes())
+        except (FileNotFoundError, plistlib.InvalidFileException, ValueError):
+            return True
+
+        desired = plistlib.loads(
+            self._render_plist([*_PASEO_BASE_ARGS, "--listen", f"{ip}:{PASEO_PORT}"])
+        )
+        return persisted != desired
 
     def ensure_paseo_agent(self, *, dry_run: bool) -> list[StepResult]:
         if self.paseo_running():
-            if self.paseo_listen_stale():
+            if self.paseo_configuration_stale():
                 return [
                     StepResult(
                         level="warn",
-                        message="Paseo bound to a stale tailnet IP — reinstalling agent",
+                        message="Paseo launch configuration drifted — reinstalling agent",
                     ),
                     *self.paseo_install_agent(dry_run=dry_run),
                 ]

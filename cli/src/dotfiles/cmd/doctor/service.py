@@ -363,7 +363,11 @@ class DoctorService:
         service = RemoteService(runner=self._runner, home=self._home)
         results: list[CheckResult] = []
         if service.paseo_running():
-            detail = "stale listen IP — run: dfs remote on" if service.paseo_listen_stale() else ""
+            detail = (
+                "launch configuration drift — run: dfs remote on"
+                if service.paseo_configuration_stale()
+                else ""
+            )
             status = "warn" if detail else "ok"
             results.append(
                 CheckResult(

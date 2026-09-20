@@ -199,6 +199,9 @@ def test_ssh_key_add_reports_the_retry_result(tmp_path: Path, retry_succeeds: bo
     assert sandbox.log.read_text().count("ssh-add --apple-use-keychain") == 2
 
 
+_OMLX_REVISION = "14c285372cbdb1777adea5bb49087ced0bffc0b5"
+
+
 @pytest.fixture
 def omlx(tmp_path: Path) -> ShellSandbox:
     sandbox = ShellSandbox(tmp_path)
@@ -233,6 +236,7 @@ def omlx(tmp_path: Path) -> ShellSandbox:
     (model / "model.safetensors.index.json").write_text("{}")
     for shard in range(1, 6):
         (model / f"model-{shard:05}-of-00005.safetensors").write_text("weights")
+    (model / ".dotfiles-revision").write_text(f"{_OMLX_REVISION}\n")
     return sandbox
 
 
@@ -350,15 +354,37 @@ def test_omlx_grammar_install_failure_prevents_readiness(omlx: ShellSandbox) -> 
 def test_omlx_download_repairs_partial_model_before_restart(omlx: ShellSandbox) -> None:
     shard = next((omlx.home / ".omlx/models").rglob("model-00001-*.safetensors"))
     shard.unlink()
-    omlx.stub("hf", 'printf weights > "$4/model-00001-of-00005.safetensors"')
+    omlx.stub("hf", 'printf weights > "$6/model-00001-of-00005.safetensors"')
 
     result = omlx.run(ROOT / "macos/configure-omlx.sh")
 
     assert result.returncode == 0, result.stderr
     assert shard.read_text() == "weights"
     commands = omlx.log.read_text()
+    assert (
+        f"hf download Jundot/Qwen3.6-35B-A3B-oQ4e-mtp --revision {_OMLX_REVISION}"
+        in commands
+    )
     assert commands.index("hf download") < commands.index("services restart")
     assert "oMLX ready" in result.stdout
+
+
+def test_omlx_complete_unpinned_model_is_reconciled_to_revision(omlx: ShellSandbox) -> None:
+    revision = next((omlx.home / ".omlx/models").rglob(".dotfiles-revision"))
+    revision.unlink()
+
+    result = omlx.run(ROOT / "macos/configure-omlx.sh")
+
+    assert result.returncode == 0, result.stderr
+    assert revision.read_text() == f"{_OMLX_REVISION}\n"
+    assert f"--revision {_OMLX_REVISION}" in omlx.log.read_text()
+
+
+def test_omlx_loader_repair_preserves_existing_record_entries() -> None:
+    script = (ROOT / "macos/configure-omlx.sh").read_text()
+
+    assert "printf 'xgrammar/libxgrammar_bindings.dylib,,\\n' >> \"$record\"" in script
+    assert "printf 'xgrammar/libxgrammar_bindings.dylib,,\\n' > \"$record\"" not in script
 
 
 @pytest.mark.parametrize(

@@ -31,9 +31,10 @@ stay local. See [data hygiene](privacy-data-hygiene.md) for the complete boundar
 `macos/packages.toml` declares oMLX and its `omlx_setup` special installer.
 `macos/configure-omlx.sh` idempotently installs and verifies xgrammar, repairs the
 known macOS loader defect, merges the non-secret settings overlay from
-`macos/omlx/settings.json`, and downloads missing or incomplete Qwen weights.
-It restarts after changes or an unhealthy service, then checks the local health
-endpoint before reporting ready. A pending restart marker survives failed runs
+`macos/omlx/settings.json`, and reconciles Qwen weights to the immutable Hugging
+Face revision `14c285372cbdb1777adea5bb49087ced0bffc0b5`. It restarts after
+changes or an unhealthy service, then checks the local health endpoint before
+reporting ready. A pending restart marker survives failed runs
 so a rerun retries the restart even when the files already match. Generated
 authentication material and unknown settings are preserved. Workbench owns
 Pi's provider, model, router, and launcher configuration.
@@ -69,7 +70,8 @@ dylib="$site/xgrammar/libxgrammar_bindings.dylib"
 record="$(find "$site" -maxdepth 1 -type d -name 'xgrammar-*.dist-info' -print -quit)/RECORD"
 install_name_tool -add_rpath "$site/tvm_ffi/lib" "$dylib"
 codesign --force --sign - "$dylib"
-printf 'xgrammar/libxgrammar_bindings.dylib,,\n' > "$record"
+grep -Fqx 'xgrammar/libxgrammar_bindings.dylib,,' "$record" || \
+  printf 'xgrammar/libxgrammar_bindings.dylib,,\n' >> "$record"
 "$(brew --prefix omlx)/libexec/bin/python" -c 'import xgrammar; print("xgrammar import OK")'
 ```
 

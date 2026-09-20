@@ -781,11 +781,7 @@ def cleanup(runner: ProcessRunner) -> list[StepResult]:
 
 
 def upgrade(runner: ProcessRunner) -> list[StepResult]:
-    """Update Homebrew and upgrade all installed formulae + casks, then prune caches.
-
-    Homebrew is the only version-pinning surface in this managed setup, so this is
-    the one-shot "bring my packages current" convenience.
-    """
+    """Update Homebrew and upgrade all installed formulae + casks, then prune caches."""
     results: list[StepResult] = []
     update = runner.run(("brew", "update"))
     if update.ok:
