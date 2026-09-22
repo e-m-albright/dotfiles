@@ -71,7 +71,12 @@ def installer(tmp_path: Path) -> tuple[ShellSandbox, Path]:
     sandbox.allow("dirname", "mkdir", "head", "grep", "cat")
     sandbox.stub("which", 'command -v "$1"')
     sandbox.stub("zsh")
-    sandbox.stub("brew", '[[ "${1:-}" == --version ]] && echo "Homebrew test"; exit 0')
+    sandbox.stub(
+        "brew",
+        '[[ "${1:-}" == --version ]] && echo "Homebrew test"; '
+        'if [[ "$*" == "list --formula uv" ]]; then command -v uv >/dev/null; exit; fi; '
+        '[[ "$*" != "${FAIL_BREW_STEP:-}" ]]',
+    )
     sandbox.stub("uv", '[[ "$*" != "${FAIL_STEP:-}" ]]')
     sandbox.stub("python3.14")
     sandbox.stub("curl", "exit 22")
@@ -99,11 +104,13 @@ def installer(tmp_path: Path) -> tuple[ShellSandbox, Path]:
 def test_installer_aborts_when_uv_bootstrap_fails(installer: tuple[ShellSandbox, Path]) -> None:
     sandbox, script = installer
     (sandbox.bin / "uv").unlink()
+    sandbox.env["FAIL_BREW_STEP"] = "install uv"
 
     result = sandbox.run(script)
 
     assert result.returncode != 0
     assert "uv" in result.stdout
+    assert "brew install uv" in sandbox.log.read_text()
     assert "Dotfiles setup complete" not in result.stdout
     assert "dock.sh" not in sandbox.log.read_text()
 
@@ -113,9 +120,6 @@ def test_installer_requires_uv_after_successful_bootstrap(
 ) -> None:
     sandbox, script = installer
     (sandbox.bin / "uv").unlink()
-    sandbox.stub("curl")
-    sandbox.stub("sh")
-
     result = sandbox.run(script)
 
     assert result.returncode != 0
@@ -161,6 +165,7 @@ def test_work_installer_runs_only_constrained_orchestration(
 ) -> None:
     sandbox, script = installer
     sandbox.stub("fnm")
+    sandbox.stub("tenv")
 
     result = sandbox.run(script, "--profile", "work")
 
@@ -169,6 +174,8 @@ def test_work_installer_runs_only_constrained_orchestration(
     assert f"uv run --project {script.parent}/cli dotfiles brew install --profile work" in commands
     assert "fnm install --lts" in commands
     assert "uv python install 3.14" in commands
+    assert "tenv tf install latest" in commands
+    assert "tenv tf use latest" in commands
     assert "workbench sync all --profile work" in commands
     assert "workbench drift all --profile work" in commands
     assert "orbstack.sh" in commands
@@ -182,6 +189,7 @@ def test_work_installer_runs_only_constrained_orchestration(
         "workbench sync all\n",
     ):
         assert forbidden not in commands
+    assert (sandbox.home / ".config/dotfiles/profile").read_text() == "work\n"
 
 
 def test_installer_success_and_rerun_reconcile_required_steps(

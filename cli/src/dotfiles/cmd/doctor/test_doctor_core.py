@@ -119,8 +119,9 @@ def _fully_equipped_runner(home: Path) -> FakeProcessRunner:
     # fnm list — contains a version so Node.js check is ok
     runner.script(("fnm", "list"), stdout="v20.0.0\n")
     runner.script(("node", "--version"), stdout="v20.0.0\n")
-    # python3.14 version
-    runner.script(("python3.14", "--version"), stdout="Python 3.14.0\n")
+    # uv-managed Python 3.14
+    runner.script(("uv", "python", "find", "3.14"), stdout="/usr/bin/python3.14\n")
+    runner.script(("/usr/bin/python3.14", "--version"), stdout="Python 3.14.0\n")
     runner.script(("/usr/bin/workbench", "drift", "all"), stdout="OK managed config matches\n")
     return runner
 

@@ -462,6 +462,13 @@ def test_install_npm_globals_installs_missing(tmp_path: Path) -> None:
     results = install_npm_globals(manifest, runner, flags_on={"ai"})
     assert ("npm", "install", "-g", "wrangler@4.112.0") in runner.calls
     assert ("npm", "install", "-g", "agent-browser") in runner.calls
+    npm_envs = [
+        env for call, env in zip(runner.calls, runner.environments, strict=True) if call[0] == "npm"
+    ]
+    assert npm_envs
+    assert all(
+        env and env["NPM_CONFIG_PREFIX"] == str(Path.home() / ".npm-global") for env in npm_envs
+    )
     assert all(r.level == "success" for r in results)
 
 

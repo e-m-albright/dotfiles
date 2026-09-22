@@ -17,7 +17,6 @@ _STEPS = (
     "node --version",
     "rustup update",
     "rustc --version",
-    "uv self update",
     "uv --version",
     "dotfiles brew install",
 )
@@ -31,8 +30,7 @@ fi
 case "$call" in
     'sudo softwareupdate -i -a' | 'dotfiles brew upgrade' | \
     'fnm install --lts' | 'fnm use --install-if-missing lts-latest' | \
-    'fnm default lts-latest' | 'rustup update' | 'uv self update' | \
-    'dotfiles brew install') ;;
+    'fnm default lts-latest' | 'rustup update' | 'dotfiles brew install') ;;
     'fnm env') printf ':\\n' ;;
     'node --version') printf 'v24.20.0\\n' ;;
     'rustc --version') printf 'rustc 1.90.0\\n' ;;

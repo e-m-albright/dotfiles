@@ -35,6 +35,7 @@ class FakeProcessRunner:
         self.calls_with_input: list[tuple[tuple[str, ...], str | None]] = []
         self.inputs: list[str | None] = []
         self.capture_output: list[bool] = []
+        self.environments: list[Mapping[str, str] | None] = []
         self.timeouts: list[float | None] = []
         self._scripted: dict[tuple[str, ...], CommandResult] = {}
 
@@ -68,6 +69,7 @@ class FakeProcessRunner:
             self.inputs.append(stdin)
             self.capture_output.append(capture_output)
             self.timeouts.append(timeout)
+            self.environments.append(env)
             self.calls_with_input.append((key, stdin))
         result = self._scripted.get(
             key, CommandResult(command=key, exit_code=0, stdout="", stderr="")

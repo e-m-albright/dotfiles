@@ -89,10 +89,8 @@ sub_update () {
         print_success "Rust: $version"
     fi
 
-    # --- UV (Python) ---
+    # uv is Homebrew-owned and was updated with the other formulae above.
     if command -v uv >/dev/null 2>&1; then
-        print_section "UV (Python package manager)"
-        uv self update
         version=$(uv --version)
         print_success "UV: $version"
     fi

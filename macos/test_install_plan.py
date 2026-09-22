@@ -40,9 +40,8 @@ def test_work_install_plan_enumerates_allowlist_and_skipped_mutations(tmp_path: 
 
     assert result.returncode == 0, result.stderr
     for software in (
-        "hashicorp/tap",
         "git-lfs",
-        "terraform",
+        "tenv",
         "ghostty",
         "orbstack",
         "claude_code",
@@ -52,6 +51,9 @@ def test_work_install_plan_enumerates_allowlist_and_skipped_mutations(tmp_path: 
     assert "Skipped host mutations" in result.stdout
     assert "Zed settings" in result.stdout
     assert "Go and Rust tools" in result.stdout
+    assert "hashicorp/tap" not in result.stdout
+    assert "docker-compose" not in result.stdout
+    assert "shared shell configuration" in result.stdout
 
 
 def test_native_pnpm_uses_the_global_prefix_not_its_bin_directory() -> None:

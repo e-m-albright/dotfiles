@@ -13,6 +13,11 @@ print_install_plan() {
             macos/print_utils.sh \
             macos/link_utils.sh \
             macos/orbstack.sh \
+            shell/.zprofile \
+            shell/.zshenv \
+            shell/.zshrc \
+            shell/profile-status.zsh \
+            shell/amuse.zsh-theme \
             terminal/ghostty.config; do
             if [[ ! -e "$DOTFILES_DIR/$required" ]]; then
                 printf 'install plan: missing required input: %s\n' "$required" >&2
@@ -22,21 +27,20 @@ print_install_plan() {
         cat <<'EOF'
 Dotfiles macOS work install plan (read-only)
 
-Selected Homebrew tap: hashicorp/tap
+Selected Homebrew taps: none
 Selected Homebrew formulae:
   git, git-lfs, git-delta, gh, jq, yq, ripgrep, fd, fzf, bat, zoxide, just,
-  shellcheck, lefthook, gitleaks, fnm, uv, deno, docker-compose, awscli, terraform
+  shellcheck, lefthook, gitleaks, fnm, uv, deno, awscli, tenv
 Selected Homebrew casks: ghostty, zed, spotify, orbstack
 Selected special installer: claude_code
 Selected npm global: @earendil-works/pi-coding-agent
-Runtimes: Node.js LTS via fnm; Python 3.14 via uv
-Configuration: Ghostty; OrbStack on-demand; clone/link Workbench; sync and drift
-  with --profile work
+Runtimes: Node.js LTS via fnm; Python 3.14 via uv; Terraform via tenv
+Configuration: shared shell configuration with a work profile; Ghostty; OrbStack
+  on-demand; clone/link Workbench; sync and drift with --profile work
 
-Skipped host mutations: Oh My Zsh and default shell; tracked shell and Git links;
-Git identity and SSH; Dock, file associations, and login items; private automation
-discovery; Zed settings; oMLX/Qwen; Go and Rust tools; pnpm;
-package cache cleanup.
+Skipped host mutations: default shell; Git configuration and identity; SSH; Dock,
+file associations, and login items; private automation discovery; Zed settings;
+oMLX/Qwen; Go and Rust tools; pnpm; package cache cleanup.
 
 No host state was inspected or changed.
 EOF
@@ -49,6 +53,7 @@ EOF
         shell/.zprofile \
         shell/.zshenv \
         shell/.zshrc \
+        shell/profile-status.zsh \
         shell/amuse.zsh-theme \
         bin/dotfiles \
         macos/packages.toml \
@@ -121,6 +126,12 @@ if [[ "$OSTYPE" != darwin* ]]; then
     printf 'install.sh targets macOS (OSTYPE=%s). Aborting.\n' "$OSTYPE" >&2
     exit 1
 fi
+
+# Apply the same privacy defaults before the first Homebrew command; future
+# interactive shells also set these in .zshrc.
+export HOMEBREW_NO_ANALYTICS=1
+export HOMEBREW_NO_ENV_HINTS=1
+
 # Supply-chain pins for first-install bootstrap. Advance them deliberately
 # (verify the new commit/version, then update). WORKBENCH_COMMIT pins the
 # FRESH clone only — an existing ~/code/public/workbench is a live working
@@ -128,7 +139,6 @@ fi
 OH_MY_ZSH_COMMIT="677a4592b18c08ddea737f8aca70bac0e9fc9313"
 HOMEBREW_INSTALL_COMMIT="fea42d9aedd20a82bea800a6898dcde19401ab1f"
 WORKBENCH_COMMIT="0652471e40f7c11ec68ea159d262565be4665376"
-UV_VERSION="0.12.9"
 
 # Source shared installer functions.
 source "$DOTFILES_DIR/macos/print_utils.sh"
@@ -136,6 +146,23 @@ source "$DOTFILES_DIR/macos/link_utils.sh"
 
 if [[ "$PROFILE" == "work" ]]; then
     print_header "Work profile"
+
+    print_section "Shell"
+    if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+        print_action "Installing Oh My Zsh..."
+        if ! RUNZSH=no sh -c "$(curl -fsSL "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/$OH_MY_ZSH_COMMIT/tools/install.sh")" >/dev/null 2>&1; then
+            print_error "Oh My Zsh install failed — shared shell configuration requires it"
+            exit 1
+        fi
+    fi
+    safe_link "$DOTFILES_DIR/shell/.zprofile" "$HOME/.zprofile"
+    safe_link "$DOTFILES_DIR/shell/.zshenv" "$HOME/.zshenv"
+    safe_link "$DOTFILES_DIR/shell/.zshrc" "$HOME/.zshrc"
+    safe_link "$DOTFILES_DIR/shell/amuse.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/amuse.zsh-theme"
+    mkdir -p "$HOME/.config/dotfiles"
+    printf 'work\n' > "$HOME/.config/dotfiles/profile"
+    printf '%s\n' "$DOTFILES_DIR" > "$HOME/.config/dotfiles/root"
+    print_success "Shared shell configured for work"
 
     print_section "Homebrew"
     if ! command -v brew >/dev/null 2>&1; then
@@ -150,13 +177,13 @@ if [[ "$PROFILE" == "work" ]]; then
     print_success "Homebrew index updated"
 
     print_section "uv (Python package manager)"
-    if ! command -v uv >/dev/null 2>&1; then
-        print_action "Installing uv..."
-        if ! curl -LsSf "https://astral.sh/uv/$UV_VERSION/install.sh" | sh >/dev/null 2>&1; then
-            print_error "uv $UV_VERSION install failed — package reconciliation requires uv"
+    if ! brew list --formula uv >/dev/null 2>&1; then
+        print_action "Installing uv through Homebrew..."
+        if ! brew install uv >/dev/null 2>&1; then
+            print_error "Homebrew uv install failed — package reconciliation requires uv"
             exit 1
         fi
-        export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+        hash -r
     fi
     if ! command -v uv >/dev/null 2>&1; then
         print_error "uv is unavailable after bootstrap — cannot reconcile packages"
@@ -179,6 +206,15 @@ if [[ "$PROFILE" == "work" ]]; then
     print_section "Python"
     uv python install 3.14 >/dev/null 2>&1
     print_success "Python 3.14 installed"
+
+    print_section "Terraform"
+    if ! command -v tenv >/dev/null 2>&1; then
+        print_error "tenv is unavailable after package reconciliation"
+        exit 1
+    fi
+    tenv tf install latest >/dev/null 2>&1
+    tenv tf use latest >/dev/null 2>&1
+    print_success "Terraform installed and managed by tenv"
 
     print_section "Ghostty"
     if command -v ghostty >/dev/null 2>&1 || [[ -d "/Applications/Ghostty.app" ]]; then
@@ -295,20 +331,18 @@ fi
 brew update >/dev/null 2>&1
 print_success "Homebrew index updated"
 
-# Ensure uv is present (needed to run the Python CLI for brew install)
+# Ensure uv is present (needed to run the Python CLI for brew install). Homebrew
+# is the sole owner on macOS; uv's self-updater must not compete with it.
 print_section "uv (Python package manager)"
-if ! command -v uv >/dev/null 2>&1; then
-    print_action "Installing uv..."
-    if curl -LsSf "https://astral.sh/uv/$UV_VERSION/install.sh" | sh >/dev/null 2>&1; then
-        # Reload PATH so uv is findable in the same shell session
-        export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
-        print_success "uv installed"
-    else
-        print_error "uv $UV_VERSION install failed — package reconciliation requires uv"
+if ! brew list --formula uv >/dev/null 2>&1; then
+    print_action "Installing uv through Homebrew..."
+    if ! brew install uv >/dev/null 2>&1; then
+        print_error "Homebrew uv install failed — package reconciliation requires uv"
         exit 1
     fi
+    hash -r
 else
-    print_info "uv already installed ($(uv --version))"
+    print_info "uv already installed through Homebrew ($(uv --version))"
 fi
 
 # Install brew with packages & casks via Python CLI (packages.toml is source of truth)
@@ -387,6 +421,13 @@ fi
 # Jupyter / Marimo — install per-project, not globally
 # Use: uv add jupyter marimo (in project virtualenv)
 # See also: Hex (hex.tech) for hosted notebook collaboration
+
+# -- Terraform / tenv
+if command -v tenv >/dev/null 2>&1; then
+    tenv tf install latest >/dev/null 2>&1
+    tenv tf use latest >/dev/null 2>&1
+    print_success "Terraform installed and managed by tenv"
+fi
 
 # Terminal configuration
 print_header "💻 Terminal Configuration"

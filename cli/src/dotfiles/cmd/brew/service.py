@@ -14,6 +14,7 @@ provides:
 from __future__ import annotations
 
 import json
+import os
 import re
 import tomllib
 from dataclasses import dataclass
@@ -672,6 +673,11 @@ def install_claude_code(runner: ProcessRunner) -> list[StepResult]:
         rmtree(install_dir)
 
 
+def _npm_environment() -> dict[str, str]:
+    """Keep global CLIs stable across fnm-managed Node version changes."""
+    return {**os.environ, "NPM_CONFIG_PREFIX": str(Path.home() / ".npm-global")}
+
+
 def _npm_runtime(
     runner: ProcessRunner, *, dry_run: bool
 ) -> tuple[tuple[str, ...] | None, StepResult | None]:
@@ -729,7 +735,7 @@ def install_npm_globals(
 
 def _npm_installed_versions(runner: ProcessRunner) -> dict[str, str]:
     """Globally installed npm packages as {name: version}, from one `npm ls` pass."""
-    result = runner.run(("npm", "ls", "-g", "--depth=0", "--json"))
+    result = runner.run(("npm", "ls", "-g", "--depth=0", "--json"), env=_npm_environment())
     try:
         raw: object = json.loads(result.stdout or "{}")
     except ValueError:
@@ -814,10 +820,11 @@ def _install_one_npm(
         return StepResult(level="info", message=f"DRY RUN: npm install -g {target}")
     # `npm list -g name@version` exits non-zero on a version mismatch even
     # though it still prints the tree root — only the exit code is the signal.
-    check = runner.run((*npm_command, "list", "-g", "--depth=0", target))
+    npm_env = _npm_environment()
+    check = runner.run((*npm_command, "list", "-g", "--depth=0", target), env=npm_env)
     if check.exit_code == 0:
         return StepResult(level="info", message=f"{pkg.name} already installed — skipping")
-    res = runner.run((*npm_command, "install", "-g", target))
+    res = runner.run((*npm_command, "install", "-g", target), env=npm_env)
     if res.exit_code == 0:
         return StepResult(level="success", message=f"npm install -g {target}")
     return StepResult(level="error", message=f"npm install -g {target} failed")

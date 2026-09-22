@@ -177,7 +177,7 @@ class DoctorService:
         sec = "Runtimes"
         results: list[CheckResult] = [
             self._tool(sec, "FNM", "fnm", "curl -fsSL https://fnm.vercel.app/install | bash"),
-            self._tool(sec, "UV", "uv", "curl -LsSf https://astral.sh/uv/install.sh | sh"),
+            self._tool(sec, "UV", "uv", "brew install uv"),
             self._tool(sec, "Go", "go", "brew install go"),
         ]
         results.extend(self._check_node(sec))
@@ -202,8 +202,31 @@ class DoctorService:
             )
         ]
 
+    def _check_uv_python(self, sec: str) -> list[CheckResult]:
+        located = self._runner.run(("uv", "python", "find", "3.14"), timeout=10)
+        if located.ok and located.stdout.strip():
+            return [
+                self._probe(
+                    sec,
+                    "Python",
+                    (located.stdout.strip(), "--version"),
+                    "Run: uv python install 3.14",
+                )
+            ]
+        return [
+            CheckResult(
+                section=sec,
+                name="Python",
+                status="missing",
+                hint="Run: uv python install 3.14",
+            )
+        ]
+
     def _check_python(self, sec: str) -> list[CheckResult]:
-        """Python — ok if 3.14, warn if only 3, missing otherwise."""
+        """Prefer uv's managed Python inventory over incidental PATH entries."""
+        if self._which("uv") is not None:
+            return self._check_uv_python(sec)
+
         for command in ("python3.14", "python3"):
             if self._which(command) is not None:
                 result = self._probe(

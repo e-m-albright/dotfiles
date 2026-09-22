@@ -53,11 +53,19 @@ For a lightweight work machine, use the fail-closed profile:
 ```
 
 The work profile installs only its explicit formula, cask, special-installer,
-and npm allowlists from `macos/packages.toml`. It adds Node.js LTS and Python
-3.14, configures Ghostty, keeps OrbStack on demand, and syncs Workbench with
-`--profile work`. It does not apply the personal shell, Git, SSH, Dock, file
-association, login item, private automation, Zed settings, local-model, Go,
-Rust, pnpm, or cache-cleanup setup.
+and npm allowlists from `macos/packages.toml`. It shares the personal zsh setup
+with work-safe defaults and a short profile banner, adds Node.js LTS, uv-managed
+Python 3.14, and tenv-managed Terraform, configures Ghostty, keeps OrbStack on
+demand, and syncs Workbench with `--profile work`. It does not apply personal
+Git or SSH configuration, Dock, file associations, login items, private
+automation, Zed settings, local models, Go, Rust, pnpm, or cache cleanup.
+
+Work shells print a one-line profile reminder by default. Run `profile_status
+medium` or `profile_status long` for local configuration details. Set
+`DOTFILES_STARTUP_DETAIL=off|short|medium|long` in `~/.zshrc.local` to change
+the startup view. The [work data-flow registry](docs/work-profile-data-flows.md)
+records which modes can transmit source, credentials, telemetry, or account
+data and which organizational approvals remain open.
 
 ## Daily Commands
 

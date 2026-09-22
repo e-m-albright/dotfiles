@@ -43,9 +43,13 @@ export ZSH="$HOME/.oh-my-zsh"
 # shellcheck disable=SC2034 # used by oh-my-zsh
 ZSH_THEME="amuse"
 
-# Auto-update settings
-zstyle ':omz:update' mode auto
-zstyle ':omz:update' frequency 14
+# Keep managed-work shells deterministic; personal shells refresh every two weeks.
+if [[ "${DOTFILES_PROFILE:-personal}" == "work" ]]; then
+    zstyle ':omz:update' mode disabled
+else
+    zstyle ':omz:update' mode auto
+    zstyle ':omz:update' frequency 14
+fi
 
 # Plugins (minimal for fast startup)
 # shellcheck disable=SC2034 # used by oh-my-zsh
@@ -55,7 +59,7 @@ plugins=(
 )
 
 # Custom completions (e.g. _dotfiles). Must precede oh-my-zsh, which runs compinit.
-fpath=("$HOME/code/public/dotfiles/shell/completions" "${fpath[@]}")
+fpath=("${DOTFILES_DIR:-$HOME/code/public/dotfiles}/shell/completions" "${fpath[@]}")
 
 source $ZSH/oh-my-zsh.sh
 
@@ -181,3 +185,10 @@ fi
 # =============================================================================
 # shellcheck source=/dev/null
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# Profile summary. Work defaults to one short line; set
+# DOTFILES_STARTUP_DETAIL=off|short|medium|long in ~/.zshrc.local to override.
+_profile_status="${DOTFILES_DIR:-$HOME/code/public/dotfiles}/shell/profile-status.zsh"
+# shellcheck disable=SC1090
+[[ -f "$_profile_status" ]] && source "$_profile_status"
+unset _profile_status

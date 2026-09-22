@@ -31,7 +31,6 @@ def test_pi_is_an_enabled_pinned_ai_package() -> None:
 
 def test_work_profile_is_the_exact_approved_allowlist() -> None:
     work = PackageManifest.load(MANIFEST).profiles["work"]
-    assert work.taps == ["hashicorp/tap"]
     assert work.formulae == [
         "git",
         "git-lfs",
@@ -51,11 +50,11 @@ def test_work_profile_is_the_exact_approved_allowlist() -> None:
         "fnm",
         "uv",
         "deno",
-        "docker-compose",
         "awscli",
-        "terraform",
+        "tenv",
     ]
     assert work.casks == ["ghostty", "zed", "spotify", "orbstack"]
+    assert work.taps == []
     assert work.specials == ["claude_code"]
     assert work.npm_packages == ["@earendil-works/pi-coding-agent"]
 

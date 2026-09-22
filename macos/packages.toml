@@ -4,7 +4,7 @@
 # Skip flagged groups per run: dotfiles brew install --no-ai --no-productivity --no-social
 
 [taps]
-list = ["axiomhq/tap", "hashicorp/tap", "jundot/omlx"]
+list = ["axiomhq/tap", "jundot/omlx"]
 trusted_formulae = ["jundot/omlx/omlx"]
 trusted_casks = ["axiomhq/tap/axiom"]
 
@@ -63,7 +63,7 @@ kind = "formula"
 packages = [
   { name = "just",           note = "Command runner (like make, but simpler)" },
   { name = "awscli",         note = "AWS command-line interface" },
-  { name = "terraform",      note = "HashiCorp infrastructure-as-code CLI" },
+  { name = "tenv",           note = "Terraform/OpenTofu version manager with signature verification" },
   { name = "lima",           note = "Former Linux virtual machines for restricted coding agents", disabled = true, reason = "Retired 2026-09-17: Workbench native macOS sandbox owns restricted terminal agents; editor and mobile integrations have host authority" },
   { name = "lefthook",       note = "Git hooks (language-agnostic, parallel execution)" },
   { name = "shellcheck",     note = "Static analysis for shell scripts" },
@@ -233,11 +233,11 @@ packages = [
 # =============================================================================
 
 [profile.work]
-taps = ["hashicorp/tap"]
+taps = []
 formulae = [
   "git", "git-lfs", "git-delta", "gh", "jq", "yq", "ripgrep", "fd", "fzf",
   "bat", "zoxide", "just", "shellcheck", "lefthook", "gitleaks", "fnm", "uv",
-  "deno", "docker-compose", "awscli", "terraform",
+  "deno", "awscli", "tenv",
 ]
 casks = ["ghostty", "zed", "spotify", "orbstack"]
 specials = ["claude_code"]
