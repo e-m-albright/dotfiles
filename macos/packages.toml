@@ -303,6 +303,12 @@ reason = "Retired 2026-08-26: the managed daemon uses the CLI bundled with Paseo
 note = "Former standalone Paseo daemon CLI; binary is `paseo`"
 
 [[npm_package]]
+name = "@earendil-works/pi-coding-agent"
+version = "0.86.1"
+flag = "ai"
+note = "Primary terminal coding-agent harness; pinned alongside Workbench's CI version"
+
+[[npm_package]]
 name = "agent-browser"
 version = "0.32.2"
 flag = "ai"

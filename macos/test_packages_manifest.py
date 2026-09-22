@@ -17,6 +17,18 @@ def test_packages_toml_loads_through_model() -> None:
     assert manifest.sections, "packages.toml parsed to zero sections"
 
 
+def test_pi_is_an_enabled_pinned_ai_package() -> None:
+    manifest = PackageManifest.load(MANIFEST)
+    pi = next(
+        package
+        for package in manifest.npm_packages
+        if package.name == "@earendil-works/pi-coding-agent"
+    )
+    assert not pi.disabled
+    assert pi.flag == "ai"
+    assert pi.version == "0.86.1"
+
+
 def test_disabled_entries_carry_dated_reasons() -> None:
     manifest = PackageManifest.load(MANIFEST)
     # The model validators enforce this on load; assert on real data anyway so
