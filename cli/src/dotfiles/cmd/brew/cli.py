@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 import typer
 
@@ -63,8 +63,14 @@ def install(
     no_social: Annotated[
         bool, typer.Option("--no-social", help="Skip social-flagged packages.")
     ] = False,
+    profile: Annotated[
+        Literal["personal", "work"],
+        typer.Option("--profile", help="Installation profile (default: personal)."),
+    ] = "personal",
 ) -> None:
-    """Install all packages declared in packages.toml (idempotent)."""
+    """Install the personal package set or a constrained work allowlist."""
+    if profile == "work" and (no_ai or no_productivity or no_social):
+        raise typer.BadParameter("--no-* category flags are only valid with --profile personal")
     app_ctx = app_context(ctx)
     manifest = _manifest(ctx)
     flags = _flags_on(no_ai=no_ai, no_productivity=no_productivity, no_social=no_social)
@@ -77,6 +83,7 @@ def install(
             manifest,
             runner,
             flags_on=flags,
+            profile=profile,
             dotfiles_dir=app_ctx.dotfiles_dir,
             dry_run=dry_run,
         )

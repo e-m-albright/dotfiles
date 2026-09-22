@@ -23,6 +23,9 @@ packages = [
   { name = "git" },
   { name = "old-tool", disabled = true, reason = "Disabled 2026-08-26: no longer needed" },
 ]
+
+[profile.work]
+formulae = ["git"]
 """
 
 
@@ -281,6 +284,28 @@ version = "v1.0.0"
     assert "wrangler (missing)" in result.output
     assert "gopls (missing)" in result.output
     assert "Heal with" in result.output
+
+
+def test_work_profile_uses_only_its_allowlist(tmp_path: Path) -> None:
+    manifest = _PACKAGES_TOML.replace('formulae = ["git"]', "formulae = []")
+    ctx = _make_ctx(tmp_path)
+    (tmp_path / "macos/packages.toml").write_text(manifest)
+
+    result = runner.invoke(app, ["brew", "install", "--dry-run", "--profile", "work"], obj=ctx)
+
+    assert result.exit_code == 0, result.output
+    assert "brew install git" not in result.output
+
+
+def test_work_profile_rejects_personal_category_flags(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        ["brew", "install", "--profile", "work", "--no-ai"],
+        obj=_make_ctx(tmp_path),
+    )
+
+    assert result.exit_code == 2
+    assert "only valid with --profile personal" in result.output
 
 
 def test_no_ai_flag_disables_a_flagged_section(tmp_path: Path) -> None:

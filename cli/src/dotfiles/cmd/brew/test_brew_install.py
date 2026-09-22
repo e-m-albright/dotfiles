@@ -112,6 +112,17 @@ def test_add_taps_success(tmp_path: Path) -> None:
     assert ("brew", "trust", "--cask", "axiomhq/tap/axiom") in runner.calls
 
 
+def test_add_taps_can_install_only_a_profile_subset(tmp_path: Path) -> None:
+    manifest = load(tmp_path)
+    runner = FakeProcessRunner()
+    runner.script(("brew", "tap", "infisical/get-cli"), exit_code=0)
+
+    results = add_taps(manifest, runner, selected=["infisical/get-cli"])
+
+    assert [step.level for step in results] == ["success"]
+    assert runner.calls == [("brew", "tap", "infisical/get-cli")]
+
+
 def test_add_taps_dry_run_reports_without_mutating(tmp_path: Path) -> None:
     runner = FakeProcessRunner()
     results = add_taps(load(tmp_path), runner, dry_run=True)

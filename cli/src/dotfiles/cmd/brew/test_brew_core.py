@@ -267,6 +267,42 @@ def test_manifest_rejects_unknown_feature_flags(tmp_path: Path) -> None:
         PackageManifest.load(make_toml(tmp_path, content))
 
 
+def test_profile_is_an_explicit_allowlist(tmp_path: Path) -> None:
+    content = (
+        MINIMAL_TOML
+        + """
+[profile.work]
+taps = ["some/tap"]
+formulae = ["git"]
+casks = ["obsidian"]
+specials = ["rust"]
+npm_packages = ["wrangler"]
+"""
+    )
+    manifest = PackageManifest.load(make_toml(tmp_path, content))
+    assert enabled_packages(manifest, flags_on=set(), profile="work") == [
+        ("git", "formula"),
+        ("obsidian", "cask"),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("profile", "message"),
+    [
+        ('taps = ["missing/tap"]', "references unknown tap"),
+        ('formulae = ["missing"]', "references unknown formula 'missing'"),
+        ('casks = ["git"]', "declares it as formula"),
+        ('formulae = ["git", "git"]', "duplicate formula profile references"),
+        ('specials = ["missing"]', "references unknown special"),
+        ('npm_packages = ["missing"]', "references unknown npm package"),
+    ],
+)
+def test_profile_references_are_validated(tmp_path: Path, profile: str, message: str) -> None:
+    content = MINIMAL_TOML + f"\n[profile.work]\n{profile}\n"
+    with pytest.raises(ValidationError, match=message):
+        PackageManifest.load(make_toml(tmp_path, content))
+
+
 # ---------------------------------------------------------------------------
 # Real packages.toml smoke test
 # ---------------------------------------------------------------------------

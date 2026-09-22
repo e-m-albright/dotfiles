@@ -32,8 +32,8 @@ git clone https://github.com/e-m-albright/dotfiles.git ~/code/public/dotfiles
 ~/code/public/dotfiles/install.sh
 ```
 
-The installer is macOS-only and safe to rerun. Its read-only plan can be
-validated on any host with `./install.sh --plan`. It:
+The installer is macOS-only and safe to rerun. Personal remains the default.
+Its read-only plan can be validated on any host with `./install.sh --plan`. It:
 
 1. Links the tracked shell and Git configuration.
 2. Configures SSH and installs Homebrew when needed.
@@ -45,6 +45,20 @@ validated on any host with `./install.sh --plan`. It:
 Secrets and personal Git identity stay outside the repository. The installer
 writes Git identity to `~/.gitconfig.local`.
 
+For a lightweight work machine, use the fail-closed profile:
+
+```bash
+./install.sh --plan --profile work
+./install.sh --profile work
+```
+
+The work profile installs only its explicit formula, cask, special-installer,
+and npm allowlists from `macos/packages.toml`. It adds Node.js LTS and Python
+3.14, configures Ghostty, keeps OrbStack on demand, and syncs Workbench with
+`--profile work`. It does not apply the personal shell, Git, SSH, Dock, file
+association, login item, private automation, Zed settings, local-model, Go,
+Rust, pnpm, or cache-cleanup setup.
+
 ## Daily Commands
 
 ```text
@@ -55,7 +69,9 @@ dotfiles credential list        show grants, consumers, scopes, and local status
 dotfiles credential set ID      prompt securely and store one grant in Keychain
 dotfiles credential link-pi ID  resolve one Pi provider grant from Keychain
 dotfiles credential run ID --…  inject one grant into one child process
-dotfiles brew install           install missing declared packages
+dotfiles brew install           install the default personal package set
+dotfiles brew install --profile work
+                                install only the explicit work allowlist
 dotfiles brew stale             show undeclared installed packages
 dotfiles brew prune             preview installed disabled tombstones
 dotfiles brew prune --yes       uninstall disabled packages; keep tombstones
@@ -116,13 +132,16 @@ intentional absence: rejected tools, deferred installs, or clients that belong
 on another device. They prevent casual reintroduction without falsely treating
 every absence as a bad product. Keep the reason and date when disabling one.
 
-Feature groups can be skipped per install:
+Feature groups can be skipped per personal install:
 
 ```bash
 dotfiles brew install --no-ai
 dotfiles brew install --no-productivity
 dotfiles brew install --no-social
 ```
+
+Category flags are rejected with `--profile work`; the work profile is an exact
+allowlist rather than a combination of personal categories.
 
 ## Repository Layout
 

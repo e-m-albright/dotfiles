@@ -7,6 +7,42 @@ DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 print_install_plan() {
     local required
+    if [[ "$PROFILE" == "work" ]]; then
+        for required in \
+            macos/packages.toml \
+            macos/print_utils.sh \
+            macos/link_utils.sh \
+            macos/orbstack.sh \
+            terminal/ghostty.config; do
+            if [[ ! -e "$DOTFILES_DIR/$required" ]]; then
+                printf 'install plan: missing required input: %s\n' "$required" >&2
+                return 1
+            fi
+        done
+        cat <<'EOF'
+Dotfiles macOS work install plan (read-only)
+
+Selected Homebrew tap: hashicorp/tap
+Selected Homebrew formulae:
+  git, git-lfs, git-delta, gh, jq, yq, ripgrep, fd, fzf, bat, zoxide, just,
+  shellcheck, lefthook, gitleaks, fnm, uv, deno, docker-compose, awscli, terraform
+Selected Homebrew casks: ghostty, zed, spotify, orbstack
+Selected special installer: claude_code
+Selected npm global: @earendil-works/pi-coding-agent
+Runtimes: Node.js LTS via fnm; Python 3.14 via uv
+Configuration: Ghostty; OrbStack on-demand; clone/link Workbench; sync and drift
+  with --profile work
+
+Skipped host mutations: Oh My Zsh and default shell; tracked shell and Git links;
+Git identity and SSH; Dock, file associations, and login items; private automation
+discovery; Zed settings; oMLX/Qwen; Go and Rust tools; pnpm;
+package cache cleanup.
+
+No host state was inspected or changed.
+EOF
+        return
+    fi
+
     for required in \
         git/.gitconfig \
         git/.gitignore_global \
@@ -51,21 +87,32 @@ No host state was inspected or changed.
 EOF
 }
 
-case "$#" in
-    0) ;;
-    1)
-        if [[ "$1" == "--plan" ]]; then
-            print_install_plan
-            exit
-        fi
-        printf 'Usage: install.sh [--plan]\n' >&2
-        exit 2
-        ;;
-    *)
-        printf 'Usage: install.sh [--plan]\n' >&2
-        exit 2
-        ;;
-esac
+PROFILE="personal"
+PLAN=false
+while (( $# )); do
+    case "$1" in
+        --plan)
+            PLAN=true
+            shift
+            ;;
+        --profile)
+            if (( $# < 2 )) || [[ "$2" != "personal" && "$2" != "work" ]]; then
+                printf 'Usage: install.sh [--plan] [--profile personal|work]\n' >&2
+                exit 2
+            fi
+            PROFILE="$2"
+            shift 2
+            ;;
+        *)
+            printf 'Usage: install.sh [--plan] [--profile personal|work]\n' >&2
+            exit 2
+            ;;
+    esac
+done
+if [[ "$PLAN" == true ]]; then
+    print_install_plan
+    exit
+fi
 
 # Fail clearly on a non-macOS host instead of cascading through chsh/defaults/
 # softwareupdate/duti errors. The read-only plan above is intentionally portable
@@ -80,12 +127,96 @@ fi
 # repo and is deliberately left at whatever it has checked out.
 OH_MY_ZSH_COMMIT="677a4592b18c08ddea737f8aca70bac0e9fc9313"
 HOMEBREW_INSTALL_COMMIT="fea42d9aedd20a82bea800a6898dcde19401ab1f"
-WORKBENCH_COMMIT="dfadab4f9f8f1cccfb2bb5ea4921b2627ef05367"
+WORKBENCH_COMMIT="0652471e40f7c11ec68ea159d262565be4665376"
 UV_VERSION="0.12.9"
 
 # Source shared installer functions.
 source "$DOTFILES_DIR/macos/print_utils.sh"
 source "$DOTFILES_DIR/macos/link_utils.sh"
+
+if [[ "$PROFILE" == "work" ]]; then
+    print_header "Work profile"
+
+    print_section "Homebrew"
+    if ! command -v brew >/dev/null 2>&1; then
+        print_action "Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL "https://raw.githubusercontent.com/Homebrew/install/$HOMEBREW_INSTALL_COMMIT/install.sh")"
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+        print_success "Homebrew installed"
+    else
+        print_info "Homebrew already installed ($(brew --version | head -1))"
+    fi
+    brew update >/dev/null 2>&1
+    print_success "Homebrew index updated"
+
+    print_section "uv (Python package manager)"
+    if ! command -v uv >/dev/null 2>&1; then
+        print_action "Installing uv..."
+        if ! curl -LsSf "https://astral.sh/uv/$UV_VERSION/install.sh" | sh >/dev/null 2>&1; then
+            print_error "uv $UV_VERSION install failed — package reconciliation requires uv"
+            exit 1
+        fi
+        export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+    fi
+    if ! command -v uv >/dev/null 2>&1; then
+        print_error "uv is unavailable after bootstrap — cannot reconcile packages"
+        exit 1
+    fi
+
+    print_section "Work software allowlist"
+    uv run --project "$DOTFILES_DIR/cli" dotfiles brew install --profile work
+
+    print_section "Node.js / FNM"
+    if ! command -v fnm >/dev/null 2>&1; then
+        print_error "fnm is unavailable after package reconciliation"
+        exit 1
+    fi
+    fnm install --lts >/dev/null 2>&1
+    fnm use --install-if-missing lts-latest >/dev/null 2>&1
+    fnm default lts-latest >/dev/null 2>&1
+    print_success "Node.js LTS installed"
+
+    print_section "Python"
+    uv python install 3.14 >/dev/null 2>&1
+    print_success "Python 3.14 installed"
+
+    print_section "Ghostty"
+    if command -v ghostty >/dev/null 2>&1 || [[ -d "/Applications/Ghostty.app" ]]; then
+        mkdir -p "$HOME/.config/ghostty"
+        safe_link "$DOTFILES_DIR/terminal/ghostty.config" "$HOME/.config/ghostty/config"
+        print_success "Ghostty configured"
+    fi
+
+    "$DOTFILES_DIR/macos/orbstack.sh"
+
+    print_section "Workbench"
+    WORKBENCH_DIR="${WORKBENCH_DIR:-$HOME/code/public/workbench}"
+    if [[ ! -d "$WORKBENCH_DIR/.git" ]]; then
+        mkdir -p "$(dirname "$WORKBENCH_DIR")"
+        if ! git clone https://github.com/e-m-albright/workbench.git "$WORKBENCH_DIR" \
+            || ! git -C "$WORKBENCH_DIR" checkout --detach "$WORKBENCH_COMMIT"; then
+            print_error "Workbench clone failed"
+            exit 1
+        fi
+    fi
+    mkdir -p "$HOME/.local/bin"
+    safe_link "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/workbench"
+    safe_link "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/wb"
+    safe_link "$WORKBENCH_DIR/bin/wf" "$HOME/.local/bin/wf"
+    if ! wb_out="$("$WORKBENCH_DIR/bin/workbench" sync all --profile work 2>&1)"; then
+        printf '%s\n' "$wb_out"
+        print_error "Workbench sync failed"
+        exit 1
+    fi
+    if ! wb_out="$("$WORKBENCH_DIR/bin/workbench" drift all --profile work 2>&1)"; then
+        printf '%s\n' "$wb_out"
+        print_error "Workbench verification found managed drift"
+        exit 1
+    fi
+    print_success "Workbench work profile synced"
+    print_completion "Dotfiles work setup complete!"
+    exit
+fi
 
 # Install oh-my-zsh if not already installed
 if [ ! -d "$HOME/.oh-my-zsh" ]; then

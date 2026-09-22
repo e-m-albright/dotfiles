@@ -46,14 +46,15 @@ class ShellSandbox:
         script.chmod(0o755)
         return script
 
-    def run(self, script: Path) -> subprocess.CompletedProcess[str]:
+    def run(self, script: Path, *args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [
                 "/bin/bash",
                 "-c",
-                'OSTYPE=darwin; script="$1"; shift; source "$script"',
+                'OSTYPE=darwin; script="$1"; shift; source "$script" "$@"',
                 "test",
                 str(script),
+                *args,
             ],
             env=self.env,
             stdin=subprocess.DEVNULL,
@@ -153,6 +154,34 @@ def test_optional_pnpm_failure_warns_without_aborting(installer: tuple[ShellSand
     assert result.returncode == 0, result.stderr
     assert "pnpm could not be installed" in result.stdout
     assert "Dotfiles setup complete" in result.stdout
+
+
+def test_work_installer_runs_only_constrained_orchestration(
+    installer: tuple[ShellSandbox, Path],
+) -> None:
+    sandbox, script = installer
+    sandbox.stub("fnm")
+
+    result = sandbox.run(script, "--profile", "work")
+
+    assert result.returncode == 0, result.stderr
+    commands = sandbox.log.read_text()
+    assert f"uv run --project {script.parent}/cli dotfiles brew install --profile work" in commands
+    assert "fnm install --lts" in commands
+    assert "uv python install 3.14" in commands
+    assert "workbench sync all --profile work" in commands
+    assert "workbench drift all --profile work" in commands
+    assert "orbstack.sh" in commands
+    for forbidden in (
+        "ssh.sh",
+        "dock.sh",
+        "file-associations.sh",
+        "login-items.sh",
+        "dotfiles clean",
+        "get-pnpm",
+        "workbench sync all\n",
+    ):
+        assert forbidden not in commands
 
 
 def test_installer_success_and_rerun_reconcile_required_steps(
@@ -361,10 +390,7 @@ def test_omlx_download_repairs_partial_model_before_restart(omlx: ShellSandbox) 
     assert result.returncode == 0, result.stderr
     assert shard.read_text() == "weights"
     commands = omlx.log.read_text()
-    assert (
-        f"hf download Jundot/Qwen3.6-35B-A3B-oQ4e-mtp --revision {_OMLX_REVISION}"
-        in commands
-    )
+    assert f"hf download Jundot/Qwen3.6-35B-A3B-oQ4e-mtp --revision {_OMLX_REVISION}" in commands
     assert commands.index("hf download") < commands.index("services restart")
     assert "oMLX ready" in result.stdout
 

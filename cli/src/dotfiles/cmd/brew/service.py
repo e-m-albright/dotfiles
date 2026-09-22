@@ -124,6 +124,30 @@ class GoPackage(_ManifestModel):
     version: str
 
 
+class InstallProfile(_ManifestModel):
+    """Explicit allowlist for a constrained installation profile."""
+
+    taps: list[str] = []
+    formulae: list[str] = []
+    casks: list[str] = []
+    specials: list[str] = []
+    npm_packages: list[str] = []
+
+    @model_validator(mode="after")
+    def entries_are_unique(self) -> InstallProfile:
+        for kind, names in (
+            ("tap", self.taps),
+            ("formula", self.formulae),
+            ("cask", self.casks),
+            ("special", self.specials),
+            ("npm package", self.npm_packages),
+        ):
+            duplicates = sorted({name for name in names if names.count(name) > 1})
+            if duplicates:
+                raise ValueError(f"duplicate {kind} profile references: {', '.join(duplicates)}")
+        return self
+
+
 ALL_FLAGS: set[FeatureFlag] = {"ai", "productivity", "social"}
 
 
@@ -143,6 +167,12 @@ class PackageManifest(_ManifestModel):
     specials: dict[str, SpecialInstaller] = Field(default={}, alias="special")
     npm_packages: list[NpmPackage] = Field(default=[], alias="npm_package")
     go_packages: list[GoPackage] = Field(default=[], alias="go_package")
+    profiles: dict[str, InstallProfile] = Field(default={}, alias="profile")
+
+    @model_validator(mode="after")
+    def profile_references_resolve(self) -> PackageManifest:
+        _validate_profile_references(self)
+        return self
 
     @classmethod
     def load(cls, path: Path) -> PackageManifest:
@@ -154,6 +184,67 @@ class PackageManifest(_ManifestModel):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _validate_brew_profile_reference(
+    profile_name: str,
+    expected: PackageKind,
+    name: str,
+    by_kind: dict[PackageKind, set[str]],
+) -> None:
+    if name in by_kind[expected]:
+        return
+    actual = next((kind for kind, entries in by_kind.items() if name in entries), None)
+    if actual:
+        raise ValueError(
+            f"profile {profile_name!r} lists {name!r} as {expected}, "
+            f"but the manifest declares it as {actual}"
+        )
+    raise ValueError(f"profile {profile_name!r} references unknown {expected} {name!r}")
+
+
+def _validate_named_profile_references(
+    profile_name: str, kind: str, names: list[str], declared: set[str]
+) -> None:
+    unknown = sorted(set(names) - declared)
+    if unknown:
+        raise ValueError(
+            f"profile {profile_name!r} references unknown {kind}: {', '.join(unknown)}"
+        )
+
+
+def _validate_one_profile(
+    profile_name: str,
+    profile: InstallProfile,
+    declared_taps: set[str],
+    by_kind: dict[PackageKind, set[str]],
+    special_names: set[str],
+    npm_names: set[str],
+) -> None:
+    _validate_named_profile_references(profile_name, "tap", profile.taps, declared_taps)
+    for name in profile.formulae:
+        _validate_brew_profile_reference(profile_name, "formula", name, by_kind)
+    for name in profile.casks:
+        _validate_brew_profile_reference(profile_name, "cask", name, by_kind)
+    _validate_named_profile_references(profile_name, "special", profile.specials, special_names)
+    _validate_named_profile_references(profile_name, "npm package", profile.npm_packages, npm_names)
+
+
+def _validate_profile_references(manifest: PackageManifest) -> None:
+    by_kind: dict[PackageKind, set[str]] = {"formula": set(), "cask": set(), "auto": set()}
+    for section in manifest.sections:
+        by_kind[section.kind].update(pkg.name for pkg in section.packages if not pkg.disabled)
+    npm_names = {pkg.name for pkg in manifest.npm_packages if not pkg.disabled}
+    special_names = {name for name, item in manifest.specials.items() if not item.disabled}
+    for profile_name, profile in manifest.profiles.items():
+        _validate_one_profile(
+            profile_name,
+            profile,
+            set(manifest.taps.items),
+            by_kind,
+            special_names,
+            npm_names,
+        )
 
 
 def _flag_active(flag: FeatureFlag | None, flags_on: set[FeatureFlag]) -> bool:
@@ -177,6 +268,7 @@ def enabled_packages(
     manifest: PackageManifest,
     *,
     flags_on: set[FeatureFlag],
+    profile: str = "personal",
 ) -> list[tuple[str, PackageKind]]:
     """Return (name, kind) pairs for all non-disabled, flag-gated packages.
 
@@ -185,6 +277,13 @@ def enabled_packages(
     - Its own flag (if any) is in flags_on
     - disabled = False
     """
+    if profile != "personal":
+        selected = manifest.profiles[profile]
+        profiled: list[tuple[str, PackageKind]] = []
+        profiled.extend((name, "formula") for name in selected.formulae)
+        profiled.extend((name, "cask") for name in selected.casks)
+        return profiled
+
     result: list[tuple[str, PackageKind]] = []
     for section in manifest.sections:
         if not _flag_active(section.flag, flags_on):
@@ -387,10 +486,17 @@ def _trust_tap_item(
 
 
 def add_taps(
-    manifest: PackageManifest, runner: ProcessRunner, *, dry_run: bool = False
+    manifest: PackageManifest,
+    runner: ProcessRunner,
+    *,
+    selected: list[str] | None = None,
+    dry_run: bool = False,
 ) -> list[StepResult]:
-    """Add declared taps and trust only their explicitly declared items."""
-    results = [_add_tap(tap, runner, dry_run=dry_run) for tap in manifest.taps.items]
+    """Add all declared taps, or only an explicit profile subset."""
+    taps = manifest.taps.items if selected is None else selected
+    results = [_add_tap(tap, runner, dry_run=dry_run) for tap in taps]
+    if selected is not None:
+        return results
     for kind, items in (
         ("formula", manifest.taps.trusted_formulae),
         ("cask", manifest.taps.trusted_casks),
@@ -432,11 +538,25 @@ def _install_one(name: str, kind: PackageKind, runner: ProcessRunner) -> StepRes
     return _install_auto(name, runner)
 
 
+def _missing_profile_packages(
+    manifest: PackageManifest, runner: ProcessRunner, profile: str
+) -> list[tuple[str, PackageKind]]:
+    wanted = enabled_packages(manifest, flags_on=set(), profile=profile)
+    formulae = installed_formulae(runner)
+    casks = installed_casks(runner)
+    return [
+        (name, kind)
+        for name, kind in wanted
+        if name not in (formulae if kind == "formula" else casks)
+    ]
+
+
 def install_packages(
     manifest: PackageManifest,
     runner: ProcessRunner,
     *,
     flags_on: set[FeatureFlag],
+    profile: str = "personal",
     dry_run: bool = False,
 ) -> list[StepResult]:
     """Install each missing (name, kind) pair from the manifest.
@@ -445,7 +565,11 @@ def install_packages(
     try formula first, then cask.  dry_run=True reports what would be done
     without running any mutating command.
     """
-    to_install = InstallPlan.compute(manifest, runner, flags_on=flags_on).missing
+    to_install: list[tuple[str, PackageKind]]
+    if profile == "personal":
+        to_install = InstallPlan.compute(manifest, runner, flags_on=flags_on).missing
+    else:
+        to_install = _missing_profile_packages(manifest, runner, profile)
     if not to_install:
         return [StepResult(level="info", message="All packages already installed")]
 
@@ -567,19 +691,29 @@ def _npm_runtime(
     )
 
 
+def _active_npm_packages(
+    manifest: PackageManifest, flags_on: set[FeatureFlag], profile: str
+) -> list[NpmPackage]:
+    if profile == "personal":
+        return [
+            pkg
+            for pkg in manifest.npm_packages
+            if not pkg.disabled and _flag_active(pkg.flag, flags_on)
+        ]
+    selected = set(manifest.profiles[profile].npm_packages)
+    return [pkg for pkg in manifest.npm_packages if not pkg.disabled and pkg.name in selected]
+
+
 def install_npm_globals(
     manifest: PackageManifest,
     runner: ProcessRunner,
     *,
     flags_on: set[FeatureFlag],
+    profile: str = "personal",
     dry_run: bool = False,
 ) -> list[StepResult]:
     """Install declared npm globals, bootstrapping fnm's LTS runtime when needed."""
-    active = [
-        pkg
-        for pkg in manifest.npm_packages
-        if not pkg.disabled and _flag_active(pkg.flag, flags_on)
-    ]
+    active = _active_npm_packages(manifest, flags_on, profile)
     if not active:
         return []
 
@@ -728,18 +862,22 @@ def install_specials(
     runner: ProcessRunner,
     *,
     flags_on: set[FeatureFlag],
+    profile: str = "personal",
     dotfiles_dir: Path,
     dry_run: bool,
 ) -> list[StepResult]:
     """Run only the special installers declared and enabled by the manifest."""
     results: list[StepResult] = []
+    selected = set(manifest.profiles[profile].specials) if profile != "personal" else None
     for name, installer in manifest.specials.items():
+        if selected is not None and name not in selected:
+            continue
         results.extend(
             _install_special(
                 name,
                 installer,
                 runner,
-                flags_on=flags_on,
+                flags_on=ALL_FLAGS if selected is not None else flags_on,
                 dotfiles_dir=dotfiles_dir,
                 dry_run=dry_run,
             )
@@ -752,23 +890,31 @@ def install_software(
     runner: ProcessRunner,
     *,
     flags_on: set[FeatureFlag],
+    profile: str = "personal",
     dotfiles_dir: Path,
     dry_run: bool,
 ) -> list[StepResult]:
-    """Reconcile every software source declared by the manifest."""
-    results = add_taps(manifest, runner, dry_run=dry_run)
-    results.extend(install_packages(manifest, runner, flags_on=flags_on, dry_run=dry_run))
+    """Reconcile software for the personal default or an explicit allowlist profile."""
+    selected_taps = None if profile == "personal" else manifest.profiles[profile].taps
+    results = add_taps(manifest, runner, selected=selected_taps, dry_run=dry_run)
+    results.extend(
+        install_packages(manifest, runner, flags_on=flags_on, profile=profile, dry_run=dry_run)
+    )
     results.extend(
         install_specials(
             manifest,
             runner,
             flags_on=flags_on,
+            profile=profile,
             dotfiles_dir=dotfiles_dir,
             dry_run=dry_run,
         )
     )
-    results.extend(install_npm_globals(manifest, runner, flags_on=flags_on, dry_run=dry_run))
-    results.extend(install_go_tools(manifest, runner, dry_run=dry_run))
+    results.extend(
+        install_npm_globals(manifest, runner, flags_on=flags_on, profile=profile, dry_run=dry_run)
+    )
+    if profile == "personal":
+        results.extend(install_go_tools(manifest, runner, dry_run=dry_run))
     return results
 
 

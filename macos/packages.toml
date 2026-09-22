@@ -4,7 +4,7 @@
 # Skip flagged groups per run: dotfiles brew install --no-ai --no-productivity --no-social
 
 [taps]
-list = ["axiomhq/tap", "jundot/omlx"]
+list = ["axiomhq/tap", "hashicorp/tap", "jundot/omlx"]
 trusted_formulae = ["jundot/omlx/omlx"]
 trusted_casks = ["axiomhq/tap/axiom"]
 
@@ -62,6 +62,8 @@ name = "Developer Tools"
 kind = "formula"
 packages = [
   { name = "just",           note = "Command runner (like make, but simpler)" },
+  { name = "awscli",         note = "AWS command-line interface" },
+  { name = "terraform",      note = "HashiCorp infrastructure-as-code CLI" },
   { name = "lima",           note = "Former Linux virtual machines for restricted coding agents", disabled = true, reason = "Retired 2026-09-17: Workbench native macOS sandbox owns restricted terminal agents; editor and mobile integrations have host authority" },
   { name = "lefthook",       note = "Git hooks (language-agnostic, parallel execution)" },
   { name = "shellcheck",     note = "Static analysis for shell scripts" },
@@ -225,6 +227,21 @@ packages = [
   { name = "ollama",          note = "~30% slower than llama.cpp; redundant", disabled = true, reason = "Disabled 2026-08-28: oMLX is the active Apple Silicon runner; Ollama adds no needed compatibility advantage and previously trailed native MLX throughput" },
   { name = "llama.cpp",       note = "Useful for raw `llama-bench` / `llama-server`; reinstall when needed", disabled = true, reason = "Disabled 2026-08-28: oMLX is the active runner; reinstall llama.cpp only for a cross-runtime benchmark or a GGUF model with no viable MLX build" },
 ]
+
+# =============================================================================
+# Installation profiles
+# =============================================================================
+
+[profile.work]
+taps = ["hashicorp/tap"]
+formulae = [
+  "git", "git-lfs", "git-delta", "gh", "jq", "yq", "ripgrep", "fd", "fzf",
+  "bat", "zoxide", "just", "shellcheck", "lefthook", "gitleaks", "fnm", "uv",
+  "deno", "docker-compose", "awscli", "terraform",
+]
+casks = ["ghostty", "zed", "spotify", "orbstack"]
+specials = ["claude_code"]
+npm_packages = ["@earendil-works/pi-coding-agent"]
 
 # =============================================================================
 # Special installers (not plain brew)

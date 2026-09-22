@@ -28,6 +28,32 @@ def test_install_plan_runs_on_linux_without_mutating_home(tmp_path: Path) -> Non
     assert list(home.iterdir()) == []
 
 
+def test_work_install_plan_enumerates_allowlist_and_skipped_mutations(tmp_path: Path) -> None:
+    env = {**os.environ, "HOME": str(tmp_path)}
+    result = subprocess.run(
+        ["bash", str(INSTALLER), "--plan", "--profile", "work"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode == 0, result.stderr
+    for software in (
+        "hashicorp/tap",
+        "git-lfs",
+        "terraform",
+        "ghostty",
+        "orbstack",
+        "claude_code",
+        "@earendil-works/pi-coding-agent",
+    ):
+        assert software in result.stdout
+    assert "Skipped host mutations" in result.stdout
+    assert "Zed settings" in result.stdout
+    assert "Go and Rust tools" in result.stdout
+
+
 def test_native_pnpm_uses_the_global_prefix_not_its_bin_directory() -> None:
     installer = INSTALLER.read_text()
 
@@ -58,4 +84,4 @@ def test_install_rejects_unknown_arguments_before_host_checks(tmp_path: Path) ->
     )
 
     assert result.returncode == 2
-    assert "Usage: install.sh [--plan]" in result.stderr
+    assert "Usage: install.sh [--plan] [--profile personal|work]" in result.stderr

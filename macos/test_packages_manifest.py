@@ -29,6 +29,37 @@ def test_pi_is_an_enabled_pinned_ai_package() -> None:
     assert pi.version == "0.86.1"
 
 
+def test_work_profile_is_the_exact_approved_allowlist() -> None:
+    work = PackageManifest.load(MANIFEST).profiles["work"]
+    assert work.taps == ["hashicorp/tap"]
+    assert work.formulae == [
+        "git",
+        "git-lfs",
+        "git-delta",
+        "gh",
+        "jq",
+        "yq",
+        "ripgrep",
+        "fd",
+        "fzf",
+        "bat",
+        "zoxide",
+        "just",
+        "shellcheck",
+        "lefthook",
+        "gitleaks",
+        "fnm",
+        "uv",
+        "deno",
+        "docker-compose",
+        "awscli",
+        "terraform",
+    ]
+    assert work.casks == ["ghostty", "zed", "spotify", "orbstack"]
+    assert work.specials == ["claude_code"]
+    assert work.npm_packages == ["@earendil-works/pi-coding-agent"]
+
+
 def test_disabled_entries_carry_dated_reasons() -> None:
     manifest = PackageManifest.load(MANIFEST)
     # The model validators enforce this on load; assert on real data anyway so
