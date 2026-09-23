@@ -140,11 +140,29 @@ export HOMEBREW_NO_ENV_HINTS=1
 # repo and is deliberately left at whatever it has checked out.
 OH_MY_ZSH_COMMIT="677a4592b18c08ddea737f8aca70bac0e9fc9313"
 HOMEBREW_INSTALL_COMMIT="fea42d9aedd20a82bea800a6898dcde19401ab1f"
-WORKBENCH_COMMIT="48822c8f20c6aa6f332d5d259e211d60f06232bf"
+WORKBENCH_COMMIT="63dc1ffa3aaa1625d74462b1f3e224b5fe30dca5"
 
 # Source shared installer functions.
 source "$DOTFILES_DIR/macos/print_utils.sh"
 source "$DOTFILES_DIR/macos/link_utils.sh"
+
+activate_homebrew() {
+    local candidate
+    if command -v brew >/dev/null 2>&1; then
+        return 0
+    fi
+    if [[ -n "${HOMEBREW_PREFIX:-}" && -x "$HOMEBREW_PREFIX/bin/brew" ]]; then
+        eval "$("$HOMEBREW_PREFIX/bin/brew" shellenv)"
+        return 0
+    fi
+    for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+        if [[ -x "$candidate" ]]; then
+            eval "$("$candidate" shellenv)"
+            return 0
+        fi
+    done
+    return 1
+}
 
 if [[ "$PROFILE" == "work" ]]; then
     print_header "Work profile"
@@ -167,13 +185,16 @@ if [[ "$PROFILE" == "work" ]]; then
     print_success "Shared shell configured for work"
 
     print_section "Homebrew"
-    if ! command -v brew >/dev/null 2>&1; then
+    if activate_homebrew; then
+        print_info "Homebrew already installed ($(brew --version | head -1))"
+    else
         print_action "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL "https://raw.githubusercontent.com/Homebrew/install/$HOMEBREW_INSTALL_COMMIT/install.sh")"
-        eval "$(/opt/homebrew/bin/brew shellenv)"
+        if ! activate_homebrew; then
+            print_error "Homebrew is unavailable after installation"
+            exit 1
+        fi
         print_success "Homebrew installed"
-    else
-        print_info "Homebrew already installed ($(brew --version | head -1))"
     fi
     brew update >/dev/null 2>&1
     print_success "Homebrew index updated"
@@ -315,16 +336,19 @@ fi
 
 # Homebrew bootstrap — must come before any brew/dotfiles-brew calls
 print_section "Homebrew"
-if ! command -v brew >/dev/null 2>&1; then
+if activate_homebrew; then
+    print_info "Homebrew already installed ($(brew --version | head -1))"
+else
     print_action "Installing Homebrew..."
     /bin/bash -c "$(curl -fsSL "https://raw.githubusercontent.com/Homebrew/install/$HOMEBREW_INSTALL_COMMIT/install.sh")"
 
     # ~/.zprofile is already the tracked symlink that runs brew shellenv for
     # future shells; activate it for this session only.
-    eval "$(/opt/homebrew/bin/brew shellenv)"
+    if ! activate_homebrew; then
+        print_error "Homebrew is unavailable after installation"
+        exit 1
+    fi
     print_success "Homebrew installed"
-else
-    print_info "Homebrew already installed ($(brew --version | head -1))"
 fi
 
 # Update Homebrew index so formulae/casks are current.

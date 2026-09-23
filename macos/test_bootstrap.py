@@ -160,6 +160,36 @@ def test_optional_pnpm_failure_warns_without_aborting(installer: tuple[ShellSand
     assert "Dotfiles setup complete" in result.stdout
 
 
+def test_installer_activates_existing_homebrew_outside_path(
+    installer: tuple[ShellSandbox, Path],
+) -> None:
+    sandbox, script = installer
+    (sandbox.bin / "brew").unlink()
+    prefix = sandbox.root / "homebrew"
+    brew = prefix / "bin/brew"
+    brew.parent.mkdir(parents=True)
+    brew.write_text(
+        "#!/bin/bash\n"
+        "set -eu\n"
+        'printf "%s %s\\n" "${0##*/}" "$*" >> "$COMMAND_LOG"\n'
+        'if [[ "${1:-}" == shellenv ]]; then '
+        'printf \'export PATH="%s/bin:$PATH"\\n\' "$HOMEBREW_PREFIX"; exit; fi\n'
+        '[[ "${1:-}" == --version ]] && echo "Homebrew test"\n'
+        'if [[ "$*" == "list --formula uv" ]]; then command -v uv >/dev/null; exit; fi\n'
+    )
+    brew.chmod(0o755)
+    sandbox.env["HOMEBREW_PREFIX"] = str(prefix)
+    sandbox.stub("fnm")
+    sandbox.stub("tenv")
+
+    result = sandbox.run(script, "--profile", "work")
+
+    assert result.returncode == 0, result.stderr
+    assert "Installing Homebrew" not in result.stdout
+    assert "Homebrew already installed" in result.stdout
+    assert "brew shellenv" in sandbox.log.read_text()
+
+
 def test_work_installer_runs_only_constrained_orchestration(
     installer: tuple[ShellSandbox, Path],
 ) -> None:

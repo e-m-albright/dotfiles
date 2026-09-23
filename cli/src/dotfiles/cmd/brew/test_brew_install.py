@@ -407,6 +407,33 @@ def test_install_claude_code_error_on_failure(
     assert "download or checksum" in results[0].message
 
 
+def test_install_claude_code_reports_checksum_mismatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("sh", "-c", "command -v claude"), stdout="")
+    install_dir = tmp_path / "claude"
+    install_dir.mkdir()
+    monkeypatch.setattr(
+        "dotfiles.cmd.brew.service.mkdtemp",
+        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
+    )
+    installer = install_dir / "install.sh"
+    runner.script(("curl", "-fsSL", "-o", str(installer), _CLAUDE_CODE_URL))
+    runner.script(("shasum", "-a", "256", "-c", "-"), exit_code=1, stdout="FAILED")
+    runner.script(
+        ("shasum", "-a", "256", str(installer)),
+        stdout=f"actualhash  {installer}\n",
+    )
+
+    results = install_claude_code(runner)
+
+    assert results[0].level == "error"
+    assert "checksum verification failed" in results[0].message
+    assert _CLAUDE_CODE_SHA256 in results[0].details
+    assert "actualhash" in results[0].details
+
+
 def test_install_claude_code_reports_installer_stage(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -591,17 +591,29 @@ def install_packages(
 # ---------------------------------------------------------------------------
 
 
+@dataclass(frozen=True)
+class VerifiedDownload:
+    path: Path | None
+    error: str = ""
+
+
 def _download_verified(
     runner: ProcessRunner, *, url: str, sha256: str, directory: Path, filename: str
-) -> Path | None:
+) -> VerifiedDownload:
     target = directory / filename
-    if not runner.run(("curl", "-fsSL", "-o", str(target), url)).ok:
-        return None
+    downloaded = runner.run(("curl", "-fsSL", "-o", str(target), url))
+    if not downloaded.ok:
+        detail = downloaded.stderr.strip() or f"curl exited {downloaded.exit_code}"
+        return VerifiedDownload(None, f"download failed: {detail}")
     checked = runner.run(
         ("shasum", "-a", "256", "-c", "-"),
         stdin=f"{sha256}  {target}\n",
     )
-    return target if checked.ok else None
+    if checked.ok:
+        return VerifiedDownload(target)
+    actual = runner.run(("shasum", "-a", "256", str(target))).stdout.split(maxsplit=1)
+    actual_hash = actual[0] if actual else "unavailable"
+    return VerifiedDownload(None, f"expected {sha256}; downloaded {actual_hash}")
 
 
 _RUSTUP_CHECK = ("sh", "-c", "command -v rustup || command -v cargo")
@@ -622,17 +634,23 @@ def install_rust(runner: ProcessRunner) -> list[StepResult]:
 
     install_dir = Path(mkdtemp(prefix="dotfiles-rustup-"))
     try:
-        installer = _download_verified(
+        download = _download_verified(
             runner,
             url=_RUSTUP_URL,
             sha256=_RUSTUP_SHA256,
             directory=install_dir,
             filename="rustup-init",
         )
-        if installer is None:
-            return [StepResult(level="error", message="rustup download verification failed")]
-        runner.run(("chmod", "+x", str(installer)))
-        installed = runner.run((str(installer), "-y"))
+        if download.path is None:
+            return [
+                StepResult(
+                    level="error",
+                    message="rustup download verification failed",
+                    details=download.error,
+                )
+            ]
+        runner.run(("chmod", "+x", str(download.path)))
+        installed = runner.run((str(download.path), "-y"))
         if not installed.ok:
             return [StepResult(level="error", message="rustup installer failed")]
         return [StepResult(level="success", message="Rust installed via rustup")]
@@ -658,21 +676,22 @@ def install_claude_code(runner: ProcessRunner) -> list[StepResult]:
 
     install_dir = Path(mkdtemp(prefix="dotfiles-claude-"))
     try:
-        installer = _download_verified(
+        download = _download_verified(
             runner,
             url=_CLAUDE_CODE_URL,
             sha256=_CLAUDE_CODE_SHA256,
             directory=install_dir,
             filename="install.sh",
         )
-        if installer is None:
+        if download.path is None:
             return [
                 StepResult(
                     level="error",
                     message="claude-code download or checksum verification failed",
+                    details=download.error,
                 )
             ]
-        if not runner.run(("bash", str(installer)), capture_output=False).ok:
+        if not runner.run(("bash", str(download.path)), capture_output=False).ok:
             return [StepResult(level="error", message="claude-code installer execution failed")]
         if not runner.run(_CLAUDE_CODE_PIN, capture_output=False).ok:
             return [StepResult(level="error", message="claude-code version pin failed")]
