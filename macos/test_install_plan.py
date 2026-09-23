@@ -61,6 +61,14 @@ def test_work_install_plan_enumerates_allowlist_and_skipped_mutations(tmp_path: 
     assert "shared shell configuration" in result.stdout
 
 
+def test_workbench_clone_stays_attached_to_main() -> None:
+    installer = INSTALLER.read_text()
+
+    assert "checkout --detach" not in installer
+    assert installer.count('checkout -B main "$WORKBENCH_COMMIT"') == 2
+    assert 'attach_workbench_main "$WORKBENCH_DIR"' in installer
+
+
 def test_native_pnpm_uses_the_global_prefix_not_its_bin_directory() -> None:
     installer = INSTALLER.read_text()
 

@@ -71,6 +71,7 @@ def installer(tmp_path: Path) -> tuple[ShellSandbox, Path]:
     sandbox.allow("dirname", "mkdir", "head", "grep", "cat")
     sandbox.stub("which", 'command -v "$1"')
     sandbox.stub("zsh")
+    sandbox.stub("git")
     sandbox.stub(
         "brew",
         '[[ "${1:-}" == --version ]] && echo "Homebrew test"; '
@@ -220,6 +221,28 @@ def test_work_installer_runs_only_constrained_orchestration(
     ):
         assert forbidden not in commands
     assert (sandbox.home / ".config/dotfiles/profile").read_text() == "work\n"
+
+
+def test_work_installer_reattaches_detached_workbench(
+    installer: tuple[ShellSandbox, Path],
+) -> None:
+    sandbox, script = installer
+    sandbox.stub("fnm")
+    sandbox.stub("tenv")
+    sandbox.stub(
+        "git",
+        '[[ "$*" == *"symbolic-ref --quiet HEAD"* ]] && exit 1; '
+        '[[ "$*" == *"show-ref --verify --quiet refs/heads/main"* ]] && exit 0; '
+        "exit 0",
+    )
+
+    result = sandbox.run(script, "--profile", "work")
+
+    assert result.returncode == 0, result.stderr
+    commands = sandbox.log.read_text()
+    assert "git -C " in commands
+    assert " checkout main" in commands
+    assert "Reattaching Workbench to main" in result.stdout
 
 
 def test_installer_success_and_rerun_reconcile_required_steps(

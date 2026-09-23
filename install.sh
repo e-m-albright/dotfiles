@@ -134,9 +134,9 @@ export HOMEBREW_NO_ANALYTICS=1
 export HOMEBREW_NO_ENV_HINTS=1
 
 # Supply-chain pins for first-install bootstrap. Advance them deliberately
-# (verify the new commit/version, then update). WORKBENCH_COMMIT pins the
-# FRESH clone only — an existing ~/code/public/workbench is a live working
-# repo and is deliberately left at whatever it has checked out.
+# (verify the new commit/version, then update). WORKBENCH_COMMIT sets the fresh
+# clone's local main branch only. Existing attached checkouts are left alone;
+# legacy detached checkouts are reattached to their local main branch.
 OH_MY_ZSH_COMMIT="677a4592b18c08ddea737f8aca70bac0e9fc9313"
 HOMEBREW_INSTALL_COMMIT="fea42d9aedd20a82bea800a6898dcde19401ab1f"
 WORKBENCH_COMMIT="63dc1ffa3aaa1625d74462b1f3e224b5fe30dca5"
@@ -144,6 +144,20 @@ WORKBENCH_COMMIT="63dc1ffa3aaa1625d74462b1f3e224b5fe30dca5"
 # Source shared installer functions.
 source "$DOTFILES_DIR/macos/print_utils.sh"
 source "$DOTFILES_DIR/macos/link_utils.sh"
+
+attach_workbench_main() {
+    local directory="$1"
+    if git -C "$directory" symbolic-ref --quiet HEAD >/dev/null 2>&1; then
+        return 0
+    fi
+
+    print_action "Reattaching Workbench to main..."
+    if git -C "$directory" show-ref --verify --quiet refs/heads/main; then
+        git -C "$directory" checkout main
+    else
+        git -C "$directory" checkout -b main --track origin/main
+    fi
+}
 
 activate_homebrew() {
     local candidate
@@ -252,10 +266,14 @@ if [[ "$PROFILE" == "work" ]]; then
     if [[ ! -d "$WORKBENCH_DIR/.git" ]]; then
         mkdir -p "$(dirname "$WORKBENCH_DIR")"
         if ! git clone https://github.com/e-m-albright/workbench.git "$WORKBENCH_DIR" \
-            || ! git -C "$WORKBENCH_DIR" checkout --detach "$WORKBENCH_COMMIT"; then
+            || ! git -C "$WORKBENCH_DIR" checkout -B main "$WORKBENCH_COMMIT"; then
             print_error "Workbench clone failed"
             exit 1
         fi
+    fi
+    if ! attach_workbench_main "$WORKBENCH_DIR"; then
+        print_error "Workbench could not attach to main"
+        exit 1
     fi
     mkdir -p "$HOME/.local/bin"
     safe_link "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/workbench"
@@ -517,10 +535,14 @@ if [[ ! -d "$WORKBENCH_DIR/.git" ]]; then
     print_action "Cloning workbench..."
     mkdir -p "$(dirname "$WORKBENCH_DIR")"
     if ! git clone https://github.com/e-m-albright/workbench.git "$WORKBENCH_DIR" \
-        || ! git -C "$WORKBENCH_DIR" checkout --detach "$WORKBENCH_COMMIT"; then
+        || ! git -C "$WORKBENCH_DIR" checkout -B main "$WORKBENCH_COMMIT"; then
         print_error "Workbench clone failed"
         exit 1
     fi
+fi
+if ! attach_workbench_main "$WORKBENCH_DIR"; then
+    print_error "Workbench could not attach to main"
+    exit 1
 fi
 mkdir -p "$HOME/.local/bin"
 safe_link "$WORKBENCH_DIR/bin/workbench" "$HOME/.local/bin/workbench"
