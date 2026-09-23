@@ -22,3 +22,8 @@ def test_ghostty_does_not_grant_automatic_clipboard_access() -> None:
     values = {key.strip(): value.strip() for key, value in values.items()}
     assert values["clipboard-read"] == "deny"
     assert values["clipboard-write"] == "ask"
+
+
+def test_ghostty_treats_option_as_alt_for_shell_word_editing() -> None:
+    settings = (_REPO / "terminal/ghostty.config").read_text()
+    assert "macos-option-as-alt = true" in settings

@@ -8,7 +8,11 @@ profile_status() {
     case "$detail" in
         off) return 0 ;;
         short)
-            printf 'dotfiles: %s profile · profile_status medium|long for details\n' "$profile"
+            if [[ -t 1 && "${TERM:-dumb}" != "dumb" && -z "${NO_COLOR:-}" ]]; then
+                printf '\033[90mdotfiles / profile=%s  (profile_status for more)\033[0m\n' "$profile"
+            else
+                printf 'dotfiles / profile=%s  (profile_status for more)\n' "$profile"
+            fi
             return 0
             ;;
         medium | long) ;;

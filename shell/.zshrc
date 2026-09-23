@@ -63,6 +63,11 @@ fpath=("${DOTFILES_DIR:-$HOME/code/public/dotfiles}/shell/completions" "${fpath[
 
 source $ZSH/oh-my-zsh.sh
 
+# Option-Delete emits Escape+Delete in terminals. Bind both common backspace
+# encodings explicitly so it removes the previous shell word across keyboards.
+bindkey '^[^?' backward-kill-word
+bindkey '^[^H' backward-kill-word
+
 # =============================================================================
 # Environment
 # =============================================================================

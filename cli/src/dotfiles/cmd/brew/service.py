@@ -660,7 +660,7 @@ def install_rust(runner: ProcessRunner) -> list[StepResult]:
 
 _CLAUDE_CODE_CHECK = ("sh", "-c", "command -v claude")
 _CLAUDE_CODE_URL = "https://claude.ai/install.sh"
-_CLAUDE_CODE_SHA256 = "b3f79015b54c751440a6488f07b1b64f9088742b9052bc1bd356d13108320d2a"
+_CLAUDE_CODE_SHA256 = "3a68d3406cf674e17bed1733a4dcf37805e2e47d87417700007d7e1aa766a944"
 _CLAUDE_CODE_PIN = ("claude", "install", "latest")
 
 
