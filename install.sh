@@ -138,7 +138,7 @@ export HOMEBREW_NO_ENV_HINTS=1
 # repo and is deliberately left at whatever it has checked out.
 OH_MY_ZSH_COMMIT="677a4592b18c08ddea737f8aca70bac0e9fc9313"
 HOMEBREW_INSTALL_COMMIT="fea42d9aedd20a82bea800a6898dcde19401ab1f"
-WORKBENCH_COMMIT="0652471e40f7c11ec68ea159d262565be4665376"
+WORKBENCH_COMMIT="48822c8f20c6aa6f332d5d259e211d60f06232bf"
 
 # Source shared installer functions.
 source "$DOTFILES_DIR/macos/print_utils.sh"

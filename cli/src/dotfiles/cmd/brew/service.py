@@ -507,14 +507,14 @@ def add_taps(
 
 
 def _install_formula(name: str, runner: ProcessRunner) -> StepResult:
-    res = runner.run(("brew", "install", name))
+    res = runner.run(("brew", "install", name), capture_output=False)
     if res.exit_code == 0:
         return StepResult(level="success", message=f"installed {name}")
     return StepResult(level="error", message=f"brew install {name} failed")
 
 
 def _install_cask(name: str, runner: ProcessRunner) -> StepResult:
-    res = runner.run(("brew", "install", "--cask", name))
+    res = runner.run(("brew", "install", "--cask", name), capture_output=False)
     if res.exit_code == 0:
         return StepResult(level="success", message=f"installed {name}")
     return StepResult(level="error", message=f"brew install --cask {name} failed")
@@ -522,10 +522,10 @@ def _install_cask(name: str, runner: ProcessRunner) -> StepResult:
 
 def _install_auto(name: str, runner: ProcessRunner) -> StepResult:
     """Try formula first; fall back to cask."""
-    res = runner.run(("brew", "install", name))
+    res = runner.run(("brew", "install", name), capture_output=False)
     if res.exit_code == 0:
         return StepResult(level="success", message=f"installed {name}")
-    res2 = runner.run(("brew", "install", "--cask", name))
+    res2 = runner.run(("brew", "install", "--cask", name), capture_output=False)
     if res2.exit_code == 0:
         return StepResult(level="success", message=f"installed {name} (cask)")
     return StepResult(level="error", message=f"brew install {name} failed (tried formula + cask)")
@@ -665,9 +665,17 @@ def install_claude_code(runner: ProcessRunner) -> list[StepResult]:
             directory=install_dir,
             filename="install.sh",
         )
-        if installer is None or not runner.run(("bash", str(installer))).ok:
-            return [StepResult(level="error", message="claude-code installer failed")]
-        runner.run(_CLAUDE_CODE_PIN)
+        if installer is None:
+            return [
+                StepResult(
+                    level="error",
+                    message="claude-code download or checksum verification failed",
+                )
+            ]
+        if not runner.run(("bash", str(installer)), capture_output=False).ok:
+            return [StepResult(level="error", message="claude-code installer execution failed")]
+        if not runner.run(_CLAUDE_CODE_PIN, capture_output=False).ok:
+            return [StepResult(level="error", message="claude-code version pin failed")]
         return [StepResult(level="success", message="claude-code installed")]
     finally:
         rmtree(install_dir)

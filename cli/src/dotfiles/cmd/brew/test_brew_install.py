@@ -190,6 +190,19 @@ def test_install_packages_only_missing(tmp_path: Path) -> None:
     assert "ghostty" not in installed_names
 
 
+def test_install_packages_streams_homebrew_output(tmp_path: Path) -> None:
+    manifest = load(tmp_path)
+    runner = _scripted_runner_some_installed()
+
+    install_packages(manifest, runner, flags_on={"ai", "productivity", "social"})
+
+    install_indexes = [
+        index for index, command in enumerate(runner.calls) if command[:2] == ("brew", "install")
+    ]
+    assert install_indexes
+    assert all(runner.capture_output[index] is False for index in install_indexes)
+
+
 def test_install_packages_formula_command(tmp_path: Path) -> None:
     manifest = load(tmp_path)
     runner = FakeProcessRunner()
@@ -369,6 +382,10 @@ def test_install_claude_code_runs_installer(
     results = install_claude_code(runner)
     assert ("bash", str(installer)) in runner.calls
     assert f"{_CLAUDE_CODE_SHA256}  {installer}\n" in runner.inputs
+    bash_index = runner.calls.index(("bash", str(installer)))
+    pin_index = runner.calls.index(("claude", "install", "latest"))
+    assert runner.capture_output[bash_index] is False
+    assert runner.capture_output[pin_index] is False
     assert results[0].level == "success"
 
 
@@ -387,6 +404,28 @@ def test_install_claude_code_error_on_failure(
     runner.script(("curl", "-fsSL", "-o", str(installer), _CLAUDE_CODE_URL), exit_code=1)
     results = install_claude_code(runner)
     assert results[0].level == "error"
+    assert "download or checksum" in results[0].message
+
+
+def test_install_claude_code_reports_installer_stage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runner = FakeProcessRunner()
+    runner.script(("sh", "-c", "command -v claude"), stdout="")
+    install_dir = tmp_path / "claude"
+    install_dir.mkdir()
+    monkeypatch.setattr(
+        "dotfiles.cmd.brew.service.mkdtemp",
+        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
+    )
+    installer = install_dir / "install.sh"
+    runner.script(("curl", "-fsSL", "-o", str(installer), _CLAUDE_CODE_URL))
+    runner.script(("bash", str(installer)), exit_code=1)
+
+    results = install_claude_code(runner)
+
+    assert results[0].level == "error"
+    assert "execution" in results[0].message
 
 
 # ---------------------------------------------------------------------------
