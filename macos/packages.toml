@@ -243,7 +243,6 @@ casks = [
   "rectangle", "flycut", "ghostty", "caffeine", "flux-app", "typewhisper",
   "zed", "spotify", "claude-code", "orbstack",
 ]
-specials = []
 npm_packages = ["@earendil-works/pi-coding-agent"]
 
 # =============================================================================
