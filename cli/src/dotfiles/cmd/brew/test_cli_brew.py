@@ -305,7 +305,8 @@ def test_work_profile_rejects_personal_category_flags(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 2
-    assert "only valid with --profile personal" in result.output
+    output = " ".join(result.output.split())
+    assert "only valid with --profile personal" in output
 
 
 def test_no_ai_flag_disables_a_flagged_section(tmp_path: Path) -> None:
