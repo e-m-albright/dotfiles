@@ -191,6 +191,40 @@ def test_installer_activates_existing_homebrew_outside_path(
     assert "brew shellenv" in sandbox.log.read_text()
 
 
+def test_work_installer_surfaces_terraform_download_failure(
+    installer: tuple[ShellSandbox, Path],
+) -> None:
+    sandbox, script = installer
+    sandbox.stub("fnm")
+    sandbox.stub(
+        "tenv",
+        'if [[ "$*" == "tf install latest" ]]; then '
+        'echo "write tcp: socket is not connected" >&2; exit 1; fi',
+    )
+
+    result = sandbox.run(script, "--profile", "work")
+
+    assert result.returncode == 1
+    assert "write tcp: socket is not connected" in result.stderr
+    assert "Terraform download failed" in result.stdout
+    assert "workbench sync" not in sandbox.log.read_text()
+
+
+def test_work_installer_skips_terraform_download_when_available(
+    installer: tuple[ShellSandbox, Path],
+) -> None:
+    sandbox, script = installer
+    sandbox.stub("fnm")
+    sandbox.stub("terraform")
+    sandbox.stub("tenv", "exit 1")
+
+    result = sandbox.run(script, "--profile", "work")
+
+    assert result.returncode == 0, result.stderr
+    assert "Terraform already installed" in result.stdout
+    assert "tenv tf" not in sandbox.log.read_text()
+
+
 def test_work_installer_runs_only_constrained_orchestration(
     installer: tuple[ShellSandbox, Path],
 ) -> None:

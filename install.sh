@@ -244,13 +244,24 @@ if [[ "$PROFILE" == "work" ]]; then
     print_success "Python 3.14 installed"
 
     print_section "Terraform"
-    if ! command -v tenv >/dev/null 2>&1; then
-        print_error "tenv is unavailable after package reconciliation"
-        exit 1
+    if command -v terraform >/dev/null 2>&1; then
+        print_info "Terraform already installed ($(terraform version | head -1))"
+    else
+        if ! command -v tenv >/dev/null 2>&1; then
+            print_error "tenv is unavailable after package reconciliation"
+            exit 1
+        fi
+        print_action "Downloading Terraform through tenv..."
+        if ! tenv tf install latest; then
+            print_error "Terraform download failed — check the network connection and rerun the installer"
+            exit 1
+        fi
+        if ! tenv tf use latest; then
+            print_error "tenv could not activate the installed Terraform version"
+            exit 1
+        fi
+        print_success "Terraform installed and managed by tenv"
     fi
-    tenv tf install latest >/dev/null 2>&1
-    tenv tf use latest >/dev/null 2>&1
-    print_success "Terraform installed and managed by tenv"
 
     print_section "Ghostty"
     if command -v ghostty >/dev/null 2>&1 || [[ -d "/Applications/Ghostty.app" ]]; then
