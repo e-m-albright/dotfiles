@@ -53,7 +53,17 @@ def test_work_profile_is_the_exact_approved_allowlist() -> None:
         "awscli",
         "tenv",
     ]
-    assert work.casks == ["ghostty", "zed", "spotify", "orbstack"]
+    assert work.casks == [
+        "rectangle",
+        "flycut",
+        "ghostty",
+        "caffeine",
+        "flux-app",
+        "typewhisper",
+        "zed",
+        "spotify",
+        "orbstack",
+    ]
     assert work.taps == []
     assert work.specials == ["claude_code"]
     assert work.npm_packages == ["@earendil-works/pi-coding-agent"]

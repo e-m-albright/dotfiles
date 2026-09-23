@@ -55,8 +55,9 @@ For a lightweight work machine, use the fail-closed profile:
 The work profile installs only its explicit formula, cask, special-installer,
 and npm allowlists from `macos/packages.toml`. It shares the personal zsh setup
 with work-safe defaults and a short profile banner, adds Node.js LTS, uv-managed
-Python 3.14, and tenv-managed Terraform, configures Ghostty, keeps OrbStack on
-demand, and syncs Workbench with `--profile work`. It does not apply personal
+Python 3.14, and tenv-managed Terraform; installs Rectangle, Flycut, Ghostty,
+Caffeine, f.lux, TypeWhisper, Zed, Spotify, and OrbStack; keeps OrbStack on
+demand; and syncs Workbench with `--profile work`. It does not apply personal
 Git or SSH configuration, Dock, file associations, login items, private
 automation, Zed settings, local models, Go, Rust, pnpm, or cache cleanup.
 

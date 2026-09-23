@@ -239,7 +239,10 @@ formulae = [
   "bat", "zoxide", "just", "shellcheck", "lefthook", "gitleaks", "fnm", "uv",
   "deno", "awscli", "tenv",
 ]
-casks = ["ghostty", "zed", "spotify", "orbstack"]
+casks = [
+  "rectangle", "flycut", "ghostty", "caffeine", "flux-app", "typewhisper",
+  "zed", "spotify", "orbstack",
+]
 specials = ["claude_code"]
 npm_packages = ["@earendil-works/pi-coding-agent"]
 

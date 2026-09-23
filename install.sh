@@ -31,7 +31,9 @@ Selected Homebrew taps: none
 Selected Homebrew formulae:
   git, git-lfs, git-delta, gh, jq, yq, ripgrep, fd, fzf, bat, zoxide, just,
   shellcheck, lefthook, gitleaks, fnm, uv, deno, awscli, tenv
-Selected Homebrew casks: ghostty, zed, spotify, orbstack
+Selected Homebrew casks:
+  rectangle, flycut, ghostty, caffeine, flux-app, typewhisper, zed, spotify,
+  orbstack
 Selected special installer: claude_code
 Selected npm global: @earendil-works/pi-coding-agent
 Runtimes: Node.js LTS via fnm; Python 3.14 via uv; Terraform via tenv

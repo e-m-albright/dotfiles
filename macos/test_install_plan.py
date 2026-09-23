@@ -42,7 +42,12 @@ def test_work_install_plan_enumerates_allowlist_and_skipped_mutations(tmp_path: 
     for software in (
         "git-lfs",
         "tenv",
+        "rectangle",
+        "flycut",
         "ghostty",
+        "caffeine",
+        "flux-app",
+        "typewhisper",
         "orbstack",
         "claude_code",
         "@earendil-works/pi-coding-agent",
