@@ -49,7 +49,7 @@ def test_work_install_plan_enumerates_allowlist_and_skipped_mutations(tmp_path: 
         "flux-app",
         "typewhisper",
         "orbstack",
-        "claude_code",
+        "claude-code",
         "@earendil-works/pi-coding-agent",
     ):
         assert software in result.stdout

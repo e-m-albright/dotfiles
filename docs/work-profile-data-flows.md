@@ -12,8 +12,7 @@ Likewise, a networked tool does not necessarily upload source code.
 
 ## Required decisions before use
 
-1. Approve Homebrew, its explicit package allowlist, and the pinned upstream
-   bootstrap downloads.
+1. Approve Homebrew and its explicit package allowlist.
 2. Select the company-approved Claude Code authentication route and terms.
 3. Select and enforce Pi's model provider; the work profile intentionally
    declares no provider.
@@ -90,7 +89,7 @@ host-hygiene guidance.
 ## Sources
 
 - [Anthropic: Claude Code data usage](https://docs.anthropic.com/en/docs/claude-code/data-usage)
-- [Anthropic: Claude Code setup and signed native installation](https://docs.anthropic.com/en/docs/claude-code/setup)
+- [Anthropic: Claude Code installation methods](https://code.claude.com/docs/en/installation)
 - [Zed: AI privacy and request paths](https://zed.dev/docs/ai/privacy-and-security)
 - [Zed: telemetry](https://zed.dev/docs/telemetry)
 - [Semgrep: metrics](https://semgrep.dev/docs/metrics)

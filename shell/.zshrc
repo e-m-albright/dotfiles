@@ -192,7 +192,7 @@ fi
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
 # Profile summary. Work defaults to one short line; set
-# DOTFILES_STARTUP_DETAIL=off|short|medium|long in ~/.zshrc.local to override.
+# DOTFILES_STARTUP_DETAIL=off|short|long in ~/.zshrc.local to override.
 _profile_status="${DOTFILES_DIR:-$HOME/code/public/dotfiles}/shell/profile-status.zsh"
 # shellcheck disable=SC1090
 [[ -f "$_profile_status" ]] && source "$_profile_status"

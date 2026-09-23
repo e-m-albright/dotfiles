@@ -7,15 +7,12 @@ from pathlib import Path
 import pytest
 
 from dotfiles.cmd.brew.service import (
-    _CLAUDE_CODE_SHA256,
-    _CLAUDE_CODE_URL,
     _RUSTUP_SHA256,
     _RUSTUP_URL,
     PackageManifest,
     PruneCandidate,
     add_taps,
     cleanup,
-    install_claude_code,
     install_go_tools,
     install_npm_globals,
     install_packages,
@@ -350,109 +347,6 @@ def test_install_rust_error_on_install_failure(
     runner.script(("curl", "-fsSL", "-o", str(installer), _RUSTUP_URL), exit_code=1)
     results = install_rust(runner)
     assert results[0].level == "error"
-
-
-# ---------------------------------------------------------------------------
-# install_claude_code
-# ---------------------------------------------------------------------------
-
-
-def test_install_claude_code_skips_when_present() -> None:
-    runner = FakeProcessRunner()
-    runner.script(("sh", "-c", "command -v claude"), stdout="/usr/local/bin/claude\n")
-    results = install_claude_code(runner)
-    assert results[0].level == "info"
-    assert "already installed" in results[0].message
-    assert not any("claude.ai" in " ".join(c) for c in runner.calls)
-
-
-def test_install_claude_code_runs_installer(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("sh", "-c", "command -v claude"), stdout="")
-    install_dir = tmp_path / "claude"
-    install_dir.mkdir()
-    monkeypatch.setattr(
-        "dotfiles.cmd.brew.service.mkdtemp",
-        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
-    )
-    installer = install_dir / "install.sh"
-    runner.script(("curl", "-fsSL", "-o", str(installer), _CLAUDE_CODE_URL))
-    results = install_claude_code(runner)
-    assert ("bash", str(installer)) in runner.calls
-    assert f"{_CLAUDE_CODE_SHA256}  {installer}\n" in runner.inputs
-    bash_index = runner.calls.index(("bash", str(installer)))
-    pin_index = runner.calls.index(("claude", "install", "latest"))
-    assert runner.capture_output[bash_index] is False
-    assert runner.capture_output[pin_index] is False
-    assert results[0].level == "success"
-
-
-def test_install_claude_code_error_on_failure(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("sh", "-c", "command -v claude"), stdout="")
-    install_dir = tmp_path / "claude"
-    install_dir.mkdir()
-    monkeypatch.setattr(
-        "dotfiles.cmd.brew.service.mkdtemp",
-        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
-    )
-    installer = install_dir / "install.sh"
-    runner.script(("curl", "-fsSL", "-o", str(installer), _CLAUDE_CODE_URL), exit_code=1)
-    results = install_claude_code(runner)
-    assert results[0].level == "error"
-    assert "download or checksum" in results[0].message
-
-
-def test_install_claude_code_reports_checksum_mismatch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("sh", "-c", "command -v claude"), stdout="")
-    install_dir = tmp_path / "claude"
-    install_dir.mkdir()
-    monkeypatch.setattr(
-        "dotfiles.cmd.brew.service.mkdtemp",
-        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
-    )
-    installer = install_dir / "install.sh"
-    runner.script(("curl", "-fsSL", "-o", str(installer), _CLAUDE_CODE_URL))
-    runner.script(("shasum", "-a", "256", "-c", "-"), exit_code=1, stdout="FAILED")
-    runner.script(
-        ("shasum", "-a", "256", str(installer)),
-        stdout=f"actualhash  {installer}\n",
-    )
-
-    results = install_claude_code(runner)
-
-    assert results[0].level == "error"
-    assert "checksum verification failed" in results[0].message
-    assert _CLAUDE_CODE_SHA256 in results[0].details
-    assert "actualhash" in results[0].details
-
-
-def test_install_claude_code_reports_installer_stage(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    runner = FakeProcessRunner()
-    runner.script(("sh", "-c", "command -v claude"), stdout="")
-    install_dir = tmp_path / "claude"
-    install_dir.mkdir()
-    monkeypatch.setattr(
-        "dotfiles.cmd.brew.service.mkdtemp",
-        lambda *, prefix: str(install_dir / prefix).removesuffix(prefix),
-    )
-    installer = install_dir / "install.sh"
-    runner.script(("curl", "-fsSL", "-o", str(installer), _CLAUDE_CODE_URL))
-    runner.script(("bash", str(installer)), exit_code=1)
-
-    results = install_claude_code(runner)
-
-    assert results[0].level == "error"
-    assert "execution" in results[0].message
 
 
 # ---------------------------------------------------------------------------

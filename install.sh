@@ -33,8 +33,8 @@ Selected Homebrew formulae:
   shellcheck, lefthook, gitleaks, fnm, uv, deno, awscli, tenv
 Selected Homebrew casks:
   rectangle, flycut, ghostty, caffeine, flux-app, typewhisper, zed, spotify,
-  orbstack
-Selected special installer: claude_code
+  claude-code, orbstack
+Selected special installers: none
 Selected npm global: @earendil-works/pi-coding-agent
 Runtimes: Node.js LTS via fnm; Python 3.14 via uv; Terraform via tenv
 Configuration: shared shell configuration with a work profile; Ghostty; OrbStack

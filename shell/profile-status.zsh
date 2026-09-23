@@ -2,7 +2,7 @@
 # Compact, local-only summary of the active host profile.
 
 profile_status() {
-    local detail="${1:-medium}"
+    local detail="${1:-long}"
     local profile="${DOTFILES_PROFILE:-personal}"
 
     case "$detail" in
@@ -15,9 +15,9 @@ profile_status() {
             fi
             return 0
             ;;
-        medium | long) ;;
+        long) ;;
         *)
-            printf 'profile_status: expected short, medium, long, or off\n' >&2
+            printf 'profile_status: expected short, long, or off\n' >&2
             return 2
             ;;
     esac
@@ -32,19 +32,17 @@ profile_status() {
     fi
     printf '  runtimes: Node via fnm; Python via uv; Terraform via tenv\n'
 
-    if [[ "$detail" == "long" ]]; then
-        local tool location
-        for tool in brew fnm node uv python3.14 tenv terraform claude pi; do
-            location=$(command -v "$tool" 2>/dev/null || true)
-            if [[ -n "$location" ]]; then
-                location=${location/#$HOME/~}
-                printf '  %-10s %s\n' "$tool" "$location"
-            else
-                printf '  %-10s unavailable\n' "$tool"
-            fi
-        done
-        printf '  config: %s\n' "${DOTFILES_DIR:-$HOME/code/public/dotfiles}"
-    fi
+    local tool location
+    for tool in brew fnm node uv python3.14 tenv terraform claude pi; do
+        location=$(command -v "$tool" 2>/dev/null || true)
+        if [[ -n "$location" ]]; then
+            location=${location/#$HOME/~}
+            printf '  %-10s %s\n' "$tool" "$location"
+        else
+            printf '  %-10s unavailable\n' "$tool"
+        fi
+    done
+    printf '  config: %s\n' "${DOTFILES_DIR:-$HOME/code/public/dotfiles}"
 }
 
 _dotfiles_startup_detail="${DOTFILES_STARTUP_DETAIL:-}"

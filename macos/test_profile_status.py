@@ -39,21 +39,42 @@ def test_short_profile_status_is_compact_and_actionable() -> None:
     assert result.stdout == "dotfiles / profile=work  (profile_status for more)\n"
 
 
-def test_medium_profile_status_explains_policy_without_tool_inventory() -> None:
+def test_medium_profile_status_is_rejected() -> None:
     result = _render("medium")
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert result.stderr == "profile_status: expected short, long, or off\n"
+
+
+def test_long_profile_status_is_the_full_view() -> None:
+    result = _render("long")
 
     assert result.returncode == 0
     assert "shell:" in result.stdout
     assert "agents:" in result.stdout
     assert "data:" in result.stdout
     assert "runtimes:" in result.stdout
-    assert "brew       " not in result.stdout
+    assert "brew       " in result.stdout
+    assert "claude     " in result.stdout
+    assert "config:" in result.stdout
 
 
-def test_long_profile_status_adds_tool_inventory_and_config_root() -> None:
-    result = _render("long")
+def test_profile_status_defaults_to_the_full_view() -> None:
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            'DOTFILES_STARTUP_DETAIL=off; source "$1"; profile_status',
+            "profile-status-test",
+            str(PROFILE_STATUS),
+        ],
+        env={**os.environ, "DOTFILES_PROFILE": "work", "TERM": "dumb"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
     assert result.returncode == 0
     assert "brew       " in result.stdout
-    assert "claude     " in result.stdout
     assert "config:" in result.stdout

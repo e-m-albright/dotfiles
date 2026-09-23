@@ -167,6 +167,7 @@ packages = [
 name = "Development Apps"
 kind = "cask"
 packages = [
+  { name = "claude-code",      note = "Anthropic terminal coding agent; installed through the supported Homebrew cask" },
   { name = "orbstack",         note = "Docker Desktop alternative (faster, better macOS integration)" },
   { name = "ngrok",            note = "Secure tunnels to localhost (official Homebrew cask; installs the CLI binary)" },
   { name = "axiom",            note = "Axiom observability CLI (axiomhq/tap cask; narrowly trusted above)" },
@@ -197,7 +198,6 @@ name = "AI CLI Tools"
 kind = "auto"
 flag = "ai"
 packages = [
-  { name = "claude-code",          note = "Installed via the special.claude_code block", disabled = true, reason = "Disabled 2026-05-17: cask tracks the stable dist-tag and can lag releases by days or weeks" },
   { name = "claude",               note = "Claude Desktop (macOS app)", disabled = true, reason = "Disabled 2026-08-29: unused, while taking a break from Anthropic products" },
   { name = "conductor",            note = "Claude Code parallelisation", disabled = true, reason = "Disabled 2026-07-15: large agent fleets do not solve a current problem; native subagents and Ghostty tabs cover the desired maximum of roughly five concurrent agents" },
   { name = "codex",                note = "OpenAI Codex CLI (terminal agent) — or: npm i -g @openai/codex" },
@@ -241,9 +241,9 @@ formulae = [
 ]
 casks = [
   "rectangle", "flycut", "ghostty", "caffeine", "flux-app", "typewhisper",
-  "zed", "spotify", "orbstack",
+  "zed", "spotify", "claude-code", "orbstack",
 ]
-specials = ["claude_code"]
+specials = []
 npm_packages = ["@earendil-works/pi-coding-agent"]
 
 # =============================================================================
@@ -265,11 +265,6 @@ flag = "ai"
 disabled = true
 reason = "Retired 2026-08-26: local neural speech did not provide enough value to justify its model, dependency, and cross-repository integration surface; revisit only when a concrete recurring workflow makes speech materially useful"
 note = "Tombstone for the retired Supertonic local neural text-to-speech experiment."
-
-[special.claude_code]
-method = "claude_code"
-flag = "ai"
-note = "Tracks `latest`, not the lagging `stable` cask. Migrated off npm global 2026-05-28."
 
 # =============================================================================
 # Go tools

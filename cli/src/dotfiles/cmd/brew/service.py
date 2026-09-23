@@ -8,7 +8,7 @@ provides:
   - installed_formulae() / installed_casks() to query the current machine
   - InstallPlan.compute() for install-plan computation (missing + stale)
   - add_taps() / install_packages() for install execution
-  - install_rust() / install_claude_code() / install_npm_globals() for bespoke installers
+  - install_rust() / install_npm_globals() for bespoke installers
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ FeatureFlag = Literal["ai", "productivity", "social"]
 PackageKind = Literal["formula", "cask", "auto"]
 # Records how a non-Homebrew package reaches this host. `python_package` is
 # declarative only: that software arrives through this repo's Python dependencies.
-SpecialMethod = Literal["rustup", "claude_code", "python_package", "omlx_setup"]
+SpecialMethod = Literal["rustup", "python_package", "omlx_setup"]
 
 # Tombstone invariant (AGENTS.md): disabled entries retain a *dated* reason.
 _TOMBSTONE_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -658,48 +658,6 @@ def install_rust(runner: ProcessRunner) -> list[StepResult]:
         rmtree(install_dir)
 
 
-_CLAUDE_CODE_CHECK = ("sh", "-c", "command -v claude")
-_CLAUDE_CODE_URL = "https://claude.ai/install.sh"
-_CLAUDE_CODE_SHA256 = "3a68d3406cf674e17bed1733a4dcf37805e2e47d87417700007d7e1aa766a944"
-_CLAUDE_CODE_PIN = ("claude", "install", "latest")
-
-
-def install_claude_code(runner: ProcessRunner) -> list[StepResult]:
-    """Install Claude Code via the native installer if not already present.
-
-    Idempotency guard: skips if `claude` is on PATH.
-    Pins to `latest` channel after install.
-    """
-    check = runner.run(_CLAUDE_CODE_CHECK)
-    if check.stdout.strip():
-        return [StepResult(level="info", message="claude-code already installed — skipping")]
-
-    install_dir = Path(mkdtemp(prefix="dotfiles-claude-"))
-    try:
-        download = _download_verified(
-            runner,
-            url=_CLAUDE_CODE_URL,
-            sha256=_CLAUDE_CODE_SHA256,
-            directory=install_dir,
-            filename="install.sh",
-        )
-        if download.path is None:
-            return [
-                StepResult(
-                    level="error",
-                    message="claude-code download or checksum verification failed",
-                    details=download.error,
-                )
-            ]
-        if not runner.run(("bash", str(download.path)), capture_output=False).ok:
-            return [StepResult(level="error", message="claude-code installer execution failed")]
-        if not runner.run(_CLAUDE_CODE_PIN, capture_output=False).ok:
-            return [StepResult(level="error", message="claude-code version pin failed")]
-        return [StepResult(level="success", message="claude-code installed")]
-    finally:
-        rmtree(install_dir)
-
-
 def _npm_environment() -> dict[str, str]:
     """Keep global CLIs stable across fnm-managed Node version changes."""
     return {**os.environ, "NPM_CONFIG_PREFIX": str(Path.home() / ".npm-global")}
@@ -876,8 +834,6 @@ def _install_special(
         return [StepResult(level="info", message=f"DRY RUN: install {name}")]
     if installer.method == "rustup":
         return install_rust(runner)
-    if installer.method == "claude_code":
-        return install_claude_code(runner)
     if installer.method == "omlx_setup":
         script = dotfiles_dir / "macos" / "configure-omlx.sh"
         result = runner.run(("bash", str(script)))

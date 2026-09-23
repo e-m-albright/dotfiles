@@ -62,9 +62,8 @@ Git or SSH configuration, Dock, file associations, login items, private
 automation, Zed settings, local models, Go, Rust, pnpm, or cache cleanup.
 
 Work shells print a muted `dotfiles / profile=work  (profile_status for more)`
-reminder by default. Run `profile_status medium` or `profile_status long` for
-local configuration details. Set
-`DOTFILES_STARTUP_DETAIL=off|short|medium|long` in `~/.zshrc.local` to change
+reminder by default. Run `profile_status` for the full local configuration view.
+Set `DOTFILES_STARTUP_DETAIL=off|short|long` in `~/.zshrc.local` to change
 the startup view. The [work data-flow registry](docs/work-profile-data-flows.md)
 records which modes can transmit source, credentials, telemetry, or account
 data and which organizational approvals remain open.
