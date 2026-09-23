@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -305,7 +306,7 @@ def test_work_profile_rejects_personal_category_flags(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 2
-    output = " ".join(result.output.split())
+    output = " ".join(re.sub(r"\x1b\[[0-9;]*m", "", result.output).split())
     assert "only valid with --profile personal" in output
 
 
