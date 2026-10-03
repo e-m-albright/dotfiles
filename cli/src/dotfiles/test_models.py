@@ -1,4 +1,4 @@
-from dotfiles.adapters.ports import CommandResult
+from dotfiles.ports import CommandResult
 
 
 def test_command_result_ok_is_true_for_zero_exit() -> None:

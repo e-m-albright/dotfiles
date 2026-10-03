@@ -4,7 +4,7 @@ import subprocess
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from dotfiles.adapters.ports import CommandResult
+from dotfiles.ports import CommandResult
 
 
 class SubprocessRunner:

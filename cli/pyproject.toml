@@ -55,7 +55,7 @@ venv = ".venv"
 
 [tool.pytest.ini_options]
 addopts = "--timeout=30 --strict-markers --strict-config"
-testpaths = ["src/dotfiles", "../macos"]
+testpaths = ["src/dotfiles", "../tests/host"]
 
 [tool.coverage.run]
 source = ["dotfiles"]

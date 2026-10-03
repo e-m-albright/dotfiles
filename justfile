@@ -53,7 +53,7 @@ validate-files:
     git ls-files -z '*.json' | while IFS= read -r -d '' file; do
         [[ -e "$file" ]] || continue
         case "$file" in
-            .claude/* | editors/*) continue ;; # JSONC/vendor-managed files
+            .claude/* | config/zed/*) continue ;; # JSONC/vendor-managed files
         esac
         python3 -m json.tool "$file" >/dev/null
     done

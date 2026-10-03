@@ -1,7 +1,7 @@
 # Work Profile Data-Flow Registry
 
 Last reviewed: 2026-09-22. This registry describes the intended `work` profile in
-`macos/packages.toml`; it is not company approval. Account settings, enterprise
+`config/packages.toml`; it is not company approval. Account settings, enterprise
 contracts, device-management controls, repository hooks, and live network
 traffic were not inspected.
 

@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 
 from dotfiles.adapters import keychain as keychain_module
-from dotfiles.adapters.keychain import KeychainWriteError, MacOSKeychainStore
+from dotfiles.adapters.keychain import MacOSKeychainStore
+from dotfiles.ports import KeychainWriteError
 
 
 def _fake_security(tmp_path: Path, *, mode: str = "normal") -> Path:

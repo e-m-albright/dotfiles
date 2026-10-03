@@ -1,6 +1,6 @@
 # =============================================================================
 # Dotfiles Repository Ignore
-# (OS/editor strays live in git/.gitignore_global, installed as core.excludesfile)
+# (OS/editor strays live in config/git/.gitignore_global, installed as core.excludesfile)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -28,7 +28,7 @@ docs/superpowers/
 .agents/
 
 # -----------------------------------------------------------------------------
-# Obsidian (canonical copy lives in editors/obsidian/)
+# Local Obsidian plugin selections
 # -----------------------------------------------------------------------------
 community-plugins.json
 

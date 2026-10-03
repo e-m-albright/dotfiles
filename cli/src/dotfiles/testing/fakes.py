@@ -5,9 +5,8 @@ import threading
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from dotfiles.adapters.keychain import KeychainWriteError
-from dotfiles.adapters.ports import CommandResult
 from dotfiles.app.context import AppContext
+from dotfiles.ports import CommandResult, KeychainWriteError
 
 
 class FakeKeychainStore:

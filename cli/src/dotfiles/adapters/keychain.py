@@ -6,9 +6,7 @@ import hmac
 import subprocess
 from pathlib import Path
 
-
-class KeychainWriteError(RuntimeError):
-    """Raised when macOS Keychain enrollment fails."""
+from dotfiles.ports import KeychainWriteError
 
 
 def _quote_argument(value: str) -> str:

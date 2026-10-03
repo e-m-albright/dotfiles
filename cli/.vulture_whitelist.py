@@ -1,5 +1,5 @@
 # Referenced dynamically via Protocol structural typing / Typer registration.
-import dotfiles.adapters.ports as ports
+import dotfiles.ports as ports
 from dotfiles.testing.fakes import FakeProcessRunner
 
 _ = ports.ProcessRunner.run

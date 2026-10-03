@@ -1,9 +1,10 @@
 from pathlib import Path
 
 from dotfiles.adapters.keychain import MacOSKeychainStore
-from dotfiles.adapters.ports import KeychainStore, ProcessRunner
 from dotfiles.adapters.process import SubprocessRunner
-from dotfiles.app.context import AppContext, build_real_context
+from dotfiles.app.context import AppContext
+from dotfiles.app.wiring import build_real_context
+from dotfiles.ports import KeychainStore, ProcessRunner
 
 
 def test_build_real_context_wires_real_adapters() -> None:

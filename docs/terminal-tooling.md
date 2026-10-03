@@ -1,6 +1,6 @@
 # Terminal tooling
 
-[`macos/packages.toml`](../macos/packages.toml) is the source of truth for installed software. Workbench owns watch lists and comparative agent-tool research.
+[`config/packages.toml`](../config/packages.toml) is the source of truth for installed software. Workbench owns watch lists and comparative agent-tool research.
 
 ## Current interactive stack
 
@@ -40,4 +40,4 @@ Ghostty denies programmatic clipboard reads and asks before programmatic writes.
 - [Yazi](https://yazi-rs.github.io/)
 - [Helix](https://helix-editor.com/)
 - [Ghostty](https://ghostty.org/)
-- [`../macos/packages.toml`](../macos/packages.toml)
+- [`../config/packages.toml`](../config/packages.toml)

@@ -1,4 +1,4 @@
-from dotfiles.adapters.ports import ProcessRunner
+from dotfiles.ports import ProcessRunner
 from dotfiles.testing.fakes import FakeProcessRunner
 
 

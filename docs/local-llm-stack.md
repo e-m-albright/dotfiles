@@ -12,7 +12,7 @@
 > still describe this hardware. Re-run them through oMLX before treating the old
 > speeds as current. The cross-platform model, runtime, router, managed-host, and
 > serverless-GPU ranking lives in Workbench's
-> [open-model-inference.md](https://github.com/e-m-albright/workbench/blob/main/playbook/knowledge/open-model-inference.md).
+> [inference.md](https://github.com/e-m-albright/workbench/blob/main/playbook/agents/models/inference.md).
 
 **Current decision:** oMLX first, native MLX weights, and LM Studio retained as a
 disabled manifest entry for possible fallback use. Qwen3.6-35B-A3B oQ4e with
@@ -28,10 +28,10 @@ stay local. See [data hygiene](privacy-data-hygiene.md) for the complete boundar
 
 ## Reproducible installation
 
-`macos/packages.toml` declares oMLX and its `omlx_setup` special installer.
-`macos/configure-omlx.sh` idempotently installs and verifies xgrammar, repairs the
+`config/packages.toml` declares oMLX and its `omlx_setup` special installer.
+`scripts/macos/omlx.sh` idempotently installs and verifies xgrammar, repairs the
 known macOS loader defect, merges the non-secret settings overlay from
-`macos/omlx/settings.json`, and reconciles Qwen weights to the immutable Hugging
+`config/omlx/settings.json`, and reconciles Qwen weights to the immutable Hugging
 Face revision `14c285372cbdb1777adea5bb49087ced0bffc0b5`. It restarts after
 changes or an unhealthy service, then checks the local health endpoint before
 reporting ready. A pending restart marker survives failed runs

@@ -1,7 +1,7 @@
 import pytest
 
-from dotfiles.adapters.ports import ProcessRunner
 from dotfiles.adapters.process import SubprocessRunner
+from dotfiles.ports import ProcessRunner
 
 
 def test_subprocess_runner_satisfies_port() -> None:

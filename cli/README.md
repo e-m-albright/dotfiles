@@ -13,10 +13,31 @@ deletes local working notes under the ignored documentation directories.
 
 ## Layout
 
-Two load-bearing rules: `cli.py` renders, `service.py` decides.
+Each feature owns its commands and decisions: `cli.py` renders, `service.py`
+decides. Tests stay beside the modules they cover.
 
-- `app/` wires dependencies and the command tree.
-- `cmd/<feature>/` holds each feature: `cli.py` (Typer rendering),
-  `service.py` (decisions), plus whatever else the feature needs
-  (`models.py` and colocated `test_*.py`).
-- `adapters/` contains subprocess effects; `testing/` contains fakes.
+- `app/` assembles the command tree. `context.py` defines the runtime context
+  and its accessor; `wiring.py` constructs concrete dependencies.
+- `features/` groups capabilities: packages, credentials, Doctor, passwords,
+  and remote access. Each feature keeps its rendering, services, and models
+  together.
+- `ports.py` defines effect interfaces, command results, and the credential
+  storage error. `adapters/` implements process execution and Keychain access.
+- `console.py` and `banner.py` handle shared presentation; `result.py` defines
+  shared step results. `testing/` supplies fakes.
+
+The `packages` feature keeps declarations and validation in `manifest.py`.
+`service.py` coordinates the Homebrew, npm, Go, and special-installer modules.
+Its public command names remain `brew` and `clean`; `brew upgrade` still
+upgrades only Homebrew packages.
+
+`test_architecture.py` enforces the dependency rules:
+
+- Features cannot import application registration or dependency construction.
+  Renderers can use `app.context`.
+- Feature decisions and models cannot import rendering or concrete adapters.
+  Adapters cannot import features; context and ports cannot construct adapters.
+- Only Doctor can coordinate other features. Package backends cannot import
+  their orchestrator.
+- Package exports cannot shadow sibling modules. Each concept has one canonical
+  source path.

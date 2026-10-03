@@ -1,20 +1,17 @@
-"""Composition root: wire real adapters into an AppContext stored on the Typer Context.
+"""Runtime context contract stored on the Typer context.
 
 Tests inject a fake AppContext via `runner.invoke(app, args, obj=fake_ctx)`.
 """
 
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
 import typer
 
-from dotfiles.adapters.keychain import MacOSKeychainStore
-from dotfiles.adapters.ports import KeychainStore, ProcessRunner
-from dotfiles.adapters.process import SubprocessRunner
+from dotfiles.ports import KeychainStore, ProcessRunner
 
 # Repo root: cli/src/dotfiles/app/context.py → parents[4] = repo root
-_REPO_ROOT = Path(__file__).resolve().parents[4]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 @dataclass(frozen=True)
@@ -24,7 +21,7 @@ class AppContext:
     runner: ProcessRunner
     keychain: KeychainStore
     home: Path
-    dotfiles_dir: Path = _REPO_ROOT
+    dotfiles_dir: Path = REPO_ROOT
 
 
 def app_context(ctx: typer.Context) -> AppContext:
@@ -36,13 +33,3 @@ def app_context(ctx: typer.Context) -> AppContext:
     obj = ctx.obj
     assert isinstance(obj, AppContext)
     return obj
-
-
-def build_real_context() -> AppContext:
-    dotfiles_dir = Path(os.environ["DOTFILES_DIR"]) if "DOTFILES_DIR" in os.environ else _REPO_ROOT
-    return AppContext(
-        runner=SubprocessRunner(),
-        keychain=MacOSKeychainStore(),
-        home=Path.home(),
-        dotfiles_dir=dotfiles_dir,
-    )

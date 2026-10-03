@@ -50,8 +50,8 @@ def test_has_errors() -> None:
 def test_render_connection_info_warns_when_no_tailscale() -> None:
     from io import StringIO
 
-    from dotfiles.cmd.remote.cli import render_connection_info
-    from dotfiles.cmd.remote.models import ConnectionInfo
+    from dotfiles.features.remote.cli import render_connection_info
+    from dotfiles.features.remote.models import ConnectionInfo
 
     buf = StringIO()
     console = Console(file=buf, force_terminal=False, width=200)
@@ -65,8 +65,8 @@ def test_render_connection_info_warns_when_no_tailscale() -> None:
 def test_render_connection_info_shows_only_paseo_address() -> None:
     from io import StringIO
 
-    from dotfiles.cmd.remote.cli import render_connection_info
-    from dotfiles.cmd.remote.models import ConnectionInfo
+    from dotfiles.features.remote.cli import render_connection_info
+    from dotfiles.features.remote.models import ConnectionInfo
 
     buf = StringIO()
     console = Console(file=buf, force_terminal=False, width=200)

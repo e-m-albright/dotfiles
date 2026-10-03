@@ -9,33 +9,33 @@ rather than maintained during routine implementation.
 
 This repo owns the host layer:
 
-- `install.sh` - idempotent bootstrap entrypoint
-- `macos/` - package manifest, system preferences, and bootstrap scripts
-- `shell/`, `terminal/`, `git/` - command-line environment
-- `editors/` - host editor configuration
+- `install.sh` - stable bootstrap entrypoint that delegates to `scripts/install.sh`
+- `config/` - configuration grouped by consuming tool, plus `packages.toml`
+- `scripts/` - executable host automation, macOS setup, and shared shell functions
 - `bin/` - the `dotfiles`/`dfs` shim that routes to bash-native commands or the
   Python CLI (load-bearing: half the daily commands pass through it)
 - `cli/` - the `dotfiles` Typer CLI
+- `tests/host/` - integration checks for bootstrap, scripts, and configuration
 - `docs/` - machine-specific operating notes
 
 It does not own agent rules, skills, MCP definitions, prompts, engineering
 doctrine, or project health kits. Those belong in
 `~/code/public/workbench`. Dotfiles owns the host integration in
-`shell/.zshrc` and `editors/zed/settings.json`; `workbench sync` deploys the shared
+`config/zsh/.zshrc` and `config/zed/settings.json`; `workbench sync` deploys the shared
 agent launchers and agent settings. The shell sources those launchers from
 `~/.local/share/workbench/shell/agent-launchers.zsh`. Legacy Claude permission
 profile files are not automatically loaded.
 
 ## Invariants
 
-- `macos/packages.toml` is the source of truth for installed software. Disabled
+- `config/packages.toml` is the source of truth for installed software. Disabled
   entries are tombstones and retain a dated reason (machine-checked by the
-  manifest model and `macos/test_packages_manifest.py`).
+  manifest model and `tests/host/test_packages_manifest.py`).
 - Scripts are macOS-only where appropriate, idempotent, quote expansions, and use
   `set -eo pipefail` (`set -euo pipefail` when safe).
-- Shell user-facing output uses `macos/print_utils.sh`; Python uses
+- Shell user-facing output uses `scripts/lib/output.sh`; Python uses
   `dotfiles.console`.
-- New CLI commands are Typer commands under `cli/src/dotfiles/cmd/`.
+- New CLI commands are Typer commands under `cli/src/dotfiles/features/`.
 - `dotfiles doctor` checks live desired state. Do not introduce stored machine
   snapshots to detect drift.
 - Remote access is deliberately limited to Tailscale-direct Paseo lifecycle and health plus one loopback-only private site proxied by Tailscale Serve. Never enable Funnel. Do not reintroduce a phone shell, terminal multiplexer, browser terminal, or Mission Control without a demonstrated need.
@@ -55,10 +55,16 @@ scheduled AI audit, or multi-vendor agent framework.
 - The justfile runs from `cli/` (`set working-directory := 'cli'`); run recipes
   from anywhere in the repo.
 - Tests are colocated next to their modules. Single module:
-  `cd cli && uv run pytest src/dotfiles/cmd/doctor/`.
+  `cd cli && uv run pytest src/dotfiles/features/doctor/`.
 - `bin/dotfiles` routes bash-native commands (`install`, `update`, `dock`,
   `profile-shell`) and delegates the rest, including `clean`, to the Python CLI.
   `app/test_command_tree.py` keeps shim, help, and zsh completions in sync.
+- Features own their rendering and decisions. Decisions depend on `ports.py`,
+  not rendering or concrete adapters. Only Doctor coordinates other features.
+  `app/context.py` defines the runtime context; `app/wiring.py` constructs it.
+  `test_architecture.py` enforces these dependency boundaries.
+- The `packages` feature owns manifest validation and package backends; its
+  public commands remain `brew` and `clean`. See `cli/README.md` for module roles.
 - Install git hooks once with `lefthook install`.
 
 ## Privacy (public repo)

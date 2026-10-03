@@ -10,13 +10,13 @@ from typer._click.core import Context
 from typer._click.formatting import HelpFormatter
 from typer.core import TyperGroup
 
-from dotfiles.app.context import build_real_context
+from dotfiles.app.wiring import build_real_context
 from dotfiles.banner import print_banner
-from dotfiles.cmd.brew.cli import brew_app, clean_command
-from dotfiles.cmd.credential.cli import credential_app
-from dotfiles.cmd.doctor.cli import doctor_command
-from dotfiles.cmd.password.cli import password_command
-from dotfiles.cmd.remote.cli import remote_app
+from dotfiles.features.credential.cli import credential_app
+from dotfiles.features.doctor.cli import doctor_command
+from dotfiles.features.packages.cli import brew_app, clean_command
+from dotfiles.features.password.cli import password_command
+from dotfiles.features.remote.cli import remote_app
 
 PANEL_MACHINE = "Machine — setup, maintenance, and machine-state"
 PANEL_CONTROL = "Control — phone access and utilities"

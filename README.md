@@ -37,7 +37,7 @@ Its read-only plan can be validated on any host with `./install.sh --plan`. It:
 
 1. Links the tracked shell and Git configuration.
 2. Configures SSH and installs Homebrew when needed.
-3. Reconciles packages from `macos/packages.toml`.
+3. Reconciles packages from `config/packages.toml`.
 4. Applies macOS, Dock, terminal, and editor configuration.
 5. Clones `~/code/public/workbench`, runs `workbench sync all`, and fails the
    install if `workbench drift all` detects managed drift.
@@ -53,7 +53,7 @@ For a lightweight work machine, use the fail-closed profile:
 ```
 
 The work profile installs only its explicit formula, cask, special-installer,
-and npm allowlists from `macos/packages.toml`. It shares the personal zsh setup
+and npm allowlists from `config/packages.toml`. It shares the personal zsh setup
 with work-safe defaults and a short profile banner, adds Node.js LTS, uv-managed
 Python 3.14, and tenv-managed Terraform; installs Rectangle, Flycut, Ghostty,
 Caffeine, f.lux, TypeWhisper, Zed, Spotify, and OrbStack; keeps OrbStack on
@@ -109,7 +109,7 @@ dotfiles remote paseo
 dotfiles remote tailscale
 ```
 
-See [`docs/remote-shell.md`](docs/remote-shell.md) for setup and recovery details.
+See [`docs/remote-access.md`](docs/remote-access.md) for setup and recovery details.
 
 ## Password Utility
 
@@ -131,11 +131,11 @@ agent's tools, logs, and backups; see [data hygiene](docs/privacy-data-hygiene.m
 LM Studio remains a tombstoned fallback. The current setup and historical
 benchmarks live in [`docs/local-llm-stack.md`](docs/local-llm-stack.md); the
 cross-platform model and provider ranking lives in Workbench's
-[`open-model-inference.md`](https://github.com/e-m-albright/workbench/blob/main/playbook/knowledge/open-model-inference.md).
+[`inference.md`](https://github.com/e-m-albright/workbench/blob/main/playbook/agents/models/inference.md).
 
 ## Package Manifest
 
-`macos/packages.toml` is the source of truth; unknown fields are rejected to
+`config/packages.toml` is the source of truth; unknown fields are rejected to
 catch configuration typos before installation. Disabled entries preserve an
 intentional absence: rejected tools, deferred installs, or clients that belong
 on another device. They prevent casual reintroduction without falsely treating
@@ -155,20 +155,26 @@ allowlist rather than a combination of personal categories.
 ## Repository Layout
 
 ```text
-bin/                 thin `dotfiles` launcher
-cli/                 Typer CLI
-macos/               package manifest and system setup
-shell/               zsh configuration and completions
-terminal/            Ghostty and Yazi configuration
-editors/             Zed host configuration
-git/                 global Git configuration
+install.sh           stable bootstrap entrypoint
+bin/                 thin `dotfiles` launcher and `dfs` alias
+config/              configuration grouped by consuming tool; package manifest
+scripts/             host automation, macOS setup, and shared shell functions
+cli/                 Typer application with features and colocated tests
+tests/host/          bootstrap and configuration integration checks
 docs/                machine-specific operating notes
+assets/              repository artwork
 ```
+
+Configuration directories name the tool that consumes them. `scripts/macos/`
+contains system setup operations, and `scripts/lib/` contains shared shell
+functions. The root installer and launcher delegate to these implementations.
+Python feature boundaries and dependency rules are described in
+[`cli/README.md`](cli/README.md).
 
 ## Development
 
-The CLI uses Python 3.13+, Typer, Pydantic, and uv. Tests are colocated
-with the modules they cover.
+The CLI uses Python 3.13+, Typer, Pydantic, and uv. Python tests are colocated
+with the modules they cover; host integration tests live in `tests/host/`.
 
 ```bash
 just verify          # complete project gate
@@ -186,7 +192,7 @@ project that adopts them.
 ## Reuse
 
 This is a personal setup, published as fork-and-adapt material rather than a
-framework. If you want something similar, start from `macos/packages.toml` and
+framework. If you want something similar, start from `config/packages.toml` and
 `install.sh`, replace the package choices and identity-specific pieces with
 your own, and delete what you don't use. Nothing here is designed to be
 depended on as a package.

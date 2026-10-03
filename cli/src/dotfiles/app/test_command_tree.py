@@ -10,7 +10,7 @@ from dotfiles.app.main import PANEL_CONTROL, PANEL_MACHINE, app
 
 _REPO = Path(__file__).resolve().parents[4]
 _SHIM = _REPO / "bin" / "dotfiles"
-_COMPLETIONS = _REPO / "shell" / "completions" / "_dotfiles"
+_COMPLETIONS = _REPO / "config" / "zsh" / "completions" / "_dotfiles"
 _BASH_NATIVE = {"install", "update", "dock", "profile-shell"}
 _PANELS = {PANEL_MACHINE, PANEL_CONTROL}
 
@@ -89,3 +89,19 @@ def test_bash_native_commands_reject_arguments_before_execution() -> None:
         )
         assert result.returncode == 2
         assert "accepts no arguments" in result.stderr
+
+
+def test_nested_command_help_preserves_the_public_interface() -> None:
+    from typer.testing import CliRunner
+
+    runner = CliRunner()
+    children = {
+        "brew": ("install", "upgrade", "prune", "stale"),
+        "credential": ("init", "list", "run", "set", "link-pi"),
+        "remote": ("on", "off", "paseo", "tailscale", "status"),
+    }
+    for parent, commands in children.items():
+        for command in commands:
+            result = runner.invoke(app, [parent, command, "--help"])
+            assert result.exit_code == 0, result.output
+            assert f"{parent} {command}" in result.output

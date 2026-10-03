@@ -1,4 +1,4 @@
-from dotfiles.adapters.ports import KeychainStore, ProcessRunner
+from dotfiles.ports import KeychainStore, ProcessRunner
 
 
 def test_keychain_store_protocol_guards_its_method_set() -> None:

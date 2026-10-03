@@ -6,14 +6,14 @@ _REPO = Path(__file__).resolve().parents[4]
 
 
 def test_zed_has_no_lima_agent_bridge() -> None:
-    settings = (_REPO / "editors/zed/settings.json").read_text()
+    settings = (_REPO / "config/zed/settings.json").read_text()
     assert '"codex-lima"' not in settings
     assert "workbench lima" not in settings
     assert "host authority" in settings
 
 
 def test_ghostty_does_not_grant_automatic_clipboard_access() -> None:
-    settings = (_REPO / "terminal/ghostty.config").read_text()
+    settings = (_REPO / "config/ghostty/config").read_text()
     values = dict(
         line.split("=", 1)
         for line in settings.splitlines()
@@ -25,5 +25,5 @@ def test_ghostty_does_not_grant_automatic_clipboard_access() -> None:
 
 
 def test_ghostty_treats_option_as_alt_for_shell_word_editing() -> None:
-    settings = (_REPO / "terminal/ghostty.config").read_text()
+    settings = (_REPO / "config/ghostty/config").read_text()
     assert "macos-option-as-alt = true" in settings

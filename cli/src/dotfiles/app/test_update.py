@@ -45,8 +45,9 @@ def _run_update(tmp_path: Path, failure: str) -> tuple[subprocess.CompletedProce
     shim = repo / "bin" / "dotfiles"
     shim.parent.mkdir(parents=True)
     shutil.copy2(_REPO / "bin" / "dotfiles", shim)
-    (repo / "macos").mkdir()
-    shutil.copy2(_REPO / "macos" / "print_utils.sh", repo / "macos" / "print_utils.sh")
+    (repo / "scripts/lib").mkdir(parents=True)
+    shutil.copy2(_REPO / "scripts/lib/output.sh", repo / "scripts/lib/output.sh")
+    shutil.copy2(_REPO / "scripts/update.sh", repo / "scripts/update.sh")
     home = tmp_path / "home"
     home.mkdir()
     binaries = tmp_path / "bin"

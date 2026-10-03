@@ -11,8 +11,8 @@ if [[ -L "$SOURCE" ]]; then
 fi
 export DOTFILES_DIR EXTRA_DIR
 DOTFILES_DIR="$(cd "$(dirname "$SOURCE")/.." && pwd)"
-# shellcheck source=../macos/print_utils.sh
-source "$DOTFILES_DIR/macos/print_utils.sh"
+# shellcheck source=../scripts/lib/output.sh
+source "$DOTFILES_DIR/scripts/lib/output.sh"
 
 # Prefer the synced venv (fast path, no resolver); fall back to uv run, which
 # can provision or heal the environment when the venv is missing or broken.
@@ -47,67 +47,11 @@ sub_help () {
 }
 
 sub_update () {
-    set -eo pipefail
-    local fnm_env version
-    # shellcheck source=../macos/print_utils.sh
-    source "$DOTFILES_DIR/macos/print_utils.sh"
-
-    print_header "Updating everything"
-
-    # --- macOS ---
-    print_section "macOS system updates"
-    if sudo softwareupdate -i -a 2>&1 | tail -1; then
-        print_success "macOS up to date"
-    else
-        print_error "macOS update failed"
-        return 1
-    fi
-
-    # --- Homebrew ---
-    if ! "$DOTFILES_DIR/bin/dotfiles" brew upgrade; then
-        print_error "Homebrew update failed"
-        return 1
-    fi
-
-    # --- Node.js (fnm) ---
-    if command -v fnm >/dev/null 2>&1; then
-        print_section "Node.js (fnm)"
-        fnm_env=$(fnm env)
-        eval "$fnm_env"
-        fnm install --lts
-        fnm use --install-if-missing lts-latest
-        fnm default lts-latest
-        version=$(node --version)
-        print_success "Node.js LTS: $version"
-    fi
-
-    # --- Rust (rustup) ---
-    if command -v rustup >/dev/null 2>&1; then
-        print_section "Rust (rustup)"
-        rustup update
-        version=$(rustc --version | awk '{print $2}')
-        print_success "Rust: $version"
-    fi
-
-    # uv is Homebrew-owned and was updated with the other formulae above.
-    if command -v uv >/dev/null 2>&1; then
-        version=$(uv --version)
-        print_success "UV: $version"
-    fi
-
-    # Reconcile exact npm and Go pins after runtime updates. A blanket
-    # `npm update -g` would create drift from packages.toml.
-    print_section "Declared software"
-    if ! "$DOTFILES_DIR/bin/dotfiles" brew install; then
-        print_error "Declared software reconciliation failed"
-        return 1
-    fi
-
-    print_completion "All updates finished"
+    "$DOTFILES_DIR/scripts/update.sh"
 }
 
 sub_dock () {
-    . "$DOTFILES_DIR/macos/dock.sh"
+    . "$DOTFILES_DIR/scripts/macos/dock.sh"
     print_success "macOS Dock configured"
 }
 
@@ -115,24 +59,8 @@ sub_install() {
     . "$DOTFILES_DIR/install.sh"
 }
 
-sub_shell_profile() {
-    printf "${BLUE}%b Profiling shell startup...${NC}\n\n" "$ARROW"
-    # Time total startup
-    local total
-    total=$( { time zsh -i -c exit 2>&1; } 2>&1 | grep real | awk '{print $2}')
-    printf "  Total startup time: ${BOLD}%s${NC}\n\n" "$total"
-
-    # Time individual sourced files
-    printf "  ${BLUE}File-by-file timing:${NC}\n"
-    for f in ~/.zshenv ~/.zprofile ~/.zshrc; do
-        if [[ -f "$f" ]]; then
-            local t
-            t=$( { time zsh -c "source $f" 2>/dev/null; } 2>&1 | grep real | awk '{print $2}')
-            printf "  %-30s %s\n" "$(basename "$f")" "$t"
-        fi
-    done
-    printf "\n"
-    printf "  ${YELLOW}Tip:${NC} If startup is slow, check for heavy evals (fnm env, brew shellenv).\n"
+sub_shell_profile () {
+    "$DOTFILES_DIR/scripts/profile-shell.sh"
 }
 
 # Every Python command must also appear in the Typer registry and zsh completion;
