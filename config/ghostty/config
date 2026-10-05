@@ -6,9 +6,9 @@
 desktop-notifications = true
 
 # OSC 52 requests are executed by the host terminal, outside agent sandboxes.
-# Manual copy/paste still works; programs cannot read or silently replace it.
+# Programs may copy out without a prompt, but cannot read clipboard contents.
 clipboard-read = deny
-clipboard-write = ask
+clipboard-write = allow
 
 # Theme
 theme = Dracula

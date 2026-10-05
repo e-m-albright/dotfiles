@@ -12,7 +12,7 @@ def test_zed_has_no_lima_agent_bridge() -> None:
     assert "host authority" in settings
 
 
-def test_ghostty_does_not_grant_automatic_clipboard_access() -> None:
+def test_ghostty_allows_copy_out_but_denies_clipboard_reads() -> None:
     settings = (_REPO / "config/ghostty/config").read_text()
     values = dict(
         line.split("=", 1)
@@ -21,7 +21,7 @@ def test_ghostty_does_not_grant_automatic_clipboard_access() -> None:
     )
     values = {key.strip(): value.strip() for key, value in values.items()}
     assert values["clipboard-read"] == "deny"
-    assert values["clipboard-write"] == "ask"
+    assert values["clipboard-write"] == "allow"
 
 
 def test_ghostty_treats_option_as_alt_for_shell_word_editing() -> None:
