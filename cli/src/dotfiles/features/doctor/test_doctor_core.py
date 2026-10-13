@@ -92,7 +92,6 @@ _ALL_TOOLS = {
     "jq",
     "yq",
     "zed",
-    "deno",
     "fnm",
     "uv",
     "go",

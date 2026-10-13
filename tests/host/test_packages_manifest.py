@@ -56,7 +56,6 @@ def test_work_profile_is_the_exact_approved_allowlist() -> None:
         "gitleaks",
         "fnm",
         "uv",
-        "deno",
         "awscli",
         "tenv",
     ]
