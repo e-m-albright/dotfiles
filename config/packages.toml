@@ -100,8 +100,8 @@ packages = [
 name = "JavaScript / TypeScript"
 kind = "formula"
 packages = [
-  { name = "bun",  note = "Retired JavaScript runtime and package manager", disabled = true, reason = "Disabled 2026-10-12: Node LTS and pnpm are the maintained default; Bun remains an alternative only after application compatibility and performance justify it" },
-  { name = "deno", note = "Retired TypeScript runtime", disabled = true, reason = "Disabled 2026-10-12: maintained applications and automation use Node LTS and pnpm; operating-system sandboxing owns process isolation" },
+  { name = "bun",  note = "Retired JavaScript runtime and package manager", disabled = true, reason = "Disabled 2026-10-14: Node LTS and pnpm are the maintained default; watch for meaningful tooling consolidation or recurring workflow savings with verified compatibility" },
+  { name = "deno", note = "Retired TypeScript runtime", disabled = true, reason = "Disabled 2026-10-14: Node LTS and pnpm are the maintained default; watch tooling consolidation, compatibility, and ongoing maintenance; operating-system sandboxing owns isolation" },
   { name = "fnm",  note = "Node version manager; installs the current LTS for Astro and other Node projects" },
 ]
 
@@ -324,7 +324,7 @@ note = "Primary terminal coding-agent harness; pinned alongside Workbench's CI v
 
 [[npm_package]]
 name = "agent-browser"
-version = "0.32.2"
+version = "0.38.1"
 flag = "ai"
 note = "Browser-automation CLI for AI agents (Tier 2 — shell out, no MCP overhead)"
 

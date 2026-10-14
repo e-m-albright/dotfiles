@@ -45,6 +45,11 @@ Its read-only plan can be validated on any host with `./install.sh --plan`. It:
 Secrets and personal Git identity stay outside the repository. The installer
 writes Git identity to `~/.gitconfig.local`.
 
+The personal JavaScript toolchain is Node LTS via fnm with pnpm. Bun and Deno
+are disabled in the package manifest. Both remain on Workbench's technology
+watchlist; adoption requires meaningful tooling consolidation or recurring
+workflow savings, verified compatibility, and dependable ongoing maintenance.
+
 For a lightweight work machine, use the fail-closed profile:
 
 ```bash

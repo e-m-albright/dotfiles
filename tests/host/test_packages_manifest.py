@@ -24,6 +24,19 @@ def test_packages_toml_loads_through_model() -> None:
     assert manifest.sections, "packages.toml parsed to zero sections"
 
 
+def test_node_is_enabled_and_bun_and_deno_are_retired() -> None:
+    manifest = PackageManifest.load(MANIFEST)
+    packages = {
+        package.name: package
+        for section in manifest.sections
+        for package in section.packages
+    }
+    assert not packages["fnm"].disabled
+    assert packages["bun"].disabled
+    assert "oven-sh/bun" not in manifest.taps.items
+    assert packages["deno"].disabled
+
+
 def test_pi_is_an_enabled_pinned_ai_package() -> None:
     manifest = PackageManifest.load(MANIFEST)
     pi = next(
