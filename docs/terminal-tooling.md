@@ -33,7 +33,7 @@ Workbench's restricted terminal launchers use a native macOS sandbox; Lima is re
 
 Local Pi is an explicitly unrestricted workflow. The local inference service remains unchanged for its other consumers; no restricted-agent tunnel exposes that service.
 
-Ghostty denies programmatic clipboard reads but allows programmatic writes without prompting. This supports one-way copy-out while preventing child processes from inspecting existing clipboard contents. These terminal escape-sequence requests (OSC 52) are performed by the host terminal, outside a child process's sandbox. Reload Ghostty configuration after changing these settings; existing processes alone do not enforce the terminal policy.
+Ghostty denies programmatic clipboard reads and asks before programmatic writes. This prevents child processes from inspecting existing clipboard contents or silently replacing them. These terminal escape-sequence requests (OSC 52) are performed by the host terminal, outside a child process's sandbox. After changing these settings, use **Command+Shift+Comma** or **Reload Config** in Ghostty's command palette to reload existing windows. A successful configuration check does not establish that an already-open window has loaded the new policy.
 
 ## Resources
 
