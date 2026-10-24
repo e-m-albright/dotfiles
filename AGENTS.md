@@ -44,6 +44,14 @@ profile files are not automatically loaded.
 - Remote access is deliberately limited to Tailscale-direct Paseo lifecycle and health plus one loopback-only private site proxied by Tailscale Serve. Never enable Funnel. Do not reintroduce a phone shell, terminal multiplexer, browser terminal, or Mission Control without a demonstrated need.
 - Never commit secrets or personal Git identity. `~/.gitconfig.local` stays local.
 
+## Shipping
+
+This repository opts into the shared direct-to-main shipping policy. Commit and
+push routine verified changes to `main`; use a PR only when requested, required
+by branch protection, or appropriate for a major departure. Normal push-triggered
+automation is authorized. Follow the shared workspace closeout rule to remove
+your own shipped branches and temporary worktrees and leave no temporary stashes.
+
 ## Verification
 
 ```bash
