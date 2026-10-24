@@ -563,7 +563,10 @@ def test_stale_ignores_versioned_keg_of_declared_alias(tmp_path: Path) -> None:
 def test_npm_inventory_rejects_malformed_payloads(payload: str) -> None:
     runner = FakeProcessRunner()
     runner.script(("npm", "ls", "-g", "--depth=0", "--json"), stdout=payload)
-    assert _npm_installed_versions(runner) == {}
+    from dotfiles.features.packages.manifest import PackageInventoryError
+
+    with pytest.raises(PackageInventoryError):
+        _npm_installed_versions(runner)
 
 
 def test_npm_inventory_ignores_malformed_entries() -> None:

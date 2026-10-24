@@ -97,6 +97,7 @@ _ALL_TOOLS = {
     "go",
     "node",
     "npx",
+    "pnpm",
     "python3.14",
     "claude",
     "gh",
@@ -117,7 +118,8 @@ def _fully_equipped_runner(home: Path) -> FakeProcessRunner:
     runner = FakeProcessRunner()
     # fnm list — contains a version so Node.js check is ok
     runner.script(("fnm", "list"), stdout="v20.0.0\n")
-    runner.script(("node", "--version"), stdout="v20.0.0\n")
+    runner.script(("node", "--version"), stdout="v26.0.0\n")
+    runner.script(("pnpm", "--version"), stdout="12.15.0\n")
     # uv-managed Python 3.14
     runner.script(("uv", "python", "find", "3.14"), stdout="/usr/bin/python3.14\n")
     runner.script(("/usr/bin/python3.14", "--version"), stdout="Python 3.14.0\n")
@@ -244,38 +246,19 @@ def test_notes_launchers_are_checked_and_fixable(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("name", "hint"),
+    ("name", "package"),
     [
-        (name, hint)
+        (name, package)
         for checks in _TOOL_CHECKS.values()
-        for name, _command, hint in checks
-        if hint.startswith("brew install")
+        for name, _command, package in checks
+        if package is not None
     ],
 )
-def test_tool_checks_stay_in_sync_with_packages_toml(name: str, hint: str) -> None:
-    """Drift gate for the CLAUDE.md invariant: doctor must stay in sync with
-    config/packages.toml (the source of truth for what's installed).
-
-    Every `brew install` hint in the declarative _TOOL_CHECKS table must name a
-    package that exists *and is enabled* in the manifest — so disabling or
-    renaming a package there breaks this test instead of silently leaving
-    doctor checking (and recommending) a tool the repo no longer installs.
-    Non-brew hints ("Run install.sh", curl installers) are out of scope.
-    """
+def test_tool_checks_stay_in_sync_with_packages_toml(name: str, package: str) -> None:
+    """Supplemental version probes must refer to enabled package declarations."""
     manifest = PackageManifest.load(_REPO / "config" / "packages.toml")
     enabled = {p.name for s in manifest.sections for p in s.packages if not p.disabled}
-    cask_ok = {p.name for s in manifest.sections if s.kind in ("cask", "auto") for p in s.packages}
-
-    pkg = hint.split()[-1]
-    assert pkg in enabled, (
-        f"doctor checks {name!r} with hint {hint!r}, but {pkg!r} is not an "
-        "enabled package in config/packages.toml — update one of them"
-    )
-    if "--cask" in hint:
-        assert pkg in cask_ok, (
-            f"doctor hint {hint!r} says --cask but {pkg!r} is not in a "
-            "cask/auto section of config/packages.toml"
-        )
+    assert package in enabled, f"Doctor probe {name!r} references undeclared {package!r}"
 
 
 def test_runtime_checks_report_degraded_but_usable_states(tmp_path: Path) -> None:
@@ -374,7 +357,7 @@ def test_configuration_reports_app_only_states(tmp_path: Path) -> None:
     )
 
     assert service._check_essentials()[0].status == "ok"
-    ghostty = service._check_ghostty("Configuration")[0]
+    ghostty = next(check for check in service._check_configuration() if check.name == "Ghostty")
     assert ghostty.status == "missing"
 
 
@@ -395,8 +378,8 @@ def test_ghostty_config_is_checked_and_fixable(tmp_path: Path) -> None:
         which=lambda _name: None,
         apps_dir=apps,
         brew_bin=tmp_path / "brew-bin",
-    )._check_ghostty("Configuration")[0]
-    assert missing.status == "missing"
+    )._check_configuration()
+    assert next(check for check in missing if check.name == "Ghostty").status == "missing"
 
     fixed = DoctorService(
         runner=FakeProcessRunner(),
@@ -406,9 +389,9 @@ def test_ghostty_config_is_checked_and_fixable(tmp_path: Path) -> None:
         which=lambda _name: None,
         apps_dir=apps,
         brew_bin=tmp_path / "brew-bin",
-    )._check_ghostty("Configuration")[0]
+    )._check_configuration()
     config = home / ".config/ghostty/config"
-    assert fixed.status == "fixed"
+    assert next(check for check in fixed if check.name == "Ghostty").status == "fixed"
     assert config.resolve() == source.resolve()
 
 

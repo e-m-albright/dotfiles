@@ -88,7 +88,12 @@ def test_bash_native_commands_reject_arguments_before_execution() -> None:
             [str(_SHIM), command, "unexpected"], capture_output=True, text=True, check=False
         )
         assert result.returncode == 2
-        assert "accepts no arguments" in result.stderr
+        if command == "install":
+            assert "install [--plan] [--profile personal|work]" in result.stderr
+        elif command == "update":
+            assert "update [--profile personal|work]" in result.stderr
+        else:
+            assert "accepts no arguments" in result.stderr
 
 
 def test_nested_command_help_preserves_the_public_interface() -> None:

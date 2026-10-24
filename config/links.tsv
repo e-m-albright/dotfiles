@@ -1,0 +1,11 @@
+# profiles	label	source	destination	required_tool (- means unconditional)
+personal,work	Zsh profile	config/zsh/.zprofile	.zprofile	-
+personal,work	Zsh environment	config/zsh/.zshenv	.zshenv	-
+personal,work	Zsh configuration	config/zsh/.zshrc	.zshrc	-
+personal,work	Zsh theme	config/zsh/amuse.zsh-theme	.oh-my-zsh/custom/themes/amuse.zsh-theme	-
+personal	Git configuration	config/git/.gitconfig	.gitconfig	-
+personal	Git ignore	config/git/.gitignore_global	.gitignore_global	-
+personal,work	Ghostty	config/ghostty/config	.config/ghostty/config	app:Ghostty
+personal	Yazi	config/yazi/yazi.toml	.config/yazi/yazi.toml	yazi
+personal	Zed settings	config/zed/settings.json	.config/zed/settings.json	zed
+personal	Zed keymap	config/zed/keymap.json	.config/zed/keymap.json	zed

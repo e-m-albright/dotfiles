@@ -4,13 +4,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dotfiles.features.packages.go import install_go_tools
+from dotfiles.features.packages.go import go_drift, install_go_tools
 from dotfiles.features.packages.homebrew import add_taps, install_packages
 from dotfiles.features.packages.manifest import FeatureFlag, PackageManifest
-from dotfiles.features.packages.npm import install_npm_globals
+from dotfiles.features.packages.npm import install_npm_globals, npm_drift
 from dotfiles.features.packages.special import install_specials
 from dotfiles.ports import ProcessRunner
 from dotfiles.result import StepResult
+
+
+def runtime_tool_drift(
+    manifest: PackageManifest, runner: ProcessRunner, *, profile: str = "personal"
+) -> list[str]:
+    """Only report globally installed tools selected for this host profile."""
+    drift = npm_drift(manifest, runner, profile=profile)
+    if profile == "personal":
+        drift.extend(go_drift(manifest, runner))
+    return drift
 
 
 def install_software(

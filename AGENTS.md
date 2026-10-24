@@ -28,7 +28,10 @@ profile files are not automatically loaded.
 
 ## Invariants
 
-- `config/packages.toml` is the source of truth for installed software. Disabled
+- `config/packages.toml` declares installed software; `config/runtimes.conf` owns
+  Node.js, Python, and pnpm versions. `config/links.tsv` is the shared installer
+  and Doctor link inventory. Host lifecycle commands honor the saved profile;
+  explicit `--profile` overrides win. Disabled
   entries are tombstones and retain a dated reason (machine-checked by the
   manifest model and `tests/host/test_packages_manifest.py`).
 - Scripts are macOS-only where appropriate, idempotent, quote expansions, and use

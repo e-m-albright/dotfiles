@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dotfiles.features.packages.manifest import GoPackage, PackageManifest
+from dotfiles.features.packages.manifest import GoPackage, PackageInventoryError, PackageManifest
 from dotfiles.ports import ProcessRunner
 from dotfiles.result import StepResult
 
@@ -11,12 +11,14 @@ def go_drift(manifest: PackageManifest, runner: ProcessRunner) -> list[str]:
     """Declared Go tools that are missing or not at their pinned version."""
     drifted: list[str] = []
     for pkg in manifest.go_packages:
-        located = runner.run(("which", pkg.name))
+        located = runner.run(("which", pkg.name), timeout=10)
         if not located.ok:
             drifted.append(f"{pkg.name} (missing)")
             continue
-        version = runner.run(("go", "version", "-m", located.stdout.strip()))
-        if pkg.version not in version.stdout:
+        version = runner.run(("go", "version", "-m", located.stdout.strip()), timeout=10)
+        if not version.ok:
+            raise PackageInventoryError(version.stderr.strip() or f"Could not inspect {pkg.name}")
+        if pkg.version not in version.stdout.split():
             drifted.append(f"{pkg.name} (want {pkg.version})")
     return drifted
 
@@ -32,10 +34,10 @@ def _install_one_go(package: GoPackage, runner: ProcessRunner, *, dry_run: bool)
     target = f"{package.module}@{package.version}"
     if dry_run:
         return StepResult(level="info", message=f"DRY RUN: go install {target}")
-    located = runner.run(("which", package.name))
+    located = runner.run(("which", package.name), timeout=10)
     if located.ok:
-        version = runner.run(("go", "version", "-m", located.stdout.strip()))
-        if package.version in version.stdout:
+        version = runner.run(("go", "version", "-m", located.stdout.strip()), timeout=10)
+        if version.ok and package.version in version.stdout.split():
             return StepResult(level="info", message=f"{package.name} {package.version} installed")
     installed = runner.run(("go", "install", target))
     return StepResult(level="success" if installed.ok else "error", message=f"go install {target}")

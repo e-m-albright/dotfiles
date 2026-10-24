@@ -18,7 +18,9 @@ _STEPS = (
     "rustup update",
     "rustc --version",
     "uv --version",
-    "dotfiles brew install",
+    "uv python install --upgrade 3.14",
+    "npx --yes get-pnpm 12.15.0",
+    "dotfiles brew install --profile personal",
 )
 _STUB = """#!/bin/bash
 call="${0##*/} $*"
@@ -30,7 +32,9 @@ fi
 case "$call" in
     'sudo softwareupdate -i -a' | 'dotfiles brew upgrade' | \
     'fnm install 26' | 'fnm use --install-if-missing 26' | \
-    'fnm default 26' | 'rustup update' | 'dotfiles brew install') ;;
+    'fnm default 26' | 'rustup update' | 'dotfiles brew install --profile personal' | \
+    'dotfiles brew install --profile work' | 'uv python install --upgrade 3.14' | \
+    'npx --yes get-pnpm 12.15.0') ;;
     'fnm env') printf ':\\n' ;;
     'node --version') printf 'v26.12.1\\n' ;;
     'rustc --version') printf 'rustc 1.90.0\\n' ;;
@@ -40,16 +44,24 @@ esac
 """
 
 
-def _run_update(tmp_path: Path, failure: str) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+def _run_update(
+    tmp_path: Path, failure: str, profile: str = "personal", args: tuple[str, ...] = ()
+) -> tuple[subprocess.CompletedProcess[str], list[str]]:
     repo = tmp_path / "repo"
     shim = repo / "bin" / "dotfiles"
     shim.parent.mkdir(parents=True)
     shutil.copy2(_REPO / "bin" / "dotfiles", shim)
     (repo / "scripts/lib").mkdir(parents=True)
     shutil.copy2(_REPO / "scripts/lib/output.sh", repo / "scripts/lib/output.sh")
+    shutil.copy2(_REPO / "scripts/lib/host.sh", repo / "scripts/lib/host.sh")
     shutil.copy2(_REPO / "scripts/update.sh", repo / "scripts/update.sh")
     home = tmp_path / "home"
     home.mkdir()
+    marker = home / ".config/dotfiles/profile"
+    marker.parent.mkdir(parents=True)
+    marker.write_text(profile + "\n")
+    (repo / "config").mkdir()
+    shutil.copy2(_REPO / "config/runtimes.conf", repo / "config/runtimes.conf")
     binaries = tmp_path / "bin"
     binaries.mkdir()
     # Only pure text/path utilities are admitted. A missing updater cannot reach the host.
@@ -61,13 +73,16 @@ def _run_update(tmp_path: Path, failure: str) -> tuple[subprocess.CompletedProce
     cli.parent.mkdir(parents=True)
     for executable in [
         cli,
-        *(binaries / name for name in ("sudo", "fnm", "node", "rustup", "rustc", "uv", "npm")),
+        *(
+            binaries / name
+            for name in ("sudo", "fnm", "node", "rustup", "rustc", "uv", "npm", "npx")
+        ),
     ]:
         executable.write_text(_STUB)
         executable.chmod(0o755)
     calls = tmp_path / "calls"
     result = subprocess.run(
-        [str(shim), "update"],
+        [str(shim), "update", *args],
         env={
             "HOME": str(home),
             "PATH": str(binaries),
@@ -79,7 +94,7 @@ def _run_update(tmp_path: Path, failure: str) -> tuple[subprocess.CompletedProce
         timeout=10,
         check=False,
     )
-    return result, calls.read_text().splitlines()
+    return result, calls.read_text().splitlines() if calls.exists() else []
 
 
 @pytest.mark.parametrize("failure", _STEPS)
@@ -95,3 +110,25 @@ def test_update_reports_completion_after_all_steps_succeed(tmp_path: Path) -> No
     assert result.returncode == 0, result.stderr
     assert "All updates finished" in result.stdout
     assert calls == list(_STEPS)
+
+
+def test_work_update_does_not_install_personal_tools(tmp_path: Path) -> None:
+    result, calls = _run_update(tmp_path, "", profile="work")
+    assert result.returncode == 0, result.stderr
+    assert "dotfiles brew install --profile work" in calls
+    assert "rustup update" not in calls
+    assert not any(call.startswith("npx ") for call in calls)
+
+
+def test_explicit_work_update_overrides_marker_without_changing_it(tmp_path: Path) -> None:
+    result, calls = _run_update(tmp_path, "", args=("--profile", "work"))
+    assert result.returncode == 0, result.stderr
+    assert "dotfiles brew install --profile work" in calls
+    assert "rustup update" not in calls
+    assert (tmp_path / "home/.config/dotfiles/profile").read_text() == "personal\n"
+
+
+def test_invalid_profile_fails_before_any_updater(tmp_path: Path) -> None:
+    result, calls = _run_update(tmp_path, "", profile="invalid")
+    assert result.returncode != 0
+    assert calls == []

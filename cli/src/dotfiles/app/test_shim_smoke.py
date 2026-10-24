@@ -5,6 +5,7 @@ Typer tree; these lock the shim's own dispatch: unknown commands fail loudly,
 help never hard-fails, and the doctor <-> workbench contract verb is real.
 """
 
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -36,6 +37,44 @@ def test_bash_native_command_help_never_enters_the_implementation() -> None:
     result = _run("install", "--help")
     assert result.returncode == 0
     assert "install" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        (("--plan",), 0),
+        (("--profile", "work", "--plan"), 0),
+        (("--plan", "--profile", "personal"), 0),
+        (("--profile", "invalid"), 2),
+        (("--profile",), 2),
+        (("--plan", "--unknown"), 2),
+        (("extra",), 2),
+    ],
+)
+def test_install_options_are_validated_before_dispatch(
+    tmp_path: Path, args: tuple[str, ...], expected: int
+) -> None:
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "scripts/lib").mkdir(parents=True)
+    shutil.copyfile(_SHIM, tmp_path / "bin/dotfiles")
+    (tmp_path / "scripts/lib/output.sh").write_text("")
+    marker = tmp_path / "installer-args"
+    installer = tmp_path / "install.sh"
+    installer.write_text(f'#!/bin/bash\nprintf "%s\\n" "$@" > "{marker}"\n')
+    installer.chmod(0o755)
+
+    result = subprocess.run(
+        ["/bin/bash", str(tmp_path / "bin/dotfiles"), "install", *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == expected, result.stderr
+    if expected == 0:
+        assert marker.read_text().splitlines() == list(args)
+    else:
+        assert not marker.exists()
 
 
 def test_workbench_drift_verb_exists_in_real_cli() -> None:

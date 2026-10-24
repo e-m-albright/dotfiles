@@ -8,11 +8,14 @@ from pathlib import Path
 from typing import cast
 
 from dotfiles.features.packages.manifest import (
+    ALL_FLAGS,
     FeatureFlag,
     NpmPackage,
+    PackageInventoryError,
     PackageManifest,
-    flag_active,
+    active_npm_packages,
 )
+from dotfiles.host import RUNTIMES
 from dotfiles.ports import ProcessRunner
 from dotfiles.result import StepResult
 
@@ -31,27 +34,18 @@ def _npm_runtime(
         return None, StepResult(
             level="error", message="npm globals require npm or fnm, but neither is available"
         )
-    if not runner.run(("fnm", "install", "26")).ok:
-        return None, StepResult(level="error", message="fnm failed to install Node.js 26")
-    if not runner.run(("fnm", "default", "26")).ok:
-        return None, StepResult(level="error", message="fnm failed to select Node.js 26")
+    if not runner.run(("fnm", "install", RUNTIMES.node)).ok:
+        return None, StepResult(
+            level="error", message=f"fnm failed to install Node.js {RUNTIMES.node}"
+        )
+    if not runner.run(("fnm", "default", RUNTIMES.node)).ok:
+        return None, StepResult(
+            level="error", message=f"fnm failed to select Node.js {RUNTIMES.node}"
+        )
     return (
-        ("fnm", "exec", "--using", "26", "npm"),
-        StepResult(level="success", message="Node.js 26 installed via fnm"),
+        ("fnm", "exec", "--using", RUNTIMES.node, "npm"),
+        StepResult(level="success", message=f"Node.js {RUNTIMES.node} installed via fnm"),
     )
-
-
-def _active_npm_packages(
-    manifest: PackageManifest, flags_on: set[FeatureFlag], profile: str
-) -> list[NpmPackage]:
-    if profile == "personal":
-        return [
-            pkg
-            for pkg in manifest.npm_packages
-            if not pkg.disabled and flag_active(pkg.flag, flags_on)
-        ]
-    selected = set(manifest.profiles[profile].npm_packages)
-    return [pkg for pkg in manifest.npm_packages if not pkg.disabled and pkg.name in selected]
 
 
 def install_npm_globals(
@@ -63,7 +57,7 @@ def install_npm_globals(
     dry_run: bool = False,
 ) -> list[StepResult]:
     """Install declared npm globals, bootstrapping fnm's Node 26 runtime when needed."""
-    active = _active_npm_packages(manifest, flags_on, profile)
+    active = active_npm_packages(manifest, flags_on, profile)
     if not active:
         return []
 
@@ -79,16 +73,20 @@ def install_npm_globals(
 
 def _npm_installed_versions(runner: ProcessRunner) -> dict[str, str]:
     """Globally installed npm packages as {name: version}, from one `npm ls` pass."""
-    result = runner.run(("npm", "ls", "-g", "--depth=0", "--json"), env=_npm_environment())
+    result = runner.run(
+        ("npm", "ls", "-g", "--depth=0", "--json"), env=_npm_environment(), timeout=15
+    )
+    if not result.ok:
+        raise PackageInventoryError(result.stderr.strip() or "npm inventory failed")
     try:
-        raw: object = json.loads(result.stdout or "{}")
-    except ValueError:
-        return {}
+        raw: object = json.loads(result.stdout)
+    except ValueError as exc:
+        raise PackageInventoryError("npm inventory returned invalid JSON") from exc
     if not isinstance(raw, dict):
-        return {}
-    deps = cast("dict[str, object]", raw).get("dependencies")
+        raise PackageInventoryError("npm inventory must be an object")
+    deps = cast("dict[str, object]", raw).get("dependencies", {})
     if not isinstance(deps, dict):
-        return {}
+        raise PackageInventoryError("npm inventory dependencies must be an object")
     versions: dict[str, str] = {}
     for name, entry in cast("dict[str, object]", deps).items():
         if isinstance(entry, dict):
@@ -96,13 +94,15 @@ def _npm_installed_versions(runner: ProcessRunner) -> dict[str, str]:
     return versions
 
 
-def npm_drift(manifest: PackageManifest, runner: ProcessRunner) -> list[str]:
+def npm_drift(
+    manifest: PackageManifest, runner: ProcessRunner, *, profile: str = "personal"
+) -> list[str]:
     """Enabled npm globals that are missing or at the wrong version.
 
     packages.toml is the source of truth, so a deleted global or an unapplied
     version bump is reported, not just healed silently on the next full install.
     """
-    wanted = [p for p in manifest.npm_packages if not p.disabled]
+    wanted = active_npm_packages(manifest, ALL_FLAGS, profile)
     if not wanted:
         return []
     installed = _npm_installed_versions(runner)

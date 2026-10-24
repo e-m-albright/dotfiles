@@ -32,8 +32,12 @@ git clone https://github.com/e-m-albright/dotfiles.git ~/code/public/dotfiles
 ~/code/public/dotfiles/install.sh
 ```
 
-The installer is macOS-only and safe to rerun. Personal remains the default.
-Its read-only plan can be validated on any host with `./install.sh --plan`. It:
+The installer is macOS-only and safe to rerun. A new host defaults to personal;
+subsequent installs, updates, package checks, and Doctor use the saved host profile.
+Pass `--profile personal|work` to override it. Installation saves the selection;
+diagnostic and update overrides do not change it.
+Its read-only plan can be validated on any host with `./install.sh --plan`. The
+work plan requires an existing Python 3.11+ interpreter and never installs one. It:
 
 1. Links the tracked shell and Git configuration.
 2. Configures SSH and installs Homebrew when needed.
@@ -76,7 +80,8 @@ data and which organizational approvals remain open.
 ## Daily Commands
 
 ```text
-dotfiles doctor                 live host, credential, and workbench drift check
+dotfiles install --plan         preview installation for the active host profile
+dotfiles doctor                 live host, package, credential, and Workbench checks
 dotfiles doctor --fix           repair supported symlinks and local config
 dotfiles credential init        create the private metadata-only inventory
 dotfiles credential list        show grants, consumers, scopes, and local status
@@ -140,7 +145,9 @@ cross-platform model and provider ranking lives in Workbench's
 
 ## Package Manifest
 
-`config/packages.toml` is the source of truth; unknown fields are rejected to
+`config/packages.toml` declares package intent; `config/runtimes.conf` declares
+Node.js, Python, and pnpm versions. `config/links.tsv` declares profile-specific
+configuration links shared by installation and Doctor. Unknown manifest fields are rejected to
 catch configuration typos before installation. Disabled entries preserve an
 intentional absence: rejected tools, deferred installs, or clients that belong
 on another device. They prevent casual reintroduction without falsely treating
@@ -154,8 +161,19 @@ dotfiles brew install --no-productivity
 dotfiles brew install --no-social
 ```
 
-Category flags are rejected with `--profile work`; the work profile is an exact
-allowlist rather than a combination of personal categories.
+Category flags are rejected on work-profile hosts unless `--profile personal`
+is explicitly selected; the work profile is an exact allowlist rather than a
+combination of personal categories. `brew stale` reports missing software only
+for the selected profile, but still identifies globally undeclared installed
+packages. Updating upgrades installed Homebrew software without uninstalling
+packages outside the profile.
+
+Profile selection uses an explicit `--profile`, then the saved
+`~/.config/dotfiles/profile`, then `DOTFILES_PROFILE`, then personal. Unknown
+profiles fail before reconciliation or repair. Switching profiles does not remove
+previously installed software or configuration; it changes future desired state.
+Doctor reports a stopped optional Paseo daemon without a warning, and checks the
+local oMLX health endpoint when that capability is selected and installed.
 
 ## Repository Layout
 

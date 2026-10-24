@@ -8,10 +8,8 @@ from pathlib import Path
 
 import typer
 
+from dotfiles.host import REPO_ROOT, Profile, resolve_profile
 from dotfiles.ports import KeychainStore, ProcessRunner
-
-# Repo root: cli/src/dotfiles/app/context.py → parents[4] = repo root
-REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 @dataclass(frozen=True)
@@ -22,6 +20,12 @@ class AppContext:
     keychain: KeychainStore
     home: Path
     dotfiles_dir: Path = REPO_ROOT
+
+    def profile(self, explicit: str | None = None) -> Profile:
+        try:
+            return resolve_profile(self.home, explicit)
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc), param_hint="--profile") from exc
 
 
 def app_context(ctx: typer.Context) -> AppContext:

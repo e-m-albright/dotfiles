@@ -21,6 +21,9 @@ decides. Tests stay beside the modules they cover.
 - `features/` groups capabilities: packages, credentials, Doctor, passwords,
   and remote access. Each feature keeps its rendering, services, and models
   together.
+- `host.py` reads the shared runtime and link declarations and resolves the active
+  profile. CLI commands validate explicit overrides through `AppContext.profile`;
+  services receive the resolved selection.
 - `ports.py` defines effect interfaces, command results, and the credential
   storage error. `adapters/` implements process execution and Keychain access.
 - `console.py` and `banner.py` handle shared presentation; `result.py` defines

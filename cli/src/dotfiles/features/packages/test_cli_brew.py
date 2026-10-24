@@ -310,6 +310,62 @@ def test_work_profile_rejects_personal_category_flags(tmp_path: Path) -> None:
     assert "only valid with --profile personal" in output
 
 
+def test_persisted_work_profile_controls_install_and_stale(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    marker = ctx.home / ".config/dotfiles/profile"
+    marker.parent.mkdir(parents=True)
+    marker.write_text("work\n")
+    manifest_path = tmp_path / "config/packages.toml"
+    manifest_path.write_text(_PACKAGES_TOML.replace('formulae = ["git"]', "formulae = []"))
+    for command in (["brew", "install", "--dry-run"], ["brew", "stale"]):
+        result = runner.invoke(app, command, obj=ctx)
+        assert result.exit_code == 0, result.output
+        assert "git" not in result.output
+    explicit = runner.invoke(
+        app, ["brew", "install", "--dry-run", "--profile", "personal"], obj=ctx
+    )
+    assert "brew install git" in explicit.output
+
+
+def test_work_stale_excludes_personal_npm_and_go_tools(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    manifest = (
+        _PACKAGES_TOML
+        + '\n[[npm_package]]\nname="personal-cli"\nversion="1.0.0"\n'
+        + '[[go_package]]\nname="gopls"\nmodule="example.com/gopls"\nversion="v1.0.0"\n'
+    )
+    (tmp_path / "config/packages.toml").write_text(manifest)
+    result = runner.invoke(app, ["brew", "stale", "--profile", "work"], obj=ctx)
+    assert result.exit_code == 0, result.output
+    assert "personal-cli" not in result.output
+    assert "gopls" not in result.output
+    assert not any(call[0] in {"npm", "go"} for call in ctx.runner.calls)
+
+
+def test_inventory_failure_is_reported_not_empty_installation(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    (tmp_path / "config/packages.toml").write_text(
+        _PACKAGES_TOML + '\n[[npm_package]]\nname="tool"\n'
+    )
+    ctx.runner.script(
+        ("npm", "ls", "-g", "--depth=0", "--json"), exit_code=124, stderr="npm timed out"
+    )
+    result = runner.invoke(app, ["brew", "stale"], obj=ctx)
+    assert result.exit_code == 1
+    assert "npm timed out" in result.output
+    assert "tool (missing)" not in result.output
+
+
+def test_invalid_profile_fails_before_inventory(tmp_path: Path) -> None:
+    ctx = _make_ctx(tmp_path)
+    marker = ctx.home / ".config/dotfiles/profile"
+    marker.parent.mkdir(parents=True)
+    marker.write_text("typo\n")
+    result = runner.invoke(app, ["brew", "install"], obj=ctx)
+    assert result.exit_code == 2
+    assert ctx.runner.calls == []
+
+
 def test_no_ai_flag_disables_a_flagged_section(tmp_path: Path) -> None:
     manifest = _PACKAGES_TOML.replace('name = "Core"', 'name = "Core"\nflag = "ai"')
     config_dir = tmp_path / "config"

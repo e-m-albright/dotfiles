@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Annotated, Literal
 
 import typer
 from typer._click.core import Context
@@ -56,15 +57,34 @@ def _main(ctx: typer.Context) -> None:  # type: ignore[reportUnusedFunction]
 
 
 @app.command(rich_help_panel=PANEL_MACHINE, context_settings=_PASSTHROUGH)
-def install(ctx: typer.Context) -> None:
-    """Run full dotfiles setup."""
-    _delegate_to_shim("install", ctx.args)
+def install(
+    ctx: typer.Context,
+    plan: Annotated[
+        bool, typer.Option("--plan", help="Show a read-only installation plan.")
+    ] = False,
+    profile: Annotated[
+        Literal["personal", "work"] | None,
+        typer.Option("--profile", help="Override the active host profile."),
+    ] = None,
+) -> None:
+    """Run dotfiles setup for the active host profile."""
+    args = ["--plan"] if plan else []
+    if profile is not None:
+        args.extend(("--profile", profile))
+    _delegate_to_shim("install", [*args, *ctx.args])
 
 
 @app.command(rich_help_panel=PANEL_MACHINE, context_settings=_PASSTHROUGH)
-def update(ctx: typer.Context) -> None:
-    """Update OS, Homebrew, runtimes, and dev tools."""
-    _delegate_to_shim("update", ctx.args)
+def update(
+    ctx: typer.Context,
+    profile: Annotated[
+        Literal["personal", "work"] | None,
+        typer.Option("--profile", help="Override the active host profile."),
+    ] = None,
+) -> None:
+    """Update OS, Homebrew, and the active profile's runtimes and tools."""
+    args = [] if profile is None else ["--profile", profile]
+    _delegate_to_shim("update", [*args, *ctx.args])
 
 
 app.command("doctor", rich_help_panel=PANEL_MACHINE)(doctor_command)

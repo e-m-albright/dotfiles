@@ -15,9 +15,7 @@ from dotfiles.console import (
     print_title,
     render_steps,
 )
-from dotfiles.features.packages.go import go_drift
 from dotfiles.features.packages.homebrew import (
-    BrewInventoryError,
     InstallPlan,
     cleanup,
     prune_candidates,
@@ -25,9 +23,13 @@ from dotfiles.features.packages.homebrew import (
     uninstall_prune_candidates,
 )
 from dotfiles.features.packages.homebrew import upgrade as upgrade_packages
-from dotfiles.features.packages.manifest import ALL_FLAGS, FeatureFlag, PackageManifest
-from dotfiles.features.packages.npm import npm_drift
-from dotfiles.features.packages.service import install_software
+from dotfiles.features.packages.manifest import (
+    ALL_FLAGS,
+    FeatureFlag,
+    PackageInventoryError,
+    PackageManifest,
+)
+from dotfiles.features.packages.service import install_software, runtime_tool_drift
 
 brew_app = typer.Typer(help="Manage Homebrew packages from packages.toml.")
 
@@ -62,14 +64,15 @@ def install(
         bool, typer.Option("--no-social", help="Skip social-flagged packages.")
     ] = False,
     profile: Annotated[
-        Literal["personal", "work"],
-        typer.Option("--profile", help="Installation profile (default: personal)."),
-    ] = "personal",
+        Literal["personal", "work"] | None,
+        typer.Option("--profile", help="Override the active host profile."),
+    ] = None,
 ) -> None:
     """Install the personal package set or a constrained work allowlist."""
+    app_ctx = app_context(ctx)
+    profile = app_ctx.profile(profile)
     if profile == "work" and (no_ai or no_productivity or no_social):
         raise typer.BadParameter("--no-* category flags are only valid with --profile personal")
-    app_ctx = app_context(ctx)
     manifest = _manifest(ctx)
     flags = _flags_on(no_ai=no_ai, no_productivity=no_productivity, no_social=no_social)
     runner = app_ctx.runner
@@ -85,7 +88,7 @@ def install(
             dotfiles_dir=app_ctx.dotfiles_dir,
             dry_run=dry_run,
         )
-    except BrewInventoryError as exc:
+    except PackageInventoryError as exc:
         print_status(console, "error", str(exc))
         raise typer.Exit(code=1) from exc
     render_steps(console, all_steps)
@@ -130,7 +133,7 @@ def prune(
     print_title(console, "brew", "prune")
     try:
         candidates = prune_candidates(_manifest(ctx), app_ctx.runner)
-    except BrewInventoryError as exc:
+    except PackageInventoryError as exc:
         print_status(console, "error", str(exc))
         raise typer.Exit(code=1) from exc
 
@@ -170,21 +173,27 @@ def _render_stale_items(title: str, subtitle: str, items: list[str], command: st
 
 
 @brew_app.command()
-def stale(ctx: typer.Context) -> None:
+def stale(
+    ctx: typer.Context,
+    profile: Annotated[
+        Literal["personal", "work"] | None,
+        typer.Option("--profile", help="Override the active host profile."),
+    ] = None,
+) -> None:
     """Report installed packages not declared in packages.toml (stale) and missing ones."""
     app_ctx = app_context(ctx)
     manifest = _manifest(ctx)
     runner = app_ctx.runner
+    profile = app_ctx.profile(profile)
 
     try:
         # One inventory pass covers both lists (stale is flag-independent).
-        plan = InstallPlan.compute(manifest, runner, flags_on=ALL_FLAGS)
+        plan = InstallPlan.compute(manifest, runner, flags_on=ALL_FLAGS, profile=profile)
         stale_list = plan.stale
         stale_tap_list = stale_taps(manifest, runner)
         missing_list = plan.missing
-        npm_drift_list = npm_drift(manifest, runner)
-        go_drift_list = go_drift(manifest, runner)
-    except BrewInventoryError as exc:
+        drift = runtime_tool_drift(manifest, runner, profile=profile)
+    except PackageInventoryError as exc:
         print_status(console, "error", str(exc))
         raise typer.Exit(code=1) from exc
 
@@ -202,11 +211,10 @@ def stale(ctx: typer.Context) -> None:
         print_status(console, "success", "none")
 
     print_section(console, "npm / go drift", "declared but missing or version-drifted")
-    drift = npm_drift_list + go_drift_list
     if drift:
         for item in drift:
             console.print(f"  [red]✗[/] {item}")
-        console.print("  [dim]Heal with: dotfiles brew install[/]")
+        console.print(f"  [dim]Heal with: dotfiles brew install --profile {profile}[/]")
     else:
         print_status(console, "success", "none")
 

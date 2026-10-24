@@ -9,6 +9,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+
+class PackageInventoryError(RuntimeError):
+    """A package backend could not observe installed state reliably."""
+
+
 FeatureFlag = Literal["ai", "productivity", "social"]
 PackageKind = Literal["formula", "cask", "auto"]
 # Records how a non-Homebrew package reaches this host. `python_package` is
@@ -268,3 +273,15 @@ def enabled_packages(
 def declared_names(manifest: PackageManifest) -> set[str]:
     """All package names declared in the manifest, enabled OR disabled."""
     return {pkg.name for section in manifest.sections for pkg in section.packages}
+
+
+def active_npm_packages(
+    manifest: PackageManifest, flags_on: set[FeatureFlag], profile: str = "personal"
+) -> list[NpmPackage]:
+    selected = None if profile == "personal" else set(manifest.profiles[profile].npm_packages)
+    return [
+        pkg
+        for pkg in manifest.npm_packages
+        if not pkg.disabled
+        and (flag_active(pkg.flag, flags_on) if selected is None else pkg.name in selected)
+    ]

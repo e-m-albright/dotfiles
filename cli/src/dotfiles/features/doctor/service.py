@@ -9,8 +9,17 @@ from pathlib import Path
 
 from dotfiles.features.credential.models import CredentialRecord
 from dotfiles.features.credential.service import CredentialInventoryError, CredentialService
-from dotfiles.features.doctor.models import CheckResult
+from dotfiles.features.doctor.models import CheckResult, InferenceHealth
+from dotfiles.features.packages.homebrew import InstallPlan
+from dotfiles.features.packages.manifest import (
+    ALL_FLAGS,
+    PackageInventoryError,
+    PackageManifest,
+    enabled_packages,
+)
+from dotfiles.features.packages.service import runtime_tool_drift
 from dotfiles.features.remote.service import RemoteService
+from dotfiles.host import REPO_ROOT, RUNTIMES, ManagedLink, managed_links, resolve_profile
 from dotfiles.ports import ProcessRunner
 
 
@@ -26,26 +35,26 @@ def _make_symlink(src: Path, dest: Path) -> None:
     elif dest.exists():
         backup = dest.with_name(dest.name + ".backup")
         counter = 1
-        while backup.exists():
+        while backup.exists() or backup.is_symlink():
             backup = dest.with_name(f"{dest.name}.backup.{counter}")
             counter += 1
         dest.rename(backup)
     dest.symlink_to(src)
 
 
-# Declarative tool checks by rendered section: (display name, command, install hint).
-_TOOL_CHECKS: dict[str, tuple[tuple[str, str, str], ...]] = {
+# Version probes supplement package inventory: (display name, command, package).
+_TOOL_CHECKS: dict[str, tuple[tuple[str, str, str | None], ...]] = {
     "Core Tools": (
-        ("Homebrew", "brew", "Run install.sh"),
-        ("Git", "git", "brew install git"),
-        ("jq", "jq", "brew install jq"),
-        ("yq", "yq", "brew install yq"),
+        ("Homebrew", "brew", None),
+        ("Git", "git", "git"),
+        ("jq", "jq", "jq"),
+        ("yq", "yq", "yq"),
     ),
-    "Editors": (("Zed", "zed", "brew install --cask zed"),),
+    "Editors": (("Zed", "zed", "zed"),),
     "Dev Tools": (
-        ("Just", "just", "brew install just"),
-        ("Delta", "delta", "brew install git-delta"),
-        ("golangci-lint", "golangci-lint", "brew install golangci-lint"),
+        ("Just", "just", "just"),
+        ("Delta", "delta", "git-delta"),
+        ("golangci-lint", "golangci-lint", "golangci-lint"),
     ),
 }
 
@@ -81,6 +90,7 @@ class DoctorService:
         home: Path,
         dotfiles_dir: Path,
         fix: bool,
+        profile: str | None = None,
         which: Callable[[str], str | None] = shutil.which,
         apps_dir: Path = Path("/Applications"),
         brew_bin: Path = Path("/opt/homebrew/bin"),
@@ -89,6 +99,16 @@ class DoctorService:
         self._home = home
         self._dotfiles = dotfiles_dir
         self._fix = fix
+        self._profile = resolve_profile(home, profile)
+        manifest_path = dotfiles_dir / "config/packages.toml"
+        self._manifest = PackageManifest.load(manifest_path) if manifest_path.exists() else None
+        selection = self._manifest or PackageManifest.load(REPO_ROOT / "config/packages.toml")
+        self._wanted = {
+            name
+            for name, _kind in enabled_packages(
+                selection, flags_on=ALL_FLAGS, profile=self._profile
+            )
+        }
         self._which = which
         # System install locations — injected so the .app / homebrew-symlink
         # checks are testable under tmp_path instead of the real machine.
@@ -107,12 +127,20 @@ class DoctorService:
         result = self._runner.run(command, timeout=10)
         if result.ok:
             detail = result.stdout.splitlines()[0].strip() if result.stdout.strip() else "installed"
-            return CheckResult(section=section, name=name, status="ok", detail=detail)
+            return CheckResult(section=section, name=name, status="ok", detail=detail, hint=hint)
         detail = result.stderr.strip() or f"probe failed (exit {result.exit_code})"
         return CheckResult(section=section, name=name, status="warn", detail=detail, hint=hint)
 
     def _symlink(self, section: str, name: str, src: Path, dest: Path) -> CheckResult:
         """Check (and optionally fix) a symlink from dest -> src."""
+        if not src.exists():
+            return CheckResult(
+                section=section,
+                name=name,
+                status="missing",
+                detail="managed source is missing",
+                hint="Restore the source in the dotfiles checkout",
+            )
         if dest.is_symlink() and dest.resolve(strict=False) == src.resolve(strict=False):
             return CheckResult(section=section, name=name, status="ok", detail="symlinked")
         if self._fix:
@@ -134,6 +162,8 @@ class DoctorService:
             self._check_runtimes,
             self._check_ai_tools,
             self._check_credentials,
+            self._check_packages,
+            self._check_local_inference,
             self._check_dev_tools,
             self._check_remote_continuity,
             self._check_configuration,
@@ -154,10 +184,23 @@ class DoctorService:
         return self._tools("Core Tools")
 
     def _tools(self, section: str) -> list[CheckResult]:
-        return [self._tool(section, name, cmd, hint) for name, cmd, hint in _TOOL_CHECKS[section]]
+        return [
+            self._tool(
+                section,
+                name,
+                cmd,
+                "Run: dotfiles install"
+                if package is None
+                else f"Run: dotfiles brew install --profile {self._profile}",
+            )
+            for name, cmd, package in _TOOL_CHECKS[section]
+            if package is None or package in self._wanted
+        ]
 
     def _check_essentials(self) -> list[CheckResult]:
         sec = "Essentials"
+        if "tailscale-app" not in self._wanted:
+            return []
         tailscale_path = self._apps_dir / "Tailscale.app"
         if self._which("tailscale") is not None or tailscale_path.exists():
             return [CheckResult(section=sec, name="Tailscale", status="ok", detail="installed")]
@@ -176,10 +219,14 @@ class DoctorService:
     def _check_runtimes(self) -> list[CheckResult]:
         sec = "Runtimes"
         results: list[CheckResult] = [
-            self._tool(sec, "FNM", "fnm", "curl -fsSL https://fnm.vercel.app/install | bash"),
+            self._tool(sec, "FNM", "fnm", "brew install fnm"),
             self._tool(sec, "UV", "uv", "brew install uv"),
-            self._tool(sec, "Go", "go", "brew install go"),
         ]
+        if "go" in self._wanted:
+            results.append(self._tool(sec, "Go", "go", "brew install go"))
+        if self._profile == "personal":
+            pnpm = self._tool(sec, "pnpm", "pnpm", "Run: dotfiles install")
+            results.append(self._require_version(pnpm, RUNTIMES.pnpm, ""))
         results.extend(self._check_node(sec))
         results.extend(self._check_python(sec))
         results.extend(self._check_node_symlink(sec))
@@ -189,66 +236,55 @@ class DoctorService:
         """Node.js via fnm — only checked if fnm present."""
         if self._which("fnm") is None:
             return []
-        fnm_result = self._runner.run(("fnm", "list"), timeout=10)
-        fnm_out = fnm_result.stdout if fnm_result.ok else ""
-        if "lts-latest" in fnm_out or re.search(r"\bv\d+", fnm_out):
-            return [self._probe(sec, "Node.js", ("node", "--version"), "Run: fnm use 26")]
-        return [
-            CheckResult(
-                section=sec,
-                name="Node.js",
-                status="warn",
-                hint="Run: fnm install 26",
-            )
-        ]
+        result = self._probe(
+            sec,
+            "Node.js",
+            ("node", "--version"),
+            f"Run: fnm use --install-if-missing {RUNTIMES.node}",
+        )
+        return [self._require_version(result, RUNTIMES.node, "v")]
 
-    def _check_uv_python(self, sec: str) -> list[CheckResult]:
-        located = self._runner.run(("uv", "python", "find", "3.14"), timeout=10)
-        if located.ok and located.stdout.strip():
-            return [
-                self._probe(
-                    sec,
-                    "Python",
-                    (located.stdout.strip(), "--version"),
-                    "Run: uv python install 3.14",
-                )
-            ]
-        return [
-            CheckResult(
-                section=sec,
-                name="Python",
-                status="missing",
-                hint="Run: uv python install 3.14",
-            )
-        ]
+    @staticmethod
+    def _require_version(result: CheckResult, wanted: str, prefix: str) -> CheckResult:
+        if result.status == "ok" and not re.match(
+            re.escape(prefix + wanted) + r"(?:\.|$)", result.detail
+        ):
+            return result.model_copy(update={"status": "warn"})
+        return result
 
     def _check_python(self, sec: str) -> list[CheckResult]:
-        """Prefer uv's managed Python inventory over incidental PATH entries."""
+        """Find the declared interpreter without allowing uv to download it."""
+        hint = f"Run: uv python install {RUNTIMES.python}"
         if self._which("uv") is not None:
             return self._check_uv_python(sec)
+        command = next(
+            (name for name in (f"python{RUNTIMES.python}", "python3") if self._which(name)),
+            None,
+        )
+        if command is None:
+            return [CheckResult(section=sec, name="Python", status="missing", hint=hint)]
+        result = self._probe(sec, "Python", (command, "--version"), hint)
+        return [self._require_version(result, RUNTIMES.python, "Python ")]
 
-        for command in ("python3.14", "python3"):
-            if self._which(command) is not None:
-                result = self._probe(
-                    sec, "Python", (command, "--version"), "Run: uv python install 3.14"
+    def _check_uv_python(self, sec: str) -> list[CheckResult]:
+        hint = f"Run: uv python install {RUNTIMES.python}"
+        located = self._runner.run(("uv", "python", "find", RUNTIMES.python), timeout=10)
+        if not located.ok or not located.stdout.strip():
+            return [
+                CheckResult(
+                    section=sec,
+                    name="Python",
+                    status="warn",
+                    detail=located.stderr.strip() or "declared interpreter not found",
+                    hint=hint,
                 )
-                if command == "python3" and result.status == "ok":
-                    result = result.model_copy(
-                        update={"status": "warn", "hint": "consider: uv python install 3.14"}
-                    )
-                return [result]
-        return [
-            CheckResult(
-                section=sec,
-                name="Python",
-                status="missing",
-                hint="Run: uv python install 3.14",
-            )
-        ]
+            ]
+        result = self._probe(sec, "Python", (located.stdout.strip(), "--version"), hint)
+        return [self._require_version(result, RUNTIMES.python, "Python ")]
 
     def _check_node_symlink(self, sec: str) -> list[CheckResult]:
         """Node symlink at /opt/homebrew/bin/node — only if fnm present."""
-        if self._which("fnm") is None:
+        if self._profile == "work" or self._which("fnm") is None:
             return []
         node_link = self._brew_bin / "node"
         if node_link.is_symlink() and node_link.exists():
@@ -260,8 +296,9 @@ class DoctorService:
                     detail="symlinked for GUI apps",
                 )
             ]
-        if self._fix and self._which("node") is not None:
-            node_bin = Path(self._which("node"))  # type: ignore[arg-type]
+        node_path = self._which("node")
+        if self._fix and node_path is not None:
+            node_bin = Path(node_path)
             npx_bin_str = self._which("npx")
             _make_symlink(node_bin, node_link)
             if npx_bin_str is not None:
@@ -283,15 +320,19 @@ class DoctorService:
                 sec,
                 "Claude Code",
                 "claude",
-                "curl -fsSL https://claude.ai/install.sh | bash",
+                "brew install --cask claude-code",
             ),
-            self._tool(sec, "Codex", "codex", "brew install --cask codex"),
         ]
+        if "codex" in self._wanted:
+            results.append(self._tool(sec, "Codex", "codex", "brew install --cask codex"))
         results.extend(self._check_workbench(sec))
         return results
 
     def _check_workbench(self, sec: str) -> list[CheckResult]:
         """Run workbench's live desired-state reconciliation when available."""
+        hint = "Run: workbench sync"
+        if self._profile == "work":
+            hint += " all --profile work"
         command = self._which("workbench")
         if command is None:
             candidate = self._home / "code" / "public" / "workbench" / "bin" / "workbench"
@@ -302,11 +343,14 @@ class DoctorService:
                     section=sec,
                     name="Workbench",
                     status="missing",
-                    hint="Clone ~/code/public/workbench, then run: workbench sync",
+                    hint=f"Clone ~/code/public/workbench, then {hint}",
                 )
             ]
 
-        checked = self._runner.run((command, "drift", "all"), timeout=30)
+        args = (command, "drift", "all")
+        if self._profile != "personal":
+            args += ("--profile", self._profile)
+        checked = self._runner.run(args, timeout=30)
         if checked.ok:
             return [
                 CheckResult(
@@ -326,7 +370,7 @@ class DoctorService:
                 name="Workbench",
                 status="warn",
                 detail=detail,
-                hint="Run: workbench sync",
+                hint=hint,
             )
         ]
 
@@ -369,10 +413,92 @@ class DoctorService:
             )
         ]
 
+    def _check_packages(self) -> list[CheckResult]:
+        sec = "Packages"
+        hint = f"Run: dotfiles brew install --profile {self._profile}"
+        if self._manifest is None:
+            return [
+                CheckResult(
+                    section=sec,
+                    name="Inventory",
+                    status="warn",
+                    detail="package manifest not found",
+                )
+            ]
+        try:
+            plan = InstallPlan.compute(
+                self._manifest, self._runner, flags_on=ALL_FLAGS, profile=self._profile
+            )
+            drift = [f"{name} (missing)" for name, _kind in plan.missing]
+            drift.extend(runtime_tool_drift(self._manifest, self._runner, profile=self._profile))
+        except PackageInventoryError as exc:
+            return [
+                CheckResult(
+                    section=sec,
+                    name="Inventory",
+                    status="warn",
+                    detail=str(exc),
+                    hint="Retry: dotfiles brew stale",
+                )
+            ]
+        if drift:
+            return [
+                CheckResult(
+                    section=sec,
+                    name="Desired software",
+                    status="missing",
+                    detail=", ".join(drift),
+                    hint=hint,
+                )
+            ]
+        return [
+            CheckResult(
+                section=sec,
+                name="Desired software",
+                status="ok",
+                detail="selected packages and pins match",
+            )
+        ]
+
+    def _check_local_inference(self) -> list[CheckResult]:
+        if "omlx" not in self._wanted or self._which("omlx") is None:
+            return []
+        result = self._runner.run(
+            (
+                "curl",
+                "--fail",
+                "--silent",
+                "--show-error",
+                "--connect-timeout",
+                "2",
+                "--max-time",
+                "5",
+                "http://127.0.0.1:8000/health",
+            ),
+            timeout=10,
+        )
+        try:
+            healthy = result.ok and InferenceHealth.model_validate_json(result.stdout).ready
+        except ValueError:
+            healthy = False
+        return [
+            CheckResult(
+                section="Local inference",
+                name="oMLX",
+                status="ok" if result.ok and healthy else "warn",
+                detail="ready with loaded models"
+                if result.ok and healthy
+                else "not ready (optional service)",
+                hint="Run: dotfiles brew install" if not healthy else "",
+            )
+        ]
+
     def _check_dev_tools(self) -> list[CheckResult]:
         return self._tools("Dev Tools")
 
     def _check_remote_continuity(self) -> list[CheckResult]:
+        if "paseo" not in self._wanted:
+            return []
         return self._check_remote_agents("Remote Continuity")
 
     def _check_remote_agents(self, sec: str) -> list[CheckResult]:
@@ -400,75 +526,48 @@ class DoctorService:
         else:
             results.append(
                 CheckResult(
-                    section=sec, name="Paseo daemon", status="warn", hint="Run: dfs remote on"
+                    section=sec,
+                    name="Paseo daemon",
+                    status="ok",
+                    detail="stopped (optional; dfs remote on to start)",
                 )
             )
         return results
 
     def _check_configuration(self) -> list[CheckResult]:
         sec = "Configuration"
-        results: list[CheckResult] = []
-
-        # Mirrors install.sh's safe_link list so `doctor --fix` can repair
-        # everything the installer manages, not just a subset.
-        links: tuple[tuple[str, Path, Path], ...] = (
-            (".zshrc", self._dotfiles / "config" / "zsh" / ".zshrc", self._home / ".zshrc"),
-            (".zshenv", self._dotfiles / "config" / "zsh" / ".zshenv", self._home / ".zshenv"),
-            (
-                ".zprofile",
-                self._dotfiles / "config" / "zsh" / ".zprofile",
-                self._home / ".zprofile",
-            ),
-            (
-                ".gitconfig",
-                self._dotfiles / "config" / "git" / ".gitconfig",
-                self._home / ".gitconfig",
-            ),
-            (
-                ".gitignore_global",
-                self._dotfiles / "config" / "git" / ".gitignore_global",
-                self._home / ".gitignore_global",
-            ),
-            (
-                "amuse theme",
-                self._dotfiles / "config" / "zsh" / "amuse.zsh-theme",
-                self._home / ".oh-my-zsh" / "custom" / "themes" / "amuse.zsh-theme",
-            ),
-            (
-                "yazi config",
-                self._dotfiles / "config" / "yazi" / "yazi.toml",
-                self._home / ".config" / "yazi" / "yazi.toml",
-            ),
-            (
-                "Zed settings",
-                self._dotfiles / "config" / "zed" / "settings.json",
-                self._home / ".config" / "zed" / "settings.json",
-            ),
-            (
-                "Zed keymap",
-                self._dotfiles / "config" / "zed" / "keymap.json",
-                self._home / ".config" / "zed" / "keymap.json",
-            ),
-        )
-        results.extend(self._symlink(sec, name, src, dest) for name, src, dest in links)
-
-        # Git identity (~/.gitconfig.local) — warn if absent
-        gitconfig_local = self._home / ".gitconfig.local"
-        if gitconfig_local.exists():
-            results.append(
-                CheckResult(section=sec, name="Git identity", status="ok", detail="configured")
-            )
-        else:
+        results = [
+            self._check_link(sec, link) for link in managed_links() if self._link_enabled(link)
+        ]
+        if self._profile == "personal":
+            configured = (self._home / ".gitconfig.local").exists()
             results.append(
                 CheckResult(
-                    section=sec, name="Git identity", status="warn", hint="Run install.sh to set up"
+                    section=sec,
+                    name="Git identity",
+                    status="ok" if configured else "warn",
+                    detail="configured" if configured else "",
+                    hint="Run install.sh to set up" if not configured else "",
                 )
             )
-
-        results.extend(self._check_ghostty(sec))
-        results.extend(self._check_notes_launchers(sec))
-
+            results.extend(self._check_notes_launchers(sec))
         return results
+
+    def _link_enabled(self, link: ManagedLink) -> bool:
+        if self._profile not in link.profiles:
+            return False
+        tool = link.required_tool
+        if tool.startswith("app:"):
+            name = tool.removeprefix("app:")
+            return (self._apps_dir / f"{name}.app").exists() or self._which(
+                name.lower()
+            ) is not None
+        return tool == "-" or self._which(tool) is not None
+
+    def _check_link(self, sec: str, link: ManagedLink) -> CheckResult:
+        return self._symlink(
+            sec, link.label, self._dotfiles / link.source, self._home / link.destination
+        )
 
     def _check_notes_launchers(self, sec: str) -> list[CheckResult]:
         """Check private Notes launchers when the vault is present."""
@@ -487,16 +586,3 @@ class DoctorService:
                 self._symlink(sec, "apple-contacts", bridge_source, bin_dir / "apple-contacts")
             )
         return results
-
-    def _check_ghostty(self, sec: str) -> list[CheckResult]:
-        """Check the managed Ghostty config when the application is installed."""
-        if not (self._apps_dir / "Ghostty.app").exists():
-            return []
-        return [
-            self._symlink(
-                sec,
-                "Ghostty",
-                self._dotfiles / "config" / "ghostty" / "config",
-                self._home / ".config" / "ghostty" / "config",
-            )
-        ]

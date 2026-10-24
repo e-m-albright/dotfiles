@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import groupby
-from typing import Annotated
+from typing import Annotated, Literal
 
 import typer
 
@@ -48,6 +48,10 @@ def render_checks(results: list[CheckResult]) -> None:
 def doctor_command(
     ctx: typer.Context,
     fix: Annotated[bool, typer.Option("--fix", help="Attempt to repair missing config.")] = False,
+    profile: Annotated[
+        Literal["personal", "work"] | None,
+        typer.Option("--profile", help="Override the active host profile."),
+    ] = None,
 ) -> None:
     """Check all tools and configuration are installed."""
     app_ctx = app_context(ctx)
@@ -56,6 +60,7 @@ def doctor_command(
         home=app_ctx.home,
         dotfiles_dir=app_ctx.dotfiles_dir,
         fix=fix,
+        profile=app_ctx.profile(profile),
     )
     results = svc.run()
     print_title(console, "doctor", "checks")
@@ -64,9 +69,6 @@ def doctor_command(
 
     failures = [r for r in results if r.is_failure]
     warnings = [r for r in results if r.status == "warn"]
-    if fix and any(r.name == "Workbench" and r.status != "ok" for r in results):
-        console.print("  [dim]Run 'workbench sync' to reconcile agent configs.[/]")
-
     if failures:
         print_status(console, "warn", "Some tools are missing — run install.sh or install each.")
         raise typer.Exit(1)

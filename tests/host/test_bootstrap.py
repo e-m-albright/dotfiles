@@ -10,9 +10,7 @@ from pathlib import Path
 import pytest
 
 ROOT = next(
-    parent
-    for parent in Path(__file__).resolve().parents
-    if (parent / "AGENTS.md").is_file()
+    parent for parent in Path(__file__).resolve().parents if (parent / "AGENTS.md").is_file()
 )
 
 
@@ -95,8 +93,16 @@ def installer(tmp_path: Path) -> tuple[ShellSandbox, Path]:
     shutil.copyfile(ROOT / "install.sh", script)
     shutil.copyfile(ROOT / "scripts/install.sh", repo / "scripts/install.sh")
     shutil.copyfile(ROOT / "scripts/lib/output.sh", repo / "scripts/lib/output.sh")
+    shutil.copyfile(ROOT / "scripts/lib/host.sh", repo / "scripts/lib/host.sh")
+    (repo / "config").mkdir()
+    shutil.copyfile(ROOT / "config/links.tsv", repo / "config/links.tsv")
+    (repo / "config/runtimes.conf").write_text(
+        "NODE_VERSION=26\nPYTHON_VERSION=3.14\nPNPM_VERSION=12.15.0\n"
+    )
     # Link mechanics have their own tests; this also blocks /opt/homebrew writes.
-    (repo / "scripts/lib/links.sh").write_text("safe_link() { :; }\n")
+    (repo / "scripts/lib/links.sh").write_text(
+        'safe_link() { printf "link %s %s\\n" "$1" "$2" >> "$COMMAND_LOG"; }\n'
+    )
     for name in (
         "ssh.sh",
         "dock.sh",
@@ -150,7 +156,7 @@ def test_required_install_failure_prevents_completion(
     sandbox, script = installer
     (sandbox.bin / "python3.14").unlink()
     sandbox.env["FAIL_STEP"] = (
-        f"run --project {script.parent}/cli dotfiles brew install"
+        f"run --project {script.parent}/cli dotfiles brew install --profile personal"
         if failure == "packages"
         else "python install 3.14"
     )
@@ -253,10 +259,7 @@ def test_work_installer_runs_only_constrained_orchestration(
 
     assert result.returncode == 0, result.stderr
     commands = sandbox.log.read_text()
-    assert (
-        f"uv run --project {script.parent}/cli dotfiles brew install --profile work"
-        in commands
-    )
+    assert f"uv run --project {script.parent}/cli dotfiles brew install --profile work" in commands
     assert "fnm install 26" in commands
     assert "uv python install 3.14" in commands
     assert "tenv tf install latest" in commands
@@ -299,6 +302,89 @@ def test_work_installer_reattaches_detached_workbench(
     assert "Reattaching Workbench to main" in result.stdout
 
 
+@pytest.mark.parametrize("profile", ["personal", "work"])
+def test_installer_links_inventory_for_selected_profile(
+    installer: tuple[ShellSandbox, Path], profile: str
+) -> None:
+    sandbox, script = installer
+    for tool in ("ghostty", "yazi", "zed", "tenv", "node", "npx"):
+        sandbox.stub(tool)
+    sandbox.stub("fnm", '[[ "$1" != env ]] || printf \'export FNM_DIR="%s/fnm"\\n\' "$HOME"')
+
+    result = sandbox.run(script, "--profile", profile)
+
+    assert result.returncode == 0, result.stderr
+    commands = sandbox.log.read_text()
+    for source in (
+        "config/zsh/.zprofile",
+        "config/zsh/.zshenv",
+        "config/zsh/.zshrc",
+        "config/zsh/amuse.zsh-theme",
+        "config/ghostty/config",
+    ):
+        assert f"link {script.parent}/{source} " in commands
+    for source in (
+        "config/git/.gitconfig",
+        "config/git/.gitignore_global",
+        "config/yazi/yazi.toml",
+        "config/zed/settings.json",
+        "config/zed/keymap.json",
+    ):
+        assert (f"link {script.parent}/{source} " in commands) is (profile == "personal")
+
+
+def test_rerun_uses_saved_work_profile(installer: tuple[ShellSandbox, Path]) -> None:
+    sandbox, script = installer
+    markers = sandbox.home / ".config/dotfiles"
+    markers.mkdir(parents=True)
+    (markers / "profile").write_text("work\n")
+    sandbox.stub("fnm")
+    sandbox.stub("tenv")
+
+    result = sandbox.run(script)
+
+    assert result.returncode == 0, result.stderr
+    commands = sandbox.log.read_text()
+    assert "dotfiles brew install --profile work" in commands
+    assert "workbench sync all --profile work" in commands
+    assert "config/git/.gitconfig" not in commands
+
+
+def test_personal_install_replaces_stale_work_markers(
+    installer: tuple[ShellSandbox, Path],
+) -> None:
+    sandbox, script = installer
+    markers = sandbox.home / ".config/dotfiles"
+    markers.mkdir(parents=True)
+    (markers / "profile").write_text("work\n")
+    (markers / "root").write_text("/old/root\n")
+
+    result = sandbox.run(script, "--profile", "personal")
+
+    assert result.returncode == 0, result.stderr
+    assert (markers / "profile").read_text() == "personal\n"
+    assert (markers / "root").read_text() == f"{script.parent}\n"
+
+
+def test_work_install_uses_configured_runtime_versions(
+    installer: tuple[ShellSandbox, Path],
+) -> None:
+    sandbox, script = installer
+    sandbox.stub("fnm")
+    sandbox.stub("tenv")
+    (script.parent / "config/runtimes.conf").write_text(
+        "NODE_VERSION=99\nPYTHON_VERSION=3.99\nPNPM_VERSION=99.1.0\n"
+    )
+
+    result = sandbox.run(script, "--profile", "work")
+
+    assert result.returncode == 0, result.stderr
+    commands = sandbox.log.read_text()
+    assert "fnm install 99" in commands
+    assert "uv python install 3.99" in commands
+    assert "get-pnpm" not in commands
+
+
 def test_installer_success_and_rerun_reconcile_required_steps(
     installer: tuple[ShellSandbox, Path],
 ) -> None:
@@ -314,9 +400,7 @@ def test_installer_success_and_rerun_reconcile_required_steps(
 
 
 @pytest.mark.parametrize("retry_succeeds", [False, True])
-def test_ssh_key_add_reports_the_retry_result(
-    tmp_path: Path, retry_succeeds: bool
-) -> None:
+def test_ssh_key_add_reports_the_retry_result(tmp_path: Path, retry_succeeds: bool) -> None:
     sandbox = ShellSandbox(tmp_path)
     sandbox.allow("dirname", "mkdir", "chmod", "cat", "grep", "awk")
     sandbox.stub("git", "echo test@example.invalid")
@@ -351,9 +435,7 @@ _OMLX_REVISION = "14c285372cbdb1777adea5bb49087ced0bffc0b5"
 @pytest.fixture
 def omlx(tmp_path: Path) -> ShellSandbox:
     sandbox = ShellSandbox(tmp_path)
-    sandbox.allow(
-        "dirname", "mkdir", "mktemp", "rm", "cp", "jq", "cmp", "install", "touch"
-    )
+    sandbox.allow("dirname", "mkdir", "mktemp", "rm", "cp", "jq", "cmp", "install", "touch")
     prefix = tmp_path / "omlx"
     (prefix / "libexec/bin").mkdir(parents=True)
     (prefix / "libexec/bin/python").symlink_to(
@@ -422,9 +504,7 @@ def test_omlx_retries_failed_restart_even_with_old_service_healthy(
 
 
 @pytest.mark.parametrize("empty", [False, True])
-def test_omlx_rejects_incomplete_weights_after_download(
-    omlx: ShellSandbox, empty: bool
-) -> None:
+def test_omlx_rejects_incomplete_weights_after_download(omlx: ShellSandbox, empty: bool) -> None:
     shard = next((omlx.home / ".omlx/models").rglob("model-00001-*.safetensors"))
     if empty:
         shard.write_text("")
@@ -443,9 +523,7 @@ def test_omlx_healthy_rerun_preserves_settings_without_restart(
     omlx: ShellSandbox,
 ) -> None:
     settings = omlx.home / ".omlx/settings.json"
-    settings.write_text(
-        '{"auth": {"api_key": "test-value"}, "future": {"enabled": true}}'
-    )
+    settings.write_text('{"auth": {"api_key": "test-value"}, "future": {"enabled": true}}')
     script = ROOT / "scripts/macos/omlx.sh"
     first = omlx.run(script)
     assert first.returncode == 0, first.stderr
@@ -486,9 +564,7 @@ def test_omlx_health_failure_does_not_claim_readiness_and_retries(
 
 
 @pytest.mark.parametrize("contents", ["{broken", "[]", "null"])
-def test_omlx_invalid_settings_are_preserved_and_abort(
-    omlx: ShellSandbox, contents: str
-) -> None:
+def test_omlx_invalid_settings_are_preserved_and_abort(omlx: ShellSandbox, contents: str) -> None:
     settings = omlx.home / ".omlx/settings.json"
     settings.write_text(contents)
 
@@ -521,10 +597,7 @@ def test_omlx_download_repairs_partial_model_before_restart(omlx: ShellSandbox) 
     assert result.returncode == 0, result.stderr
     assert shard.read_text() == "weights"
     commands = omlx.log.read_text()
-    assert (
-        f"hf download Jundot/Qwen3.6-35B-A3B-oQ4e-mtp --revision {_OMLX_REVISION}"
-        in commands
-    )
+    assert f"hf download Jundot/Qwen3.6-35B-A3B-oQ4e-mtp --revision {_OMLX_REVISION}" in commands
     assert commands.index("hf download") < commands.index("services restart")
     assert "oMLX ready" in result.stdout
 
@@ -546,9 +619,7 @@ def test_omlx_loader_repair_preserves_existing_record_entries() -> None:
     script = (ROOT / "scripts/macos/omlx.sh").read_text()
 
     assert "printf 'xgrammar/libxgrammar_bindings.dylib,,\\n' >> \"$record\"" in script
-    assert (
-        "printf 'xgrammar/libxgrammar_bindings.dylib,,\\n' > \"$record\"" not in script
-    )
+    assert "printf 'xgrammar/libxgrammar_bindings.dylib,,\\n' > \"$record\"" not in script
 
 
 @pytest.mark.parametrize(

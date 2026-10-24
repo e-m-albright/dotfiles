@@ -28,6 +28,8 @@ if ! "$python" -c 'import xgrammar' >/dev/null 2>&1; then
 fi
 
 if ! "$python" -c 'import xgrammar' >/dev/null 2>&1; then
+    # Retire this repair after a clean upstream --with-grammar install imports
+    # xgrammar and passes structured-output readiness without local loader edits.
     site="$prefix/libexec/lib/python3.11/site-packages"
     dylib="$site/xgrammar/libxgrammar_bindings.dylib"
     tvm_lib="$site/tvm_ffi/lib"

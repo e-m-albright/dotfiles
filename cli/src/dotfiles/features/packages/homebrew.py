@@ -7,6 +7,7 @@ from typing import Literal
 
 from dotfiles.features.packages.manifest import (
     FeatureFlag,
+    PackageInventoryError,
     PackageKind,
     PackageManifest,
     declared_names,
@@ -16,7 +17,7 @@ from dotfiles.ports import ProcessRunner
 from dotfiles.result import StepResult
 
 
-class BrewInventoryError(RuntimeError):
+class BrewInventoryError(PackageInventoryError):
     """Homebrew's installed state could not be read safely."""
 
 
@@ -32,7 +33,7 @@ def _strip_version(name: str) -> str:
 
 
 def _brew_inventory(runner: ProcessRunner, *args: str) -> set[str]:
-    result = runner.run(("brew", *args))
+    result = runner.run(("brew", *args), timeout=15)
     _require_inventory(result.exit_code, result.stderr)
     return {line for line in result.stdout.splitlines() if line.strip()}
 
@@ -97,14 +98,20 @@ class InstallPlan:
         runner: ProcessRunner,
         *,
         flags_on: set[FeatureFlag],
+        profile: str = "personal",
     ) -> InstallPlan:
         formulae = installed_formulae(runner)
         casks = installed_casks(runner)
         installed = formulae | casks
         satisfied = installed | {_strip_version(name) for name in installed}
-        wanted = enabled_packages(manifest, flags_on=flags_on)
+        wanted = enabled_packages(manifest, flags_on=flags_on, profile=profile)
+        available: dict[PackageKind, set[str]] = {
+            "formula": formulae | {_strip_version(item) for item in formulae},
+            "cask": casks,
+            "auto": satisfied,
+        }
         missing: list[tuple[str, PackageKind]] = [
-            (name, kind) for name, kind in wanted if name not in satisfied
+            (name, kind) for name, kind in wanted if name not in available[kind]
         ]
         declared = declared_names(manifest)
         requested = requested_formulae(runner)
@@ -256,19 +263,6 @@ def _install_one(name: str, kind: PackageKind, runner: ProcessRunner) -> StepRes
     return _install_auto(name, runner)
 
 
-def _missing_profile_packages(
-    manifest: PackageManifest, runner: ProcessRunner, profile: str
-) -> list[tuple[str, PackageKind]]:
-    wanted = enabled_packages(manifest, flags_on=set(), profile=profile)
-    formulae = installed_formulae(runner)
-    casks = installed_casks(runner)
-    return [
-        (name, kind)
-        for name, kind in wanted
-        if name not in (formulae if kind == "formula" else casks)
-    ]
-
-
 def install_packages(
     manifest: PackageManifest,
     runner: ProcessRunner,
@@ -283,11 +277,7 @@ def install_packages(
     try formula first, then cask.  dry_run=True reports what would be done
     without running any mutating command.
     """
-    to_install: list[tuple[str, PackageKind]]
-    if profile == "personal":
-        to_install = InstallPlan.compute(manifest, runner, flags_on=flags_on).missing
-    else:
-        to_install = _missing_profile_packages(manifest, runner, profile)
+    to_install = InstallPlan.compute(manifest, runner, flags_on=flags_on, profile=profile).missing
     if not to_install:
         return [StepResult(level="info", message="All packages already installed")]
 

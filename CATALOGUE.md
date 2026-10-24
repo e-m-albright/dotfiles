@@ -2,11 +2,11 @@
 
 Timestamped map of maintained host capabilities in this repository.
 
-**Snapshot:** 2026-09-19. Refresh the map and counts on demand during an explicit capability-health review, not during routine implementation.
+**Snapshot:** 2026-10-23. Refresh the map and counts on demand during an explicit capability-health review, not during routine implementation.
 
 ## Scale snapshot
 
-Counts are physical lines in the reviewed working tree, including the new files in this change, comments, and blank lines. Symlinks count as their one-line Git representation rather than duplicating their target. Empty files are text with zero lines. Every file belongs to exactly one group; ignored local artifacts and caches are excluded:
+Counts are physical lines in tracked and newly authored, nonignored files, including comments and blank lines. Symlinks count as their one-line Git representation. Test paths, test modules, test helpers, and the Vulture whitelist are tests; executable files under `bin/` and shell/Python scripts under `scripts/`, plus non-test Python under `cli/src/`, are source. Other authored files are text. Lockfiles are generated. Empty files have zero lines. Each file belongs to one group; ignored artifacts and caches are excluded:
 
 - **Code - source:** executable implementation and styling maintained here.
 - **Code - tests:** executable verification, including test helpers and fixtures.
@@ -17,11 +17,11 @@ Binary assets are reported by file count and bytes, not fake line counts. Attrib
 
 | Group | Files | Lines |
 |---|---:|---:|
-| Code - source | 40 | 4,538 |
-| Code - tests | 35 | 5,070 |
-| Text | 35 | 2,559 |
-| Generated/vendor | 1 | 804 |
-| **Text total** | **111** | **12,971** |
+| Code - source | 51 | 5,150 |
+| Code - tests | 44 | 6,500 |
+| Text | 38 | 2,879 |
+| Generated/vendor | 1 | 996 |
+| **Text total** | **134** | **15,525** |
 
 Binary assets: 0 files. SVG and empty files are counted as text.
 
@@ -46,6 +46,8 @@ Binary assets: 0 files. SVG and empty files are counted as text.
 
 - Declarative Homebrew formula, cask, tap, Go, npm, and special-installer inventory, including the active open-source MLX inference runner.
 - Feature flags, disabled dated tombstones, installed and missing inventory, stale-item reporting, upgrades, cleanup, and confirmed pruning.
+- Saved personal/work profiles consistently select installation, update reconciliation, and missing-software checks; explicit overrides do not silently change the saved profile.
+- Node.js, Python, and pnpm versions share one declaration; failed package inventory is distinguished from missing software.
 - TypeWhisper supplies local dictation; OpenWhispr remains a disabled dated tombstone.
 - Workbench installation pinned for fresh clones; existing working checkouts are preserved.
 
@@ -56,14 +58,17 @@ Binary assets: 0 files. SVG and empty files are counted as text.
 - Fresh-Mac installer and idempotent symlink helpers.
 - macOS preferences, Dock, login items, file associations, SSH, OrbStack, and Yazi setup.
 - Shell prompt and aliases, Git defaults and global ignore rules, Ghostty, Zed, and completions.
+- One profile-aware configuration-link inventory shared by bootstrap and Doctor; shared bootstrap operations avoid separate work/personal implementations.
+- Read-only installation plans render the work package allowlist directly from the manifest; the work plan needs an existing Python 3.11+ interpreter.
 - Generic discovery of an optional private automation layer, shared as a contract by bootstrap and Doctor, with an explicit root override.
 
 **Assessment:** Keep. The installer remains necessarily procedural, but private workflow details must stay behind environment variables or generic discovery. Add focused shell tests when bootstrap behavior changes; do not migrate stable native configuration into Python merely for uniformity.
 
 ### Doctor
 
-- Runtime, editor, shell, Node, Python, Workbench, remote-access, and launcher checks.
-- Bounded repair for symlinks and configuration drift.
+- Profile-aware package inventory, runtime-version, editor, shell, Workbench, remote-access, and launcher checks.
+- Local inference readiness over loopback; intentionally stopped optional Paseo access is informational.
+- Bounded repair for selected configuration links, refusing missing sources rather than creating broken links; work hosts do not acquire personal configuration through repair.
 - Bounded diagnostic subprocesses, warnings for failed version probes, and actionable repair hints.
 
 **Assessment:** Keep. Doctor is the main reconciliation surface and should remain an observer plus narrow repair tool, not a second installer.
