@@ -167,7 +167,7 @@ def test_optional_pnpm_failure_warns_without_aborting(
     installer: tuple[ShellSandbox, Path],
 ) -> None:
     sandbox, script = installer
-    sandbox.stub("fnm", '[[ "$1" != list ]] || echo lts-latest')
+    sandbox.stub("fnm", '[[ "$1" != env ]] || printf \'export FNM_DIR="%s/fnm"\\n\' "$HOME"')
     sandbox.stub("node")
     sandbox.stub("npx", "exit 1")
 
@@ -257,7 +257,7 @@ def test_work_installer_runs_only_constrained_orchestration(
         f"uv run --project {script.parent}/cli dotfiles brew install --profile work"
         in commands
     )
-    assert "fnm install --lts" in commands
+    assert "fnm install 26" in commands
     assert "uv python install 3.14" in commands
     assert "tenv tf install latest" in commands
     assert "tenv tf use latest" in commands

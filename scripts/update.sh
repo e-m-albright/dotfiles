@@ -28,11 +28,11 @@ if command -v fnm >/dev/null 2>&1; then
     print_section "Node.js (fnm)"
     fnm_env=$(fnm env)
     eval "$fnm_env"
-    fnm install --lts
-    fnm use --install-if-missing lts-latest
-    fnm default lts-latest
+    fnm install 26
+    fnm use --install-if-missing 26
+    fnm default 26
     version=$(node --version)
-    print_success "Node.js LTS: $version"
+    print_success "Node.js 26: $version"
 fi
 
 # --- Rust (rustup) ---

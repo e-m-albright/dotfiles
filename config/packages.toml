@@ -102,7 +102,7 @@ kind = "formula"
 packages = [
   { name = "bun",  note = "Retired JavaScript runtime and package manager", disabled = true, reason = "Disabled 2026-10-14: Node LTS and pnpm are the maintained default; watch for meaningful tooling consolidation or recurring workflow savings with verified compatibility" },
   { name = "deno", note = "Retired TypeScript runtime", disabled = true, reason = "Disabled 2026-10-14: Node LTS and pnpm are the maintained default; watch tooling consolidation, compatibility, and ongoing maintenance; operating-system sandboxing owns isolation" },
-  { name = "fnm",  note = "Node version manager; installs the current LTS for Astro and other Node projects" },
+  { name = "fnm",  note = "Node version manager; installs Node 26 for Astro and other Node projects" },
 ]
 
 [[section]]
@@ -272,17 +272,17 @@ note = "Tombstone for the retired Supertonic local neural text-to-speech experim
 [[go_package]]
 name = "gopls"
 module = "golang.org/x/tools/gopls"
-version = "v0.23.0"
+version = "v0.24.0"
 
 [[go_package]]
 name = "dlv"
 module = "github.com/go-delve/delve/cmd/dlv"
-version = "v1.27.0"
+version = "v1.27.2"
 
 [[go_package]]
 name = "air"
 module = "github.com/air-verse/air"
-version = "v1.66.0"
+version = "v1.67.4"
 
 [[go_package]]
 name = "sqlc"
@@ -292,17 +292,17 @@ version = "v1.31.1"
 [[go_package]]
 name = "goose"
 module = "github.com/pressly/goose/v3/cmd/goose"
-version = "v3.27.2"
+version = "v3.29.0"
 
 [[go_package]]
 name = "templ"
 module = "github.com/a-h/templ/cmd/templ"
-version = "v0.3.1020"
+version = "v0.3.1070"
 
 [[go_package]]
 name = "staticcheck"
 module = "honnef.co/go/tools/cmd/staticcheck"
-version = "v0.7.0"
+version = "v0.8.2"
 
 # =============================================================================
 # npm globals (no brew formula available / brew formula is wrong package)
@@ -318,19 +318,19 @@ note = "Former standalone Paseo daemon CLI; binary is `paseo`"
 
 [[npm_package]]
 name = "@earendil-works/pi-coding-agent"
-version = "0.86.1"
+version = "1.4.0"
 flag = "ai"
 note = "Primary terminal coding-agent harness; pinned alongside Workbench's CI version"
 
 [[npm_package]]
 name = "agent-browser"
-version = "0.38.1"
+version = "0.39.2"
 flag = "ai"
 note = "Browser-automation CLI for AI agents (Tier 2 — shell out, no MCP overhead)"
 
 [[npm_package]]
 name = "ctx7"
-version = "0.5.6"
+version = "0.8.2"
 flag = "ai"
 note = "Context7 docs-lookup CLI (replaces the context7 MCP — `ctx7 library <name>` / `ctx7 docs <id> <query>`, no MCP context tax, universal across agents)"
 
@@ -351,5 +351,5 @@ reason = "Removed 2026-07-30: the experiment produced no unique use case; Playwr
 
 [[npm_package]]
 name = "wrangler"
-version = "4.114.0"
+version = "4.152.0"
 note = "Cloudflare Workers CLI (brew formula `wrangler` is the unrelated Erlang refactor tool, disabled upstream 2025-07-01)"

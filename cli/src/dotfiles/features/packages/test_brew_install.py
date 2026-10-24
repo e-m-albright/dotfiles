@@ -439,14 +439,14 @@ def test_install_npm_globals_bootstraps_node_through_fnm(tmp_path: Path) -> None
     runner = FakeProcessRunner()
     runner.script(("which", "npm"), exit_code=1)
     runner.script(("which", "fnm"), stdout="/opt/homebrew/bin/fnm\n")
-    npm = ("fnm", "exec", "--using", "lts-latest", "npm")
+    npm = ("fnm", "exec", "--using", "26", "npm")
     runner.script((*npm, "list", "-g", "--depth=0", "wrangler@4.112.0"), exit_code=1)
     runner.script((*npm, "list", "-g", "--depth=0", "agent-browser"), exit_code=1)
 
     results = install_npm_globals(manifest, runner, flags_on={"ai"})
 
-    assert ("fnm", "install", "--lts") in runner.calls
-    assert ("fnm", "default", "lts-latest") in runner.calls
+    assert ("fnm", "install", "26") in runner.calls
+    assert ("fnm", "default", "26") in runner.calls
     assert (*npm, "install", "-g", "wrangler@4.112.0") in runner.calls
     assert not any(step.level == "error" for step in results)
 
@@ -473,12 +473,12 @@ def test_install_npm_globals_reports_fnm_bootstrap_failure(
     runner.script(("which", "npm"), exit_code=1)
     runner.script(("which", "fnm"), stdout="/opt/homebrew/bin/fnm\n")
     command = (
-        ("fnm", "install", "--lts")
+        ("fnm", "install", "26")
         if failed_command == "install"
         else (
             "fnm",
             "default",
-            "lts-latest",
+            "26",
         )
     )
     runner.script(command, exit_code=1)

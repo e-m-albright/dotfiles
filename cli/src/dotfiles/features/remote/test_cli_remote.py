@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,17 @@ runner = CliRunner()
 def _tailnet(process: FakeProcessRunner, ip: str = "100.64.0.1") -> None:
     process.script(("tailscale", "status"), exit_code=0)
     process.script(("tailscale", "ip", "-4"), stdout=f"{ip}\n")
+    for key, value in (("daemon.listen", f"{ip}:6767"), ("daemon.relay.enabled", False)):
+        process.script(
+            (
+                "/Applications/Paseo.app/Contents/Resources/bin/paseo",
+                "daemon",
+                "config",
+                "get",
+                key,
+            ),
+            stdout=json.dumps({"set": True, "value": value}),
+        )
 
 
 def test_remote_help_exposes_only_paseo_tailscale_and_status() -> None:

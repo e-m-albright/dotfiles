@@ -35,7 +35,7 @@ Selected Homebrew casks:
   rectangle, flycut, ghostty, caffeine, flux-app, typewhisper, zed, spotify,
   claude-code, orbstack
 Selected npm global: @earendil-works/pi-coding-agent
-Runtimes: Node.js LTS via fnm; Python 3.14 via uv; Terraform via tenv
+Runtimes: Node.js 26 via fnm; Python 3.14 via uv; Terraform via tenv
 Configuration: shared shell configuration with a work profile; Ghostty; OrbStack
   on-demand; clone/link Workbench; sync and drift with --profile work
 
@@ -234,10 +234,10 @@ if [[ "$PROFILE" == "work" ]]; then
         print_error "fnm is unavailable after package reconciliation"
         exit 1
     fi
-    fnm install --lts >/dev/null 2>&1
-    fnm use --install-if-missing lts-latest >/dev/null 2>&1
-    fnm default lts-latest >/dev/null 2>&1
-    print_success "Node.js LTS installed"
+    fnm install 26 >/dev/null 2>&1
+    fnm use --install-if-missing 26 >/dev/null 2>&1
+    fnm default 26 >/dev/null 2>&1
+    print_success "Node.js 26 installed"
 
     print_section "Python"
     uv python install 3.14 >/dev/null 2>&1
@@ -422,29 +422,21 @@ print_header "🔧 Languages & Runtimes"
 
 # -- Node.js / FNM (fnm and go install via packages.toml; doctor reports presence)
 print_section "Node.js / FNM"
-# Initialize FNM and install Node.js LTS (idempotent)
+# Initialize FNM and install Node.js 26 (idempotent)
 if command -v fnm >/dev/null 2>&1; then
     eval "$(fnm env)"
 
-    # Check if Node.js LTS is already installed
-    if fnm list 2>/dev/null | grep -q "lts-latest"; then
-        print_info "Node.js LTS already installed"
-    else
-        print_action "Installing Node.js LTS..."
-        fnm install --lts >/dev/null 2>&1
-        fnm use --install-if-missing lts-latest >/dev/null 2>&1
-        fnm default lts-latest >/dev/null 2>&1
-        print_success "Node.js LTS installed"
-    fi
+    # Resolve the latest patch even when an older Node 26 is already installed.
+    fnm install 26 >/dev/null 2>&1
 
-    # Ensure LTS is set as default (idempotent)
-    fnm use --install-if-missing lts-latest >/dev/null 2>&1
-    fnm default lts-latest >/dev/null 2>&1
+    # Ensure Node 26 is set as default (idempotent)
+    fnm use --install-if-missing 26 >/dev/null 2>&1
+    fnm default 26 >/dev/null 2>&1
 
     # pnpm 12 is a native binary; install it outside fnm's Corepack shims.
     if command -v npx >/dev/null 2>&1; then
-        if PNPM_HOME="$HOME/.npm-global" npx --yes get-pnpm 12.1.0 >/dev/null 2>&1; then
-            print_info "pnpm 12.1.0 installed"
+        if PNPM_HOME="$HOME/.npm-global" npx --yes get-pnpm 12.15.0 >/dev/null 2>&1; then
+            print_info "pnpm 12.15.0 installed"
         else
             print_warn "pnpm could not be installed; rerun the installer after checking Node"
         fi
@@ -456,8 +448,8 @@ if command -v fnm >/dev/null 2>&1; then
     node_bin="$(command -v node 2>/dev/null)"
     npx_bin="$(command -v npx 2>/dev/null)"
     if [[ -n "$node_bin" && -n "$npx_bin" && -d /opt/homebrew/bin ]]; then
-        safe_link "$node_bin" /opt/homebrew/bin/node
-        safe_link "$npx_bin" /opt/homebrew/bin/npx
+        safe_link "$FNM_DIR/aliases/default/bin/node" /opt/homebrew/bin/node
+        safe_link "$FNM_DIR/aliases/default/bin/npx" /opt/homebrew/bin/npx
         print_success "Node/npx symlinked to /opt/homebrew/bin (GUI app support)"
     fi
 fi

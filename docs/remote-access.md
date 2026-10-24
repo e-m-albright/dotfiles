@@ -21,8 +21,10 @@ The private web surface is a separate productivity application and trust boundar
 1. `dotfiles brew install` reconciles Paseo.app and Tailscale. The managed daemon uses the CLI bundled inside Paseo.app so the desktop and daemon protocol versions stay aligned.
 2. Set a Paseo daemon password with `paseo daemon set-password`. Paseo stores only its hash under `~/.paseo`; never put the plaintext in shell history or tracked configuration.
 3. Run `dfs remote on`. It brings Tailscale up, installs `com.dotfiles.paseo` bound to the Mac's current Tailscale IPv4 on port 6767, and configures Tailscale Serve to proxy `127.0.0.1:8765` over tailnet-only HTTPS port 8443.
-4. Keep `--no-relay` enabled for Paseo and never enable Tailscale Funnel. Both surfaces fail closed when Tailscale is disconnected.
+4. Keep Paseo's `daemon.relay.enabled` set to `false` and never enable Tailscale Funnel. Both surfaces fail closed when Tailscale is disconnected.
 5. In Paseo desktop and mobile, save the daemon address printed by `dfs remote status`, plus the daemon password. Open the private-site URL printed by the same command in the phone browser.
+
+Paseo 0.12 uses `daemon run` under launchd; the old foreground, listen, and relay command flags are removed. Dotfiles reads and writes only `daemon.listen` and `daemon.relay.enabled` through the vendor configuration CLI, preserving authentication and other settings. It backs up the existing private configuration before changes and stops before replacing the running daemon if configuration cannot be verified.
 
 Because the relay is disabled there is no relay QR pairing. Tailscale encrypts and authenticates the network hop; the Paseo password protects the daemon protocol.
 
@@ -59,7 +61,7 @@ dotfiles remote paseo --rotate-password --dry-run
 | Symptom | Check |
 |---|---|
 | Paseo app will not connect | Is Tailscale up on both devices? Is `dfs remote status` healthy? Does the saved address match the current `100.x:6767` value? Is the password current? |
-| Paseo reports a relay | The managed launch command must contain `--no-relay`; run `dfs remote on` to reconcile it. |
+| Paseo reports a relay | Persistent `daemon.relay.enabled` must be `false`; run `dfs remote on` to reconcile it. |
 | Daemon stopped after the Tailscale address changed | `dfs remote on` detects a stale listen address and reinstalls the launchd agent. |
 | Desktop works but mobile does not | Verify the phone is on the same tailnet and points to the direct tailnet address, not localhost or a retired endpoint. |
 | Private site reports `not configured` | Run `dfs remote on`, then open the HTTPS port 8443 URL shown by `dfs remote status`. |

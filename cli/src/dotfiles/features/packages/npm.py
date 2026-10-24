@@ -31,13 +31,13 @@ def _npm_runtime(
         return None, StepResult(
             level="error", message="npm globals require npm or fnm, but neither is available"
         )
-    if not runner.run(("fnm", "install", "--lts")).ok:
-        return None, StepResult(level="error", message="fnm failed to install Node.js LTS")
-    if not runner.run(("fnm", "default", "lts-latest")).ok:
-        return None, StepResult(level="error", message="fnm failed to select Node.js LTS")
+    if not runner.run(("fnm", "install", "26")).ok:
+        return None, StepResult(level="error", message="fnm failed to install Node.js 26")
+    if not runner.run(("fnm", "default", "26")).ok:
+        return None, StepResult(level="error", message="fnm failed to select Node.js 26")
     return (
-        ("fnm", "exec", "--using", "lts-latest", "npm"),
-        StepResult(level="success", message="Node.js LTS installed via fnm"),
+        ("fnm", "exec", "--using", "26", "npm"),
+        StepResult(level="success", message="Node.js 26 installed via fnm"),
     )
 
 
@@ -62,7 +62,7 @@ def install_npm_globals(
     profile: str = "personal",
     dry_run: bool = False,
 ) -> list[StepResult]:
-    """Install declared npm globals, bootstrapping fnm's LTS runtime when needed."""
+    """Install declared npm globals, bootstrapping fnm's Node 26 runtime when needed."""
     active = _active_npm_packages(manifest, flags_on, profile)
     if not active:
         return []

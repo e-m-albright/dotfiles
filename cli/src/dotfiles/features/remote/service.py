@@ -5,10 +5,14 @@ Tailscale Serve exposes one loopback-only private site to the tailnet. Paseo's
 relay stays disabled, and no terminal-session wrapper is involved.
 """
 
+import json
 import plistlib
 import re
+import shutil
+import time
 from functools import cached_property
 from pathlib import Path
+from typing import cast
 
 from dotfiles.features.remote.models import PASEO_PORT, CaffeineStatus, ConnectionInfo, RemoteStatus
 from dotfiles.ports import ProcessRunner
@@ -18,9 +22,8 @@ _PASEO_LABEL = "com.dotfiles.paseo"
 _PASEO_BIN = "/Applications/Paseo.app/Contents/Resources/bin/paseo"
 _PASEO_BASE_ARGS = [
     _PASEO_BIN,
-    "start",
-    "--foreground",
-    "--no-relay",
+    "daemon",
+    "run",
 ]
 _PASEO_STOP_COMMAND = (_PASEO_BIN, "daemon", "stop")
 _PASEO_SET_PASSWORD_COMMAND = (_PASEO_BIN, "daemon", "set-password")
@@ -155,6 +158,47 @@ class RemoteService:
             )
         return out
 
+    def _paseo_setting(self, key: str) -> tuple[bool, object]:
+        result = self._runner.run((_PASEO_BIN, "daemon", "config", "get", key), timeout=10)
+        if not result.ok:
+            return False, None
+        try:
+            data = json.loads(result.stdout)
+        except ValueError:
+            return False, None
+        if not isinstance(data, dict):
+            return False, None
+        settings = cast("dict[str, object]", data)
+        if not isinstance(settings.get("set"), bool):
+            return False, None
+        expected_type = str if key == "daemon.listen" else bool
+        if settings["set"] and type(settings.get("value")) is not expected_type:
+            return False, None
+        return True, settings.get("value")
+
+    def _configure_paseo_network(self, address: str) -> list[StepResult]:
+        config = self._home / ".paseo/config.json"
+        backup_needed = config.is_file()
+        for key, desired in (("daemon.listen", address), ("daemon.relay.enabled", False)):
+            ok, current = self._paseo_setting(key)
+            if not ok:
+                return [
+                    StepResult(level="error", message=f"Paseo configuration read failed: {key}")
+                ]
+            if current == desired:
+                continue
+            if backup_needed:
+                shutil.copy2(config, config.with_name(f"config.json.backup-{time.time_ns()}"))
+                backup_needed = False
+            updated = self._runner.run(
+                (_PASEO_BIN, "daemon", "config", "set", key, json.dumps(desired)), timeout=10
+            )
+            if not updated.ok:
+                return [
+                    StepResult(level="error", message=f"Paseo configuration update failed: {key}")
+                ]
+        return []
+
     def paseo_install_agent(self, *, dry_run: bool) -> list[StepResult]:
         """Install Paseo bound to the current tailnet IP with relay disabled."""
         if dry_run:
@@ -169,10 +213,11 @@ class RemoteService:
                 )
             ]
 
+        errors = self._configure_paseo_network(f"{tailnet_ip}:{PASEO_PORT}")
+        if errors:
+            return errors
         self._runner.run(_PASEO_STOP_COMMAND)
-        return self._load_agent(
-            [*_PASEO_BASE_ARGS, "--listen", f"{tailnet_ip}:{PASEO_PORT}"], dry_run=False
-        )
+        return self._load_agent(_PASEO_BASE_ARGS, dry_run=False)
 
     def paseo_configuration_stale(self) -> bool:
         connected, ip = self._tailscale
@@ -185,10 +230,17 @@ class RemoteService:
         except (FileNotFoundError, plistlib.InvalidFileException, ValueError):
             return True
 
-        desired = plistlib.loads(
-            self._render_plist([*_PASEO_BASE_ARGS, "--listen", f"{ip}:{PASEO_PORT}"])
-        )
-        return persisted != desired
+        desired = plistlib.loads(self._render_plist(_PASEO_BASE_ARGS))
+        if persisted != desired:
+            return True
+        for key, expected in (
+            ("daemon.listen", f"{ip}:{PASEO_PORT}"),
+            ("daemon.relay.enabled", False),
+        ):
+            ok, current = self._paseo_setting(key)
+            if not ok or current != expected:
+                return True
+        return False
 
     def ensure_paseo_agent(self, *, dry_run: bool) -> list[StepResult]:
         if self.paseo_running():

@@ -46,7 +46,7 @@ def test_pi_is_an_enabled_pinned_ai_package() -> None:
     )
     assert not pi.disabled
     assert pi.flag == "ai"
-    assert pi.version == "0.86.1"
+    assert pi.version == "1.4.0"
 
 
 def test_work_profile_is_the_exact_approved_allowlist() -> None:

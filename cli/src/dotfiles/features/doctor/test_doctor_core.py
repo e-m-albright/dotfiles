@@ -222,7 +222,7 @@ def test_workbench_check_reports_live_drift() -> None:
 
 def test_notes_launchers_are_checked_and_fixable(tmp_path: Path) -> None:
     home = tmp_path / "home"
-    source = home / "code/private/notes/bin/notes"
+    source = home / "code/private/fixture-app/bin/notes"
     source.parent.mkdir(parents=True)
     source.write_text("#!/bin/sh\n")
     source.chmod(0o700)

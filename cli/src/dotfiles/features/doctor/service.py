@@ -192,13 +192,13 @@ class DoctorService:
         fnm_result = self._runner.run(("fnm", "list"), timeout=10)
         fnm_out = fnm_result.stdout if fnm_result.ok else ""
         if "lts-latest" in fnm_out or re.search(r"\bv\d+", fnm_out):
-            return [self._probe(sec, "Node.js", ("node", "--version"), "Run: fnm use --lts")]
+            return [self._probe(sec, "Node.js", ("node", "--version"), "Run: fnm use 26")]
         return [
             CheckResult(
                 section=sec,
                 name="Node.js",
                 status="warn",
-                hint="Run: fnm install --lts",
+                hint="Run: fnm install 26",
             )
         ]
 

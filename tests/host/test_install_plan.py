@@ -81,7 +81,7 @@ def test_workbench_clone_stays_attached_to_main() -> None:
 def test_native_pnpm_uses_the_global_prefix_not_its_bin_directory() -> None:
     installer = (INSTALLER.parent / "scripts/install.sh").read_text()
 
-    assert 'PNPM_HOME="$HOME/.npm-global" npx --yes get-pnpm 12.1.0' in installer
+    assert 'PNPM_HOME="$HOME/.npm-global" npx --yes get-pnpm 12.15.0' in installer
     assert 'PNPM_HOME="$HOME/.npm-global/bin" npx --yes get-pnpm' not in installer
 
 

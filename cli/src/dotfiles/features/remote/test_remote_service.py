@@ -1,3 +1,4 @@
+import json
 import plistlib
 from pathlib import Path
 
@@ -14,20 +15,28 @@ def _service(runner: FakeProcessRunner, home: Path) -> RemoteService:
 def _tailnet(runner: FakeProcessRunner, ip: str = "100.64.0.1") -> None:
     runner.script(("tailscale", "status"), exit_code=0)
     runner.script(("tailscale", "ip", "-4"), stdout=f"{ip}\n")
+    for key, value in (("daemon.listen", f"{ip}:6767"), ("daemon.relay.enabled", False)):
+        runner.script(
+            (
+                "/Applications/Paseo.app/Contents/Resources/bin/paseo",
+                "daemon",
+                "config",
+                "get",
+                key,
+            ),
+            stdout=json.dumps({"set": True, "value": value}),
+        )
 
 
-def _canonical_paseo_plist(home: Path, ip: str = "100.64.0.1") -> dict[str, object]:
+def _canonical_paseo_plist(home: Path) -> dict[str, object]:
     paseo = "/Applications/Paseo.app/Contents/Resources/bin/paseo"
     log = home / "Library/Logs/paseo.log"
     return {
         "Label": "com.dotfiles.paseo",
         "ProgramArguments": [
             paseo,
-            "start",
-            "--foreground",
-            "--no-relay",
-            "--listen",
-            f"{ip}:6767",
+            "daemon",
+            "run",
         ],
         "RunAtLoad": True,
         "KeepAlive": True,
@@ -116,8 +125,9 @@ def test_paseo_install_writes_tailnet_bound_no_relay_plist(tmp_path: Path) -> No
 
     plist = tmp_path / "Library/LaunchAgents/com.dotfiles.paseo.plist"
     content = plistlib.loads(plist.read_bytes())
-    assert content["ProgramArguments"][-2:] == ["--listen", "100.64.0.1:6767"]
-    assert "--no-relay" in content["ProgramArguments"]
+    assert content["ProgramArguments"][-2:] == ["daemon", "run"]
+    assert "--foreground" not in content["ProgramArguments"]
+    assert not any(call[1:4] == ("daemon", "config", "set") for call in runner.calls)
     assert content["KeepAlive"] is True
     assert ("launchctl", "bootstrap", "gui/501", str(plist)) in runner.calls
     assert all(step.level != "error" for step in steps)
@@ -297,16 +307,16 @@ def test_malformed_running_agent_configuration_is_stale(tmp_path: Path) -> None:
     ("name", "mutate"),
     [
         (
-            "missing no-relay",
-            lambda data: data["ProgramArguments"].remove("--no-relay"),
+            "obsolete foreground flag",
+            lambda data: data["ProgramArguments"].append("--foreground"),
         ),
         (
             "wrong executable",
             lambda data: data["ProgramArguments"].__setitem__(0, "/usr/local/bin/paseo"),
         ),
         (
-            "wrong port",
-            lambda data: data["ProgramArguments"].__setitem__(-1, "100.64.0.1:9999"),
+            "wrong command",
+            lambda data: data["ProgramArguments"].__setitem__(-1, "start"),
         ),
         ("KeepAlive false", lambda data: data.__setitem__("KeepAlive", False)),
         (
@@ -401,6 +411,58 @@ def test_paseo_stop_is_idempotent_when_absent(tmp_path):
     steps = _service(runner, tmp_path).paseo_uninstall_agent(dry_run=False)
     assert all(step.level == "success" for step in steps)
     assert ("launchctl", "list") in runner.calls
+
+
+def test_paseo_config_update_backs_up_private_settings_and_changes_only_network_fields(tmp_path):
+    runner = FakeProcessRunner()
+    _tailnet(runner)
+    paseo = "/Applications/Paseo.app/Contents/Resources/bin/paseo"
+    runner.script(
+        (paseo, "daemon", "config", "get", "daemon.listen"),
+        stdout=json.dumps({"set": True, "value": "127.0.0.1:6767"}),
+    )
+    config = tmp_path / ".paseo/config.json"
+    config.parent.mkdir()
+    original = '{"daemon":{"auth":{"sentinel":"preserve"}}}'
+    config.write_text(original)
+    config.chmod(0o600)
+
+    steps = _service(runner, tmp_path).paseo_install_agent(dry_run=False)
+
+    assert all(step.level != "error" for step in steps)
+    assert (paseo, "daemon", "config", "set", "daemon.listen", '"100.64.0.1:6767"') in runner.calls
+    backups = list(config.parent.glob("config.json.backup-*"))
+    assert len(backups) == 1
+    assert backups[0].read_text() == original
+    assert backups[0].stat().st_mode & 0o777 == 0o600
+    assert config.read_text() == original
+
+
+@pytest.mark.parametrize("failure", ["read", "malformed", "wrong-type", "set"])
+def test_paseo_bad_config_does_not_stop_or_launch_a_daemon(tmp_path, failure):
+    runner = FakeProcessRunner()
+    _tailnet(runner)
+    paseo = "/Applications/Paseo.app/Contents/Resources/bin/paseo"
+    runner.script(
+        (paseo, "daemon", "config", "get", "daemon.listen"),
+        exit_code=1 if failure == "read" else 0,
+        stdout=(
+            "not JSON"
+            if failure == "malformed"
+            else json.dumps(
+                {"set": True, "value": 0} if failure == "wrong-type" else {"set": False}
+            )
+        ),
+    )
+    runner.script(
+        (paseo, "daemon", "config", "set", "daemon.listen", '"100.64.0.1:6767"'), exit_code=1
+    )
+
+    steps = _service(runner, tmp_path).paseo_install_agent(dry_run=False)
+
+    assert any(step.level == "error" for step in steps)
+    assert (paseo, "daemon", "stop") not in runner.calls
+    assert not any("bootstrap" in call for call in runner.calls)
 
 
 def test_remote_status_probes_are_bounded(tmp_path):

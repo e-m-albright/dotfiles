@@ -11,9 +11,9 @@ _STEPS = (
     "sudo softwareupdate -i -a",
     "dotfiles brew upgrade",
     "fnm env",
-    "fnm install --lts",
-    "fnm use --install-if-missing lts-latest",
-    "fnm default lts-latest",
+    "fnm install 26",
+    "fnm use --install-if-missing 26",
+    "fnm default 26",
     "node --version",
     "rustup update",
     "rustc --version",
@@ -29,10 +29,10 @@ if [[ "$call" == "$TEST_FAILURE" ]]; then
 fi
 case "$call" in
     'sudo softwareupdate -i -a' | 'dotfiles brew upgrade' | \
-    'fnm install --lts' | 'fnm use --install-if-missing lts-latest' | \
-    'fnm default lts-latest' | 'rustup update' | 'dotfiles brew install') ;;
+    'fnm install 26' | 'fnm use --install-if-missing 26' | \
+    'fnm default 26' | 'rustup update' | 'dotfiles brew install') ;;
     'fnm env') printf ':\\n' ;;
-    'node --version') printf 'v24.20.0\\n' ;;
+    'node --version') printf 'v26.12.1\\n' ;;
     'rustc --version') printf 'rustc 1.90.0\\n' ;;
     'uv --version') printf 'uv 0.8.0\\n' ;;
     *) printf 'Unexpected command: %s\\n' "$call" >&2; exit 99 ;;

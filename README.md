@@ -45,7 +45,7 @@ Its read-only plan can be validated on any host with `./install.sh --plan`. It:
 Secrets and personal Git identity stay outside the repository. The installer
 writes Git identity to `~/.gitconfig.local`.
 
-The personal JavaScript toolchain is Node LTS via fnm with pnpm. Bun and Deno
+The personal JavaScript toolchain is Node 26 via fnm with pnpm. Bun and Deno
 are disabled in the package manifest. Both remain on Workbench's technology
 watchlist; adoption requires meaningful tooling consolidation or recurring
 workflow savings, verified compatibility, and dependable ongoing maintenance.
@@ -59,7 +59,7 @@ For a lightweight work machine, use the fail-closed profile:
 
 The work profile installs only its explicit formula, cask, special-installer,
 and npm allowlists from `config/packages.toml`. It shares the personal zsh setup
-with work-safe defaults and a short profile banner, adds Node.js LTS, uv-managed
+with work-safe defaults and a short profile banner, adds Node.js 26, uv-managed
 Python 3.14, and tenv-managed Terraform; installs Rectangle, Flycut, Ghostty,
 Caffeine, f.lux, TypeWhisper, Zed, Spotify, and OrbStack; keeps OrbStack on
 demand; and syncs Workbench with `--profile work`. It does not apply personal
