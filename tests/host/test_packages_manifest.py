@@ -49,6 +49,19 @@ def test_pi_is_an_enabled_pinned_ai_package() -> None:
     assert pi.version == "1.4.0"
 
 
+def test_antigravity_cli_is_enabled_without_ide_or_gemini() -> None:
+    manifest = PackageManifest.load(MANIFEST)
+    packages = {
+        package.name: package
+        for section in manifest.sections
+        for package in section.packages
+    }
+    assert not packages["antigravity-cli"].disabled
+    assert "agy" in packages["antigravity-cli"].note
+    assert packages["antigravity"].disabled
+    assert packages["gemini-cli"].disabled
+
+
 def test_work_profile_is_the_exact_approved_allowlist() -> None:
     work = PackageManifest.load(MANIFEST).profiles["work"]
     assert work.formulae == [

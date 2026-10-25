@@ -206,7 +206,7 @@ packages = [
   { name = "paseo",                note = "Desktop client for monitoring and controlling local coding agents from desktop and mobile" },
   { name = "googleworkspace-cli",  note = "Google Workspace CLI (Drive, Gmail, Calendar, Sheets, Admin)" },
   { name = "gemini-cli",           note = "Google terminal coding agent", disabled = true, reason = "Disabled 2026-06-09: replaced during the Antigravity evaluation; active agent support is now focused on Claude and Codex" },
-  { name = "antigravity-cli",      note = "Google Antigravity CLI", disabled = true, reason = "Disabled 2026-07-15: focus active agent support on Claude and Codex" },
+  { name = "antigravity-cli",      note = "Google Antigravity CLI (Homebrew cask; binary is `agy`)" },
   { name = "antigravity",          note = "Google Antigravity AI-native IDE", disabled = true, reason = "Disabled 2026-07-15: overlaps Cursor and other agentic editors without offering a needed current capability; open to reevaluation" },
   { name = "crush",                note = "Charmbracelet agentic coding CLI (requires charmbracelet/tap)", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
   { name = "block-goose-cli",      note = "Block's Goose agentic CLI", disabled = true, reason = "Disabled 2026-06-01: agentic-coding experiment; standardized on Claude Code + Codex" },
