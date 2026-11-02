@@ -6,7 +6,7 @@ requires-python = ">=3.13"
 dependencies = [
     "typer>=0.27.3",
     "rich>=13.9",
-    "pydantic>=2.14.1",
+    "pydantic>=2.14.2",
 ]
 
 [project.scripts]
@@ -14,13 +14,13 @@ dotfiles = "dotfiles.app.main:app"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3",
+    "pytest>=9.2.0",
     "pytest-cov>=6.0",
     "pytest-timeout>=2.3",
-    "ruff>=0.17.1",
+    "ruff>=0.17.3",
     "pyright>=1.1.414",
     "vulture>=2.14",
-    "complexipy>=8.0.0",
+    "complexipy>=8.3.0",
     "pip-audit>=2.7",
 ]
 
