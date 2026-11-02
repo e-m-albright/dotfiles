@@ -42,6 +42,7 @@ class Package(_ManifestModel):
 
     name: str
     note: str = ""
+    personal: bool = True  # False keeps a package available only through named profile allowlists.
     disabled: bool = False
     reason: str = ""
     flag: FeatureFlag | None = None
@@ -238,7 +239,7 @@ def _section_enabled_packages(
     return [
         (pkg.name, section.kind)
         for pkg in section.packages
-        if not pkg.disabled and flag_active(pkg.flag, flags_on)
+        if pkg.personal and not pkg.disabled and flag_active(pkg.flag, flags_on)
     ]
 
 
@@ -253,6 +254,7 @@ def enabled_packages(
     A package is included when:
     - Its section flag (if any) is in flags_on
     - Its own flag (if any) is in flags_on
+    - personal = True (named profiles use their explicit allowlists instead)
     - disabled = False
     """
     if profile != "personal":

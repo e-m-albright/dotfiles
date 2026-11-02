@@ -148,6 +148,7 @@ name = "Productivity"
 kind = "cask"
 flag = "productivity"
 packages = [
+  { name = "microsoft-365-copilot", note = "Microsoft 365 Copilot; work profile only", personal = false },
   { name = "rectangle",        note = "Window management" },
   { name = "flycut",           note = "Clipboard manager" },
   { name = "ghostty",          note = "GPU-accelerated terminal" },
@@ -241,7 +242,7 @@ formulae = [
 ]
 casks = [
   "rectangle", "flycut", "ghostty", "caffeine", "flux-app", "typewhisper",
-  "zed", "spotify", "claude-code", "orbstack",
+  "zed", "spotify", "claude-code", "orbstack", "microsoft-365-copilot",
 ]
 npm_packages = ["@earendil-works/pi-coding-agent"]
 

@@ -7,7 +7,7 @@ fails `just check` instead of surfacing on the next `dotfiles brew install`.
 
 from pathlib import Path
 
-from dotfiles.features.packages.manifest import PackageManifest
+from dotfiles.features.packages.manifest import ALL_FLAGS, PackageManifest, enabled_packages
 
 MANIFEST = (
     next(
@@ -96,9 +96,17 @@ def test_work_profile_is_the_exact_approved_allowlist() -> None:
         "spotify",
         "claude-code",
         "orbstack",
+        "microsoft-365-copilot",
     ]
     assert work.taps == []
     assert work.npm_packages == ["@earendil-works/pi-coding-agent"]
+
+
+def test_microsoft_365_copilot_is_work_only() -> None:
+    manifest = PackageManifest.load(MANIFEST)
+    copilot = ("microsoft-365-copilot", "cask")
+    assert copilot in enabled_packages(manifest, flags_on=ALL_FLAGS, profile="work")
+    assert copilot not in enabled_packages(manifest, flags_on=ALL_FLAGS, profile="personal")
 
 
 def test_disabled_entries_carry_dated_reasons() -> None:
