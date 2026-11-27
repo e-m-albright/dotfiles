@@ -46,7 +46,7 @@ def test_pi_is_an_enabled_pinned_ai_package() -> None:
     )
     assert not pi.disabled
     assert pi.flag == "ai"
-    assert pi.version == "1.4.0"
+    assert pi.version == "1.6.1"
 
 
 def test_antigravity_cli_is_enabled_without_ide_or_gemini() -> None:
